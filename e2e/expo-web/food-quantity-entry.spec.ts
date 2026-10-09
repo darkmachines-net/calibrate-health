@@ -64,4 +64,3 @@ for (const blurBeforeSave of [false, true]) {
     await expect(dialog.getByRole('textbox', { name: 'Amount', exact: true })).toHaveValue('0.250001');
   });
 }
-
