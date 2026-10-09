@@ -473,12 +473,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             ? getProviderAttribution(selection.item.source ?? undefined, providerData?.attribution)
             : null;
         return (
-            <KeyboardAwareScrollView
-                style={styles.flex}
-                contentContainerStyle={styles.editorContent}
-                revealFocusedInputOnFocus
-                keyboardShouldPersistTaps="handled"
-            >
+            <View style={styles.editorContent}>
                 {selectionAttribution && renderProviderAttribution(selectionAttribution)}
                 <FoodSelectionEditor
                     selection={selection}
@@ -492,7 +487,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                     }}
                     onSubmit={(request) => logFood.mutate(request)}
                 />
-            </KeyboardAwareScrollView>
+            </View>
         );
     }
 
@@ -739,7 +734,9 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             maxHeight={ADD_FOOD_SHEET_HEIGHT}
             size="wide"
             showCloseButton
-            scrollable={false}
+            // Scroll the selected editor together with its controls in short viewports.
+            scrollable={Boolean(selection)}
+            revealFocusedInputOnFocus={Boolean(selection)}
             dismissDisabled={logFood.isPending}
             isDirty={hasUnsavedDraft}
             confirmDismiss={confirmDiscardChanges}

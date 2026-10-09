@@ -278,7 +278,7 @@ export default function FoodLogContent({ embedded = false }: { embedded?: boolea
             !nextAmount.trim()
             || !Number.isFinite(parsedAmount)
             || !editAmountConfig
-            || Math.abs(parsedAmount - editAmountConfig.amount) > 0.000001
+            || editAmountConfig.toServings(parsedAmount) !== editAmountConfig.toServings(editAmountConfig.amount)
         );
         if (editCaloriesOverridden || !editEntry || !editAmountConfig) return;
 
