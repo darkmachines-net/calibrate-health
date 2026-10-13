@@ -4,10 +4,11 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { ReleaseRecordStore, latestCheckpoint } from './release-record.mjs';
+import { checkpointReleaseOperation } from './release-engine.mjs';
+import { RELEASE_ENGINE_CONFIG } from './release-engine.config.mjs';
 
-export const EAS_PROJECT_ID = 'fda8f8c5-e646-47ac-82fb-35003c9cbec7';
-// Match the existing tracks returned by Play, including the Wear form-factor prefix.
-export const SUBMISSION_TRACKS = Object.freeze({ phone: 'internal', wear: 'wear:internal' });
+export const EAS_PROJECT_ID = RELEASE_ENGINE_CONFIG.expo.projectId;
+export const SUBMISSION_TRACKS = RELEASE_ENGINE_CONFIG.expo.tracks;
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
 /** The pinned submit command has no JSON flag; bind only its unique project-specific details URL. */
@@ -54,6 +55,16 @@ export function easInvocation(toolRoot, directory, args, execute = execFileSync)
   });
 }
 
+/** Record verified acceptance separately from eventual provider completion so only the handoff unlocks OTA. */
+export async function recordSubmissionHandoff(store, releaseId, role, submission) {
+  if (role !== 'phone' || ['ERRORED', 'CANCELED'].includes(submission.status)) return;
+  const state = await store.read(releaseId);
+  const previous = latestCheckpoint(state.checkpoints, 'phone-handoff');
+  if (previous?.status === 'succeeded' && previous.submission_id === submission.id) return;
+  await store.checkpoint(releaseId, 'phone-handoff', { status: 'succeeded', submission_id: submission.id,
+    provider_status: submission.status });
+}
+
 /** A prior intent without an ID must be reconciled rather than creating an untracked duplicate. */
 export async function queueSubmission({ store, releaseId, role, aab, runEas, retryFailed = false }) {
   const state = await store.read(releaseId);
@@ -64,26 +75,35 @@ export async function queueSubmission({ store, releaseId, role, aab, runEas, ret
     const observed = verifySubmission(JSON.parse(runEas(['submit:view', previous.submission_id, '--json'])), previous.submission_id, role);
     if (['ERRORED', 'CANCELED'].includes(observed.status)) {
       if (!retryFailed || !observed.canRetry) throw new Error(`${role} submission failed. Resume with provider retry support or explicitly abandon this release; never upload another AAB under the same codes.`);
-      await store.checkpoint(releaseId, stage, { status: 'enqueueing', prior_submission_id: previous.submission_id });
+      if (previous.operation?.status !== 'failed') await checkpointReleaseOperation(store, releaseId, stage,
+        { type: 'failed', definitive: true, reason: observed.status, proof: observed });
+      await checkpointReleaseOperation(store, releaseId, stage, { type: 'retry' }, { prior_submission_id: previous.submission_id });
       const retried = JSON.parse(runEas(['submit:retry', previous.submission_id, '--non-interactive', '--json']));
       if (!new RegExp(`^${UUID}$`).test(retried.id ?? '')) throw new Error('EAS retry outcome is ambiguous; reconcile before continuing.');
-      await store.checkpoint(releaseId, stage, { status: 'queued', submission_id: retried.id, prior_submission_id: previous.submission_id });
+      await checkpointReleaseOperation(store, releaseId, stage, { type: 'accepted', operationId: retried.id },
+        { prior_submission_id: previous.submission_id });
       const checked = verifySubmission(JSON.parse(runEas(['submit:view', retried.id, '--json'])), retried.id, role);
-      if (['ERRORED', 'CANCELED'].includes(checked.status)) throw new Error('EAS rejected the replacement submission.');
+      if (['ERRORED', 'CANCELED'].includes(checked.status)) {
+        await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: checked.status });
+        throw new Error('EAS rejected the replacement submission.');
+      }
+      await recordSubmissionHandoff(store, releaseId, role, checked);
       return retried.id;
     }
+    await recordSubmissionHandoff(store, releaseId, role, observed);
     return previous.submission_id;
   }
-  await store.checkpoint(releaseId, stage, { status: 'enqueueing' });
+  await checkpointReleaseOperation(store, releaseId, stage, previous ? { type: 'retry' } : { type: 'intent', operationKey: stage });
   const output = runEas(['submit', '--platform', 'android', '--profile', role, '--path', aab, '--non-interactive', '--no-wait']);
   const id = parseSubmissionId(output);
   // Persist the ID before readback, so a readback outage cannot cause a duplicate enqueue.
-  await store.checkpoint(releaseId, stage, { status: 'queued', submission_id: id });
+  await checkpointReleaseOperation(store, releaseId, stage, { type: 'accepted', operationId: id });
   const observed = verifySubmission(JSON.parse(runEas(['submit:view', id, '--json'])), id, role);
   if (['ERRORED', 'CANCELED'].includes(observed.status)) {
-    await store.checkpoint(releaseId, stage, { status: 'failed', submission_id: id });
+    await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: observed.status });
     throw new Error('EAS rejected the initial submission before OTA handoff.');
   }
+  await recordSubmissionHandoff(store, releaseId, role, observed);
   return id;
 }
 
@@ -91,12 +111,16 @@ export async function queueSubmission({ store, releaseId, role, aab, runEas, ret
 export async function waitForSubmission({ store, releaseId, role, id, runEas, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), attempts = 240 }) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const submission = verifySubmission(JSON.parse(runEas(['submit:view', id, '--json'])), id, role);
+    const previous = latestCheckpoint((await store.read(releaseId)).checkpoints, `${role}-submit`);
     if (submission.status === 'FINISHED') {
-      await store.checkpoint(releaseId, `${role}-submit`, { status: 'succeeded', submission_id: id });
+      await recordSubmissionHandoff(store, releaseId, role, submission);
+      if (previous?.status !== 'succeeded') await checkpointReleaseOperation(store, releaseId, `${role}-submit`,
+        { type: 'complete', receipt: submission, proof: submission });
       return;
     }
     if (['ERRORED', 'CANCELED'].includes(submission.status)) {
-      await store.checkpoint(releaseId, `${role}-submit`, { status: 'failed', submission_id: id });
+      if (previous?.status !== 'failed') await checkpointReleaseOperation(store, releaseId, `${role}-submit`,
+        { type: 'failed', definitive: true, reason: submission.status, proof: submission }, { submission_id: id });
       throw new Error(`${role} EAS submission ${id} ${submission.status.toLowerCase()}; OTA is independent. Recover this release before another cut.`);
     }
     if (attempt % 4 === 0) console.log(`${role} submission ${id}: ${submission.status}`);

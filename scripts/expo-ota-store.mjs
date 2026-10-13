@@ -10,12 +10,14 @@ import { verifyUpdateArtifact } from './expo-ota-artifact.mjs';
 import { verifyNativeArtifactMetadata } from './native-release-artifacts.mjs';
 import { releaseGit } from './release-selection.mjs';
 import { parseNativePlayWorkflowTrustSet } from './native-play-receipt.mjs';
+import { createReleaseArtifactManifest, verifyReleaseArtifactManifest } from './release-engine.mjs';
+import { RELEASE_ENGINE_CONFIG, RELEASE_ENGINE_TRUST_FILES } from './release-engine.config.mjs';
 
 /** Resolve the immutable source and channel from the orchestration record. */
 export function otaTarget(state, channel) {
   if (!['internal', 'production'].includes(channel)) throw new Error('Invalid OTA channel.');
   return { sourceCommit: latestCheckpoint(state.checkpoints, 'prepared')?.source_commit ?? state.record.source_commit,
-    channel, environment: channel === 'production' ? 'production' : 'preview', projectId: 'fda8f8c5-e646-47ac-82fb-35003c9cbec7' };
+    channel, environment: channel === 'production' ? 'production' : 'preview', projectId: RELEASE_ENGINE_CONFIG.expo.projectId };
 }
 
 /** Authenticate the export's file hashes against its original reviewed workflow before reuse. */
@@ -26,7 +28,7 @@ export function verifyOtaAttestation(file, signer, root, repository, execute = e
   const policy = parseNativePlayWorkflowTrustSet(releaseGit(root, ['show', `${current}:.github/native-play-attestation-trusted-workflow-shas`]));
   if (policy.revoked.includes(signer)) throw new Error('OTA artifact signer is revoked by current master.');
   const critical = ['.github/workflows/expo-ota-update.yml', 'scripts/expo-ota-artifact.mjs',
-    'scripts/expo-ota-store.mjs', 'scripts/expo-runtime.mjs', 'scripts/zip-entry.mjs', 'scripts/release-config.mjs'];
+    'scripts/expo-ota-store.mjs', 'scripts/expo-runtime.mjs', 'scripts/release-config.mjs', ...RELEASE_ENGINE_TRUST_FILES];
   if (!policy.allowed.includes(signer) && !critical.every((name) =>
     releaseGit(root, ['rev-parse', `${signer}:${name}`]) === releaseGit(root, ['rev-parse', `${current}:${name}`]))) {
     throw new Error('Retain the reviewed OTA signer in the master trust policy before recovery.');
@@ -88,6 +90,11 @@ export async function retainOtaArtifact(store, releaseId, channel, root, toolRoo
   const signer = process.env.WORKFLOW_SHA;
   verifyOtaAttestation(path.join(root, 'provenance.json'), signer, toolRoot, store.repository);
   await verifySelectedNativeRuntime(store, releaseId, state, provenance, path.dirname(root), toolRoot);
+  const artifactManifest = await createReleaseArtifactManifest(root);
+  const expectedFiles = ['provenance.json', ...provenance.files.map((file) => `bundle/${file.path}`)].sort();
+  if (JSON.stringify(artifactManifest.files.map((file) => file.path).sort()) !== JSON.stringify(expectedFiles)) {
+    throw new Error('OTA artifact contains files outside its retained provenance inventory.');
+  }
   const bytes = packOtaArtifact(root, target);
   const hash = createHash('sha256').update(bytes).digest('hex');
   const name = `ota-${channel}.json.gz`;
@@ -96,7 +103,9 @@ export async function retainOtaArtifact(store, releaseId, channel, root, toolRoo
     const retained = await store.api(`/releases/assets/${existing.id}`, { raw: true });
     if (createHash('sha256').update(retained).digest('hex') !== hash) throw new Error('OTA export already retained with different bytes. Resume its original export.');
   } else await store.upload(releaseId, name, bytes);
+  await verifyReleaseArtifactManifest(root, artifactManifest);
   await store.checkpoint(releaseId, `ota-${channel}-artifact`, { status: 'succeeded', sha256: hash, workflow_sha: signer,
+    artifact_manifest: artifactManifest,
     runtime_version: provenance.runtimeVersion, bundle_integrity: provenance.bundleIntegrity });
 }
 
@@ -109,6 +118,7 @@ export async function restoreOtaArtifact(store, releaseId, channel, root, toolRo
   const bytes = await store.api(`/releases/assets/${asset.id}`, { raw: true });
   if (createHash('sha256').update(bytes).digest('hex') !== checkpoint.sha256) throw new Error('Retained OTA archive hash mismatch.');
   const provenance = unpackOtaArtifact(bytes, root, otaTarget(state, channel));
+  if (checkpoint.artifact_manifest) await verifyReleaseArtifactManifest(root, checkpoint.artifact_manifest);
   verifyOtaAttestation(path.join(root, 'provenance.json'), checkpoint.workflow_sha, toolRoot, store.repository);
   await verifySelectedNativeRuntime(store, releaseId, state, provenance, path.dirname(root), toolRoot);
 }

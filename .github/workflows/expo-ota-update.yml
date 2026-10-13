@@ -1,3 +1,4 @@
+# Publish Expo OTA Update with trusted source and pinned shared release tooling.
 name: Publish Expo OTA Update
 
 on:
@@ -130,8 +131,9 @@ jobs:
           path: .release-tooling
           persist-credentials: false
           ref: ${{ job.workflow_sha }}
-          sparse-checkout: |-
+          sparse-checkout: |
             scripts
+            tools
           sparse-checkout-cone-mode: true
 
       - name: Setup Node
@@ -230,6 +232,11 @@ jobs:
             /scripts/native-tag-attestation.mjs
             /scripts/release-config.mjs
             /tools/eas-cli/
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -364,6 +371,11 @@ jobs:
             /scripts/native-ota-contract.mjs
             /scripts/native-ota-update.mjs
             /scripts/native-tag-attestation.mjs
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -479,9 +491,14 @@ jobs:
           path: .release-tooling
           persist-credentials: false
           ref: ${{ job.workflow_sha }}
-          sparse-checkout: |-
+          sparse-checkout: |
             /scripts/
             /tools/eas-cli/
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -618,6 +635,11 @@ jobs:
             /scripts/native-tag-attestation.mjs
             /scripts/release-config.mjs
             /tools/eas-cli/
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -753,6 +775,11 @@ jobs:
             /scripts/native-ota-contract.mjs
             /scripts/native-ota-update.mjs
             /scripts/native-tag-attestation.mjs
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -869,9 +896,14 @@ jobs:
           path: .release-tooling
           persist-credentials: false
           ref: ${{ job.workflow_sha }}
-          sparse-checkout: |-
+          sparse-checkout: |
             /scripts/
             /tools/eas-cli/
+            /scripts/release-engine.mjs
+            /scripts/release-engine.config.mjs
+            /tools/release-engine/
+            /tools/verify-release-engine.mjs
+            /release-engine.lock.json
           sparse-checkout-cone-mode: false
 
       - name: Setup Node
@@ -950,7 +982,9 @@ jobs:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
           fetch-depth: 0
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: expo-ota-android-internal-${{ needs.preflight-release-target.outputs.source_commit }}
@@ -994,7 +1028,9 @@ jobs:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
           fetch-depth: 0
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: expo-ota-android-production-${{ needs.preflight-release-target.outputs.source_commit }}

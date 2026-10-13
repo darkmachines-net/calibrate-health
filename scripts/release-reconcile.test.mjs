@@ -59,6 +59,29 @@ test('late submission failure and retry preserve the original OTA result and rec
   assert.equal(store.state.checkpoints[0].status, 'succeeded');
 });
 
+test('reconciliation cannot substitute another submission for a previously accepted ID', async () => {
+  const store = storeFixture([
+    { stage: 'native-build', status: 'succeeded', aab_hashes: { phone: hash }, asset_id: 1 },
+    { stage: 'phone-submit', status: 'queued', submission_id: id, asset_id: 2 }
+  ]);
+  await assert.rejects(reconcileRelease({ store, releaseId: '1', input: { stage: 'phone-submit',
+    status: 'observed', id: 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee', artifact_hash: hash, evidence, confirmed: true },
+  runEas: () => assert.fail('Readback must not silently replace an accepted operation.') }), /cannot replace/);
+  assert.equal(store.state.checkpoints.length, 2);
+});
+
+test('failed legacy provider IDs cannot be replaced or declared absent', async () => {
+  const store = storeFixture([
+    { stage: 'native-build', status: 'succeeded', aab_hashes: { phone: hash }, asset_id: 1 },
+    { stage: 'phone-submit', status: 'failed', submission_id: id, asset_id: 2 }
+  ]);
+  const input = { stage: 'phone-submit', status: 'observed', id: 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee',
+    artifact_hash: hash, evidence, confirmed: true };
+  await assert.rejects(reconcileRelease({ store, releaseId: '1', input, runEas: () => assert.fail() }), /cannot replace/);
+  await assert.rejects(reconcileRelease({ store, releaseId: '1', input: { ...input, status: 'not-published', id: '', artifact_hash: '' },
+    runEas: () => assert.fail() }), /accepted provider operation/);
+});
+
 test('OTA reconciliation binds channel, runtime and retained artifact, without publishing', async () => {
   const store = storeFixture([{ stage: 'ota-production-artifact', status: 'succeeded', bundle_integrity: hash,
     runtime_version: 'b'.repeat(40), asset_id: 1 }, { stage: 'ota-production', status: 'started', asset_id: 2 }]);

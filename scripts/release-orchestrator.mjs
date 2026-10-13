@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { ReleaseRecordStore, completedBaseline, latestCheckpoint } from './release-record.mjs';
 import { inspectReleaseSelection, releaseGit } from './release-selection.mjs';
 import { verifyCurrentReleaseWorkflow, verifyPreparedReleaseCandidate } from './release-config.mjs';
+import { checkpointReleaseOperation, incompleteCalibrateStages, sealCalibrateRecord, summarizeCalibrateRelease } from './release-engine.mjs';
 
 /** Export explicit scalar values for workflow conditions and never embed untrusted JSON in shell code. */
 function outputs(values) {
@@ -46,18 +47,13 @@ export async function planRelease({ store, root, source, workflowSha, runId, bum
   }
   const plan = inspectReleaseSelection(root, source, baseline, bump);
   if (plan.native && !confirmPlay) throw new Error('Native submission is selected. Confirm Play Publishing overview is clear and pause other Console/API edits for this release.');
-  return { schema_version: 1, repository: store.repository, run_id: String(runId),
-    source_commit: source, workflow_sha: workflowSha, baseline, plan };
+  return sealCalibrateRecord({ schema_version: 1, repository: store.repository, run_id: String(runId),
+    source_commit: source, workflow_sha: workflowSha, baseline, plan });
 }
 
 /** Require all selected publications, but do not make native monitoring a prerequisite for OTA. */
 export function unfinishedStages(record, checkpoints) {
-  const required = [];
-  if (record.plan.server) required.push('image', 'deploy');
-  if (record.plan.native) required.push('native-build', 'phone-submit', 'wear-submit');
-  if (record.plan.ota_internal) required.push('ota-internal');
-  if (record.plan.ota_production) required.push('ota-production');
-  return required.filter((stage) => latestCheckpoint(checkpoints, stage)?.status !== 'succeeded');
+  return incompleteCalibrateStages(record, checkpoints);
 }
 
 /** Resolve the exact already prepared source for recovery without allocating versions or rebuilding. */
@@ -78,14 +74,15 @@ export async function recoveryInputs(store, releaseId) {
   const source = prepared?.source_commit ?? state.record.source_commit;
   /** Treat only an explicit successful checkpoint as a completed stage. */
   const stageDone = (stage) => latestCheckpoint(state.checkpoints, stage)?.status === 'succeeded';
+  const complete = new Set(summarizeCalibrateRelease(state.record, state.checkpoints).completedComponents);
   return { ...state.record.plan, source_commit: source, release_id: releaseId,
     producing_run_id: state.record.run_id,
     release_branch: prepared?.release_branch ?? '',
     image_complete: stageDone('image'), native_build_complete: stageDone('native-build'),
-    server: state.record.plan.server && !stageDone('deploy'),
-    native: state.record.plan.native && !stageDone('wear-submit'),
-    ota_internal: state.record.plan.ota_internal && !stageDone('ota-internal'),
-    ota_production: state.record.plan.ota_production && !stageDone('ota-production') };
+    server: state.record.plan.server && !complete.has('server'),
+    native: state.record.plan.native && !complete.has('native'),
+    ota_internal: state.record.plan.ota_internal && !complete.has('ota-internal'),
+    ota_production: state.record.plan.ota_production && !complete.has('ota-production') };
 }
 
 /** Bind the canonical merged candidate once; OTA-only releases retain their original protected source. */
@@ -127,7 +124,13 @@ export async function markReleaseStage(store, releaseId, stage, status) {
     if (!/^ghcr\.io\/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$/.test(process.env.RELEASE_IMAGE_REF ?? '')) throw new Error('A verified image digest is required for the release record.');
     identity.image_ref = process.env.RELEASE_IMAGE_REF;
   }
-  await store.checkpoint(releaseId, stage, { status, ...identity });
+  if (stage === 'deploy') {
+    const previous = latestCheckpoint((await store.read(releaseId)).checkpoints, stage);
+    let event = { type: 'complete', receipt: { service: 'calibratehealth', healthy: true } };
+    if (status === 'started') event = previous?.status === 'not-published'
+      ? { type: 'retry' } : { type: 'intent', operationKey: stage };
+    await checkpointReleaseOperation(store, releaseId, stage, event, identity);
+  } else await store.checkpoint(releaseId, stage, { status, ...identity });
 }
 
 /** Keep incomplete records draft; explicit abandonment cannot discard an ambiguous remote operation. */
@@ -135,7 +138,7 @@ export async function finishRelease(store, releaseId, abandon = false) {
   const state = await store.read(releaseId);
   const pending = unfinishedStages(state.record, state.checkpoints);
   const lines = [`## Release ${releaseId} outcomes`, ''];
-  for (const stage of ['image', 'deploy', 'native-build', 'phone-submit', 'wear-submit', 'ota-internal', 'ota-production']) {
+  for (const stage of ['image', 'deploy', 'native-build', 'phone-handoff', 'phone-submit', 'wear-submit', 'ota-internal', 'ota-production']) {
     const checkpoint = latestCheckpoint(state.checkpoints, stage);
     const detail = checkpoint?.submission_id ?? checkpoint?.publication?.group ?? checkpoint?.image_ref ?? '';
     lines.push(`- ${stage}: ${checkpoint?.status ?? (pending.includes(stage) ? 'not completed' : 'not selected')} ${detail}`);
@@ -145,7 +148,7 @@ export async function finishRelease(store, releaseId, abandon = false) {
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
   if (abandon) {
     for (const stage of ['deploy', 'phone-submit', 'wear-submit', 'ota-internal', 'ota-production']) {
-      if (['enqueueing', 'queued', 'started'].includes(latestCheckpoint(state.checkpoints, stage)?.status)) {
+      if (['enqueueing', 'queued', 'started', 'unknown'].includes(latestCheckpoint(state.checkpoints, stage)?.status)) {
         throw new Error(`Reconcile ${stage} before abandoning this release.`);
       }
     }

@@ -4,7 +4,8 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveExpoRuntime } from './expo-runtime.mjs';
-import { compareSemver, getNextNativeVersionCodes, nextReleaseVersion } from './release-config.mjs';
+import { compareSemver, nextReleaseVersion } from './release-config.mjs';
+import { allocateCalibrateNativeCodes, selectCalibrateComponents } from './release-engine.mjs';
 
 const IGNORED = /(^|\/)(__tests__|__mocks__|fixtures|e2e|docs)(\/|$)|(^|\/)src\/(test|androidTest)\/|\.(test|spec)\.[^/]+$|(^|\/)(README[^/]*|AGENTS\.md)$/i;
 const SERVER_FILES = /^(backend\/|shared\/|packages\/|mobile\/|Dockerfile\.app$|\.dockerignore$|package(?:-lock)?\.json$|scripts\/expo-(?:cli-environment|web-build|web-release)\.mjs$)/;
@@ -107,10 +108,13 @@ export function selectRelease({ manifest, baseline, serverChanges, otaChanges, p
   const reserved = baseline?.reserved_native_version ?? nativeBaseline?.version;
   const minimumNativeCode = baseline?.reserved_native_code ?? 0;
   const reserveNative = native && (!reserved || compareSemver(manifest.android.mobile.version_name, reserved) <= 0 || manifest.android.mobile.version_code <= minimumNativeCode);
-  const server = serverChanges.length > 0 || reserveNative;
+  const selected = selectCalibrateComponents({ serverChanges, otaChanges, productionChanges,
+    phoneRuntimeChanged: newRuntime, wearChanged: !nativeBaseline || nativeBaseline.wear_hash !== wearHash,
+    reserveNative, bump });
+  const server = selected.server;
   const introducesRuntime = newRuntime || reserveNative;
-  const ota = introducesRuntime || otaChanges.length > 0 || (server && bump === 'major');
-  const production = introducesRuntime || productionChanges.length > 0 || (server && bump === 'major');
+  const ota = selected.ota_internal;
+  const production = selected.ota_production;
   return {
     schema_version: 1,
     server, native, ota_internal: ota, ota_production: production,
@@ -118,10 +122,11 @@ export function selectRelease({ manifest, baseline, serverChanges, otaChanges, p
     reserve_native: reserveNative,
     minimum_native_code: minimumNativeCode,
     native_version: native ? (reserveNative ? nextReleaseVersion(manifest.android.mobile.version_name, 'patch') : manifest.android.mobile.version_name) : null,
-    native_codes: native ? (reserveNative ? getNextNativeVersionCodes(manifest, minimumNativeCode) : {
+    native_codes: native ? (reserveNative ? allocateCalibrateNativeCodes(manifest, minimumNativeCode) : {
       mobileVersionCode: manifest.android.mobile.version_code, wearVersionCode: manifest.android.wear.version_code
     }) : null,
-    noop: !server && !native && !ota && !production,
+    noop: selected.noop,
+    selection: selected.selection,
     bump, runtime_version: runtimeVersion, wear_hash: wearHash,
     reasons: {
       server: [...serverChanges, ...(reserveNative ? ['Native version preparation updates server diagnostic metadata'] : [])],

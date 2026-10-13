@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "repository": "MChartier/expo-release-template",
+  "revision": "6d6c8b863d6d93e06192d76281a1bf4017dc59f3",
+  "packageVersion": "0.1.0",
+  "digest": "ed0366ae9855d819ce1601a97cf54316ace84c9c2c25184561d483ae2ebab317",
+  "verifierDigest": "2d4aa22e456647262d53ac0ffe4e530021a7961a98ed6cf0b831081eb25db482",
+  "files": {
+    "artifacts.mjs": "624baf59788c80ed8b2977b4b9da538b8521a716b597f2fba5fc7c1becfa8c0c",
+    "core.mjs": "d8ce13a43eb3bbf1e43dfe754f6ea5392386710b5dcb684fd6caaaee3e878d09",
+    "graph.mjs": "b3278ac137a038275a235ea3aa544aa22cfd89f56234846ac181fcc345138e5f",
+    "index.d.mts": "eebc59360b1d893fc775e8b035e21d99a90fad7a92d9d473e2b1be4a55791dd0",
+    "index.mjs": "e872e4eb964ccecb3b7b8977e134c954702537e93fb649fad2e9a259ccbcdc2d",
+    "operation.mjs": "01dfb58bc1795530bdef775d55a077b80e78f6b976672a60bb106aeeea09c3cb",
+    "package.json": "14e2a7d6479562deb0a29f904ce076793c281ff969baeeda4c680b674ff1df03",
+    "selection.mjs": "8bb1621a3f0e823ed463f39425459b05d41975da7f62eab121ccba8c1ab9d6df",
+    "test/artifacts.test.mjs": "3295e50e4ed1197b16993900219a7e0fd6bffe2208314293cc0169dc5688a066",
+    "test/core.test.mjs": "f7d8891defac431a51539e9ce12ad259de193f5e6cf2c57a2fb2831602dcff75",
+    "test/graph.test.mjs": "8ee938af734d4ea5f01aee3c6d87eb871ebd0135354a8dc7afadacc6e1a225a3",
+    "test/operation.test.mjs": "b5e3df9c7c08af347c70e82e50f12e8a3a601b3799bd3d58818501fa803c5921",
+    "test/selection.test.mjs": "1591f6460cdbf6d40342896b99445d8c9e6f74b424151260b597d0897f02e6bf",
+    "test/versions.test.mjs": "f28694ec5742e093758b1d1d2ccb62c3f6ed8302951cf5a45f1cc83ea4d20e09",
+    "versions.mjs": "086b458ea02467c4179509f06cfd1df8f64fded509528c853b2c27bef5201df0"
+  }
+}

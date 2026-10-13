@@ -90,7 +90,9 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - name: Preserve completed stages and retire this release
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -109,9 +111,10 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: |-
+          sparse-checkout: |
             scripts
             tools/eas-cli
+            tools
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22.14.0

@@ -1,0 +1,25 @@
+# Verifies the pinned common release engine and runs its shared recovery/selection contracts without release credentials.
+name: Release engine
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: MChartier/expo-release-template@6d6c8b863d6d93e06192d76281a1bf4017dc59f3
+  contract:
+    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@6d6c8b863d6d93e06192d76281a1bf4017dc59f3
+    permissions:
+      contents: read

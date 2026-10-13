@@ -91,7 +91,9 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - name: Record completed image publication
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -110,7 +112,9 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - name: Reserve one deployment request
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -141,7 +145,9 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - name: Record successful deployment and health
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -178,7 +184,9 @@ jobs:
           ref: ${{ job.workflow_sha }}
           fetch-depth: 0
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: native-play-release-${{ inputs.release_commit }}
@@ -255,7 +263,9 @@ jobs:
         with:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - name: Finalize only a fully completed release
         env:
           GITHUB_TOKEN: ${{ github.token }}

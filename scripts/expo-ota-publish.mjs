@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { ReleaseRecordStore, latestCheckpoint } from './release-record.mjs';
 import { verifyUpdateArtifact } from './expo-ota-artifact.mjs';
+import { canRunCalibrateStage, checkpointReleaseOperation } from './release-engine.mjs';
 
 /** Refuse to repeat an ambiguous update publication; completed groups remain authoritative on recovery. */
 export async function publishOta({ artifactRoot, toolRoot, publisherRoot, target, message, releaseId,
@@ -15,9 +16,12 @@ export async function publishOta({ artifactRoot, toolRoot, publisherRoot, target
     const state = await store.read(releaseId);
     const previous = latestCheckpoint(state.checkpoints, stage);
     if (previous?.status === 'succeeded') return previous.publication;
-    if (previous?.status === 'started') throw new Error('OTA publication outcome is unresolved. Reconcile its EAS update group before retrying.');
-    await store.checkpoint(releaseId, stage, { status: 'started', source_commit: target.sourceCommit,
-      runtime_version: provenance.runtimeVersion, bundle_integrity: provenance.bundleIntegrity });
+    if (['started', 'unknown'].includes(previous?.status)) throw new Error('OTA publication outcome is unresolved. Reconcile its EAS update group before retrying.');
+    if (state.record?.plan && !canRunCalibrateStage(state.record, state.checkpoints, stage)) {
+      throw new Error('OTA publication prerequisites are incomplete.');
+    }
+    await checkpointReleaseOperation(store, releaseId, stage, previous ? { type: 'retry' } : { type: 'intent', operationKey: stage },
+      { source_commit: target.sourceCommit, runtime_version: provenance.runtimeVersion, bundle_integrity: provenance.bundleIntegrity });
   }
   const env = { ...process.env, EAS_NO_VCS: '1', EAS_SKIP_AUTO_FINGERPRINT: '1', EXPO_NO_DOTENV: '1' };
   delete env.GITHUB_TOKEN;
@@ -35,7 +39,7 @@ export async function publishOta({ artifactRoot, toolRoot, publisherRoot, target
   }
   const publication = { group: updates[0].group, runtime_version: provenance.runtimeVersion,
     source_commit: target.sourceCommit, bundle_integrity: provenance.bundleIntegrity };
-  if (store) await store.checkpoint(releaseId, stage, { status: 'succeeded', publication });
+  if (store) await checkpointReleaseOperation(store, releaseId, stage, { type: 'complete', receipt: publication }, { publication });
   console.log(`Published ${target.channel} OTA group ${publication.group} for runtime ${publication.runtime_version}.`);
   return publication;
 }

@@ -211,7 +211,9 @@ jobs:
           ref: ${{ job.workflow_sha }}
           persist-credentials: false
           path: .release-tooling
-          sparse-checkout: scripts
+          sparse-checkout: |
+            scripts
+            tools
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: native-play-release-${{ inputs.source_commit }}

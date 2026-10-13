@@ -92,10 +92,11 @@ test('partial outcomes preserve OTA/server success without claiming completed na
     { stage: 'image', status: 'succeeded', asset_id: 1 },
     { stage: 'deploy', status: 'succeeded', asset_id: 2 },
     { stage: 'native-build', status: 'succeeded', asset_id: 3, native: baseline.native },
+    { stage: 'phone-handoff', status: 'succeeded', asset_id: 4 },
     { stage: 'phone-submit', status: 'failed', asset_id: 4 },
     { stage: 'ota-internal', status: 'succeeded', asset_id: 5, publication: { group: 'group-a' } }
   ];
-  assert.deepEqual(unfinishedStages(record, checkpoints), ['phone-submit', 'wear-submit', 'ota-production']);
+  assert.deepEqual(unfinishedStages(record, checkpoints), ['ota-production', 'phone-submit', 'wear-submit']);
   const carried = completedBaseline(record, checkpoints);
   assert.equal(carried.server.source_commit, record.source_commit);
   assert.equal(carried.ota_internal.group, 'group-a');
@@ -177,7 +178,8 @@ test('ambiguous enqueue cannot be retried automatically', async () => {
 });
 
 test('later submission failure is recorded without modifying OTA success', async () => {
-  const store = fakeStore([{ stage: 'ota-internal', status: 'succeeded', asset_id: 1 }]);
+  const store = fakeStore([{ stage: 'ota-internal', status: 'succeeded', asset_id: 1 },
+    { stage: 'phone-submit', status: 'queued', submission_id: id, asset_id: 2 }]);
   await assert.rejects(waitForSubmission({ store, releaseId: '1', role: 'phone', id,
     runEas: () => JSON.stringify({ ...submission, status: 'ERRORED' }), sleep: async () => {} }), /OTA is independent/);
   assert.equal(latestCheckpoint(store.checkpoints, 'ota-internal').status, 'succeeded');

@@ -8,6 +8,8 @@ import { ReleaseRecordStore, latestCheckpoint } from './release-record.mjs';
 import { releaseGit, wearInputHash } from './release-selection.mjs';
 import { resolveExpoRuntime, verifyEmbeddedRuntime } from './expo-runtime.mjs';
 import { parseNativePlayWorkflowTrustSet } from './native-play-receipt.mjs';
+import { createReleaseArtifactManifest, verifyReleaseArtifactManifest } from './release-engine.mjs';
+import { RELEASE_ENGINE_TRUST_FILES } from './release-engine.config.mjs';
 
 export const NATIVE_ARTIFACT_PATHS = Object.freeze({
   'phone-apk': 'mobile/android/app/build/outputs/apk/release/app-release.apk',
@@ -18,7 +20,7 @@ export const NATIVE_ARTIFACT_PATHS = Object.freeze({
 const CRITICAL = ['.github/workflows/native-build.yml', 'scripts/native-release-artifacts.mjs',
   'scripts/native-release-build.mjs', 'scripts/native-release-evidence.mjs', 'scripts/native-play-release.mjs',
   'scripts/expo-runtime.mjs', 'scripts/release-config.mjs', 'scripts/zip-entry.mjs',
-  'scripts/release-selection.mjs', 'mobile/fingerprint.config.js'];
+  'scripts/release-selection.mjs', 'mobile/fingerprint.config.js', ...RELEASE_ENGINE_TRUST_FILES];
 
 /** Hash verified regular files, rejecting symlinks at the artifact boundary. */
 function fileHash(file) {
@@ -88,6 +90,14 @@ export async function retainNativeArtifacts(store, releaseId, artifactRoot, tool
   if (metadata.source_commit !== expectedSource || metadata.workflow_sha !== state.record.workflow_sha) throw new Error('Native build does not belong to this release.');
   const files = [...metadata.artifacts.map((item) => ({ ...item, name: `${item.id}${path.extname(item.path)}` })),
     { path: 'native-metadata.json', name: 'native-metadata.json', sha256: fileHash(metadataFile) }];
+  const provenanceFile = path.join(artifactRoot, 'build/native-release-provenance.json');
+  if (fs.existsSync(provenanceFile)) files.push({ path: 'build/native-release-provenance.json',
+    name: 'native-release-provenance.json', sha256: fileHash(provenanceFile) });
+  const artifactManifest = await createReleaseArtifactManifest(artifactRoot);
+  if (artifactManifest.files.length !== files.length || artifactManifest.files.some((item) =>
+    !files.some((file) => file.path === item.path && file.sha256 === item.sha256))) {
+    throw new Error('The native artifact tree contains unrecognized or changed files.');
+  }
   for (const file of files) {
     if (fileHash(path.join(artifactRoot, file.path)) !== file.sha256) throw new Error('Native build bytes changed after attestation.');
     const existing = state.assets.find((item) => item.name === file.name);
@@ -96,7 +106,9 @@ export async function retainNativeArtifacts(store, releaseId, artifactRoot, tool
       if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error('A conflicting retained native asset already exists.');
     } else await store.upload(releaseId, file.name, fs.readFileSync(path.join(artifactRoot, file.path)));
   }
-  await store.checkpoint(releaseId, 'native-build', { status: 'succeeded', native: metadata.native, metadata_sha256: fileHash(metadataFile),
+  await verifyReleaseArtifactManifest(artifactRoot, artifactManifest);
+  await store.checkpoint(releaseId, 'native-build', { status: 'succeeded', native: metadata.native,
+    artifact_manifest: artifactManifest, metadata_sha256: fileHash(metadataFile),
     aab_hashes: { phone: metadata.artifacts.find((file) => file.id === 'phone-aab').sha256,
       wear: metadata.artifacts.find((file) => file.id === 'wear-aab').sha256 } });
   return metadata;
@@ -118,6 +130,15 @@ export async function restoreNativeArtifacts(store, releaseId, artifactRoot, too
     const asset = state.assets.find((item) => item.name === `${file.id}${path.extname(file.path)}`);
     if (!asset) throw new Error(`Retained ${file.id} is missing.`);
     await store.download(asset, file.sha256, path.join(artifactRoot, file.path));
+  }
+  if (checkpoint.artifact_manifest) {
+    const provenance = checkpoint.artifact_manifest.files.find((file) => file.path === 'build/native-release-provenance.json');
+    if (provenance) {
+      const asset = state.assets.find((item) => item.name === 'native-release-provenance.json');
+      if (!asset) throw new Error('Retained native provenance is missing.');
+      await store.download(asset, provenance.sha256, path.join(artifactRoot, provenance.path));
+    }
+    await verifyReleaseArtifactManifest(artifactRoot, checkpoint.artifact_manifest);
   }
   return metadata;
 }

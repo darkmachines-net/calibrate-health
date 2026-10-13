@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { completedCalibrateBaseline, verifyCalibrateRecord } from './release-engine.mjs';
 
 const PREFIX = 'release-run-';
 const SHA = /^[a-f0-9]{40}$/;
-const STAGES = new Set(['prepared', 'image', 'deploy', 'native-build', 'phone-submit', 'wear-submit', 'ota-internal', 'ota-production', 'ota-internal-artifact', 'ota-production-artifact', 'final']);
+const STAGES = new Set(['prepared', 'image', 'deploy', 'native-build', 'phone-handoff', 'phone-submit', 'wear-submit', 'ota-internal', 'ota-production', 'ota-internal-artifact', 'ota-production-artifact', 'final']);
 
 /** Fail closed on an unrelated repository, source, or producing Actions workflow. */
 export function validateRecord(record, repository) {
@@ -23,6 +24,7 @@ export function validateRecord(record, repository) {
       !Number.isSafeInteger(plan.native_codes?.mobileVersionCode) || plan.native_codes.mobileVersionCode < 1 ||
       plan.native_codes.mobileVersionCode % 2 !== 1 || plan.native_codes.wearVersionCode !== plan.native_codes.mobileVersionCode + 1 ||
       plan.native_codes.wearVersionCode > 2100000000))) throw new Error('Release component plan is malformed.');
+  verifyCalibrateRecord(record);
   return record;
 }
 
@@ -33,22 +35,7 @@ export function latestCheckpoint(checkpoints, stage) {
 
 /** Carry successful component publications forward even when a later stage is explicitly abandoned. */
 export function completedBaseline(record, checkpoints) {
-  const result = structuredClone(record.baseline ?? {});
-  if (record.plan.native_codes) result.reserved_native_code = Math.max(result.reserved_native_code ?? 0, record.plan.native_codes.wearVersionCode);
-  if (record.plan.native_version) result.reserved_native_version = record.plan.native_version;
-  const prepared = latestCheckpoint(checkpoints, 'prepared');
-  const source = prepared?.source_commit ?? record.source_commit;
-  if (latestCheckpoint(checkpoints, 'deploy')?.status === 'succeeded') result.server = { source_commit: source };
-  const native = latestCheckpoint(checkpoints, 'native-build');
-  if (prepared?.native_version || native?.native?.version) result.reserved_native_version = prepared?.native_version ?? native.native.version;
-  if (native?.status === 'succeeded' && latestCheckpoint(checkpoints, 'wear-submit')?.status === 'succeeded') {
-    result.native = { ...native.native, source_commit: source };
-  }
-  for (const channel of ['internal', 'production']) {
-    const checkpoint = latestCheckpoint(checkpoints, `ota-${channel}`);
-    if (checkpoint?.status === 'succeeded') result[`ota_${channel}`] = { source_commit: source, ...checkpoint.publication };
-  }
-  return result;
+  return completedCalibrateBaseline(record, checkpoints);
 }
 
 /** Use fixed GitHub API origins; error text never includes credential-bearing request headers. */
@@ -141,7 +128,9 @@ export class ReleaseRecordStore {
     if (pending) throw new Error(`Resolve unfinished release ${pending.id} before another Cut release.`);
     if (same) {
       const existing = await this.read(same.id);
-      if (existing.record.source_commit !== record.source_commit) throw new Error('Cannot change a reserved release source.');
+      if (existing.record.source_commit !== record.source_commit ||
+        JSON.stringify(existing.record.plan) !== JSON.stringify(record.plan) ||
+        existing.record.engine_plan?.digest !== record.engine_plan?.digest) throw new Error('Cannot change a reserved release source or component plan.');
       return same;
     }
     return this.api('/releases', { method: 'POST', body: {
