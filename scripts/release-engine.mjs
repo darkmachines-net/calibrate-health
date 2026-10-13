@@ -79,7 +79,7 @@ export function allocateCalibrateNativeCodes(manifest, reservedCode = 0) {
 }
 
 /** Describe deployment and provider handoff barriers separately from asynchronous native completion. */
-export function calibrateReleaseGraph(plan) {
+function calibrateReleaseGraph(plan) {
   const stages = [];
   if (plan.server) stages.push({ id: 'image', component: 'server' },
     { id: 'deploy', component: 'server', needs: ['image'] });
@@ -97,7 +97,7 @@ export function calibrateReleaseGraph(plan) {
 }
 
 /** Convert append-only GitHub checkpoints to ordered shared receipts without treating queued work as complete. */
-export function releaseReceipts(checkpoints) {
+function releaseReceipts(checkpoints) {
   const statuses = { started: 'intent', enqueueing: 'intent', queued: 'accepted', unknown: 'unknown',
     succeeded: 'complete', failed: 'failed', 'not-published': 'failed' };
   return checkpoints.map((checkpoint, index) => ({ checkpoint, order: checkpoint.asset_id ?? index }))

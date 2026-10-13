@@ -7,7 +7,12 @@
   },
   "workspaces": {
     ".": {
-      "entry": [".codex/local-environment.setup.mjs", "scripts/reset-test-user-onboarding.mjs"],
+      "entry": [
+        ".codex/local-environment.setup.mjs",
+        "scripts/reset-test-user-onboarding.mjs",
+        "tools/verify-release-engine.mjs",
+        "tools/release-engine/index.mjs"
+      ],
       "project": [
         ".codex/**/*.mjs",
         "deploy/**/*.{js,mjs,ts}",

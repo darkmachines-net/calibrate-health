@@ -6,6 +6,10 @@ records its immutable upstream commit and every file hash. Update the engine in 
 template first, then use its snapshot sync command to update the lock and vendored files
 together. Do not edit the snapshot directly.
 
+Knip models `tools/release-engine/index.mjs` as the vendored library's public entry
+and `tools/verify-release-engine.mjs` as the external workflow action's entry. This
+preserves the pinned API without suppressing dead-code checks in Calibrate adapters.
+
 `scripts/release-engine.mjs` adapts the engine to Calibrate's manifest and publication
 contracts. `scripts/release-engine.config.mjs` owns the app-specific identities. The
 shared engine owns component selection, dependency expansion, stage completion,
