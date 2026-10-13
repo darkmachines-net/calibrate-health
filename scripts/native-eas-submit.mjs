@@ -9,6 +9,7 @@ import { RELEASE_ENGINE_CONFIG } from './release-engine.config.mjs';
 
 export const EAS_PROJECT_ID = RELEASE_ENGINE_CONFIG.expo.projectId;
 export const SUBMISSION_TRACKS = RELEASE_ENGINE_CONFIG.expo.tracks;
+const RETIRED_SUBMISSION_TRACKS = Object.freeze({ phone: 'qa', wear: 'wear:qa' });
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
 /** The pinned submit command has no JSON flag; bind only its unique project-specific details URL. */
@@ -25,6 +26,16 @@ export function verifySubmission(value, id, role) {
     || value.androidConfig?.track !== SUBMISSION_TRACKS[role]) throw new Error('EAS submission identity or track mismatch.');
   if (!['IN_QUEUE', 'IN_PROGRESS', 'AWAITING_BUILD', 'FINISHED', 'ERRORED', 'CANCELED'].includes(value.status)) {
     throw new Error(`Unknown EAS submission status: ${value.status}`);
+  }
+  return value;
+}
+
+/** Admit only the exact terminal rejection of a retired role-specific track for audited correction. */
+export function verifyRejectedSubmission(value, id, role) {
+  if (!Object.hasOwn(RETIRED_SUBMISSION_TRACKS, role) || value?.id !== id || value.app?.id !== EAS_PROJECT_ID
+    || value.platform !== 'ANDROID' || value.status !== 'ERRORED'
+    || value.androidConfig?.track !== RETIRED_SUBMISSION_TRACKS[role]) {
+    throw new Error('EAS submission lacks exact terminal wrong-track rejection.');
   }
   return value;
 }
@@ -70,21 +81,38 @@ export async function queueSubmission({ store, releaseId, role, aab, runEas, ret
   const state = await store.read(releaseId);
   const stage = `${role}-submit`;
   const previous = latestCheckpoint(state.checkpoints, stage);
-  if (previous && previous.status !== 'not-published') {
+  const correctedRequest = previous?.retry_mode === 'new-request' && previous.operation?.status === 'failed';
+  let correctionProof;
+  if (correctedRequest) {
+    const proof = previous.operation.proof;
+    const native = latestCheckpoint(state.checkpoints, 'native-build');
+    if (proof?.confirmed !== true || proof.corrected_destination !== SUBMISSION_TRACKS[role]
+      || proof.rejected_destination !== RETIRED_SUBMISSION_TRACKS[role]
+      || native?.status !== 'succeeded' || proof.artifact_hash !== native.aab_hashes?.[role]
+      || !/^[a-f0-9]{64}$/.test(proof.artifact_hash ?? '')
+      || !previous.operation.operationId || previous.submission_id !== previous.operation.operationId
+      || proof.observed?.id !== previous.operation.operationId) {
+      throw new Error('Corrected submission authorization no longer matches the retained AAB, provider ID or destination.');
+    }
+    verifyRejectedSubmission(proof.observed, previous.operation.operationId, role);
+    const observed = verifyRejectedSubmission(JSON.parse(runEas(['submit:view', previous.operation.operationId, '--json'])), previous.operation.operationId, role);
+    correctionProof = { ...proof, observed };
+  }
+  if (previous && previous.status !== 'not-published' && !correctedRequest) {
     if (!previous.submission_id) throw new Error(`${role} enqueue is unresolved; reconcile its EAS ID before retrying.`);
     const observed = verifySubmission(JSON.parse(runEas(['submit:view', previous.submission_id, '--json'])), previous.submission_id, role);
     if (['ERRORED', 'CANCELED'].includes(observed.status)) {
       if (!retryFailed || !observed.canRetry) throw new Error(`${role} submission failed. Resume with provider retry support or explicitly abandon this release; never upload another AAB under the same codes.`);
       if (previous.operation?.status !== 'failed') await checkpointReleaseOperation(store, releaseId, stage,
         { type: 'failed', definitive: true, reason: observed.status, proof: observed });
-      await checkpointReleaseOperation(store, releaseId, stage, { type: 'retry' }, { prior_submission_id: previous.submission_id });
+      await checkpointReleaseOperation(store, releaseId, stage, { type: 'retry', proof: observed }, { prior_submission_id: previous.submission_id });
       const retried = JSON.parse(runEas(['submit:retry', previous.submission_id, '--non-interactive', '--json']));
       if (!new RegExp(`^${UUID}$`).test(retried.id ?? '')) throw new Error('EAS retry outcome is ambiguous; reconcile before continuing.');
       await checkpointReleaseOperation(store, releaseId, stage, { type: 'accepted', operationId: retried.id },
         { prior_submission_id: previous.submission_id });
       const checked = verifySubmission(JSON.parse(runEas(['submit:view', retried.id, '--json'])), retried.id, role);
       if (['ERRORED', 'CANCELED'].includes(checked.status)) {
-        await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: checked.status });
+        await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: checked.status, proof: checked });
         throw new Error('EAS rejected the replacement submission.');
       }
       await recordSubmissionHandoff(store, releaseId, role, checked);
@@ -93,14 +121,16 @@ export async function queueSubmission({ store, releaseId, role, aab, runEas, ret
     await recordSubmissionHandoff(store, releaseId, role, observed);
     return previous.submission_id;
   }
-  await checkpointReleaseOperation(store, releaseId, stage, previous ? { type: 'retry' } : { type: 'intent', operationKey: stage });
+  let event = { type: 'intent', operationKey: stage };
+  if (previous) event = correctedRequest ? { type: 'retry', proof: correctionProof } : { type: 'retry' };
+  await checkpointReleaseOperation(store, releaseId, stage, event);
   const output = runEas(['submit', '--platform', 'android', '--profile', role, '--path', aab, '--non-interactive', '--no-wait']);
   const id = parseSubmissionId(output);
   // Persist the ID before readback, so a readback outage cannot cause a duplicate enqueue.
   await checkpointReleaseOperation(store, releaseId, stage, { type: 'accepted', operationId: id });
   const observed = verifySubmission(JSON.parse(runEas(['submit:view', id, '--json'])), id, role);
   if (['ERRORED', 'CANCELED'].includes(observed.status)) {
-    await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: observed.status });
+    await checkpointReleaseOperation(store, releaseId, stage, { type: 'failed', definitive: true, reason: observed.status, proof: observed });
     throw new Error('EAS rejected the initial submission before OTA handoff.');
   }
   await recordSubmissionHandoff(store, releaseId, role, observed);

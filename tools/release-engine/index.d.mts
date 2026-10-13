@@ -88,6 +88,8 @@ export interface OperationState {
   readonly operationId?: string;
   readonly request?: ReadonlyJsonValue;
   readonly proof?: string | { readonly [key: string]: ReadonlyJsonValue };
+  /** Authorization supplied with the retry event, archived with the failed attempt and its provider ID. */
+  readonly retryProof?: string | { readonly [key: string]: ReadonlyJsonValue };
   readonly receipt?: string | { readonly [key: string]: ReadonlyJsonValue };
   readonly reason?: string;
   readonly retrySafe?: boolean;
@@ -98,10 +100,17 @@ export type OperationEvent =
   | { type: 'accepted'; operationId: string; proof?: OperationEvidence }
   | { type: 'unknown'; reason: string }
   | { type: 'complete'; receipt: OperationEvidence; proof?: OperationEvidence }
+  /** Definitive failure of an unknown/known-ID operation, or refreshing an existing failure, requires fresh proof. */
   | { type: 'failed'; reason: string; definitive?: boolean; proof?: OperationEvidence }
   | { type: 'reconciled-absent'; proof: OperationEvidence }
-  | { type: 'retry' };
-/** Reduce and freeze durable operation state; adapters must persist intent before I/O and verify reconciliation proof. */
+  /** Known-ID failures require fresh proof of safety for the adapter's chosen retry transport. */
+  | { type: 'retry'; proof?: OperationEvidence };
+/**
+ * Reduce and freeze durable operation state, retaining supplied proof and every failed attempt's provider ID.
+ * Adapters persist intent before I/O, verify failure/publication facts, and authorize the appropriate retry transport.
+ * A known-ID terminal failure and its retry each require fresh event proof; the latter is archived as retryProof.
+ * Such an operation cannot be described as absent. Historical failure state alone never authorizes known-ID retry.
+ */
 export function reduceOperation(previous: OperationState | null | undefined, event: OperationEvent): OperationState;
 
 export interface ArtifactFile { readonly path: string; readonly size: number; readonly sha256: string }

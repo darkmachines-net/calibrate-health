@@ -14,6 +14,33 @@ const manifest = { server: { version: '0.40.1' }, android: { mobile: { version_n
 const baseline = { native: { version: '0.2.7', runtime_version: 'a'.repeat(40), wear_hash: 'b'.repeat(64) } };
 const base = { manifest, baseline, serverChanges: [], otaChanges: [], runtimeVersion: 'a'.repeat(40), wearHash: 'b'.repeat(64), bump: 'patch' };
 
+test('recorded 0.40.3 recovery preserves healthy server, retained 17/18 pair and unfinished OTA', async () => {
+  const source = '3dfb97c064c55cb55b514415618220f03dce91f1';
+  const record = { schema_version: 1, run_id: '38338448015', source_commit: '4b8947309e5d2dcb66e1f2dec8abf13f632198a9',
+    baseline: { reserved_native_code: 16, reserved_native_version: '0.2.8' }, plan: {
+      server: true, native: true, ota_internal: true, ota_production: true, server_version: '0.40.3',
+      native_version: '0.2.9', native_codes: { mobileVersionCode: 17, wearVersionCode: 18 } } };
+  const checkpoints = [
+    { stage: 'prepared', status: 'succeeded', source_commit: source, release_branch: 'release/v0.40.3', native_version: '0.2.9', asset_id: 1 },
+    { stage: 'image', status: 'succeeded', asset_id: 2 }, { stage: 'deploy', status: 'succeeded', asset_id: 3 },
+    { stage: 'native-build', status: 'succeeded', native: { version: '0.2.9', phone_code: 17, wear_code: 18,
+      runtime_version: '8b61a231da5765e424ce6cb65087944ddbd80d04' }, asset_id: 4 },
+    { stage: 'phone-submit', status: 'failed', submission_id: '602c0864-a253-4133-ac26-6f8a2f4de11e', asset_id: 5 }
+  ];
+  const recovered = await recoveryInputs({ read: async () => ({ record, checkpoints }) }, '411201908');
+  assert.equal(recovered.source_commit, source);
+  assert.deepEqual([recovered.server, recovered.image_complete, recovered.native, recovered.native_build_complete,
+    recovered.ota_internal, recovered.ota_production], [false, true, true, true, true, true]);
+  assert.deepEqual(recovered.native_codes, { mobileVersionCode: 17, wearVersionCode: 18 });
+  const published = completedBaseline(record, checkpoints);
+  assert.equal(published.server.source_commit, source);
+  assert.equal(published.reserved_native_code, 18);
+  assert.equal(published.reserved_native_version, '0.2.9');
+  assert.equal(published.native, undefined);
+  assert.equal(published.ota_internal, undefined);
+  assert.equal(published.ota_production, undefined);
+});
+
 test('selection covers no-op, server-only, OTA-only, native, and combined releases', () => {
   assert.equal(selectRelease(base).noop, true);
   const server = selectRelease({ ...base, serverChanges: ['backend/src/index.ts'] });

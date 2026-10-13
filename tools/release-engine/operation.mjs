@@ -31,6 +31,10 @@ function validateState(state, historical = false) {
   else invariant(state.retrySafe === undefined, 'Only definitive failure may permit retry.');
   if (['unknown', 'failed'].includes(state.status)) reason(state.reason);
   if (state.proof !== undefined) evidence(state.proof, 'Retained operation proof');
+  if (state.retryProof !== undefined) {
+    invariant(state.status === 'failed', 'Only a failed attempt may contain retry authorization.');
+    evidence(state.retryProof, 'Retained retry proof');
+  }
   if (state.history !== undefined) {
     invariant(!historical && Array.isArray(state.history), 'Operation history must be a flat list.');
     invariant(state.history.length === state.attempt - 1, 'Operation history does not match its attempt count.');
@@ -44,8 +48,12 @@ function validateState(state, historical = false) {
 /**
  * Reduce an operation event without performing I/O; persist every returned state before starting its external side effect.
  * A durable intent permits one initial request. After process interruption, treat an intent as unknown and reconcile it.
- * Accepted means queued, never complete. Unknown outcomes cannot retry without explicit proof of absence.
- * Adapters verify proof with the provider; this reducer validates transitions and preserves the evidence they supply.
+ * Accepted means queued, never complete. Unknown outcomes need verified absence or definitive failure proof before retry.
+ * A known provider ID cannot be reconciled as absent. Its definitive failure and each retry require fresh event proof.
+ * A retry archives its authorization as retryProof alongside the failed ID; old serialized failure is not authorization.
+ * Adapters verify what the proof establishes (provider failure alone does not prove no store publication occurred),
+ * authorize a provider retry or a fresh request, and keep artifact identity/reservations unchanged. This reducer
+ * validates transitions, preserves supplied evidence and prior attempts, and performs no provider requests.
  */
 export function reduceOperation(previous, event) {
   const state = previous == null ? { schemaVersion: 1, status: 'idle', attempt: 0 } : immutable(previous);
@@ -66,7 +74,7 @@ export function reduceOperation(previous, event) {
       invariant(['intent', 'unknown'].includes(state.status), 'Only an outstanding operation can be accepted.');
       invariant(typeof event.operationId === 'string' && event.operationId.trim().length > 0, 'Provider operation id is required.');
       invariant(state.operationId === undefined || state.operationId === event.operationId, 'Provider operation id changed during reconciliation.');
-      if (state.status === 'unknown') next.proof = evidence(event.proof, 'Reconciliation proof');
+      if (state.status === 'unknown' || event.proof !== undefined) next.proof = evidence(event.proof, 'Reconciliation proof');
       next.operationId = event.operationId;
       next.status = 'accepted';
       delete next.reason;
@@ -80,7 +88,7 @@ export function reduceOperation(previous, event) {
     }
     case 'complete': {
       invariant(['intent', 'accepted', 'unknown'].includes(state.status), 'Only an outstanding operation can complete.');
-      if (state.status === 'unknown') next.proof = evidence(event.proof, 'Reconciliation proof');
+      if (state.status === 'unknown' || event.proof !== undefined) next.proof = evidence(event.proof, 'Reconciliation proof');
       next.receipt = evidence(event.receipt, 'Completion receipt');
       next.status = 'complete';
       delete next.reason;
@@ -88,11 +96,13 @@ export function reduceOperation(previous, event) {
       break;
     }
     case 'failed': {
-      invariant(['intent', 'accepted', 'unknown'].includes(state.status), 'Only an outstanding operation can fail.');
+      invariant(['intent', 'accepted', 'unknown'].includes(state.status) || state.status === 'failed' && event.definitive === true,
+        'Only an outstanding operation can fail; refreshing a definitive failure needs fresh definitive proof.');
+      if (event.proof !== undefined) next.proof = evidence(event.proof, 'Failure proof');
       if (event.definitive !== true) {
         next.status = 'unknown';
       } else {
-        if (state.status === 'unknown') next.proof = evidence(event.proof, 'Definitive failure proof');
+        if (state.status === 'unknown' || state.status === 'failed' || state.operationId !== undefined) next.proof = evidence(event.proof, 'Definitive failure proof');
         next.status = 'failed';
         next.retrySafe = true;
       }
@@ -111,6 +121,7 @@ export function reduceOperation(previous, event) {
     case 'retry': {
       invariant(state.status === 'failed' && state.retrySafe === true, 'Unknown, queued, or completed operations cannot be blindly retried.');
       const { history: previousHistory = [], ...attempt } = state;
+      if (state.operationId !== undefined || event.proof !== undefined) attempt.retryProof = evidence(event.proof, 'Fresh retry proof');
       const history = [...previousHistory, immutable(attempt)];
       const retried = { schemaVersion: 1, status: 'intent', operationKey: state.operationKey, attempt: state.attempt + 1, history };
       if (state.request !== undefined) retried.request = state.request;

@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ReleaseRecordStore, latestCheckpoint } from './release-record.mjs';
-import { easInvocation, recordSubmissionHandoff, verifySubmission, writeSubmissionProject } from './native-eas-submit.mjs';
+import { SUBMISSION_TRACKS, easInvocation, recordSubmissionHandoff, verifyRejectedSubmission, verifySubmission, writeSubmissionProject } from './native-eas-submit.mjs';
 import { checkpointOperation, checkpointReleaseOperation } from './release-engine.mjs';
 
 /** Keep the recovery request bounded, single-line, and incapable of changing sources or allocated versions. */
@@ -33,6 +33,23 @@ export async function reconcileRelease({ store, releaseId, input, runEas }) {
     ...(process.env.GITHUB_ACTOR ? { actor: process.env.GITHUB_ACTOR } : {}), confirmed: true } };
   if (value.status === 'not-published') {
     // This is an explicit operator assertion after inspecting provider/service logs, never an automatic retry.
+    const operation = checkpointOperation(previous, value.stage);
+    if (operation?.operationId && value.stage.endsWith('-submit')) {
+      const role = value.stage.split('-')[0];
+      const rejectedTrack = role === 'phone' ? 'qa' : 'wear:qa';
+      const observed = verifyRejectedSubmission(JSON.parse(runEas(['submit:view', operation.operationId, '--json'])), operation.operationId, role);
+      const native = latestCheckpoint(state.checkpoints, 'native-build');
+      const artifactHash = native?.aab_hashes?.[role];
+      if (native?.status !== 'succeeded' || !/^[a-f0-9]{64}$/.test(artifactHash ?? '')) {
+        throw new Error('A corrected request requires its retained AAB evidence.');
+      }
+      const proof = { ...audit.reconciliation, observed, artifact_hash: artifactHash,
+        rejected_destination: rejectedTrack, corrected_destination: SUBMISSION_TRACKS[role] };
+      await checkpointReleaseOperation(store, releaseId, value.stage, { type: 'failed', definitive: true,
+        reason: `Provider rejected the retired ${rejectedTrack} track; operator confirmed no bundle was committed.`, proof },
+      { ...audit, retry_mode: 'new-request' });
+      return;
+    }
     await checkpointReleaseOperation(store, releaseId, value.stage, { type: 'reconciled-absent', proof: audit.reconciliation }, audit);
     return;
   }
@@ -55,7 +72,7 @@ export async function reconcileRelease({ store, releaseId, input, runEas }) {
     if (observed.status === 'FINISHED') await checkpointReleaseOperation(store, releaseId, value.stage,
       { type: 'complete', receipt: observed }, audit);
     else if (['ERRORED', 'CANCELED'].includes(observed.status)) await checkpointReleaseOperation(store, releaseId, value.stage,
-      { type: 'failed', definitive: true, reason: observed.status }, audit);
+      { type: 'failed', definitive: true, reason: observed.status, proof: observed }, audit);
     await recordSubmissionHandoff(store, releaseId, role, observed);
     return;
   }

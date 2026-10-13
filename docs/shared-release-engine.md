@@ -33,6 +33,11 @@ Calibrate keeps these application policies:
   workflow approval and the runtime server compatibility guard remains unchanged.
 - Incomplete requests retain their exact source, artifacts, provider IDs and reserved
   codes. An ambiguous remote outcome requires reconciliation evidence before retry.
+- Calibrate's existing Play tracks are `internal` and `wear:internal`. Correcting a
+  legacy `qa`/`wear:qa` failure requires operator confirmation that no bundle was
+  committed and live readback of the exact terminal rejected submission. Recovery
+  retains that ID, AAB digest, rejection and corrected destination in the operation
+  history before permitting one new enqueue. Provider retry cannot change a track.
 
 The graph distinguishes `phone-handoff` from `phone-submit`. A persisted submission ID
 alone does not prove successful readback. Only the verified handoff checkpoint satisfies

@@ -66,3 +66,86 @@ test('repeated definitive failures retain linear immutable attempt history', () 
   assert.equal(state.history.length, 3);
   assert.ok(state.history.every((entry) => entry.history === undefined));
 });
+
+test('known-ID terminal rejection requires fresh proof and retains its identity through an audited retry', () => {
+  const request = { artifactSha256: 'a'.repeat(64), sourceCommit: 'b'.repeat(40), reservedVersionCode: 17 };
+  const original = reduceOperation(null, { type: 'intent', operationKey: 'phone-submit', request });
+  const accepted = reduceOperation(original, { type: 'accepted', operationId: 'failed-provider-id', proof: { status: 'IN_QUEUE' } });
+  assert.throws(() => reduceOperation(accepted, { type: 'failed', definitive: true, reason: 'ERRORED' }), /proof/);
+  const proof = { provider: { operationId: 'failed-provider-id', status: 'ERRORED', reason: 'Track not found' },
+    publication: { checked: true, artifactSha256: request.artifactSha256, uploaded: false },
+    authorization: { retryMode: 'new-request', rejectedTrack: 'qa', approvedTrack: 'internal', confirmed: true } };
+  const rejected = reduceOperation(accepted, { type: 'failed', definitive: true, reason: 'Provider rejected the destination before store publication.', proof });
+  assert.equal(rejected.operationId, 'failed-provider-id');
+  assert.deepEqual(rejected.proof, proof);
+  assert.throws(() => reduceOperation(rejected, { type: 'retry' }), /Fresh retry proof/);
+  const resumed = reduceOperation(rejected, { type: 'retry', proof });
+  assert.equal(resumed.status, 'intent');
+  assert.equal(resumed.operationId, undefined);
+  assert.deepEqual(resumed.request, request);
+  assert.equal(resumed.history[0].operationId, 'failed-provider-id');
+  assert.deepEqual(resumed.history[0].proof, proof);
+  assert.deepEqual(resumed.history[0].retryProof, proof);
+  assert.ok(Object.isFrozen(resumed.history[0].proof));
+  const next = reduceOperation(resumed, { type: 'accepted', operationId: 'replacement-provider-id' });
+  assert.equal(next.history[0].operationId, 'failed-provider-id');
+  assert.throws(() => reduceOperation(next, { type: 'retry' }), /blindly retried/);
+});
+
+test('provider failure observations never become absence proof or implicit retry authorization', () => {
+  const accepted = reduceOperation(intent(), { type: 'accepted', operationId: 'provider-1' });
+  const uncertain = reduceOperation(accepted, { type: 'failed', reason: 'Provider returned ERRORED; publication outcome has not been checked.',
+    proof: { providerStatus: 'ERRORED', publicationOutcome: 'unknown' } });
+  assert.equal(uncertain.status, 'unknown');
+  assert.deepEqual(uncertain.proof, { providerStatus: 'ERRORED', publicationOutcome: 'unknown' });
+  assert.equal(uncertain.operationId, 'provider-1');
+  assert.throws(() => reduceOperation(uncertain, { type: 'retry' }), /blindly retried/);
+  assert.throws(() => reduceOperation(uncertain, { type: 'reconciled-absent', proof: { uploaded: false } }), /definitive provider outcome/);
+  assert.throws(() => reduceOperation(uncertain, { type: 'failed', definitive: true, reason: 'Use retained acceptance evidence' }), /proof/);
+});
+
+test('supplied acceptance, completion and pre-acceptance failure proof is retained and validated', () => {
+  const acceptance = { readback: { id: 'provider-1', status: 'IN_QUEUE' } };
+  const accepted = reduceOperation(intent(), { type: 'accepted', operationId: 'provider-1', proof: acceptance });
+  assert.deepEqual(accepted.proof, acceptance);
+  const completion = { artifactDigest: 'exact-bytes', providerStatus: 'FINISHED' };
+  const completed = reduceOperation(accepted, { type: 'complete', receipt: { id: 'provider-1' }, proof: completion });
+  assert.deepEqual(completed.proof, completion);
+  const preflight = { response: 'rejected-before-operation-created' };
+  assert.deepEqual(reduceOperation(intent(), { type: 'failed', definitive: true, reason: 'Request refused', proof: preflight }).proof, preflight);
+  for (const event of [
+    { type: 'accepted', operationId: 'provider-1', proof: {} },
+    { type: 'complete', receipt: { id: 'provider-1' }, proof: '' },
+    { type: 'failed', definitive: true, reason: 'Request refused', proof: null },
+  ]) assert.throws(() => reduceOperation(intent(), event), /proof/i);
+});
+
+test('historical definitive failure never supplies fresh authorization for another known-ID request', () => {
+  for (const retained of [
+    {}, { proof: { observed: 'old acceptance' } }, { retryProof: { observed: 'previous retry authorization' } },
+  ]) {
+    const failed = { schemaVersion: 1, status: 'failed', attempt: 1, operationKey: 'phone-submit',
+      operationId: 'old-provider-id', reason: 'ERRORED', retrySafe: true, ...retained };
+    assert.throws(() => reduceOperation(failed, { type: 'retry' }), /Fresh retry proof/);
+    const proof = { observedNow: { id: 'old-provider-id', status: 'ERRORED', canRetry: true }, action: 'provider-retry' };
+    const next = reduceOperation(failed, { type: 'retry', proof });
+    assert.deepEqual(next.history[0].retryProof, proof);
+    assert.equal(next.history[0].operationId, 'old-provider-id');
+    if (retained.proof) assert.deepEqual(next.history[0].proof, retained.proof);
+  }
+});
+
+test('an audited failure refresh retains its identity and cannot inherit authorization from non-definitive evidence', () => {
+  const failed = { schemaVersion: 1, status: 'failed', attempt: 1, operationKey: 'phone-submit',
+    operationId: 'old-provider-id', reason: 'ERRORED', retrySafe: true };
+  assert.throws(() => reduceOperation(failed, { type: 'failed', definitive: false, reason: 'Unknown publication result' }), /fresh definitive proof/);
+  assert.throws(() => reduceOperation(failed, { type: 'failed', definitive: true, reason: 'Rechecked' }), /proof/);
+  const proof = { providerId: 'old-provider-id', rejected: true, artifactWasNotPublished: true };
+  const refreshed = reduceOperation(failed, { type: 'failed', definitive: true, reason: 'Verified request rejection', proof });
+  assert.equal(refreshed.operationId, failed.operationId);
+  assert.equal(refreshed.attempt, failed.attempt);
+  assert.deepEqual(refreshed.proof, proof);
+  assert.throws(() => reduceOperation(refreshed, { type: 'retry' }), /Fresh retry proof/);
+  assert.throws(() => reduceOperation({ ...failed, retryProof: {} }, { type: 'retry', proof }), /Retained retry proof/);
+  assert.throws(() => reduceOperation({ ...intent(), retryProof: proof }, { type: 'accepted', operationId: 'unexpected' }), /Only a failed attempt/);
+});

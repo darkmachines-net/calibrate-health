@@ -18,8 +18,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - uses: MChartier/expo-release-template@6d6c8b863d6d93e06192d76281a1bf4017dc59f3
+      - uses: MChartier/expo-release-template@4a2ba97e5eeb569ab6e552fafd9605953aa467ec
   contract:
-    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@6d6c8b863d6d93e06192d76281a1bf4017dc59f3
+    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@4a2ba97e5eeb569ab6e552fafd9605953aa467ec
     permissions:
       contents: read
