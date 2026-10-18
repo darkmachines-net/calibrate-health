@@ -1,81 +1,13 @@
+# Read-only exact-source application release contract; dependency audits use maintenance.
 name: Optional Release Confidence
-
 on:
   workflow_dispatch:
     inputs:
-      candidate_commit:
-        description: Exact lowercase 40-character commit to review before an external release
-        required: true
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  group: optional-release-confidence-${{ inputs.candidate_commit }}
-  cancel-in-progress: true
-
+      candidate_commit: { description: Exact commit to inspect, required: true, type: string }
+permissions: { contents: read }
 jobs:
-  owner-confidence:
-    name: Owner-discretion release confidence
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Validate candidate input
-        shell: bash
-        env:
-          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
-        run: |
-          set -euo pipefail
-          if [[ ! "${CANDIDATE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "candidate_commit must be a full lowercase Git commit SHA." >&2
-            exit 1
-          fi
-
-      - name: Checkout exact candidate
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.candidate_commit }}
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            backend/package-lock.json
-
-      - name: Install release dependencies
-        run: |
-          npm ci --no-audit --fund=false
-          npm --prefix backend ci --no-audit --fund=false
-
-      - name: Run lightweight release confidence checks
-        shell: bash
-        env:
-          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${CANDIDATE_COMMIT}"
-          node scripts/release-config.mjs check
-          npm run audit:production
-          npm run test:deploy
-          npm run api:contract:check
-          git diff --exit-code
-          git diff --check
-
-      - name: Summarize owner review
-        shell: bash
-        env:
-          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
-        run: |
-          {
-            echo "## Optional release confidence"
-            echo
-            echo "- Candidate: \`${CANDIDATE_COMMIT}\`"
-            echo "- Release mirrors, root/mobile production dependency audit, deploy contracts, and generated API contract passed."
-            echo "- External release remains an owner decision; this workflow does not create an evidence commit or receipt ledger."
-          } >> "${GITHUB_STEP_SUMMARY}"
+  contract:
+    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@c101987cb2af9412dd984dbdf0e917916705319e
+    with:
+      source_sha: ${{ inputs.candidate_commit }}
+    permissions: { contents: read }

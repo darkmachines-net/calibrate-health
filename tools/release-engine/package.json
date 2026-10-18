@@ -1,9 +1,0 @@
-{
-  "name": "@expo-release-template/release-engine",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "engines": { "node": ">=20" },
-  "exports": { ".": { "types": "./index.d.mts", "import": "./index.mjs" } },
-  "scripts": { "test": "node --test" }
-}

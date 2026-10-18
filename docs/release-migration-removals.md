@@ -1,6 +1,6 @@
-# Replaced release files awaiting removal
+# Replaced release files
 
-The automatic approval review blocked this exact cleanup. These files remain present until approved. Their original versions remain recoverable in Git at PR #476's existing head `19322f287af6bdc09e84d65d855d3aaa8afbc925`.
+The owner approved this exact 84-file cleanup, and the files have been removed. Their original versions remain recoverable in Git at PR #476's existing head `19322f287af6bdc09e84d65d855d3aaa8afbc925`.
 
 The replacement ownership map and tests are in the template's `test/fixtures/calibrate/migration-map.json`. Shared Windows/Linux suites, the deployment transport's 23 cases, historical recovery fixtures, and Calibrate's 27 release / 120 native checks validate the replacement boundary. This list removes the old runner-side deployment transport; the deployment service, Dockerfiles, Compose files, webhook configuration and runtime guards remain.
 
