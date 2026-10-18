@@ -34,8 +34,7 @@ test('dynamic workflow, plugin, scenario, and Playwright entry points stay disco
   assert.deepEqual(rootConfig.playwright.config, ['playwright.expo-web.config.ts', 'playwright.ux.config.ts']);
   assert.ok(rootConfig.entry.includes('.codex/local-environment.setup.mjs'));
   assert.ok(rootConfig.entry.includes('scripts/reset-test-user-onboarding.mjs'));
-  assert.ok(rootConfig.entry.includes('tools/verify-release-engine.mjs'));
-  assert.ok(rootConfig.entry.includes('tools/release-engine/index.mjs'));
+  assert.ok(rootConfig.entry.includes('scripts/release-hooks.mjs'));
   assert.deepEqual(knipConfig.workspaces.mobile.entry, [
     'plugins/withHealthConnect.js',
     'plugins/withPinnedGradleWrapper.js',

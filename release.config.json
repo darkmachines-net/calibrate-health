@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "repository": "MChartier/calibrate-health",
+  "defaultBranch": "master",
+  "defaultProfile": "production",
+  "packageDirectories": [".", "backend"],
+  "profiles": {
+    "production": { "environment": "production", "channel": "production", "easProfile": "production", "distribution": "store", "submit": true },
+    "local": { "execution": "local", "environment": "preview", "channel": "internal", "easProfile": "internal", "distribution": "internal", "submit": false,
+      "expo": { "serverUrl": "https://calibratehealth.darkmachines.net" }, "publicEnvironment": { "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net" } }
+  },
+  "expo": {
+    "projectId": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+    "owner": "calibrate-health", "slug": "calibrate-health-app",
+    "serverUrl": "https://calibratehealth.app",
+    "environmentPolicy": { "readableStringsOnly": true, "allowedNames": ["EXPO_PUBLIC_CALIBRATE_SERVER_URL", "EXPO_PUBLIC_EAS_PROJECT_ID"], "channelVariable": "EXPO_UPDATES_CHANNEL" }
+  },
+  "components": [
+    { "id": "server", "kind": "server", "profiles": ["production"], "image": "ghcr.io/mchartier/calibratehealth",
+      "dockerfile": "Dockerfile.app", "context": ".", "platforms": ["linux/amd64"],
+      "publication": { "gitTagPrefix": "v", "movingTag": "latest" },
+      "smoke": { "port": 3000, "healthPath": "/api/v1/readyz", "timeoutSeconds": 90,
+        "services": { "postgres": { "image": "postgres:16-alpine", "environment": { "POSTGRES_USER": "release_ci", "POSTGRES_PASSWORD": "release_ci", "POSTGRES_DB": "release_ci" } } },
+        "environment": { "DATABASE_URL": "postgresql://release_ci:release_ci@postgres:5432/release_ci?schema=public", "SESSION_SECRET": "disposable-release-smoke-secret-at-least-32", "PUBLIC_APP_ORIGIN": "http://127.0.0.1:3000", "MIGRATION_MAX_ATTEMPTS": "10" } },
+      "version": { "file": "shared/release.json", "pointer": "/server/version" } },
+    { "id": "phone", "kind": "native", "platform": "android", "builder": "command", "buildGroup": "android-pair",
+      "appDirectory": "mobile", "applicationId": "net.darkmachines.healthtracker", "runtimePolicy": "fingerprint", "runtimeCompatibility": "fingerprint", "compareEnvironment": false, "environmentSource": "declared",
+      "signing": { "secretNames": { "keystore": "CALIBRATE_ANDROID_UPLOAD_KEYSTORE_BASE64", "storePassword": "CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD", "alias": "CALIBRATE_ANDROID_SIGNING_KEY_ALIAS", "keyPassword": "CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD" },
+        "variables": { "file": "CALIBRATE_ANDROID_SIGNING_STORE_FILE", "storePassword": "CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD", "alias": "CALIBRATE_ANDROID_SIGNING_KEY_ALIAS", "keyPassword": "CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD" } },
+      "version": { "file": "shared/release.json", "pointer": "/android/mobile/version_name", "codePointer": "/android/mobile/version_code" },
+      "submission": { "track": "internal", "releaseStatus": "completed" }, "signingEnvironment": "native-release-signing", "approvalEnvironment": { "production": "play-internal", "local": "" } },
+    { "id": "wear", "kind": "native", "platform": "android", "builder": "command", "buildGroup": "android-pair",
+      "appDirectory": "wear", "applicationId": "net.darkmachines.healthtracker", "runtimePolicy": "fingerprint", "after": ["phone"], "compareEnvironment": false, "environmentSource": "declared",
+      "version": { "file": "shared/release.json", "pointer": "/android/wear/version_name", "codePointer": "/android/wear/version_code" },
+      "submission": { "track": "wear:internal", "releaseStatus": "completed" }, "signingEnvironment": "native-release-signing", "approvalEnvironment": { "production": "play-internal", "local": "" } },
+    { "id": "ota-internal", "kind": "ota", "platform": "android", "nativeTarget": "phone", "appDirectory": "mobile",
+      "channel": "internal", "environment": "preview", "profiles": ["production"], "compareEnvironment": false, "runtimeBinding": "source" },
+    { "id": "ota-production", "kind": "ota", "platform": "android", "nativeTarget": "phone", "appDirectory": "mobile",
+      "channel": "production", "environment": "production", "approvalEnvironment": "production", "after": ["ota-internal"], "profiles": ["production"], "compareEnvironment": false }
+  ],
+  "nativeGroups": [["phone", "wear"]],
+  "promotions": {
+    "closed": { "targets": ["phone", "wear"], "tracks": { "phone": { "source": "internal", "destination": "closed" }, "wear": { "source": "wear:internal", "destination": "wear:closed" } },
+      "approvalEnvironment": "play-internal", "credentials": { "accessToken": "GOOGLE_PLAY_TEST_ACCESS_TOKEN", "serviceAccountBase64": "GOOGLE_PLAY_TEST_SERVICE_ACCOUNT_JSON_BASE64" } },
+    "production": { "targets": ["phone", "wear"], "tracks": { "phone": { "source": "closed", "destination": "production" }, "wear": { "source": "wear:closed", "destination": "wear:production" } },
+      "approvalEnvironment": "play-production", "credentials": { "accessToken": "GOOGLE_PLAY_PRODUCTION_ACCESS_TOKEN", "serviceAccountBase64": "GOOGLE_PLAY_PRODUCTION_SERVICE_ACCOUNT_JSON_BASE64" } }
+  },
+  "dependencies": [{ "component": "phone", "requires": ["server"], "when": "version-reservation" }],
+  "versionGroups": [
+    { "id": "server", "targets": ["server"], "bump": "requested",
+      "version": { "file": "shared/release.json", "pointer": "/server/version", "mirrors": [
+        { "file": "package.json", "pointer": "/version" }, { "file": "package-lock.json", "pointer": "/version" },
+        { "file": "package-lock.json", "pointer": "/packages//version" }, { "file": "backend/package.json", "pointer": "/version" },
+        { "file": "backend/package-lock.json", "pointer": "/version" }, { "file": "backend/package-lock.json", "pointer": "/packages//version" }
+      ] } },
+    { "id": "native", "targets": ["phone", "wear"], "bump": "patch", "codeAllocation": "global", "minimumCode": 12, "reusePrepared": true,
+      "lanes": { "phone": { "modulus": 2, "residue": 1 }, "wear": { "modulus": 2, "residue": 0 } } }
+  ],
+  "metadataFiles": ["shared/client-diagnostic-versions.json", "docs/openapi/v1.yaml", "packages/api-client/src/generated/v1.ts",
+    "mobile/package.json", "mobile/app.json", "mobile/modules/wear-pairing/package.json",
+    "mobile/modules/wear-pairing/android/build.gradle", "wear/app/build.gradle.kts"],
+  "policy": { "otaForNewRuntime": true, "otaForServerMajor": true, "deployment": "selected-server" },
+  "inspection": { "environment": { "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app", "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7", "EXPO_UPDATES_CHANNEL": "production", "NODE_ENV": "production" } },
+  "hooks": {
+    "inspect": { "command": ["node", "scripts/release-hooks.mjs"] },
+    "prepare": { "command": ["node", "scripts/release-hooks.mjs"] },
+    "validate": { "command": ["node", "scripts/release-hooks.mjs"] },
+    "build": { "command": ["node", "scripts/release-hooks.mjs"] },
+    "verify": { "command": ["node", "scripts/release-hooks.mjs"] }
+  },
+  "deployment": {
+    "type": "wireguard-webhook", "service": "calibratehealth", "environment": "self-hosted-testing", "path": "/deploy/calibratehealth",
+    "variables": { "host": "DEPLOY_HOST", "url": "DEPLOY_URL", "address": "DEPLOY_WG_ADDRESS", "endpoint": "DEPLOY_WG_ENDPOINT",
+      "publicKey": "DEPLOY_WG_PUBLIC_KEY", "privateKey": "DEPLOY_WG_PRIVATE_KEY", "token": "DEPLOY_TOKEN" }
+  },
+  "github": { "requestWorkflow": "release-request.yml", "handlerWorkflow": "release-handler.yml", "recoveryWorkflow": "recover-release.yml" },
+  "local": { "settingsDirectory": "calibrate-health", "settingsFile": "native.json",
+    "submissions": { "phone": { "track": "internal" }, "wear": { "track": "wear:internal" } } },
+  "trust": { "workflowFile": ".github/release-image-attestation-trusted-workflow-shas", "nativeWorkflowFile": ".github/native-play-attestation-trusted-workflow-shas" },
+  "legacy": { "format": "calibrate-v1", "prefixes": ["release-run-"], "handlerWorkflow": ".github/workflows/cut-release-handler.yml",
+    "recoveryWorkflow": ".github/workflows/publish-release-handler.yml", "defaultBranch": "master" }
+}

@@ -10,8 +10,7 @@
       "entry": [
         ".codex/local-environment.setup.mjs",
         "scripts/reset-test-user-onboarding.mjs",
-        "tools/verify-release-engine.mjs",
-        "tools/release-engine/index.mjs"
+        "scripts/release-hooks.mjs"
       ],
       "project": [
         ".codex/**/*.mjs",
@@ -21,17 +20,45 @@
         "tools/**/*.{js,cjs,mjs,ts}",
         "*.{js,cjs,mjs,ts}"
       ],
-      "ignoreDependencies": ["@expo/config-plugins", "@expo/fingerprint", "react", "react-dom", "react-native-safe-area-context", "expo-updates"],
+      "ignoreDependencies": [
+        "@expo/config-plugins",
+        "@expo/fingerprint",
+        "react",
+        "react-dom",
+        "react-native-safe-area-context",
+        "expo-updates",
+        "expo"
+      ],
       "github-actions": true,
       "playwright": {
-        "config": ["playwright.expo-web.config.ts", "playwright.ux.config.ts"]
+        "config": [
+          "playwright.expo-web.config.ts",
+          "playwright.ux.config.ts"
+        ]
       }
     },
     "backend": {
-      "entry": ["src/index.ts!", "prisma.config.ts", "prisma/seed.ts", "scripts/*.js", "test/**/*.test.js"],
-      "project": ["src/**/*.ts!", "prisma/**/*.prisma", "prisma/**/*.ts", "scripts/**/*.js", "test/**/*.js"],
-      "ignoreDependencies": ["@redocly/openapi-core", "openapi-typescript"],
-      "prisma": { "config": [] }
+      "entry": [
+        "src/index.ts!",
+        "prisma.config.ts",
+        "prisma/seed.ts",
+        "scripts/*.js",
+        "test/**/*.test.js"
+      ],
+      "project": [
+        "src/**/*.ts!",
+        "prisma/**/*.prisma",
+        "prisma/**/*.ts",
+        "scripts/**/*.js",
+        "test/**/*.js"
+      ],
+      "ignoreDependencies": [
+        "@redocly/openapi-core",
+        "openapi-typescript"
+      ],
+      "prisma": {
+        "config": []
+      }
     },
     "mobile": {
       "entry": [
@@ -51,15 +78,27 @@
       "ignoreDependencies": ["@babel/runtime!", "abort-controller", "regenerator-runtime", "whatwg-fetch"]
     },
     "shared": {
-      "entry": ["calibrationScenarios.ts"],
-      "project": ["*.ts!", "!calibrationScenarios.ts!"]
+      "entry": [
+        "calibrationScenarios.ts"
+      ],
+      "project": [
+        "*.ts!",
+        "!calibrationScenarios.ts!"
+      ]
     },
     "packages/api-client": {
-      "project": ["src/**/*.ts!", "test/**/*.test.ts"],
-      "ignoreFiles": ["src/generated/v1.ts"]
+      "project": [
+        "src/**/*.ts!",
+        "test/**/*.test.ts"
+      ],
+      "ignoreFiles": [
+        "src/generated/v1.ts"
+      ]
     },
     "mobile/modules/wear-pairing": {
-      "project": ["**/*.ts!"]
+      "project": [
+        "**/*.ts!"
+      ]
     }
   }
 }

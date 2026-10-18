@@ -6,7 +6,16 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { readZipEntry } from './zip-entry.mjs';
 
-/** Return the resolved fingerprint only when the SDK discovers the required Android modules; reject incomplete graphs and non-fingerprint policies. */
+/** Validate Calibrate's public Expo build inputs before Android generation or compilation. */
+export function resolveExpoUpdateBuildConfig(environment, fallbackProjectId = null) {
+  const projectId = environment.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || fallbackProjectId || null;
+  const channel = environment.EXPO_UPDATES_CHANNEL?.trim() || 'internal';
+  if (projectId !== null && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(projectId)) throw new Error('EXPO_PUBLIC_EAS_PROJECT_ID must be an Expo project UUID.');
+  if (!/^[a-z0-9][a-z0-9._-]*$/i.test(channel)) throw new Error('Invalid EXPO_UPDATES_CHANNEL.');
+  return { projectId, channel };
+}
+
+/** Autolinking errors can produce a hash of an empty graph; such a hash is not a usable runtime. */
 export function validateRuntimeResolution(value) {
   if (!/^[a-f0-9]{40,64}$/.test(value.runtimeVersion ?? '')) throw new Error('Expo must resolve a fingerprint runtime.');
   const sources = value.fingerprintSources ?? [];
@@ -39,6 +48,18 @@ export function resolveExpoRuntime(root, { environment = process.env, execute = 
   if (result.error || result.status !== 0) throw new Error(`Expo runtime resolution failed: ${result.stderr || result.error}`);
   const value = JSON.parse(result.stdout);
   return validateRuntimeResolution(value);
+}
+
+/** Capture the public configuration evaluated with the exact same inputs as runtime resolution. */
+export function resolveExpoPublicConfig(root, { environment = process.env, execute = spawnSync } = {}) {
+  const require = createRequire(path.join(root, 'mobile/package.json'));
+  const env = { ...environment, NODE_ENV: 'production', EXPO_NO_DOTENV: '1', EXPO_NO_METRO_WORKSPACE_ROOT: '1' };
+  for (const key of Object.keys(env)) if (/^(EXPO_TOKEN|GITHUB_TOKEN|GH_TOKEN|DEPLOY_|CALIBRATE_ANDROID_|GOOGLE_|PLAY_)/.test(key)) delete env[key];
+  const cli = path.join(path.dirname(require.resolve('expo/package.json')), 'bin/cli');
+  const result = execute(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd: path.join(root, 'mobile'), env, encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
+  if (result.error || result.status !== 0) throw new Error('Public Expo configuration could not be resolved.');
+  return JSON.parse(result.stdout);
 }
 
 /** Compare embedded runtime bytes against the independently resolved source runtime. */

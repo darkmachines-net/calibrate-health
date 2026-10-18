@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -211,41 +212,18 @@ function inspectNativeGit(environment, capture) {
     detail: 'Install Git for Windows and ensure git is on PATH. Reopen the terminal and rerun npm run native:setup.' };
 }
 
-function easInstallState(root) {
-  const directory = path.join(root, 'tools/eas-cli');
-  const hash = createHash('sha256');
-  for (const file of ['package.json', 'package-lock.json']) hash.update(fs.readFileSync(path.join(directory, file)));
-  hash.update(process.versions.node + ':' + process.platform + ':' + process.arch);
-  return {
-    directory, digest: hash.digest('hex'),
-    entry: path.join(directory, 'node_modules/eas-cli/bin/run'),
-    stamp: path.join(directory, 'node_modules/.calibrate-native-eas-install')
-  };
-}
-
-/** Reports whether the EAS installation and lock/runtime cache stamp match the reviewed tool inputs. */
+/** Inspect the provider installed by the shared release package; setup owns no second dependency tree. */
 export function inspectNativeEasDependency(root) {
   try {
-    const state = easInstallState(root);
-    if (fs.existsSync(state.entry) && fs.readFileSync(state.stamp, 'utf8') === state.digest) {
-      return { name: 'EAS CLI', ok: true, detail: 'Locked dependency cache hit' };
-    }
-  } catch { /* Missing or stale install is repaired by native setup. */ }
-  return { name: 'EAS CLI', ok: false, detail: 'Missing entry or changed lockfile/runtime. Run npm run native:setup.' };
+    const shared = createRequire(path.join(root, 'package.json'))('@mchartier/expo-release');
+    if (fs.existsSync(shared.resolveEasCli())) return { name: 'EAS CLI', ok: true, detail: 'Installed with shared release package' };
+  } catch { /* Host dependency setup installs the pinned package before this check. */ }
+  return { name: 'EAS CLI', ok: false, detail: 'Run npm run setup to install the pinned shared release package.' };
 }
 
-/** Reuses a matching EAS dependency cache or installs the reviewed lockfile without application credentials. */
-export function ensureNativeEasDependency(root, npmCli, environment, run = runSetupCommand, log = console.log) {
-  if (inspectNativeEasDependency(root).ok) {
-    log('[native-setup] EAS CLI dependency cache hit.');
-    return;
-  }
-  const state = easInstallState(root);
-  log('[native-setup] EAS CLI dependency cache miss; installing the reviewed lockfile.');
-  fs.rmSync(state.stamp, { force: true });
-  run(process.execPath, [npmCli, 'ci', '--prefix', state.directory, '--include=dev', '--no-audit', '--fund=false'], environment, { root });
-  if (!fs.existsSync(state.entry)) throw new Error('EAS CLI installation did not create its entry point.');
-  fs.writeFileSync(state.stamp, state.digest);
+export function ensureNativeEasDependency(root) {
+  const result = inspectNativeEasDependency(root);
+  if (!result.ok) throw new Error(result.detail);
 }
 
 /** Reports missing host prerequisites needed by native setup without modifying them. */

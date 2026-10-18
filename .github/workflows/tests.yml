@@ -1,16 +1,6 @@
 name: Tests
 
 on:
-  workflow_call:
-    inputs:
-      release_sha:
-        description: Exact canonical release candidate; validated by Cut release
-        required: true
-        type: string
-      source_sha:
-        description: Exact protected source and workflow commit
-        required: true
-        type: string
   pull_request:
   workflow_dispatch:
 
@@ -18,12 +8,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: tests-${{ inputs.release_sha && format('candidate-{0}-{1}', github.run_id, github.run_attempt) || github.event.pull_request.number || github.ref }}
+  group: tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   changes:
-    name: Classify Test Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Classify Test Inputs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -83,7 +73,7 @@ jobs:
           echo "mobile=${MOBILE_CHANGED}" >> "${GITHUB_OUTPUT}"
 
   backend-tests:
-    name: Backend Tests${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Backend Tests
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
@@ -112,7 +102,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -135,7 +125,7 @@ jobs:
         run: npm test
 
   mobile-tests:
-    name: Mobile Tests${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Mobile Tests
     needs: changes
     if: needs.changes.outputs.mobile == 'true' || needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -145,12 +135,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
+          node-version: 22.14.0
           cache: npm
           cache-dependency-path: |
             package-lock.json

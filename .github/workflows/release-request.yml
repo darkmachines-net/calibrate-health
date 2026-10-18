@@ -1,0 +1,10 @@
+name: Release request
+on:
+  workflow_dispatch:
+    inputs:
+      request: { description: 'Prepared expo-release request JSON', required: true, type: string }
+permissions: { contents: read }
+jobs:
+  request:
+    uses: MChartier/expo-release-template/.github/workflows/release-request.yml@c101987cb2af9412dd984dbdf0e917916705319e
+    with: { request: '${{ inputs.request }}' }

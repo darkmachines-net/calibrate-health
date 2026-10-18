@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import {
@@ -199,34 +200,11 @@ test('full setup delegates host installation to existing repo scripts before sav
   assert.equal(events.at(-1)[0], 'save');
 });
 
-test('EAS setup caches the reviewed dependency graph and retries a failed install without a valid stamp', (t) => {
+test('EAS setup reports the shared dependency without installing a second tree', (t) => {
   const root = temporaryDirectory(t);
-  const directory = path.join(root, 'tools/eas-cli');
-  const lock = path.join(directory, 'package-lock.json');
-  const entry = path.join(directory, 'node_modules/eas-cli/bin/run');
-  write(path.join(directory, 'package.json'), '{}');
-  write(lock, '{"lockfileVersion":3}');
-  const commands = [];
-  /** Execute the requested build-tool operation through the injected runner. */
-  const run = (_command, args, environment) => {
-    commands.push(args);
-    assert.equal(environment.EXPO_TOKEN, undefined);
-    write(entry);
-  };
   assert.equal(inspectNativeEasDependency(root).ok, false);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(inspectNativeEasDependency(root).ok, true);
-  assert.deepEqual(commands[0], ['npm-cli.js', 'ci', '--prefix', directory, '--include=dev', '--no-audit', '--fund=false']);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(commands.length, 1);
-  write(lock, '{"lockfileVersion":3,"packages":{}}');
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  assert.throws(() => ensureNativeEasDependency(root, 'npm-cli.js', {}, () => { throw new Error('offline'); }, () => {}), /offline/);
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(inspectNativeEasDependency(root).ok, true);
-  fs.rmSync(entry);
-  assert.equal(inspectNativeEasDependency(root).ok, false);
+  assert.throws(() => ensureNativeEasDependency(root), /pinned shared release package/);
+  assert.equal(fs.existsSync(path.join(root, 'tools/eas-cli')), false);
 });
 
 test('all missing toolchain components are reported together and tool stderr cannot leak secrets', (t) => {
@@ -303,9 +281,11 @@ test('archive extraction handles literal Windows paths and rejects entries outsi
   assert.equal(fs.existsSync(path.join(directory, 'escaped')), false);
 });
 
-test('local tool versions stay aligned with the protected workflow pins', () => {
-  const workflow = fs.readFileSync(new URL('../.github/workflows/native-build.yml', import.meta.url), 'utf8');
-  assert.ok(workflow.includes("ANDROID_BUILD_TOOLS_VERSION: '" + NATIVE_TOOLCHAIN.buildTools + "'"));
-  assert.ok(workflow.includes("BUNDLETOOL_VERSION: '" + NATIVE_TOOLCHAIN.bundletool + "'"));
-  assert.ok(workflow.includes('BUNDLETOOL_SHA256: ' + NATIVE_TOOL_DOWNLOADS.bundletool.sha256));
+test('local artifact inspection uses the shared worker tool versions', () => {
+  const require = createRequire(import.meta.url);
+  const shared = path.dirname(require.resolve('@mchartier/expo-release/package.json'));
+  const tools = fs.readFileSync(path.join(shared, 'bin/android-tools.mjs'), 'utf8');
+  assert.ok(tools.includes('ANDROID_BUILD_TOOLS_VERSION=' + NATIVE_TOOLCHAIN.buildTools));
+  assert.ok(tools.includes("const version = '" + NATIVE_TOOLCHAIN.bundletool + "'"));
+  assert.ok(tools.includes(NATIVE_TOOL_DOWNLOADS.bundletool.sha256));
 });

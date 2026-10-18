@@ -12,3 +12,4 @@ mobile/android
 .dev.env
 coverage
 **/*.log
+.release

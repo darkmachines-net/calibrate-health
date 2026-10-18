@@ -5,12 +5,7 @@ GitHub-hosted Actions use an existing WireGuard peer and call the shared `deploy
 runner's temporary tunnel and request. The homelab owns the service, Compose configuration, tokens, WireGuard peers,
 routing, and firewall. No host installer, uninstaller, deployment SSH account, or sudo rule is needed here.
 
-When server/web changes are selected, **Cut release** publishes the GHCR image (including latest), calls the webhook,
-and requires completed deployment and affirmative health before client publication. Production OTA retains its later
-production approval. An unchanged server is neither deployed nor health-checked. **Publish prepared release** resumes
-remaining recorded stages. **Deploy self-hosted server** independently tests deployment. A timed-out request may still
-be deploying: inspect service logs before retrying. **Publish Expo OTA Update** stays client-only; ensure server
-compatibility separately when using it. **Build Release Image** stays image-only.
+When server/web changes are selected, the shared release workflow publishes the GHCR image (including latest), calls the webhook, and requires completed deployment health before dependent client publication. An unchanged server is neither deployed nor health-checked. Production OTA retains its approval. Use `npm run release -- recover --release-id ID` for read-only inspection and an explicit recovery action to continue. A timed-out request may still be deploying; inspect service logs and reconcile before another request. Standalone `plan --operation deploy --release-id ID` uses retained server evidence; `plan --operation ota` stays client-only. The webhook healthy response is health evidence, not proof of an exact deployed digest.
 
 ## Webhook contract
 
@@ -83,7 +78,7 @@ parameters. The job verifies current protected-master workflow authority before 
    and provide the existing peer credentials and Calibrate token. Use `deployer.darkmachines.net` in `DEPLOY_URL`;
    the runner derives both TLS hostname verification and private address resolution from this URL.
 2. Configure the master-only environment above.
-3. After merge, run **Cut release** to publish the first image containing the built-in healthcheck and execute the
+3. After merge, review and run the shared release plan to publish the first image containing the built-in healthcheck and execute the
    image/deploy/OTA sequence. Confirm the deployment job succeeds before approving production OTA.
 4. Once `latest` includes that healthcheck, **Deploy self-hosted server** from `master` with no inputs independently
    tests or retries the webhook. It performs a real upgrade and may briefly restart `app`. Use **Publish prepared

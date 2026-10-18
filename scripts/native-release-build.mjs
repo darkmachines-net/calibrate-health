@@ -15,7 +15,8 @@ import {
   NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256,
   nativeReleaseGradleContract
 } from '../mobile/plugins/nativeReleaseGradleWrapper.js';
-import { resolveExpoUpdateBuildConfig, writeNativeOtaBaseline } from './native-ota-contract.mjs';
+import { resolveExpoUpdateBuildConfig } from './expo-runtime.mjs';
+import { NATIVE_TOOLCHAIN } from './native-toolchain.mjs';
 import {
   NATIVE_RELEASE_APPLICATION_ID,
   NATIVE_RELEASE_ARTIFACT_CONTRACTS
@@ -753,6 +754,7 @@ function prepareGradle() {
   });
   if (prebuildResult.error) throw prebuildResult.error;
   if (prebuildResult.status !== 0) process.exit(prebuildResult.status ?? 1);
+  configureWindowsCmake(repositoryRoot, process.env);
 
   const builds = nativeReleaseGradleCommands();
   for (const build of builds) {
@@ -766,6 +768,25 @@ function prepareGradle() {
     'Credential-free phone prebuild and phone/Wear Gradle integrity verification completed. ' +
     `Removed pinned Gradle distribution caches: ${removedDistributionCache.join(', ')}.`
   );
+}
+
+/** Keep generated Windows CMake/Ninja inputs on the validated native toolchain after prebuild. */
+export function configureWindowsCmake(root, environment, { platform = process.platform, execute = execFileSync } = {}) {
+  if (platform !== 'win32') return;
+  const sdk = environment.ANDROID_HOME || environment.ANDROID_SDK_ROOT;
+  if (!sdk) throw new Error('Set ANDROID_HOME through npm run native:setup.');
+  const directory = path.join(sdk, 'cmake', NATIVE_TOOLCHAIN.cmake);
+  const inspect = (file, args) => execute(file, args, { env: nativeReleaseCredentialFreeEnvironment(environment),
+    encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const cmake = inspect(path.join(directory, 'bin/cmake.exe'), ['--version']);
+  const ninja = inspect(path.join(directory, 'bin/ninja.exe'), ['--version']).match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!cmake.includes(`cmake version ${NATIVE_TOOLCHAIN.cmake}`) || !ninja || Number(ninja[1]) < 1
+    || Number(ninja[1]) === 1 && Number(ninja[2]) < 12) throw new Error('Install the configured CMake toolchain and Ninja 1.12 or newer.');
+  const file = path.join(root, 'mobile/android/local.properties');
+  const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const lines = previous.split(/\r?\n/).filter(line => !/^\s*cmake\.dir\s*[=:]/.test(line));
+  const escaped = directory.replaceAll('\\', '/').replace(/[^\x20-\x7e]/g, character => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
+  fs.writeFileSync(file, `${lines.join('\n').trimEnd()}\ncmake.dir=${escaped}\n`);
 }
 
 /** Execute the requested build-tool operation through the injected runner. */
@@ -804,12 +825,6 @@ function run() {
     assertNativeReleaseArtifacts(build);
   }
 
-  const otaBaseline = writeNativeOtaBaseline({ root: repositoryRoot, environment, commit: sourceCommit });
-  if (otaBaseline) {
-    console.log(`Recorded OTA compatibility baseline at ${otaBaseline.output}`);
-  } else {
-    console.log('Expo OTA is disabled for this build because EXPO_PUBLIC_EAS_PROJECT_ID was not set.');
-  }
   const provenance = createNativeReleaseBuildProvenance(repositoryRoot, sourceCommit);
   const output = writeNativeReleaseBuildProvenance(repositoryRoot, provenance);
   console.log(`Recorded candidate-bound native release provenance at ${output}.`);

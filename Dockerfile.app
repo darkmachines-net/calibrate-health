@@ -12,6 +12,9 @@ WORKDIR /app
 
 FROM base AS deps
 
+# The pinned release toolkit is a Git dependency used only while building the application.
+RUN apk add --no-cache git
+
 COPY package.json package-lock.json ./
 COPY mobile/package.json ./mobile/package.json
 COPY mobile/modules/wear-pairing/package.json ./mobile/modules/wear-pairing/package.json

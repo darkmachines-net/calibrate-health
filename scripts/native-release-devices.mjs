@@ -419,8 +419,7 @@ function formatFingerprint(value) {
   return value.toUpperCase().match(/.{1,2}/g)?.join(':') ?? value;
 }
 
-/** Inspects all native release artifacts against the canonical phone/watch versions and signing contract. */
-export async function inspectNativeReleaseArtifactSet(root, tooling, runner) {
+export async function inspectNativeReleaseArtifactSet(root, tooling, runner, retainedFiles = {}) {
   const manifestContent = fs.readFileSync(path.join(root, 'shared', 'release.json'));
   const manifest = JSON.parse(manifestContent.toString('utf8'));
   const expected = {
@@ -430,7 +429,7 @@ export async function inspectNativeReleaseArtifactSet(root, tooling, runner) {
   const artifacts = [];
 
   for (const contract of NATIVE_RELEASE_ARTIFACT_CONTRACTS) {
-    const file = path.resolve(root, contract.path);
+    const file = retainedFiles[contract.id] ?? path.resolve(root, contract.path);
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
       throw new Error(`${contract.id} release artifact is missing at ${contract.path}. Build the signed release pair first.`);
     }
@@ -944,7 +943,7 @@ export async function runNativeReleaseDevices(options = {}) {
     await buildReleaseArtifacts(root, buildEnvironment, runner);
   }
 
-  const artifactSet = await inspectNativeReleaseArtifactSet(root, tooling, runner);
+  const artifactSet = await inspectNativeReleaseArtifactSet(root, tooling, runner, options.retainedFiles);
   const buildProvenance = evidenceMode
     ? readNativeReleaseBuildProvenance(root, {
       candidateCommit: config.candidateCommit,
