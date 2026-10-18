@@ -62,6 +62,10 @@ test('compiled phone manifest must preserve exact project, channel and runtime w
     <meta-data android:name="expo.modules.updates.EXPO_RUNTIME_VERSION" android:value="@runtime"/>
     <meta-data android:name="expo.modules.updates.UPDATES_CONFIGURATION_REQUEST_HEADERS_KEY" android:value="{&quot;expo-channel-name&quot;:&quot;internal&quot;}"/></application>`;
   validateBundleRuntime(xml, expected, () => expected.runtime);
+  validateBundleRuntime(xml, expected, () => 'file:fingerprint', () => expected.runtime);
+  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:fingerprint'), /RUNTIME_VERSION/);
+  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:fingerprint', () => 'b'.repeat(40)), /RUNTIME_VERSION/);
+  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:other', () => expected.runtime), /RUNTIME_VERSION/);
   assert.throws(() => validateBundleRuntime(xml, { ...expected, channel: 'production' }, () => expected.runtime), /channel differs/);
   assert.throws(() => validateBundleRuntime(xml, expected, () => 'other'), /RUNTIME_VERSION/);
   assert.throws(() => validateBundleRuntime(xml.replace('"false"', '"true"'), expected), /HTTPS-only/);

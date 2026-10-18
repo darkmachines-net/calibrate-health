@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { readZipEntry } from './zip-entry.mjs';
 import { resolveNativeReleaseDeviceTooling } from './native-release-devices.mjs';
 
 function metadataValue(xml, name) {
@@ -16,13 +17,15 @@ export function parseBundleResourceValue(dump) {
   return values[0];
 }
 
-export function validateBundleRuntime(xml, { role, projectId, runtime, channel }, resolveResource = () => null) {
+export function validateBundleRuntime(xml, { role, projectId, runtime, channel }, resolveResource = () => null, readFingerprint = () => null) {
   if (!/android:usesCleartextTraffic="false"/.test(xml) || /android:debuggable="true"/.test(xml)) throw new Error(`${role} bundle must be a non-debuggable HTTPS-only release.`);
   if (role !== 'phone') return;
   for (const [name, expected] of Object.entries({ 'expo.modules.updates.EXPO_UPDATE_URL': `https://u.expo.dev/${projectId}`,
     'expo.modules.updates.EXPO_RUNTIME_VERSION': runtime })) {
     const raw = metadataValue(xml, name);
-    const value = raw?.startsWith('@') || /^0x[0-9a-f]+$/i.test(raw ?? '') ? resolveResource(raw.replace(/^@/, '')) : raw;
+    let value = raw?.startsWith('@') || /^0x[0-9a-f]+$/i.test(raw ?? '') ? resolveResource(raw.replace(/^@/, '')) : raw;
+    // Expo resolves this sentinel from the exact embedded asset at application startup.
+    if (name === 'expo.modules.updates.EXPO_RUNTIME_VERSION' && value === 'file:fingerprint') value = readFingerprint();
     if (value !== expected) throw new Error(`Phone bundle has an unexpected ${name}.`);
   }
   const headers = JSON.parse(metadataValue(xml, 'expo.modules.updates.UPDATES_CONFIGURATION_REQUEST_HEADERS_KEY'));
@@ -36,7 +39,7 @@ export function inspectBundleRuntime(file, expected, environment) {
     encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024, ...options });
   const xml = run(tooling.java, ['-jar', tooling.bundletoolJar, 'dump', 'manifest', `--bundle=${file}`]);
   validateBundleRuntime(xml, expected, resource => parseBundleResourceValue(run(tooling.java, ['-jar', tooling.bundletoolJar,
-    'dump', 'resources', `--bundle=${file}`, `--resource=${resource}`, '--values'])));
+    'dump', 'resources', `--bundle=${file}`, `--resource=${resource}`, '--values'])), () => readZipEntry(file, 'base/assets/fingerprint').toString('utf8').trim());
   const jar = path.join(tooling.javaHome, 'bin', process.platform === 'win32' ? 'jar.exe' : 'jar');
   const entries = run(jar, ['tf', file]).split(/\r?\n/).filter(entry => expected.role === 'phone'
     ? entry === 'base/assets/index.android.bundle' : /^base\/dex\/classes\d*\.dex$/.test(entry));
