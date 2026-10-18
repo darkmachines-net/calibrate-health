@@ -10,17 +10,17 @@ The owner-approved [84-file cleanup](release-migration-removals.md) is applied. 
 
 | Surface | Before | After | Reduction |
 | --- | ---: | ---: | ---: |
-| Implementation, configuration and release workflows | 18,565 | 6,325 | 65.9% |
+| Implementation, configuration and release workflows | 18,565 | 6,328 | 65.9% |
 | Release workflow YAML | 5,204 | 71 | 98.6% |
-| Authored source, configuration, tests and documentation | 35,851 | 13,897 | 61.2% |
+| Authored source, configuration, tests and documentation | 35,851 | 13,904 | 61.2% |
 | Generated lockfiles (separate) | 18,986 | 19,923 | +937 lines |
 
-The final authored count includes this report. The installed package replaces the separate EAS installation and vendored engine. Both application-facing version metadata and Calibrate's native builders remain. Internal OTA preserves source-validated publication; production OTA requires exact native compatibility. No application runtime behavior or held release state is intentionally changed.
+The final authored count includes this report. The build-tool installation fixes in the general development launcher are line-neutral and excluded from dedicated release ownership. The installed package replaces the separate EAS installation and vendored engine. Both application-facing version metadata and Calibrate's native builders remain. Internal OTA preserves source-validated publication; production OTA requires exact native compatibility. No application runtime behavior or held release state is intentionally changed.
 
 ## Validation and rollout
 
-The shared suite passed locally on Windows and Linux (278 tests each, two distribution tests run separately), plus clean package/Git installation and exact EAS dependency graph checks. Read-only planner comparisons cover eight scenarios over five real Calibrate commits. Held-release fixtures retain original codes 17/18, source, provider IDs and producing-run evidence without performing live recovery.
+The final toolkit revision passed all 280 tests on hosted Windows and Linux, including clean package/Git installation and exact EAS dependency graph checks ([run](https://github.com/MChartier/expo-release-template/actions/runs/39102881012)). Read-only planner comparisons cover eight scenarios over five real Calibrate commits. Held-release fixtures retain original codes 17/18, source, provider IDs and producing-run evidence without performing live recovery.
 
-Calibrate's clean Windows Git installation, 552-package distribution graph, 27 release tests, 120 native/tooling tests, all TypeScript surfaces and both dead-code checks passed. Clean-to-prebuild runtime consistency passed. Compilation in the long managed worktree hit Ninja's Windows path limit; a short disposable checkout is used for final compilation. The production image builds successfully with a clean Linux npm 10 install. Hosted cross-repository checkout and pin verification pass on Windows and Linux; final compilation and full hosted checks are still running.
+Calibrate's clean Windows Git installation, 552-package distribution graph, 27 release tests, 120 native/tooling tests, 28 development-script tests, all TypeScript surfaces and both dead-code checks passed. The production image builds with clean Linux npm 10 installation and passes readiness, Expo web/PWA and backend-boundary smoke with disposable Postgres. Hosted cross-repository checkout and pin verification pass on Windows and Linux. At application commit `fe5ed6c99aadf2567015f8ebae22c4f576f80688`, the shared local CLI built and verified all four phone/Wear APK/AAB files with an ephemeral test key; runtime `d4a9fb1577ec194eb6c1d9ea868a4c78e01a0507` remained consistent across clean source, prebuild and compilation. The local receipt retained exact hashes and an explicit local origin; the test key and disposable short checkout were removed after validation. Short paths avoid Ninja's Windows path limit. Expo's compiled `file:fingerprint` runtime is verified against its embedded asset, with missing or mismatched bytes rejected.
 
 Review and merge the template before consumer adoption. Releases, deployment, store/OTA publication and resuming the held release remain separate operations. See [release commands](mobile-release.md) and [protected releases](native-store-release.md).

@@ -19,7 +19,3 @@
 *.ttf binary
 *.eot binary
 *.otf binary
-
-# Preserve the shared release engine snapshot byte-for-byte across platforms.
-tools/release-engine/** -text
-tools/verify-release-engine.mjs -text
