@@ -6,5 +6,5 @@ on:
 permissions: { contents: read }
 jobs:
   request:
-    uses: MChartier/expo-release-template/.github/workflows/release-request.yml@c101987cb2af9412dd984dbdf0e917916705319e
+    uses: MChartier/expo-release-template/.github/workflows/release-request.yml@1303156faa526fc5c51b8863c56a7c25bf00ab3e
     with: { request: '${{ inputs.request }}' }

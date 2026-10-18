@@ -8,7 +8,7 @@ jobs:
   release:
     if: github.event.workflow_run.conclusion == 'success'
     permissions: { contents: write, actions: write, pull-requests: write, packages: write, id-token: write, attestations: write }
-    uses: MChartier/expo-release-template/.github/workflows/release-handler.yml@c101987cb2af9412dd984dbdf0e917916705319e
+    uses: MChartier/expo-release-template/.github/workflows/release-handler.yml@1303156faa526fc5c51b8863c56a7c25bf00ab3e
     secrets:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       CALIBRATE_ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.CALIBRATE_ANDROID_UPLOAD_KEYSTORE_BASE64 }}
