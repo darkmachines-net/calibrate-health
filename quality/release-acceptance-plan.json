@@ -65,30 +65,17 @@
       "trigger": "affected-pull-request-and-release",
       "workflowPaths": [
         ".github/workflows/container-scan.yml",
-        ".github/workflows/cut-release.yml"
+        ".github/workflows/release-handler.yml"
       ],
-      "jobIds": ["scan", "release-validation"]
+      "jobIds": ["scan", "release"]
     },
     {
       "id": "prepared-release-integrity",
-      "title": "Publish the exact merged release image, then publish OTA",
-      "releaseScopes": ["server-web", "ota"],
+      "title": "Delegate exact-source publication and recovery to the pinned shared worker",
+      "releaseScopes": ["server-web", "ota", "native"],
       "trigger": "release",
-      "workflowPaths": [
-        ".github/workflows/cut-release.yml",
-        ".github/workflows/publish-release.yml",
-        ".github/workflows/expo-ota-update.yml"
-      ],
-      "jobIds": [
-        "prepare",
-        "release-validation",
-        "finalize",
-        "publish",
-        "tag_release",
-        "build_release_image",
-        "publish-internal",
-        "publish-production"
-      ]
+      "workflowPaths": [".github/workflows/release-handler.yml"],
+      "jobIds": ["release"]
     }
   ],
   "manualCapabilities": [
@@ -97,7 +84,7 @@
       "title": "Optional owner-discretion release confidence check",
       "releaseScopes": ["server-web", "ota", "native"],
       "workflowPath": ".github/workflows/release-acceptance.yml",
-      "jobIds": ["owner-confidence"]
+      "jobIds": ["contract"]
     },
     {
       "id": "exhaustive-web-regression",
