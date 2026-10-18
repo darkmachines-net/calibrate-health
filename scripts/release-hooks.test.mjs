@@ -1,6 +1,8 @@
 /** @file Application-owned metadata mirrors and compiled Android assertions at the shared hook boundary. */
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,11 +10,30 @@ import { checkRepository, validateManifest, createServerReleaseReplacements, cre
   NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
 import { validateBundleRuntime, parseBundleResourceValue } from './native-runtime-checks.mjs';
 import { validateConfig, planRelease } from '@mchartier/expo-release';
+import { applicationIdentity } from './release-inputs.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const manifest = JSON.parse(read('shared/release.json'));
 const config = JSON.parse(read('release.config.json'));
+
+test('binary application inputs retain exact bytes while version-only mirrors remain normalized', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'calibrate-inputs-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const git = args => execFileSync('git', args, { cwd: directory, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  fs.mkdirSync(path.join(directory, 'mobile/assets'), { recursive: true });
+  fs.writeFileSync(path.join(directory, 'mobile/assets/image.bin'), Buffer.from([0x80]));
+  fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"fixture","version":"1.0.0"}');
+  git(['init', '--quiet']);
+  const commit = () => { git(['add', '.']); git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture']); return git(['rev-parse', 'HEAD']); };
+  const before = commit();
+  fs.writeFileSync(path.join(directory, 'mobile/assets/image.bin'), Buffer.from([0x81]));
+  const changed = commit();
+  for (const component of ['server', 'ota']) assert.notEqual(applicationIdentity(directory, before, component), applicationIdentity(directory, changed, component));
+  fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"fixture","version":"1.0.1"}');
+  const versionOnly = commit();
+  for (const component of ['server', 'ota']) assert.equal(applicationIdentity(directory, changed, component), applicationIdentity(directory, versionOnly, component));
+});
 
 test('current application manifests and diagnostic/API mirrors remain consistent', async () => {
   assert.deepEqual((await checkRepository(root)).errors, []);

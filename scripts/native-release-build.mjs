@@ -195,7 +195,7 @@ export function readNativeReleaseBuildProvenance(root, options = {}) {
   } catch {
     throw new Error(
       `Native release build provenance is missing or invalid at ${relativePath}. ` +
-      'Run npm run native:build -- --credentials-file <external-file> from clean candidate C.'
+      'Run npm run release -- run --local --credentials-file <external-file> with a prepared build plan from clean candidate C.'
     );
   }
   const errors = validateNativeReleaseBuildProvenance(provenance, options);

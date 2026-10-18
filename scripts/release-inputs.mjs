@@ -3,6 +3,7 @@ import { trackedIdentity } from '@mchartier/expo-release';
 const IGNORED = /(^|\/)(__tests__|__mocks__|fixtures|e2e|docs)(\/|$)|(^|\/)src\/(test|androidTest)\/|\.(test|spec)\.[^/]+$|(^|\/)(README[^/]*|AGENTS\.md)$/i;
 const SERVER_FILES = /^(backend\/|shared\/|packages\/|mobile\/|Dockerfile\.app$|\.dockerignore$|package(?:-lock)?\.json$|scripts\/expo-(?:cli-environment|web-build|web-release)\.mjs$)/;
 const PHONE_FILES = /^(mobile\/|shared\/|packages\/api-client\/|package(?:-lock)?\.json$)/;
+const VERSION_MIRRORS = /^(shared\/(release|client-diagnostic-versions)\.json|docs\/openapi\/v1\.yaml|packages\/api-client\/src\/generated\/v1\.ts)$|(^|\/)package(?:-lock)?\.json$/;
 
 /** Release mirrors change versions without changing the application inputs they describe. */
 function applicationContent(file, text) {
@@ -55,7 +56,7 @@ function affectsComponent(file, component) {
 export function applicationIdentity(root, source, component) {
   return trackedIdentity(root, source, {
     include: file => component === 'wear' ? file.startsWith('wear/') && !IGNORED.test(file) : affectsComponent(file, component),
-    content: file => component === 'wear' && file !== 'wear/app/build.gradle.kts' ? 'blob' : 'text',
+    content: file => (component === 'wear' ? file === 'wear/app/build.gradle.kts' : VERSION_MIRRORS.test(file)) ? 'text' : 'blob',
     normalize: (file, text) => component === 'wear' && file === 'wear/app/build.gradle.kts'
       ? text.replace(/versionCode = \d+/g, 'versionCode = <reserved>').replace(/versionName = "[^"]+"/g, 'versionName = "<reserved>"')
       : applicationContent(file, text)
