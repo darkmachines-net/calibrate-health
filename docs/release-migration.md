@@ -1,6 +1,6 @@
 # Shared release migration
 
-This draft consumes `@mchartier/expo-release` and reusable workers at `cb56f92f927486c0d4fe233e97f271d8ba958739` ([template PR #2](https://github.com/MChartier/expo-release-template/pull/2)). Little Say #56 consumes the same revision. Generic selection, reservations, candidate handling, providers, artifact retention, journaling, recovery and deployment transport belong upstream. Calibrate retains configuration, source hooks, metadata transformations, its paired Android builder and application artifact assertions.
+This draft consumes `@mchartier/expo-release` and reusable workers at `8ee459cadf0eaacea913e0ea5e42b67a9845144c` ([template PR #2](https://github.com/MChartier/expo-release-template/pull/2)). Little Say #56 consumes the same revision. Generic selection, reservations, candidate handling, providers, artifact retention, journaling, recovery and deployment transport belong upstream. Calibrate retains configuration, source hooks, metadata transformations, its paired Android builder and application artifact assertions.
 
 ## Ownership and footprint
 
@@ -19,7 +19,7 @@ The final authored count includes this report. The build-tool installation fixes
 
 ## Validation and rollout
 
-The toolkit's Windows/Linux suite includes clean package/Git installation and exact EAS dependency graph checks ([review revision CI](https://github.com/MChartier/expo-release-template/actions/runs/39144167321)). Read-only planner comparisons cover eight scenarios over five real Calibrate commits. Held-release fixtures retain original codes 17/18, source, provider IDs and producing-run evidence without performing live recovery.
+The toolkit's Windows/Linux suite includes clean package/Git installation and exact EAS dependency graph checks ([review revision CI](https://github.com/MChartier/expo-release-template/actions/runs/39144324357)). Read-only planner comparisons cover eight scenarios over five real Calibrate commits. Held-release fixtures retain original codes 17/18, source, provider IDs and producing-run evidence without performing live recovery.
 
 Review corrected shared OTA scheduling for second-wave native targets and build-only profiles, original-run verification beyond 100 jobs, audited destination correction, and original local settings/runtime compatibility. Calibrate now compares ordinary inputs by exact Git blob identity: distinct binary bytes must select a release even when UTF-8 decoding would produce the same text. Only explicit version mirrors use normalized text. This correctness change is covered separately from extraction by a binary-change/version-only regression fixture.
 

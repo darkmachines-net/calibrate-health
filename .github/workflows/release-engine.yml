@@ -9,6 +9,6 @@ permissions:
   contents: read
 jobs:
   contract:
-    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@cb56f92f927486c0d4fe233e97f271d8ba958739
+    uses: MChartier/expo-release-template/.github/workflows/release-contract.yml@8ee459cadf0eaacea913e0ea5e42b67a9845144c
     permissions:
       contents: read
