@@ -1,20 +1,2 @@
-# Current protected-master code automatically trusts its own signer revision, an
-# ancestor with byte-identical security-critical image tooling, and the exact
-# post-hardening parent of the canonical Cut release commit. Use one directive per
-# exceptional historical signer whose critical tooling changed:
-#   allow 0123456789abcdef0123456789abcdef01234567
-# Use `revoke SHA` to deny any signer, including an otherwise automatic Cut parent
-# or byte-identical ancestor. A revision may appear only once; revocation wins by
-# construction because conflicting directives are rejected.
-
-# Preserve pre-extraction canonical release signers after moving their critical tooling upstream.
-# Each was accepted by the original policy at efb7c77615ed5144deb13fe939bf84190e1638cc.
-allow 9aad13afd54e2d1b0931a444dbdb200b92179ccc
-allow 7a0f158796f8d15fbc71fd6cb399fed76362d56c
-allow 2d7a4f659d8d1a8d27cfb4210db1bbe22b3e536b
-allow 97767a1204b51a901aca47c0f38856b71438dbda
-allow a094f424ff9ee5984b2a783c1b1af981302f06c0
-allow a43c06dfb567128f31a76c2878b420c2ab53269f
-allow e582bde4451c3660e5662ddadff0539a16283712
-allow 6f119645a559105355d33fd2c0b8cc7c3e22cf66
-allow 4b8947309e5d2dcb66e1f2dec8abf13f632198a9
+# Current-format artifact signer policy. Revocation overrides automatic retention.
+# Add allow SHA only after reviewing a new-format producing workflow.

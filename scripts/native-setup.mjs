@@ -212,18 +212,21 @@ function inspectNativeGit(environment, capture) {
     detail: 'Install Git for Windows and ensure git is on PATH. Reopen the terminal and rerun npm run native:setup.' };
 }
 
-/** Inspect the provider installed by the shared release package; setup owns no second dependency tree. */
+/** Inspect the shared official provider cache; the toolkit owns its installation. */
 export function inspectNativeEasDependency(root) {
   try {
     const shared = createRequire(path.join(root, 'package.json'))('@mchartier/expo-release');
-    if (fs.existsSync(shared.resolveEasCli())) return { name: 'EAS CLI', ok: true, detail: 'Installed with shared release package' };
+    if (fs.existsSync(shared.resolveEasCli())) return { name: 'EAS CLI', ok: true, detail: 'Installed in shared provider cache' };
   } catch { /* Host dependency setup installs the pinned package before this check. */ }
-  return { name: 'EAS CLI', ok: false, detail: 'Run npm run setup to install the pinned shared release package.' };
+  return { name: 'EAS CLI', ok: false, detail: 'Run npm run release -- setup to install the pinned official provider tools.' };
 }
 
+/** Install or reuse the official provider cache through the pinned shared toolkit. */
 export function ensureNativeEasDependency(root) {
-  const result = inspectNativeEasDependency(root);
-  if (!result.ok) throw new Error(result.detail);
+  let shared;
+  try { shared = createRequire(path.join(root, 'package.json'))('@mchartier/expo-release'); }
+  catch { throw new Error('Install the pinned shared release package before provider setup.'); }
+  shared.setupToolchain();
 }
 
 /** Reports missing host prerequisites needed by native setup without modifying them. */
@@ -311,7 +314,7 @@ export async function setupNative(argv = [], options = {}) {
       const npmCli = inherited.npm_execpath || path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
       if (!fs.existsSync(npmCli)) throw new Error('Cannot locate npm-cli.js. Run setup through npm run native:setup.');
       run(process.execPath, [npmCli, '--prefix', path.join(root, 'shared'), 'run', 'build'], environment, { root });
-      (options.ensureEas ?? ensureNativeEasDependency)(root, npmCli, environment, run, log);
+      (options.ensureEas ?? ensureNativeEasDependency)(root);
     }
   }
   const checks = [gitCheck, ...inspect(environment)];

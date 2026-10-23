@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { baselineKey, configuredComponents, hashIdentity, sourceEnvironment } from '@mchartier/expo-release';
+import { configuredComponents, sourceEnvironment } from '@mchartier/expo-release';
 import { applicationIdentity } from './release-inputs.mjs';
 import { resolveExpoRuntime, resolveExpoPublicConfig, verifyEmbeddedRuntime } from './expo-runtime.mjs';
 import { checkRepository, createServerReleaseReplacements, createNativeReleaseReplacements, NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
@@ -35,7 +35,7 @@ function nativeEnvironment(inputs) {
 
 /** Inspect actual Expo runtimes and app-specific source sets; no provider operations or state is maintained here. */
 function inspect(request) {
-  const { root, source, config, profile, baseline = {}, componentEnvironments = {}, environment = {} } = request;
+  const { root, source, config, profile, componentEnvironments = {}, environment = {} } = request;
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'shared/release.json'), 'utf8'));
   const values = configuredComponents(config, profile);
   const runtimes = new Map();
@@ -48,13 +48,11 @@ function inspect(request) {
     const resolved = runtimes.get(runtimeKey); const runtime = resolved?.runtime;
     const type = component.kind === 'server' ? 'server' : component.id === 'wear' ? 'wear' : 'ota';
     const identity = component.id === 'phone' ? runtime : applicationIdentity(root, source.commit, type);
-    const old = baseline.components?.[baselineKey(component, profile)];
     const environmentHash = componentEnvironments[component.id]?.hash ?? request.environmentHash;
     const observation = { id: component.id, identity,
       ...(runtime ? { runtime, fingerprint: runtime, version: manifest.android.mobile.version_name,
         environmentHash: environmentHash ?? null, environment: publicInputs,
         expoConfig: resolved.config } : { version: manifest.server.version }) };
-    if (old?.source && !old.identity && component.id !== 'phone') observation.baselineIdentity = hashIdentity({ identity: applicationIdentity(root, old.source, type), environment: null });
     return observation;
   });
   return { schemaVersion: 1, observations };

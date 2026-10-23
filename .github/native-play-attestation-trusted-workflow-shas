@@ -1,11 +1,2 @@
-# Native Play receipt workflow trust policy.
-#
-# Keep this file comment-only for normal operation. Historical workflow revisions are
-# accepted only when their critical receipt tooling is byte-identical to current master.
-# Use `allow <40-character-lowercase-SHA>` only for a reviewed historical hardening
-# revision that must remain recoverable after critical tooling changes. Use
-# `revoke <40-character-lowercase-SHA>` to reject a compromised revision immediately.
-
-# Preserve release 411201908's verified native 0.2.9 artifacts (phone 17 / Wear 18)
-# after correcting Play track IDs in the artifact-inspection tooling.
-allow 4b8947309e5d2dcb66e1f2dec8abf13f632198a9
+# Current-format artifact signer policy. Revocation overrides automatic retention.
+# Add allow SHA only after reviewing a new-format producing workflow.

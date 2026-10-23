@@ -200,10 +200,17 @@ test('full setup delegates host installation to existing repo scripts before sav
   assert.equal(events.at(-1)[0], 'save');
 });
 
-test('EAS setup reports the shared dependency without installing a second tree', (t) => {
+test('EAS setup delegates provider installation to the shared toolkit without a consumer-owned tree', (t) => {
   const root = temporaryDirectory(t);
   assert.equal(inspectNativeEasDependency(root).ok, false);
   assert.throws(() => ensureNativeEasDependency(root), /pinned shared release package/);
+  const shared = path.join(root, 'node_modules/@mchartier/expo-release');
+  fs.mkdirSync(shared, { recursive: true });
+  fs.writeFileSync(path.join(shared, 'package.json'), JSON.stringify({ name: '@mchartier/expo-release', main: 'index.cjs' }));
+  fs.writeFileSync(path.join(shared, 'index.cjs'), `/** Inert provider-cache delegation fixture. */
+    exports.setupToolchain = () => require('node:fs').writeFileSync(${JSON.stringify(path.join(root, 'setup-called'))}, 'called');`);
+  ensureNativeEasDependency(root);
+  assert.equal(fs.readFileSync(path.join(root, 'setup-called'), 'utf8'), 'called');
   assert.equal(fs.existsSync(path.join(root, 'tools/eas-cli')), false);
 });
 

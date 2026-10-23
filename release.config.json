@@ -25,8 +25,7 @@
       "version": { "file": "shared/release.json", "pointer": "/server/version" } },
     { "id": "phone", "kind": "native", "platform": "android", "builder": "command", "buildGroup": "android-pair",
       "appDirectory": "mobile", "applicationId": "net.darkmachines.healthtracker", "runtimePolicy": "fingerprint", "runtimeCompatibility": "fingerprint", "compareEnvironment": false, "environmentSource": "declared",
-      "signing": { "secretNames": { "keystore": "CALIBRATE_ANDROID_UPLOAD_KEYSTORE_BASE64", "storePassword": "CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD", "alias": "CALIBRATE_ANDROID_SIGNING_KEY_ALIAS", "keyPassword": "CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD" },
-        "variables": { "file": "CALIBRATE_ANDROID_SIGNING_STORE_FILE", "storePassword": "CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD", "alias": "CALIBRATE_ANDROID_SIGNING_KEY_ALIAS", "keyPassword": "CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD" } },
+      "signing": { "variables": { "file": "CALIBRATE_ANDROID_SIGNING_STORE_FILE", "storePassword": "CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD", "alias": "CALIBRATE_ANDROID_SIGNING_KEY_ALIAS", "keyPassword": "CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD" } },
       "version": { "file": "shared/release.json", "pointer": "/android/mobile/version_name", "codePointer": "/android/mobile/version_code" },
       "submission": { "track": "internal", "releaseStatus": "completed" }, "signingEnvironment": "native-release-signing", "approvalEnvironment": { "production": "play-internal", "local": "" } },
     { "id": "wear", "kind": "native", "platform": "android", "builder": "command", "buildGroup": "android-pair",
@@ -52,9 +51,9 @@
         { "file": "package.json", "pointer": "/version" }, { "file": "package-lock.json", "pointer": "/version" },
         { "file": "package-lock.json", "pointer": "/packages//version" }, { "file": "backend/package.json", "pointer": "/version" },
         { "file": "backend/package-lock.json", "pointer": "/version" }, { "file": "backend/package-lock.json", "pointer": "/packages//version" }
-      ] } },
+      ] }, "minimumVersion": "0.40.3" },
     { "id": "native", "targets": ["phone", "wear"], "bump": "patch", "codeAllocation": "global", "minimumCode": 12, "reusePrepared": true,
-      "lanes": { "phone": { "modulus": 2, "residue": 1 }, "wear": { "modulus": 2, "residue": 0 } } }
+      "lanes": { "phone": { "modulus": 2, "residue": 1 }, "wear": { "modulus": 2, "residue": 0 } }, "minimumVersion": "0.2.9", "minimumCodes": {"phone":17,"wear":18} }
   ],
   "metadataFiles": ["shared/client-diagnostic-versions.json", "docs/openapi/v1.yaml", "packages/api-client/src/generated/v1.ts",
     "mobile/package.json", "mobile/app.json", "mobile/modules/wear-pairing/package.json",
@@ -74,9 +73,7 @@
       "publicKey": "DEPLOY_WG_PUBLIC_KEY", "privateKey": "DEPLOY_WG_PRIVATE_KEY", "token": "DEPLOY_TOKEN" }
   },
   "github": { "requestWorkflow": "release-request.yml", "handlerWorkflow": "release-handler.yml", "recoveryWorkflow": "recover-release.yml" },
-  "local": { "settingsDirectory": "calibrate-health", "settingsFile": "native.json",
+  "local": { "settingsDirectory": "calibrate-health", "settingsFile": "expo-release.json",
     "submissions": { "phone": { "track": "internal" }, "wear": { "track": "wear:internal" } } },
-  "trust": { "workflowFile": ".github/release-image-attestation-trusted-workflow-shas", "nativeWorkflowFile": ".github/native-play-attestation-trusted-workflow-shas" },
-  "legacy": { "format": "calibrate-v1", "prefixes": ["release-run-"], "handlerWorkflow": ".github/workflows/cut-release-handler.yml",
-    "recoveryWorkflow": ".github/workflows/publish-release-handler.yml", "defaultBranch": "master" }
+  "trust": { "workflowFile": ".github/release-image-attestation-trusted-workflow-shas", "nativeWorkflowFile": ".github/native-play-attestation-trusted-workflow-shas" }
 }
