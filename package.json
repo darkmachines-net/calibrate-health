@@ -115,7 +115,7 @@
     "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
   },
   "devDependencies": {
-    "@mchartier/expo-release": "git+https://github.com/MChartier/expo-release-template.git#6ae5cf3eaa680ae9911743387a2bd4791349570c",
+    "@mchartier/expo-release": "git+https://github.com/MChartier/expo-release-template.git#fcff5bff477e1ed324bd1efbdb0d576c09af8742",
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@types/node": "^20.0.0",
