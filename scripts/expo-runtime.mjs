@@ -55,9 +55,14 @@ export function resolveExpoPublicConfig(root, { environment = process.env, execu
 /** Check the actual compiled runtime resource in a debug APK produced by application CI. */
 export function verifyEmbeddedRuntime(file, _member, runtime, environment = process.env) {
   const tools = resolveNativeReleaseDeviceTooling(environment);
-  const resources = execFileSync(tools.aapt, ['dump', '--values', 'resources', file], { encoding: 'utf8', windowsHide: true });
-  const value = resources.split('string/expo_runtime_version')[1]?.split('resource ')[0];
-  if (!value || !value.includes('"' + runtime + '"')) throw new Error('Built APK runtime differs from the source major.');
+  const resources = execFileSync(tools.aapt, ['dump', '--values', 'resources', file], { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
+  validateEmbeddedRuntimeResources(resources, runtime);
+}
+
+/** Read resource values, not the earlier resource-spec index, and reject inconsistent localized values. */
+export function validateEmbeddedRuntimeResources(resources, runtime) {
+  const values = [...resources.matchAll(/^\s*resource\s+\S+\s+[^:\s]+:string\/expo_runtime_version:[^\r\n]*\r?\n\s*\(string8?\)\s+"([^"]*)"/gm)].map(match => match[1]);
+  if (!values.length || values.some(value => value !== runtime)) throw new Error('Built APK runtime differs from the source major.');
 }
 
 /** Capture a clean runtime or verify a built APK and post-build source against that capture. */
