@@ -1,7 +1,8 @@
 {
   "cli": {
-    "version": ">= 16.0.0",
-    "appVersionSource": "local"
+    "version": "25.3.0",
+    "appVersionSource": "local",
+    "requireCommit": true
   },
   "build": {
     "internal": {
@@ -28,6 +29,20 @@
       "node": "22.14.0",
       "android": {
         "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "phone": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed"
+      }
+    },
+    "wear": {
+      "android": {
+        "track": "wear:internal",
+        "releaseStatus": "completed"
       }
     }
   }

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
-import { compareSemver } from '@mchartier/expo-release';
+import { compareVersions as compareSemver } from '@mchartier/expo-release/engine';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 

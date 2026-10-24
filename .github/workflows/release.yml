@@ -1,0 +1,14 @@
+# All release paths run through one immutable shared workflow from the protected default branch.
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      profile: { description: Configured release destination, type: choice, required: true, options: [production] }
+      rebuild: { description: Build compatible binaries and same-runtime OTA, type: boolean, default: false }
+permissions: { contents: read }
+jobs:
+  release:
+    permissions: { contents: write, deployments: write, packages: write }
+    uses: MChartier/expo-release-template/.github/workflows/release.yml@f1f765d2094627aefea889844694a878874b9d7c
+    with: { profile: '${{ inputs.profile }}', rebuild: '${{ inputs.rebuild }}' }
+    secrets: inherit

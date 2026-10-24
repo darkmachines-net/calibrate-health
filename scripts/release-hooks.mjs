@@ -1,162 +1,75 @@
-/** @file Calibrate source-only release hooks: application inputs, metadata mirrors, validation and paired native artifact contracts. */
+/** @file Calibrate metadata transformations, paired Gradle builder and application artifact assertions. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { configuredComponents, sourceEnvironment } from '@mchartier/expo-release';
+import { fileURLToPath } from 'node:url';
+import { hash, trackedIdentity } from '@mchartier/expo-release';
 import { applicationIdentity } from './release-inputs.mjs';
-import { resolveExpoRuntime, resolveExpoPublicConfig, verifyEmbeddedRuntime } from './expo-runtime.mjs';
 import { checkRepository, createServerReleaseReplacements, createNativeReleaseReplacements, NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
 import { NATIVE_RELEASE_ARTIFACT_CONTRACTS } from './native-release-evidence.mjs';
 import { readNativeReleaseBuildProvenance } from './native-release-build.mjs';
 import { verifyNativeArtifacts } from './native-artifact-checks.mjs';
 import { inspectBundleRuntime } from './native-runtime-checks.mjs';
-import { readNativeUserEnvironment, NATIVE_ENVIRONMENT_KEYS } from './native-setup.mjs';
 
 const serverFiles = { manifest: 'shared/release.json', diagnostics: 'shared/client-diagnostic-versions.json', rootPackage: 'package.json',
   rootLock: 'package-lock.json', backendPackage: 'backend/package.json', backendLock: 'backend/package-lock.json',
   openApi: 'docs/openapi/v1.yaml', generatedApi: 'packages/api-client/src/generated/v1.ts' };
 
-/** Execute an application build/check without mixing tool logs into the JSON response. */
-function run(root, file, args = [], environment = {}) {
-  execFileSync(process.execPath, [path.join(root, file), ...args], { cwd: root,
-    env: { ...sourceEnvironment(), ...environment }, windowsHide: true, stdio: ['ignore', 2, 2], maxBuffer: 32 * 1024 * 1024 });
+/** Transform only metadata mirrors using the shared planner's allocated versions. */
+export function stamp(root, plan) {
+  const transform = (files, update) => {
+    const current = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, fs.readFileSync(path.join(root, file), 'utf8')]));
+    for (const [key, value] of Object.entries(update(current))) fs.writeFileSync(path.join(root, files[key]), value);
+  };
+  if (plan.server) transform(serverFiles, value => createServerReleaseReplacements(value, plan.versions.server));
+  if (plan.native) transform(NATIVE_RELEASE_FILE_PATHS, value => createNativeReleaseReplacements(value, plan.versions.mobile,
+    { mobileVersionCode: plan.pair[0], wearVersionCode: plan.pair[1] }));
+  if (plan.bump) fs.writeFileSync(path.join(root, 'mobile/release-version.json'), JSON.stringify({ version: plan.versions.mobile }, null, 2) + '\n');
 }
 
-/** Native tools saved by Windows setup apply to both build and binary inspection hooks. */
-function nativeEnvironment(inputs) {
-  const environment = { ...sourceEnvironment(), ...inputs };
-  if (process.platform === 'win32') {
-    const saved = readNativeUserEnvironment(process.env);
-    for (const key of NATIVE_ENVIRONMENT_KEYS) if (!environment[key] && saved[key]) environment[key] = saved[key];
-  }
-  return environment;
+/** Run application tools with the already restricted job environment and logs on stderr. */
+function run(root, script, args = [], env = process.env) {
+  execFileSync(process.execPath, [path.join(root, script), ...args], { cwd: root, env, windowsHide: true, stdio: ['ignore', 2, 2] });
 }
 
-/** Inspect actual Expo runtimes and app-specific source sets; no provider operations or state is maintained here. */
-function inspect(request) {
-  const { root, source, config, profile, componentEnvironments = {}, environment = {} } = request;
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'shared/release.json'), 'utf8'));
-  const values = configuredComponents(config, profile);
-  const runtimes = new Map();
-  const observations = values.map(component => {
-    const inputs = componentEnvironments[component.id]?.environment ?? environment;
-    const publicInputs = { ...inputs, EXPO_UPDATES_CHANNEL: component.channel };
-    const runtimeKey = JSON.stringify(publicInputs);
-    if (component.kind !== 'server' && !runtimes.has(runtimeKey)) runtimes.set(runtimeKey, {
-      runtime: resolveExpoRuntime(root, { environment: publicInputs }), config: resolveExpoPublicConfig(root, { environment: publicInputs }) });
-    const resolved = runtimes.get(runtimeKey); const runtime = resolved?.runtime;
-    const type = component.kind === 'server' ? 'server' : component.id === 'wear' ? 'wear' : 'ota';
-    const identity = component.id === 'phone' ? runtime : applicationIdentity(root, source.commit, type);
-    const environmentHash = componentEnvironments[component.id]?.hash ?? request.environmentHash;
-    const observation = { id: component.id, identity,
-      ...(runtime ? { runtime, fingerprint: runtime, version: manifest.android.mobile.version_name,
-        environmentHash: environmentHash ?? null, environment: publicInputs,
-        expoConfig: resolved.config } : { version: manifest.server.version }) };
-    return observation;
-  });
-  return { schemaVersion: 1, observations };
+/** Perform only application operations; selection, reservations and provider requests stay shared. */
+export async function applicationHook({ root, action, source, plan, target, directory, baseUrl }) {
+  if (action === 'inspect') return { server: applicationIdentity(root, source, 'server'),
+    js: { android: applicationIdentity(root, source, 'ota') }, extraNative: hash({ wear: applicationIdentity(root, source, 'wear'),
+      builder: trackedIdentity(root, source, { include: file => ['scripts/native-release-build.mjs', 'scripts/native-toolchain.mjs'].includes(file) }) }) };
+  if (action === 'prepare') { stamp(root, plan); return {}; }
+  if (action === 'validate') {
+    const checked = await checkRepository(root);
+    if (checked.errors.length) throw new Error(checked.errors.join('\n'));
+    run(root, 'scripts/release-acceptance.mjs', ['verify']); return {};
+  }
+  if (action === 'buildPrepare') { run(root, 'scripts/native-release-build.mjs', ['prepare']); return {}; }
+  if (action === 'build') {
+    const env = { ...process.env, CALIBRATE_ANDROID_SIGNING_STORE_FILE: process.env.ANDROID_KEYSTORE,
+      CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD: process.env.ANDROID_STORE_PASSWORD,
+      CALIBRATE_ANDROID_SIGNING_KEY_ALIAS: process.env.ANDROID_KEY_ALIAS, CALIBRATE_ANDROID_SIGNING_KEY_PASSWORD: process.env.ANDROID_KEY_PASSWORD };
+    run(root, 'scripts/native-release-build.mjs', ['build-prepared'], env);
+    readNativeReleaseBuildProvenance(root, { candidateCommit: plan.build });
+    for (const id of ['phone', 'wear']) {
+      const output = path.join(directory, id); fs.mkdirSync(output, { recursive: true });
+      for (const artifact of NATIVE_RELEASE_ARTIFACT_CONTRACTS.filter(a => a.role === (id === 'phone' ? 'phone' : 'watch')))
+        fs.copyFileSync(path.join(root, artifact.path), path.join(output, `native.${artifact.format}`));
+    }
+    return { targets: ['phone', 'wear'] };
+  }
+  if (action === 'verify' && target === 'server') { run(root, 'scripts/production-container-smoke.mjs', [baseUrl]); return {}; }
+  if (action === 'verify') {
+    verifyNativeArtifacts({ root, sourceCommit: plan.build, environment: process.env });
+    inspectBundleRuntime(path.join(directory, 'native.aab'), {
+      role: target === 'phone' ? 'phone' : 'watch', runtime: plan.runtime, projectId: plan.config.mobile.projectId,
+      channel: plan.config.profiles[plan.profile].channel, serverUrl: plan.environments[plan.profile].EXPO_PUBLIC_CALIBRATE_SERVER_URL
+    }, process.env);
+    return {};
+  }
+  throw new Error(`Unsupported application hook: ${action}`);
 }
 
-/** Transform Calibrate diagnostic/API/Gradle mirrors using versions already reserved by the shared planner. */
-async function prepare(request) {
-  const { root, plan, originals = {} } = request;
-  const read = files => Object.fromEntries(Object.entries(files).map(([key, file]) => [key, originals[file] ?? fs.readFileSync(path.join(root, file), 'utf8')]));
-  const save = (files, replacements) => { for (const [key, content] of Object.entries(replacements)) fs.writeFileSync(path.join(root, files[key]), content); };
-  const server = plan.components.find(component => component.kind === 'server' && component.next);
-  if (server) save(serverFiles, createServerReleaseReplacements(read(serverFiles), server.next.version));
-  const phone = plan.components.find(component => component.id === 'phone' && component.next);
-  const wear = plan.components.find(component => component.id === 'wear' && component.next);
-  if (phone && wear) {
-    const current = Object.fromEntries(Object.entries(NATIVE_RELEASE_FILE_PATHS).map(([key, file]) => [key, fs.readFileSync(path.join(root, file), 'utf8')]));
-    // Use the original native fields while preserving server transformations made above.
-    const original = JSON.parse(originals['shared/release.json']);
-    const manifest = JSON.parse(current.manifest);
-    manifest.android = original.android;
-    current.manifest = JSON.stringify(manifest);
-    save(NATIVE_RELEASE_FILE_PATHS, createNativeReleaseReplacements(current, phone.next.version,
-      { mobileVersionCode: phone.next.versionCode, wearVersionCode: wear.next.versionCode }));
-  }
-  const checked = await checkRepository(root);
-  if (checked.errors.length) throw new Error(checked.errors.join('\n'));
-  return { schemaVersion: 1 };
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const result = await applicationHook(JSON.parse(fs.readFileSync(0, 'utf8')));
+  process.stdout.write(JSON.stringify(result) + '\n');
 }
-
-/** Keep Calibrate's validated source gates and native binary assertions in the application repository. */
-async function validate(request) {
-  const checked = await checkRepository(request.root);
-  if (checked.errors.length) throw new Error(checked.errors.join('\n'));
-  run(request.root, 'scripts/release-acceptance.mjs', ['verify'], request.environment);
-  if (request.plan) {
-    run(request.root, 'scripts/dev-env.mjs', ['ci'], request.environment);
-    run(request.root, 'scripts/postgres-populated-upgrade-smoke.mjs', [], request.environment);
-  }
-  return { schemaVersion: 1 };
-}
-
-/** Produce application artifacts once per paired build group, or export an already resolved OTA runtime. */
-function build(request) {
-  const { root, plan, target, phase, outputDirectory, environment = {} } = request;
-  const component = plan.components.find(value => value.id === target);
-  if (!component) throw new Error('Unknown Calibrate artifact target.');
-  if (component.kind === 'native' && process.platform === 'win32') {
-    Object.assign(environment, nativeEnvironment(environment));
-  }
-  if (component.kind === 'ota') {
-    const require = createRequire(path.join(root, 'mobile/package.json'));
-    const executable = path.join(path.dirname(require.resolve('expo/package.json')), 'bin/cli');
-    const inputs = { ...environment, EXPO_NO_DOTENV: '1', NODE_ENV: 'production', EXPO_NO_METRO_WORKSPACE_ROOT: '1', EXPO_UPDATES_CHANNEL: component.channel };
-    execFileSync(process.execPath, [executable, 'export', '--platform', component.platform, '--output-dir', outputDirectory], {
-      cwd: path.join(root, 'mobile'), env: { ...sourceEnvironment(), ...inputs }, windowsHide: true, stdio: ['ignore', 2, 2] });
-    return { schemaVersion: 1, artifact: { directory: outputDirectory, runtime: resolveExpoRuntime(root, { environment: inputs }), kind: 'ota' } };
-  }
-  if (phase === 'prepare') {
-    run(root, 'scripts/native-release-build.mjs', ['prepare'], environment);
-    const runtime = resolveExpoRuntime(root, { environment });
-    if (runtime !== component.observation.runtime) throw new Error('Prebuild changed the reserved phone runtime.');
-    return { schemaVersion: 1 };
-  }
-  run(root, 'scripts/native-release-build.mjs', ['build-prepared'], environment);
-  const provenance = readNativeReleaseBuildProvenance(root, { candidateCommit: plan.source.commit });
-  const artifacts = [];
-  for (const native of plan.components.filter(value => value.kind === 'native' && value.selected)) {
-    const directory = path.join(path.dirname(path.dirname(outputDirectory)), native.id, 'files');
-    fs.mkdirSync(directory, { recursive: true });
-    const role = native.id === 'wear' ? 'watch' : 'phone';
-    const contracts = NATIVE_RELEASE_ARTIFACT_CONTRACTS.filter(value => value.role === role);
-    for (const contract of contracts) fs.copyFileSync(path.join(root, contract.path), path.join(directory, `native.${contract.format}`));
-    artifacts.push({ target: native.id, directory, kind: 'native', provenance, runtime: native.observation.runtime,
-      version: native.observation.version, versionCode: native.observation.versionCode });
-  }
-  return { schemaVersion: 1, artifacts, artifact: artifacts.find(value => value.target === target) };
-}
-
-/** Assert Calibrate's embedded phone runtime and original paired build provenance without publishing it. */
-function verify(request) {
-  const { artifact, plan, target } = request;
-  const component = plan.components.find(value => value.id === target);
-  if (!artifact || !component) throw new Error('Missing application artifact evidence.');
-  if (component.kind === 'server') {
-    if (!artifact.baseUrl) throw new Error('Production image verification requires its running smoke instance.');
-    run(request.root, 'scripts/production-container-smoke.mjs', [artifact.baseUrl], request.environment);
-  }
-  if (target === 'phone') {
-    verifyEmbeddedRuntime(path.join(artifact.directory, 'native.apk'), 'assets/fingerprint', component.observation.runtime);
-    verifyEmbeddedRuntime(path.join(artifact.directory, 'native.aab'), 'base/assets/fingerprint', component.observation.runtime);
-  }
-  if (component.kind === 'native' && artifact.provenance.sourceCommit !== plan.source.commit) throw new Error('Native build provenance differs from the selected source.');
-  if (component.kind === 'native') verifyNativeArtifacts({ root: request.root, sourceCommit: plan.source.commit, environment: nativeEnvironment(request.environment) });
-  if (component.kind === 'native') inspectBundleRuntime(path.join(artifact.directory, 'native.aab'), {
-    role: target === 'phone' ? 'phone' : 'watch', runtime: component.observation.runtime,
-    projectId: plan.providerConfiguration.expo.projectId, channel: component.channel,
-    serverUrl: plan.providerConfiguration.expo.serverUrl
-  }, nativeEnvironment(request.environment));
-  return { schemaVersion: 1, verified: true };
-}
-
-const request = JSON.parse(fs.readFileSync(0, 'utf8'));
-if (request.schemaVersion !== 1) throw new Error('Unsupported application hook protocol.');
-const hooks = { inspect, prepare, validate, build, verify };
-if (!Object.hasOwn(hooks, request.action)) throw new Error('Unsupported application hook.');
-Promise.resolve(hooks[request.action](request)).then(result => process.stdout.write(`${JSON.stringify(result)}\n`))
-  .catch(error => { console.error(error.message); process.exitCode = 1; });

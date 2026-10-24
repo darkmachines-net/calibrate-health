@@ -212,24 +212,7 @@ function inspectNativeGit(environment, capture) {
     detail: 'Install Git for Windows and ensure git is on PATH. Reopen the terminal and rerun npm run native:setup.' };
 }
 
-/** Inspect the shared official provider cache; the toolkit owns its installation. */
-export function inspectNativeEasDependency(root) {
-  try {
-    const shared = createRequire(path.join(root, 'package.json'))('@mchartier/expo-release');
-    if (fs.existsSync(shared.resolveEasCli())) return { name: 'EAS CLI', ok: true, detail: 'Installed in shared provider cache' };
-  } catch { /* Host dependency setup installs the pinned package before this check. */ }
-  return { name: 'EAS CLI', ok: false, detail: 'Run npm run release -- setup to install the pinned official provider tools.' };
-}
-
-/** Install or reuse the official provider cache through the pinned shared toolkit. */
-export function ensureNativeEasDependency(root) {
-  let shared;
-  try { shared = createRequire(path.join(root, 'package.json'))('@mchartier/expo-release'); }
-  catch { throw new Error('Install the pinned shared release package before provider setup.'); }
-  shared.setupToolchain();
-}
-
-/** Reports missing host prerequisites needed by native setup without modifying them. */
+/** Inspect application dependencies needed by the local Android development tools. */
 export function inspectNativeHostDependencies(root) {
   const missing = ['node_modules/expo/package.json', 'shared/dist/cjs/releaseCompatibility.js']
     .filter((file) => !fs.existsSync(path.join(root, file)));
@@ -268,7 +251,6 @@ export async function setupNative(argv = [], options = {}) {
   const install = options.installArchive ?? installNativeArchive;
   const download = options.download ?? downloadNativeTool;
   const hostCheck = options.hostCheck ?? inspectNativeHostDependencies;
-  const easCheck = options.easCheck ?? inspectNativeEasDependency;
   const gitCheck = inspectNativeGit(environment, capture);
   if (!args.check && !gitCheck.ok) throw new Error(gitCheck.detail);
 
@@ -314,11 +296,10 @@ export async function setupNative(argv = [], options = {}) {
       const npmCli = inherited.npm_execpath || path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
       if (!fs.existsSync(npmCli)) throw new Error('Cannot locate npm-cli.js. Run setup through npm run native:setup.');
       run(process.execPath, [npmCli, '--prefix', path.join(root, 'shared'), 'run', 'build'], environment, { root });
-      (options.ensureEas ?? ensureNativeEasDependency)(root);
     }
   }
   const checks = [gitCheck, ...inspect(environment)];
-  if (!args.skipDeps) checks.push(hostCheck(root), easCheck(root));
+  if (!args.skipDeps) checks.push(hostCheck(root));
   const ok = checks.every((check) => check.ok);
   const values = Object.fromEntries(NATIVE_ENVIRONMENT_KEYS.map((key) => [key, environment[key]]));
   for (const check of checks) log('[native-setup] ' + (check.ok ? 'OK ' : 'MISSING ') + check.name + ': ' +

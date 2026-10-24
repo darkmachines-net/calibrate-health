@@ -1,95 +1,63 @@
-/** @file Application-owned metadata mirrors and compiled Android assertions at the shared hook boundary. */
+/** @file Current release contract: metadata-only stamping, stable native fingerprints and fixed destination configuration. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { checkRepository, validateManifest, createServerReleaseReplacements, createNativeReleaseReplacements,
-  NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
-import { validateBundleRuntime, parseBundleResourceValue } from './native-runtime-checks.mjs';
-import { validateConfig, planRelease } from '@mchartier/expo-release';
-import { applicationIdentity } from './release-inputs.mjs';
+import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { stamp } from './release-hooks.mjs';
+import { sourceEnvironment } from '@mchartier/expo-release';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const config=JSON.parse(fs.readFileSync(path.join(root,'release.config.json')));
+const allocation={server:true,native:true,bump:'major',versions:{server:'0.99.0',mobile:'1.0.0'},pair:[101,102]};
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-const manifest = JSON.parse(read('shared/release.json'));
-const config = JSON.parse(read('release.config.json'));
-
-test('binary application inputs retain exact bytes while version-only mirrors remain normalized', t => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'calibrate-inputs-'));
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-  const git = args => execFileSync('git', args, { cwd: directory, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-  fs.mkdirSync(path.join(directory, 'mobile/assets'), { recursive: true });
-  fs.writeFileSync(path.join(directory, 'mobile/assets/image.bin'), Buffer.from([0x80]));
-  fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"fixture","version":"1.0.0"}');
-  git(['init', '--quiet']);
-  const commit = () => { git(['add', '.']); git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture']); return git(['rev-parse', 'HEAD']); };
-  const before = commit();
-  fs.writeFileSync(path.join(directory, 'mobile/assets/image.bin'), Buffer.from([0x81]));
-  const changed = commit();
-  for (const component of ['server', 'ota']) assert.notEqual(applicationIdentity(directory, before, component), applicationIdentity(directory, changed, component));
-  fs.writeFileSync(path.join(directory, 'package.json'), '{"name":"fixture","version":"1.0.1"}');
-  const versionOnly = commit();
-  for (const component of ['server', 'ota']) assert.equal(applicationIdentity(directory, changed, component), applicationIdentity(directory, versionOnly, component));
+test('version stamping changes only declared application metadata', t => {
+  const copy=fs.mkdtempSync(path.join(os.tmpdir(),'release-metadata-'));
+  t.after(()=>fs.rmSync(copy,{recursive:true,force:true}));
+  for(const file of config.metadataFiles){const destination=path.join(copy,file);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.copyFileSync(path.join(root,file),destination);}
+  stamp(copy,allocation);
+  const app=JSON.parse(fs.readFileSync(path.join(copy,'mobile/app.json')));
+  assert.equal(app.expo.version,'1.0.0');
+  const release=JSON.parse(fs.readFileSync(path.join(copy,'shared/release.json')));
+  assert.equal(release.server.version,'0.99.0');assert.equal(release.android.mobile.version_code,101);assert.equal(release.android.wear.version_code,102);
+  const diagnostics=JSON.parse(fs.readFileSync(path.join(copy,'shared/client-diagnostic-versions.json')));
+  assert.ok(diagnostics.supported_versions.android_phone.includes('1.0.0'));
 });
 
-test('current application manifests and diagnostic/API mirrors remain consistent', async () => {
-  assert.deepEqual((await checkRepository(root)).errors, []);
-  assert.deepEqual(validateManifest(manifest), []);
-  assert.equal(validateConfig(config), config);
+test('OTA patch stamps the bundle version without manufacturing a new binary build number', t => {
+  const copy=fs.mkdtempSync(path.join(os.tmpdir(),'release-ota-metadata-'));
+  t.after(()=>fs.rmSync(copy,{recursive:true,force:true}));
+  for(const file of config.metadataFiles){const destination=path.join(copy,file);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.copyFileSync(path.join(root,file),destination);}
+  stamp(copy,{...allocation,server:false,native:false,bump:'patch',versions:{mobile:'1.1.2'}});
+  assert.equal(JSON.parse(fs.readFileSync(path.join(copy,'mobile/release-version.json'))).version,'1.1.2');
+  assert.deepEqual(fs.readFileSync(path.join(copy,'shared/release.json')),fs.readFileSync(path.join(root,'shared/release.json')));
 });
 
-test('server metadata transformation preserves independently versioned phone and Wear fields', () => {
-  const files = { manifest: 'shared/release.json', diagnostics: 'shared/client-diagnostic-versions.json', rootPackage: 'package.json',
-    rootLock: 'package-lock.json', backendPackage: 'backend/package.json', backendLock: 'backend/package-lock.json',
-    openApi: 'docs/openapi/v1.yaml', generatedApi: 'packages/api-client/src/generated/v1.ts' };
-  const original = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
-  const next = createServerReleaseReplacements(original, '0.41.0');
-  assert.deepEqual(JSON.parse(next.manifest).android, manifest.android);
-  for (const key of ['rootPackage', 'backendPackage', 'rootLock', 'backendLock']) assert.equal(JSON.parse(next[key]).version, '0.41.0');
-  assert.equal(JSON.parse(next.rootLock).packages[''].version, '0.41.0');
-  assert.match(next.openApi, /0\.41\.0/); assert.match(next.generatedApi, /0\.41\.0/);
+test('the real Expo SDK ignores stamped versions but retains native compatibility', {timeout:180000}, () => {
+  const app=path.join(root,'mobile'),require=createRequire(path.join(app,'package.json'));
+  const sdk=require.resolve('@expo/fingerprint');
+  const platforms=['android'];
+  const env=sourceEnvironment(config.profiles.production.publicEnvironment);
+  const fingerprint=platform=>JSON.parse(execFileSync(process.execPath,['-e',
+    'require(process.argv[1]).createFingerprintAsync(process.cwd(),{platforms:[process.argv[2]],silent:true}).then(x=>console.log(JSON.stringify(x)))',sdk,platform],
+    {cwd:app,env:{...env,EAS_BUILD_PLATFORM:platform},encoding:'utf8',windowsHide:true,maxBuffer:32*1024*1024}));
+  const before=Object.fromEntries(platforms.map(p=>[p,fingerprint(p)]));
+  const originals=new Map(config.metadataFiles.map(file=>[file,fs.readFileSync(path.join(root,file))]));
+  try {
+    stamp(root,allocation);
+    for(const platform of platforms){const after=fingerprint(platform);assert.equal(after.hash,before[platform].hash);
+      assert.ok(after.sources.some(source=>source.id=== 'expoAutolinkingConfig:'+platform || source.reasons.some(reason=>reason.includes('Autolinking'))));}
+  } finally {for(const [file,bytes] of originals)fs.writeFileSync(path.join(root,file),bytes);}
 });
 
-test('native metadata maps the shared reservation into existing phone/Wear files without changing server version', () => {
-  const original = Object.fromEntries(Object.entries(NATIVE_RELEASE_FILE_PATHS).map(([key, file]) => [key, read(file)]));
-  const next = createNativeReleaseReplacements(original, '0.2.10', { mobileVersionCode: 19, wearVersionCode: 20 });
-  const changed = JSON.parse(next.manifest);
-  assert.deepEqual(changed.server, manifest.server);
-  assert.equal(changed.android.mobile.version_code, 19); assert.equal(changed.android.wear.version_code, 20);
-  assert.equal(changed.android.mobile.native_release_tag, 'native-v0.2.10');
-  assert.deepEqual(validateManifest(changed), []);
-});
-
-test('Calibrate configuration keeps paired reservations, metadata server dependency, and explicit internal source-runtime policy', () => {
-  const observations = config.components.map(({ id, kind }) => ({ id, identity: id, runtime: 'a'.repeat(40), fingerprint: 'a'.repeat(40),
-    version: kind === 'server' ? manifest.server.version : manifest.android.mobile.version_name,
-    ...(kind === 'native' ? { versionCode: id === 'wear' ? 18 : 17 } : {}) }));
-  const plan = planRelease({ config, source: { repository: config.repository, commit: 'b'.repeat(40), toolkitCommit: 'c'.repeat(40), origin: 'local' },
-    origin: { kind: 'local' }, observations, targets: ['phone'] });
-  assert(plan.selection.selected.includes('wear')); assert(plan.selection.selected.includes('server'));
-  assert.equal(plan.components.find(value => value.id === 'phone').next.versionCode % 2, 1);
-  assert.equal(plan.components.find(value => value.id === 'wear').next.versionCode % 2, 0);
-  assert.equal(config.components.find(value => value.id === 'ota-internal').runtimeBinding, 'source');
-  assert.notEqual(config.components.find(value => value.id === 'ota-production').runtimeBinding, 'source');
-  assert(plan.graph.stages.find(value => value.id === 'wear:handoff').needs.includes('phone:submit'));
-});
-
-test('compiled phone manifest must preserve exact project, channel and runtime without permitting debug/cleartext', () => {
-  const expected = { role: 'phone', projectId: config.expo.projectId, channel: 'internal', runtime: 'a'.repeat(40) };
-  const xml = `<application android:usesCleartextTraffic="false"><meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL" android:value="https://u.expo.dev/${expected.projectId}"/>
-    <meta-data android:name="expo.modules.updates.EXPO_RUNTIME_VERSION" android:value="@runtime"/>
-    <meta-data android:name="expo.modules.updates.UPDATES_CONFIGURATION_REQUEST_HEADERS_KEY" android:value="{&quot;expo-channel-name&quot;:&quot;internal&quot;}"/></application>`;
-  validateBundleRuntime(xml, expected, () => expected.runtime);
-  validateBundleRuntime(xml, expected, () => 'file:fingerprint', () => expected.runtime);
-  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:fingerprint'), /RUNTIME_VERSION/);
-  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:fingerprint', () => 'b'.repeat(40)), /RUNTIME_VERSION/);
-  assert.throws(() => validateBundleRuntime(xml, expected, () => 'file:other', () => expected.runtime), /RUNTIME_VERSION/);
-  assert.throws(() => validateBundleRuntime(xml, { ...expected, channel: 'production' }, () => expected.runtime), /channel differs/);
-  assert.throws(() => validateBundleRuntime(xml, expected, () => 'other'), /RUNTIME_VERSION/);
-  assert.throws(() => validateBundleRuntime(xml.replace('"false"', '"true"'), expected), /HTTPS-only/);
-  assert.equal(parseBundleResourceValue(' - [STR] "runtime"\n - [STR] "runtime"'), 'runtime');
-  assert.throws(() => parseBundleResourceValue(' - [STR] "one"\n - [STR] "two"'), /consistent/);
+test('configured identity, approval environments and destinations remain explicit', () => {
+  assert.equal(config.schemaVersion,3);assert.equal(config.server.deployment.service,'calibratehealth');
+  assert.ok(config.profiles.production.approvalEnvironment);assert.equal(config.profiles.production.deployEnvironment,'self-hosted-testing');
+  const eas=JSON.parse(fs.readFileSync(path.join(root,'mobile/eas.json')));
+  assert.equal(eas.cli.version,'25.3.0');
+  assert.deepEqual(config.mobile.targets.map(t=>t.id),['phone','wear']);
+  assert.equal(eas.submit.phone.android.track,'internal');assert.equal(eas.submit.wear.android.track,'wear:internal');
+  assert.equal(config.server.metadataOnNative,true);
 });

@@ -261,15 +261,12 @@ UI code style:
 
 ## Release Versioning
 
-- Ordinary feature/fix PRs must not change server or native versions and their diagnostic/API/package mirrors.
-- `release.config.json` maps the existing manifests and declares Calibrate's paired Android targets, odd/even reservations, real native-metadata server dependency, OTA destinations and environments. The pinned `@mchartier/expo-release` package owns orchestration and provider behavior. Do not copy its engine or add consumer retry/persistence/publication hooks.
-- Use `npm run release -- validate|plan|run|status|recover`. Plan from a clean committed source. Protected operations dispatch read-only requests to default-branch handlers; approval environments remain in shared workers. Device installation and machine setup use `native:install`, `native:configure`, and `native:setup`.
-- Keep package, lockfile and reusable-worker pins at the same reviewed full SHA. Privileged workers obtain trusted tooling independently. Source inspection/install/export has no publication credentials; preserve build/signing/publication separation.
-- GitHub Releases are the durable ledger. Keep original producing runs, provider IDs, reservations, destinations, artifact hashes and current signer revocations. Unknown remote outcomes block retries until explicit reconciliation. Local receipts remain local evidence and cannot establish protected provenance.
-- Keep phone completion before Wear submission and verified phone handoff before dependent OTA. Internal OTA deliberately preserves source-validated runtime behavior; production requires exact retained native compatibility. Independent successful stages survive failure elsewhere.
-- Legacy releases are intentionally unsupported. Test new-format recovery with synthetic receipts; never dispatch live releases during validation.
-- Keep existing deployment infrastructure and runtime guards. A healthy webhook response is health evidence, not proof of an exact deployed digest. Client/server major versions must match; the server minor must be at least the client's, while patch drift remains compatible. Compatibility fetches use `cache: 'no-store'`; Expo owns automatic update checks/downloads.
-- Follow `docs/native-store-release.md` for hosted operations and recovery, `docs/mobile-release.md` for local builds, and `docs/android-internal-testing.md` for onboarding. Retain application-specific native validation and physical-device acceptance.
+- Ordinary PRs leave release versions unchanged. One protected Release workflow selects server, native and OTA paths and stamps tagged build commits.
+- Use npm run release -- validate or plan --profile production for read-only checks. There are no local release wrappers or recovery CLI.
+- Keep package, lockfile and workflow pins at one reviewed full toolkit SHA. Use the toolkit pin updater; never copy lifecycle code.
+- Preserve Calibrate's paired odd/even codes, application/signing identities, artifact checks, diagnostic server dependency and protected environments.
+- Expo runtime is the shared mobile major. Version metadata must not change native fingerprints; changed native compatibility requires a new major.
+- Preserve reservation tags and current-run evidence. An unknown provider outcome blocks another request; inspect and resolve through provider/GitHub tooling.
 
 ## Git And PR Workflow
 

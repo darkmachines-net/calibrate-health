@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import {
   downloadNativeTool, extractNativeArchive, installNativeArchive, NATIVE_ENVIRONMENT_KEYS,
-  nativeSetupEnvironment, parseNativeSetupArguments, setupNative, ensureNativeEasDependency, inspectNativeEasDependency
+  nativeSetupEnvironment, parseNativeSetupArguments, setupNative
 } from './native-setup.mjs';
 import {
   assertNativeNodeVersion, inspectNativeToolchain, NATIVE_SDK_PACKAGES, NATIVE_TOOLCHAIN, NATIVE_TOOL_DOWNLOADS
@@ -196,22 +196,7 @@ test('full setup delegates host installation to existing repo scripts before sav
   const commands = events.filter(([kind]) => kind === 'run').map(([, , args]) => args);
   assert.deepEqual(commands[1], [path.join(root, 'scripts/dev-env.mjs'), 'setup:host']);
   assert.deepEqual(commands[2], [npmCli, '--prefix', path.join(root, 'shared'), 'run', 'build']);
-  assert.equal(events.at(-2)[0], 'eas');
   assert.equal(events.at(-1)[0], 'save');
-});
-
-test('EAS setup delegates provider installation to the shared toolkit without a consumer-owned tree', (t) => {
-  const root = temporaryDirectory(t);
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  assert.throws(() => ensureNativeEasDependency(root), /pinned shared release package/);
-  const shared = path.join(root, 'node_modules/@mchartier/expo-release');
-  fs.mkdirSync(shared, { recursive: true });
-  fs.writeFileSync(path.join(shared, 'package.json'), JSON.stringify({ name: '@mchartier/expo-release', main: 'index.cjs' }));
-  fs.writeFileSync(path.join(shared, 'index.cjs'), `/** Inert provider-cache delegation fixture. */
-    exports.setupToolchain = () => require('node:fs').writeFileSync(${JSON.stringify(path.join(root, 'setup-called'))}, 'called');`);
-  ensureNativeEasDependency(root);
-  assert.equal(fs.readFileSync(path.join(root, 'setup-called'), 'utf8'), 'called');
-  assert.equal(fs.existsSync(path.join(root, 'tools/eas-cli')), false);
 });
 
 test('all missing toolchain components are reported together and tool stderr cannot leak secrets', (t) => {

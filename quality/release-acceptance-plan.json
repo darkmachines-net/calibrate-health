@@ -17,9 +17,15 @@
     {
       "id": "affected-builds",
       "title": "Compile and bundle only affected application surfaces",
-      "releaseScopes": ["server-web", "ota", "native"],
+      "releaseScopes": [
+        "server-web",
+        "ota",
+        "native"
+      ],
       "trigger": "affected-pull-request",
-      "workflowPaths": [".github/workflows/builds.yml"],
+      "workflowPaths": [
+        ".github/workflows/builds.yml"
+      ],
       "jobIds": [
         "release-config",
         "backend-build",
@@ -34,69 +40,107 @@
     {
       "id": "affected-tests-and-typecheck",
       "title": "Run unit tests and type checks for affected code",
-      "releaseScopes": ["server-web", "ota", "native"],
+      "releaseScopes": [
+        "server-web",
+        "ota",
+        "native"
+      ],
       "trigger": "affected-pull-request",
       "workflowPaths": [
         ".github/workflows/tests.yml",
         ".github/workflows/lint.yml"
       ],
-      "jobIds": ["backend-tests", "mobile-tests", "typecheck"]
+      "jobIds": [
+        "backend-tests",
+        "mobile-tests",
+        "typecheck"
+      ]
     },
     {
       "id": "migration-safety",
       "title": "Exercise populated upgrades and rollback only when database migrations change",
-      "releaseScopes": ["server-web"],
+      "releaseScopes": [
+        "server-web"
+      ],
       "trigger": "migration-change",
-      "workflowPaths": [".github/workflows/database-upgrade.yml"],
-      "jobIds": ["populated-upgrade", "release-upgrade-rollback"]
+      "workflowPaths": [
+        ".github/workflows/database-upgrade.yml"
+      ],
+      "jobIds": [
+        "populated-upgrade",
+        "release-upgrade-rollback"
+      ]
     },
     {
       "id": "dependency-audit",
       "title": "Review dependency findings during scheduled or manual maintenance",
-      "releaseScopes": ["server-web", "ota", "native"],
+      "releaseScopes": [
+        "server-web",
+        "ota",
+        "native"
+      ],
       "trigger": "schedule-and-manual",
-      "workflowPaths": [".github/workflows/dependency-audit.yml"],
-      "jobIds": ["production-audit"]
+      "workflowPaths": [
+        ".github/workflows/dependency-audit.yml"
+      ],
+      "jobIds": [
+        "production-audit"
+      ]
     },
     {
       "id": "production-container",
       "title": "Validate production containers for affected pull requests and releases",
-      "releaseScopes": ["server-web"],
+      "releaseScopes": [
+        "server-web"
+      ],
       "trigger": "affected-pull-request-and-release",
       "workflowPaths": [
         ".github/workflows/container-scan.yml",
-        ".github/workflows/release-handler.yml"
+        ".github/workflows/release.yml"
       ],
-      "jobIds": ["scan", "release"]
+      "jobIds": [
+        "scan",
+        "release"
+      ]
     },
     {
       "id": "prepared-release-integrity",
-      "title": "Delegate exact-source publication and recovery to the pinned shared worker",
-      "releaseScopes": ["server-web", "ota", "native"],
+      "title": "Validate source and publish current-run artifacts through the pinned fixed workflow",
+      "releaseScopes": [
+        "server-web",
+        "ota",
+        "native"
+      ],
       "trigger": "release",
-      "workflowPaths": [".github/workflows/release-handler.yml"],
-      "jobIds": ["release"]
+      "workflowPaths": [
+        ".github/workflows/release.yml"
+      ],
+      "jobIds": [
+        "release"
+      ]
     }
   ],
   "manualCapabilities": [
     {
-      "id": "owner-release-confidence",
-      "title": "Optional owner-discretion release confidence check",
-      "releaseScopes": ["server-web", "ota", "native"],
-      "workflowPath": ".github/workflows/release-acceptance.yml",
-      "jobIds": ["contract"]
-    },
-    {
       "id": "exhaustive-web-regression",
       "title": "Optional full browser, data-state, accessibility, and visual suites",
-      "releaseScopes": ["server-web", "ota"],
+      "releaseScopes": [
+        "server-web",
+        "ota"
+      ],
       "workflowPath": ".github/workflows/builds.yml",
-      "jobIds": ["exported-web-e2e", "data-state-acceptance", "ux-regression"]
+      "jobIds": [
+        "exported-web-e2e",
+        "data-state-acceptance",
+        "ux-regression"
+      ]
     },
     {
       "id": "native-emulator-and-upgrade",
       "title": "Optional Android, Wear, and same-signer upgrade validation",
-      "releaseScopes": ["native"],
+      "releaseScopes": [
+        "native"
+      ],
       "workflowPath": ".github/workflows/builds.yml",
       "jobIds": [
         "android-emulator-e2e",

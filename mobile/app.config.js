@@ -2,6 +2,7 @@
 
 /** Resolve the native Expo project, update channel, and automatic runtime compatibility. */
 const { runtimeVersion } = require('@mchartier/expo-release/expo');
+const release = require('./release-version.json');
 const PROJECT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHANNEL_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
@@ -23,7 +24,8 @@ function createExpoConfig({ config }) {
 
   return {
     ...config,
-    runtimeVersion: runtimeVersion('fingerprint'),
+    version: release.version,
+    runtimeVersion: runtimeVersion(release.version),
     updates: {
       ...config.updates,
       url: `https://u.expo.dev/${projectId}`,
@@ -34,6 +36,7 @@ function createExpoConfig({ config }) {
     },
     extra: {
       ...config.extra,
+      releaseVersion: release.version,
       eas: {
         ...config.extra?.eas,
         projectId
