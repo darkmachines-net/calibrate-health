@@ -5,8 +5,8 @@ import { pathToFileURL } from 'node:url';
 // Only canonical version-mirror candidates reach this gate. Builds intentionally
 // suppresses platform fan-out; database rollback requires an actual migration.
 export const REQUIRED_CI = {
-  'lint.yml': ['Backend, Shared, API Client, and Mobile Typecheck'],
-  'tests.yml': ['Classify Test Inputs', 'Backend Tests', 'Mobile Tests'],
+  'lint.yml': ['Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)'],
+  'tests.yml': ['Classify Test Inputs', 'Backend Tests', 'Mobile Tests', 'Required Tests'],
   'builds.yml': ['Classify Build Inputs', 'Release Configuration'],
   'container-scan.yml': ['Classify Production Image Inputs', 'High and Critical Vulnerabilities'],
   'database-upgrade.yml': ['Classify Database Inputs', 'Populated Postgres Upgrade'],
@@ -96,6 +96,45 @@ export async function inspectTrustedCi(api, identity) {
   assertTrustedRun(await api(runPath), identity);
   assertIdentity({ pull: await api(`${root}/pulls/${identity.number}`), master: await api(`${root}/git/ref/heads/master`) }, identity);
   return result;
+}
+
+// Bot-created release PRs do not trigger pull_request workflows. Publish only
+// results already verified against this protected run and exact candidate.
+export async function publishRequiredChecks(api, createCheck, identity) {
+  if (!identity.runId || !identity.runAttempt) throw new Error('Required checks need a trusted release run.');
+  await inspectTrustedCi(api, identity);
+  for (const name of [...REQUIRED_CI['lint.yml'], 'Required Tests']) {
+    await createCheck(identity.repository, {
+      name,
+      head_sha: identity.head,
+      status: 'completed',
+      conclusion: 'success',
+      external_id: `${identity.runId}:${identity.runAttempt}:${identity.head}`,
+      details_url: `https://github.com/${identity.repository}/actions/runs/${identity.runId}/attempts/${identity.runAttempt}`,
+      output: {
+        title: 'Exact release candidate validation passed',
+        summary: `Verified ${name} for candidate ${identity.head} against protected source ${identity.base} in release run ${identity.runId}, attempt ${identity.runAttempt}.`,
+      },
+    });
+  }
+}
+
+export function githubCheckWriter({ token, apiUrl = 'https://api.github.com', fetchImpl = fetch }) {
+  return async (repository, check) => {
+    const response = await fetchImpl(`${apiUrl}/repos/${repository}/check-runs`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+      body: JSON.stringify(check),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`Required check publication failed (${response.status}); no merge permitted.`);
+    const result = await response.json();
+    if (result.name !== check.name || result.head_sha !== check.head_sha || result.status !== 'completed' ||
+        result.conclusion !== 'success' || result.app?.slug !== 'github-actions') {
+      throw new Error('Published check identity differs from the verified release candidate.');
+    }
+  };
 }
 
 export function assertIdentity({ pull, master }, identity) {
@@ -246,13 +285,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         runId !== process.env.GITHUB_RUN_ID || runAttempt !== process.env.GITHUB_RUN_ATTEMPT || process.env.WORKFLOW_SHA !== base)) {
       throw new Error('Missing exact current release run/attempt/workflow identity.');
     }
-    await waitForCi(githubApi({ token, apiUrl: process.env.GITHUB_API_URL }), { repository, base, head, branch, number, runId, runAttempt }, {
+    const api = githubApi({ token, apiUrl: process.env.GITHUB_API_URL });
+    const identity = { repository, base, head, branch, number, runId, runAttempt };
+    await waitForCi(api, identity, {
       timeoutMs: process.argv.includes('--once') ? 0 : 40 * 60_000,
       report: message => {
         console.log(message);
         if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${message}\n\n`);
       },
     });
+    if (process.argv.includes('--publish-required-checks')) {
+      await publishRequiredChecks(api, githubCheckWriter({ token, apiUrl: process.env.GITHUB_API_URL }), identity);
+    }
   } catch (error) {
     console.error(error.message);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Release CI blocked: ${error.message}\n`);

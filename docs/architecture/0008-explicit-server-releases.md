@@ -20,18 +20,19 @@ match the highest stable tag, prepares all server/web mirrors on `release/vMAJOR
 commit. Validation covers candidate identity, synchronized release configuration, the exact generated mirror set, and
 a production-image startup and served-Web smoke. Affected pull-request and scheduled workflows own the broader unit,
 integration, API/deploy, production-image, and database checks; package audits run separately as scheduled/manual
-maintenance. Before merging, the release finalizer also waits for the five existing PR workflows on the exact
-candidate: Lint, Tests, Builds, Production Container Scan and Database Upgrade. Generated-mirror build fan-out and
+maintenance. Before merging, the release finalizer verifies the five reusable CI workflows on the exact
+candidate in the protected release run: Lint, Tests, Builds, Production Container Scan and Database Upgrade. Generated-mirror build fan-out and
 migration-only rollback skips remain intentional; required classifier/configuration/test/scan/upgrade jobs must pass.
 
 The candidate is merged through an action-created version-only PR only when `master` still points to the source commit
-selected at dispatch and the complete current CI inventory succeeds. A bounded 40-minute wait reports missing or
-approval-pending checks; failed, cancelled, stale, missing and zero-job results never authorize merge. The finalizer
-binds successful runs to the single intended PR and tested base/head; missing or ambiguous run associations fail closed.
-It rechecks CI and then rereads PR/master refs immediately before the SHA-locked PR merge API, and verifies merged
-ancestry/tree afterward. Repository
-required-status-check rules are still recommended as a separate administrator-controlled boundary: client polling
-and the merge API do not form an atomic CI-and-base transaction. Publishing tags the validated candidate
+selected at dispatch and the complete current CI inventory succeeds. Failed, cancelled, stale, missing and zero-job
+results never authorize merge. The finalizer binds successful jobs to the protected run, workflow revision and exact
+candidate, then publishes the required lint, typecheck and test checks on that candidate with links to the evidence.
+Only finalization receives Checks write permission; validation jobs remain read-only. This lets token-created release
+PRs satisfy the same repository merge rules even though they do not trigger PR workflows. It rechecks CI and
+PR/master refs immediately before the SHA-locked PR merge API, and verifies merged ancestry/tree afterward.
+The required-status-check rules provide a separate administrator-controlled boundary; client polling and the merge
+API do not form an atomic CI-and-base transaction. Publishing tags the validated candidate
 commit after proving it is an ancestor of `master`, then calls the reusable GHCR workflow directly. A separate
 manual/reusable publisher accepts the exact release commit and branch for post-merge recovery. Cut release now selects paired Android builds and each OTA channel in the same orchestration. Native fingerprint
 or Wear-input changes select native builds; exact AABs are submitted through EAS, phone first and Wear after phone

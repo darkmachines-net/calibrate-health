@@ -182,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             return true;
         } catch (error) {
-            if (!isCurrent()) throw new Error('Authentication scope changed during refresh.');
+            if (!isCurrent()) throw new Error('Authentication scope changed during refresh.', { cause: error });
             if (error instanceof ApiError && error.status === 401) return false;
             if (isRetryableMutationError(error)) {
                 localOnlyRef.current = true;
@@ -352,7 +352,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             isMounted = false;
         };
-    }, [clearSession, getDevTestUserAuthPayload, handleClientUpgradeRequired, persistAuthPayload]);
+    }, [clearSession, getDevTestUserAuthPayload, handleClientUpgradeRequired, persistAuthPayload, queryClient]);
 
     const recheckClientCompatibility = useCallback(async (): Promise<boolean> => {
         try {

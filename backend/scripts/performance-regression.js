@@ -11,7 +11,8 @@ const WARMUP_SAMPLES = 3;
 const MEASURED_SAMPLES = 9;
 const REQUIRED_BENCHMARKS = ['diagnostics_snapshot_serialization', 'weight_trend_recompute'];
 const ALLOWED_OWNER_ROLES = new Set(['release_engineer', 'service_operator', 'backend_maintainer', 'client_maintainer']);
-let benchmarkSink;
+// Retain benchmark results so the measured work cannot be optimized away.
+const benchmarkSink = { value: undefined };
 
 function buildWeightFixture() {
   const firstDay = Date.parse('2026-01-01T00:00:00.000Z');
@@ -46,7 +47,7 @@ function buildDiagnosticsFixture() {
 
 function runBatch(action, iterations) {
   const started = process.hrtime.bigint();
-  for (let iteration = 0; iteration < iterations; iteration += 1) benchmarkSink = action();
+  for (let iteration = 0; iteration < iterations; iteration += 1) benchmarkSink.value = action();
   return Number(process.hrtime.bigint() - started);
 }
 

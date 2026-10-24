@@ -517,7 +517,7 @@ export async function synchronizeHealthConnect(
         const storedToken = await storage.getItem(
             tokenKey(options.serverUrl, options.userId, descriptor.activityType)
         );
-        let token = parseTokenReceipt(storedToken, options.timeZone);
+        const token = parseTokenReceipt(storedToken, options.timeZone);
         if (storedToken && !token) {
             await storage.removeItem(tokenKey(options.serverUrl, options.userId, descriptor.activityType));
             await storage.removeItem(pendingKey(options.serverUrl, options.userId, descriptor.activityType));
@@ -578,7 +578,6 @@ export async function synchronizeHealthConnect(
             }
         } catch (error) {
             if (!isTokenMismatch(error)) throw error;
-            token = null;
             await storage.removeItem(tokenKey(options.serverUrl, options.userId, descriptor.activityType));
             await storage.removeItem(pendingKey(options.serverUrl, options.userId, descriptor.activityType));
             await resetRecordType({

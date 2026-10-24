@@ -58,6 +58,7 @@ export default function FoodLogContent({ embedded = false }: { embedded?: boolea
     const { enqueue } = outbox;
     const queryClient = useQueryClient();
     const dateNavigation = useSharedLogDateNavigation();
+    const { setDate } = dateNavigation;
     const { request: addFoodRequest, consumeRequest: consumeAddFoodRequest } = useAddFoodRequest();
     const selectedDate = dateNavigation.selectedDate;
     const [addFoodMeal, setAddFoodMeal] = useState<MealPeriod | null | undefined>(undefined);
@@ -128,13 +129,13 @@ export default function FoodLogContent({ embedded = false }: { embedded?: boolea
         if (embedded || !addFoodRequest || getActiveTabRoute(pathname) !== 'food-log') return;
         const requestDate = addFoodRequest.date ?? selectedDate;
         if (requestDate !== selectedDate) {
-            dateNavigation.setDate(requestDate);
+            setDate(requestDate);
             return;
         }
         if (!canEditFood) return;
         setAddFoodMeal(addFoodRequest.meal ?? null);
         consumeAddFoodRequest(addFoodRequest.id);
-    }, [embedded, addFoodRequest, canEditFood, consumeAddFoodRequest, dateNavigation.setDate, pathname, selectedDate]);
+    }, [embedded, addFoodRequest, canEditFood, consumeAddFoodRequest, setDate, pathname, selectedDate]);
 
     async function invalidateLogQueries(additionalDates: string[] = []) {
         const dates = Array.from(new Set([selectedDate, ...additionalDates]));

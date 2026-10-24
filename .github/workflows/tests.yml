@@ -58,12 +58,14 @@ jobs:
           filters: |
             backend:
               - '.github/workflows/tests.yml'
+              - 'scripts/ci-test-gate*'
               - 'backend/**'
               - 'docs/openapi/v1.yaml'
               - 'docs/weight-trend-v2-tuning-report.json'
               - 'shared/**'
             mobile:
               - '.github/workflows/tests.yml'
+              - 'scripts/ci-test-gate*'
               - 'backend/package.json'
               - 'backend/package-lock.json'
               - 'docs/openapi/v1.yaml'
@@ -171,3 +173,34 @@ jobs:
 
       - name: Run mobile tests
         run: npm --prefix mobile test
+
+  required-tests:
+    name: Required Tests${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    needs: [changes, backend-tests, mobile-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify explicit release candidate
+        if: inputs.release_sha != ''
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: node scripts/release-ci-gate.mjs --verify-inputs
+
+      - name: Verify test gate behavior
+        run: node --test scripts/ci-test-gate.test.mjs
+
+      - name: Require successful selected tests
+        env:
+          TEST_JOB_RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/ci-test-gate.mjs

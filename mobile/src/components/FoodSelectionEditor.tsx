@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { FoodLogCreatePayload } from '@calibrate/api-client';
@@ -52,11 +52,15 @@ export const FoodSelectionEditor: React.FC<FoodSelectionEditorProps> = ({
     const styles = useMemo(() => createStyles(theme), [theme]);
     const [draft, setDraft] = useState(() => createFoodSelectionDraft(selection));
     const [isMeasureSelectorOpen, setIsMeasureSelectorOpen] = useState(false);
+    const selectionKeyRef = useRef(selection.key);
 
     useEffect(() => {
+        // Refreshing the same food must preserve the user's serving edits.
+        if (selectionKeyRef.current === selection.key) return;
+        selectionKeyRef.current = selection.key;
         setDraft(createFoodSelectionDraft(selection));
         setIsMeasureSelectorOpen(false);
-    }, [selection.key]);
+    }, [selection]);
 
     const result = buildFoodSelectionPayload({ selection, draft, date, meal });
     const measureOptions: Array<OverlaySelectOption<string>> = selection.kind === 'provider'

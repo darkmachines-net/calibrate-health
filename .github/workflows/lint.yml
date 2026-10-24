@@ -12,16 +12,7 @@ on:
         required: true
         type: string
   pull_request:
-    paths:
-      - '.github/workflows/lint.yml'
-      - 'backend/**'
-      - 'knip.json'
-      - 'mobile/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'packages/**'
-      - 'scripts/**'
-      - 'shared/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -31,6 +22,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  eslint:
+    name: ESLint (zero warnings)${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify explicit release candidate
+        if: inputs.release_sha != ''
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: node scripts/release-ci-gate.mjs --verify-inputs
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Install workspace deps
+        run: npm ci --no-audit --fund=false
+
+      - name: Verify lint enforcement
+        run: npm run test:lint
+
+      - name: Lint with zero warnings
+        run: npm run lint:eslint
+
   typecheck:
     name: Backend, Shared, API Client, and Mobile Typecheck${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
     runs-on: ubuntu-latest
@@ -67,7 +94,7 @@ jobs:
         run: npm ci --prefix backend --no-audit --fund=false
 
       - name: Type-check all TypeScript surfaces
-        run: npm run lint
+        run: npm run typecheck
 
       - name: Check for dead code
         run: npm run test:dead-code

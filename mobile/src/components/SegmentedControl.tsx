@@ -115,20 +115,20 @@ export function SegmentedControl<T extends string>({
     const stacked = compactMultipleChoices || enlargedLabels;
     const selectedIndex = options.findIndex((option) => option.value === value);
     const tabStopIndex = selectedIndex >= 0 ? selectedIndex : 0;
-    React.useEffect(() => {
-        if (!controlRef) return;
-        controlRef.current = { focus: () => focusOption(tabStopIndex) };
-        return () => { controlRef.current = null; };
-    }, [controlRef, disabled, tabStopIndex]);
-
-    function focusOption(index: number) {
+    const focusOption = React.useCallback((index: number) => {
         if (disabled) return;
         const element = optionRefs.current[index];
         element?.focus?.();
         if (Platform.OS === 'web' || !element) return;
         const handle = findNodeHandle(element as View);
         if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
-    }
+    }, [disabled]);
+
+    React.useEffect(() => {
+        if (!controlRef) return;
+        controlRef.current = { focus: () => focusOption(tabStopIndex) };
+        return () => { controlRef.current = null; };
+    }, [controlRef, focusOption, tabStopIndex]);
 
     function selectAndFocus(index: number) {
         const option = options[index];

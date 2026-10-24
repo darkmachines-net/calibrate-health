@@ -560,7 +560,7 @@ export function assertNativeReleaseGradleDependencyState(build, options = {}) {
     try {
       source = canonicalNativeReleaseGradleStateText(bytes);
     } catch (error) {
-      throw new Error(`${build.label} ${error.message}: ${record.path}.`);
+      throw new Error(`${build.label} ${error.message}: ${record.path}.`, { cause: error });
     }
     const actualSha256 = sha256(Buffer.from(source, 'utf8'));
     if (actualSha256 !== record.sha256) {

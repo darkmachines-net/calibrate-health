@@ -23,8 +23,9 @@ export function OfflineWorkspaceStatus() {
     const scopeRef = useRef({ serverUrl, userId: user?.id });
     scopeRef.current = { serverUrl, userId: user?.id };
     const recoveryRef = useRef<() => void>(() => undefined);
+    const userId = user?.id;
     useEffect(() => {
-        if (!user || !pendingReconnection) {
+        if (userId === undefined || !pendingReconnection) {
             setRetrying(false);
             return;
         }
@@ -39,7 +40,7 @@ export function OfflineWorkspaceStatus() {
             if (timer) clearTimeout(timer);
             try {
                 if (await recheckClientCompatibility()) {
-                    if (scopeRef.current.serverUrl !== serverUrl || scopeRef.current.userId !== user.id) return;
+                    if (scopeRef.current.serverUrl !== serverUrl || scopeRef.current.userId !== userId) return;
                     await reconcile();
                     await queryClient.invalidateQueries();
                 }
@@ -64,7 +65,7 @@ export function OfflineWorkspaceStatus() {
             subscription.remove();
             recoveryRef.current = () => undefined;
         };
-    }, [serverUrl, pendingReconnection, queryClient, recheckClientCompatibility, reconcile, user?.id]);
+    }, [serverUrl, pendingReconnection, queryClient, recheckClientCompatibility, reconcile, userId]);
     const hasFailure = mutations.some(row => row.state === 'failed');
     if (!user || (!pendingReconnection && mutations.length === 0)) return null;
     return <><AppNotice accessibilityLiveRegion="polite" testID="offline-workspace-status">

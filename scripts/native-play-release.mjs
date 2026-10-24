@@ -315,7 +315,7 @@ export function verifyNativePlayArtifacts(options = {}) {
       inspection = artifactInspector(file, contract);
     } catch (error) {
       if (error instanceof Error) throw error;
-      throw new Error(`Unable to inspect ${contract.id} release artifact.`);
+      throw new Error(`Unable to inspect ${contract.id} release artifact.`, { cause: error });
     }
     if (inspection?.applicationId !== NATIVE_PLAY_APPLICATION_ID) {
       throw new Error(`${contract.id} application ID must be ${NATIVE_PLAY_APPLICATION_ID}.`);
@@ -342,7 +342,7 @@ export function verifyNativePlayArtifacts(options = {}) {
     };
   });
 
-  const provenance = readNativeReleaseBuildProvenance(root, {
+  readNativeReleaseBuildProvenance(root, {
     candidateCommit: plan.sourceCommit,
     manifestContent,
     artifacts: inspectedArtifacts

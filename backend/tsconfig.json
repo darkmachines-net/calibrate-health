@@ -1,6 +1,8 @@
 {
     "compilerOptions": {
         "target": "es2020",
+        // Node supports Error.cause independently of the emitted JavaScript target.
+        "lib": ["es2022", "dom"],
         "module": "commonjs",
         "outDir": "./dist",
         "rootDir": "./src",

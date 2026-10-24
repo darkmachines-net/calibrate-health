@@ -1,6 +1,6 @@
 import { useTrackingMetrics } from '../../../src/offline/useTrackingQueries';
 import { GoalPaceSheet } from '../../../src/progress/GoalPaceSheet';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, AccessibilityInfo, StyleSheet, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
@@ -249,7 +249,7 @@ export default function ProgressScreen() {
         saveGoal.mutate();
     }
 
-    function getDefaultStartWeight(): string {
+    const getDefaultStartWeight = useCallback((): string => {
         const latestWeight = latestMetric?.weight;
         if (typeof latestWeight === 'number' && Number.isFinite(latestWeight)) {
             return formatWeightInput(latestWeight);
@@ -265,7 +265,7 @@ export default function ProgressScreen() {
         }
 
         return goalQuery.data ? formatWeightInput(goalQuery.data.start_weight) : '';
-    }
+    }, [goalQuery.data, latestMetric?.weight, latestTrendMetric?.trend_weight, profileQuery.data?.latest_weight_grams, user?.weight_unit]);
 
     function editCurrentGoal() {
         const currentGoal = goalQuery.data;
@@ -276,7 +276,7 @@ export default function ProgressScreen() {
         openGoalEditor();
     }
 
-    function openGoalEditor() {
+    const openGoalEditor = useCallback(() => {
         const currentGoal = goalQuery.data;
         const nextStartWeight = getDefaultStartWeight();
         const nextTargetWeight = currentGoal ? formatWeightInput(currentGoal.target_weight) : '';
@@ -290,9 +290,9 @@ export default function ProgressScreen() {
         setValidationError(null);
         setIsDailyChangeSelectorOpen(false);
         setIsGoalEditorOpen(true);
-    }
+    }, [getDefaultStartWeight, goalQuery.data]);
 
-    function openNextGoalEditor() {
+    const openNextGoalEditor = useCallback(() => {
         const latestWeight = getDefaultStartWeight();
         const nextTargetWeight = getTargetWeightAfterGoalModeChange('maintain', latestWeight, '');
         setStartWeight(latestWeight);
@@ -303,7 +303,7 @@ export default function ProgressScreen() {
         setValidationError(null);
         setIsDailyChangeSelectorOpen(false);
         setIsGoalEditorOpen(true);
-    }
+    }, [getDefaultStartWeight]);
 
     async function requestGoalEditorClose() {
         if (!isGoalDraftDirty || await confirmDiscardChanges()) setIsGoalEditorOpen(false);
@@ -333,13 +333,7 @@ export default function ProgressScreen() {
         if (handledNextGoalRouteRef.current || !getDefaultStartWeight()) return;
         handledNextGoalRouteRef.current = true;
         openNextGoalEditor();
-    }, [
-        goalQuery.data,
-        metricsQuery.data,
-        profileQuery.data,
-        routeParams.openNextGoal,
-        trendSummaryQuery.data
-    ]); // Query data completes the one-shot handoff from a goal-reached receipt.
+    }, [getDefaultStartWeight, openNextGoalEditor, routeParams.openNextGoal]);
 
     useEffect(() => {
         if (routeParams.openPlanReview !== 'true') {
@@ -349,13 +343,7 @@ export default function ProgressScreen() {
         if (handledPlanReviewRouteRef.current || !getDefaultStartWeight()) return;
         handledPlanReviewRouteRef.current = true;
         openGoalEditor();
-    }, [
-        goalQuery.data,
-        metricsQuery.data,
-        profileQuery.data,
-        routeParams.openPlanReview,
-        trendSummaryQuery.data
-    ]);
+    }, [getDefaultStartWeight, openGoalEditor, routeParams.openPlanReview]);
 
     return (
         <>

@@ -411,6 +411,7 @@ function safeRedirectUri(value: string): boolean {
 }
 
 function sanitizeClientName(value: string | undefined): string {
+  // eslint-disable-next-line no-control-regex -- Strip control characters from the displayed client name.
   const normalized = value?.trim().replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 120);
   return normalized || 'Codex';
 }

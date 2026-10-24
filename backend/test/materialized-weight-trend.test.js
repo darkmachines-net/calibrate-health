@@ -605,12 +605,8 @@ test('materializedWeightTrend: failed replacement rolls back and retains the las
           }
         }
       };
-      try {
-        await callback(tx);
-        persistedRows = transactionRows;
-      } catch (error) {
-        throw error;
-      }
+      await callback(tx);
+      persistedRows = transactionRows;
     }
   };
   const service = loadMaterializedWeightTrendService(prismaStub);

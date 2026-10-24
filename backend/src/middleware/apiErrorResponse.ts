@@ -48,6 +48,7 @@ function normalizedMessage(value: unknown, maximumLength = MAX_MESSAGE_LENGTH): 
   if (
     normalized.length === 0 ||
     normalized.length > maximumLength ||
+    // eslint-disable-next-line no-control-regex -- Reject control characters in public error text.
     /[\r\n\u0000-\u001f\u007f]/.test(normalized) ||
     UNSAFE_MESSAGE_PATTERN.test(normalized)
   ) {

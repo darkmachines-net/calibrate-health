@@ -97,12 +97,13 @@ export function useModalFocusManagement({
 
     useEffect(() => {
         if (!visible) return;
+        const returnTarget = returnFocusRef?.current ?? automaticReturnTargetRef.current;
 
         if (Platform.OS !== 'web' || typeof document === 'undefined') {
             const frame = requestAnimationFrame(focusInitial);
             return () => {
                 cancelAnimationFrame(frame);
-                returnFocusRef?.current?.focus?.();
+                returnTarget?.focus?.();
             };
         }
 
@@ -161,7 +162,6 @@ export function useModalFocusManagement({
             ownerDocument.removeEventListener('keydown', containKeyboardFocus);
             ownerDocument.removeEventListener('focusin', containProgrammaticFocus);
             if (!wasTopmost) return;
-            const returnTarget = returnFocusRef?.current ?? automaticReturnTargetRef.current;
             if (returnTarget instanceof HTMLElement && !returnTarget.isConnected) return;
             returnTarget?.focus?.();
         };

@@ -55,7 +55,7 @@ function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
-    throw new Error(`Unable to read performance budget JSON ${filePath}: ${error instanceof Error ? error.message : error}`);
+    throw new Error(`Unable to read performance budget JSON ${filePath}: ${error instanceof Error ? error.message : error}`, { cause: error });
   }
 }
 

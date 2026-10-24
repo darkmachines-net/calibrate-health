@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (active) setIsLoading(false);
         });
         return () => { active = false; };
-    }, [acceptUser, api, clearSession, serverUrl]);
+    }, [acceptUser, api, clearSession, queryClient, serverUrl]);
 
     const probeCurrentServer = useCallback(async (): Promise<ServerConnectionResult> => {
         const currentRequest = requestId.current + 1;

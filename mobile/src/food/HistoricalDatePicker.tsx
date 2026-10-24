@@ -130,6 +130,7 @@ export const HistoricalDatePicker: React.FC<HistoricalDatePickerProps> = ({
     const [keyExpanded, setKeyExpanded] = useState(false);
     const [colorGuideExpanded, setColorGuideExpanded] = useState(false);
     const pauseQuery = useFoodTrackingPause(visible);
+    const { refetch: refetchPause } = pauseQuery;
     const pausePlan = getActivePausePlan(pauseQuery.data?.pause, maxDate);
     const lastBrowseMonth = getPauseBrowseMonth(maxDate, pausePlan);
 
@@ -147,8 +148,8 @@ export const HistoricalDatePicker: React.FC<HistoricalDatePickerProps> = ({
 
     const displayMonth = visibleMonth > lastBrowseMonth ? lastBrowseMonth : visibleMonth;
     useEffect(() => {
-        if (visible) void pauseQuery.refetch();
-    }, [visible, displayMonth, pauseQuery.refetch]);
+        if (visible) void refetchPause();
+    }, [visible, displayMonth, refetchPause]);
     const monthRange = getCalendarMonthRange(displayMonth, minDate, maxDate);
     const hasHistory = monthRange.startDate <= monthRange.endDate;
     const rangeQuery = useQuery({

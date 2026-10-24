@@ -78,16 +78,16 @@ test('local reusable workflow callers cover every called job token permission', 
     const workflow = readWorkflow(file);
     const defaults = workflowPermissions(workflow, 0);
     const jobs = workflow.slice(workflow.indexOf('\njobs:\n'));
-    for (const [, jobName] of jobs.matchAll(/^  ([a-z0-9_-]+):$/gm)) {
+    for (const [, jobName] of jobs.matchAll(/^ {2}([a-z0-9_-]+):$/gm)) {
       const caller = workflowJobBlock(workflow, jobName);
-      const reference = caller.match(/^    uses: \.\/\.github\/workflows\/([^\s]+)$/m);
+      const reference = caller.match(/^ {4}uses: \.\/\.github\/workflows\/([^\s]+)$/m);
       if (!reference) continue;
       const allowed = workflowPermissions(caller, 4) ?? defaults;
       assert.ok(allowed, `${file}/${jobName} must declare its token permissions`);
       const callee = readWorkflow(reference[1]);
       const calleeDefaults = workflowPermissions(callee, 0);
       const nestedJobs = callee.slice(callee.indexOf('\njobs:\n'));
-      for (const [, nestedJobName] of nestedJobs.matchAll(/^  ([a-z0-9_-]+):$/gm)) {
+      for (const [, nestedJobName] of nestedJobs.matchAll(/^ {2}([a-z0-9_-]+):$/gm)) {
         const requested = workflowPermissions(workflowJobBlock(callee, nestedJobName), 4)
           ?? calleeDefaults;
         assert.ok(requested, `${reference[1]}/${nestedJobName} must declare its token permissions`);
@@ -276,7 +276,7 @@ test('credentialed release workflows pin external actions and the EAS CLI immuta
   assert.doesNotMatch(cutRelease, /uses: \.\/\.github\/workflows\/publish-release\.yml[\s\S]*secrets: inherit/);
   assert.match(mobileReleaseDocs, /GitHub `preview` environment/);
   assert.match(mobileReleaseDocs, /repository `EXPO_TOKEN` secret/);
-  assert.match(mobileReleaseDocs, /required reviewer and\n   branch policy/);
+  assert.match(mobileReleaseDocs, /required reviewer and\n {3}branch policy/);
   assert.match(mobileReleaseDocs, /account\/project scoped, not channel scoped/);
   assert.match(mobileReleaseDocs, /EXPO_TOKEN/);
 });
@@ -317,7 +317,7 @@ test('server publication accepts read-only master requests through protected def
     const handler = readWorkflow(entry.handler);
     const worker = readWorkflow(entry.worker);
 
-    assert.match(request, /\n  workflow_dispatch:/);
+    assert.match(request, /\n {2}workflow_dispatch:/);
     assert.doesNotMatch(request, /workflow_run:|workflow_call:|\n\s+push:|\n\s+pull_request:/);
     assert.match(request, /permissions:\s*\n\s+contents: read/);
     assert.doesNotMatch(request, /^\s{0,8}(?:contents|packages|pull-requests|actions): write\s*$/gm);
@@ -336,7 +336,7 @@ test('server publication accepts read-only master requests through protected def
     assert.doesNotMatch(workflowJobBlock(handler, 'verify_request'), /^\s{0,8}(?:contents|packages|pull-requests|actions): write\s*$/gm);
     assert.doesNotMatch(handler, /environment:|SERVER_RELEASE_APP_|GHCR_PUBLISH_|secrets: inherit/);
     const handlerFreshness = handler.match(
-      /\n      - name: Require current protected master handler\n[\s\S]*?(?=\n      - name:)/
+      /\n {6}- name: Require current protected master handler\n[\s\S]*?(?=\n {6}- name:)/
     )?.[0];
     assert.ok(handlerFreshness);
     assert.match(handlerFreshness, /WORKFLOW_SHA: \$\{\{ job\.workflow_sha \}\}/);
@@ -367,8 +367,8 @@ test('server publication accepts read-only master requests through protected def
     assert.match(handler, new RegExp(`--operation ${entry.operation}`));
     assert.match(handler, new RegExp(`uses: \\.\\/\\.github\\/workflows\\/${entry.worker.replace('.', '\\.')}`));
 
-    assert.match(worker, /\n  workflow_call:/);
-    assert.doesNotMatch(worker, /^  (?:workflow_dispatch|workflow_run):/gm);
+    assert.match(worker, /\n {2}workflow_call:/);
+    assert.doesNotMatch(worker, /^ {2}(?:workflow_dispatch|workflow_run):/gm);
   }
 
   const releaseDocs = readFileSync(path.join(repositoryRoot, 'docs', 'release-compatibility.md'), 'utf8');
@@ -383,7 +383,7 @@ test('server publication grants only the operation-specific built-in token permi
     ['cut-release.yml', 'prepare', { contents: 'read' }],
     ['cut-release.yml', 'publish_candidate', { actions: 'read', contents: 'write' }],
     ['cut-release.yml', 'release-validation', { contents: 'read' }],
-    ['cut-release.yml', 'finalize', { contents: 'write', 'pull-requests': 'write', actions: 'read' }],
+    ['cut-release.yml', 'finalize', { contents: 'write', 'pull-requests': 'write', actions: 'read', checks: 'write' }],
     ['cut-release.yml', 'inspect_cleanup', { contents: 'read', 'pull-requests': 'read' }],
     ['cut-release.yml', 'cleanup-candidate', { contents: 'write', 'pull-requests': 'write' }],
     ['publish-release.yml', 'tag_release', { contents: 'read' }],
@@ -436,7 +436,7 @@ test('Cut release uses a read-only request, protected handler, and scoped token 
   assert.doesNotMatch(workflowJobBlock(handler, 'verify_request'), /environment:|secrets\.|contents: write|packages: write|pull-requests: write/);
 
   assert.match(workflow, /workflow_call:[\s\S]*source_sha:[\s\S]*required: true/);
-  assert.doesNotMatch(workflow, /^  (?:workflow_dispatch|workflow_run|push):/gm);
+  assert.doesNotMatch(workflow, /^ {2}(?:workflow_dispatch|workflow_run|push):/gm);
   assert.match(workflow, /group: cut-release/);
   assert.match(workflow, /group: cut-release\s*\n\s+queue: max/);
   assert.match(workflow, /cancel-in-progress: false/);
@@ -561,7 +561,7 @@ test('Cut release uses a read-only request, protected handler, and scoped token 
   assert.match(publish, /release_branch: \$\{\{ needs\.prepare\.outputs\.release_branch \}\}/);
   assert.doesNotMatch(publish, /secrets: inherit/);
   assert.match(publish, /EXPO_TOKEN: \$\{\{ secrets\.EXPO_TOKEN \}\}/);
-  assert.doesNotMatch(workflow, /\n  database-rollback:|database_migrations_changed|test:db:rollback/);
+  assert.doesNotMatch(workflow, /\n {2}database-rollback:|database_migrations_changed|test:db:rollback/);
 
   const checkoutCount = (workflow.match(/uses: actions\/checkout@[0-9a-f]{40}/g) ?? []).length;
   assert.ok(checkoutCount > 0);
@@ -663,12 +663,12 @@ test('selected deployment gates client publication without changing the deployme
     assert.ok(gateIndex > 0 && gateIndex < outputIndex, gate + ' must complete before exposing the digest');
   }
   assert.doesNotMatch(workflowJobBlock(image, 'build_image'), /image_ref:/);
-  assert.doesNotMatch(image, /^  workflow_dispatch:/m);
+  assert.doesNotMatch(image, /^ {2}workflow_dispatch:/m);
 
   const workflow = readWorkflow('deploy-self-hosted.yml');
   assert.match(workflow, /workflow_call:/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.doesNotMatch(workflow, /SELF_HOSTED_DEPLOY_ENABLED|image_ref:|release_tag:|\n    if:/);
+  assert.doesNotMatch(workflow, /SELF_HOSTED_DEPLOY_ENABLED|image_ref:|release_tag:|\n {4}if:/);
   assert.match(workflow, /GITHUB_REF.*!=.*refs\/heads\/master/);
   assert.match(workflow, /DEPLOY_WG_ENDPOINT: \$\{\{ secrets\.DEPLOY_WG_ENDPOINT \}\}/);
   assert.match(workflow, /DEPLOY_TOKEN: \$\{\{ secrets\.DEPLOY_TOKEN \}\}/);
@@ -701,9 +701,9 @@ test('deployment environment secrets are forwarded through every reusable releas
     const source = readWorkflow(file);
     assert.doesNotMatch(source, /DEPLOY_SSH_/, file + ' must not retain retired deployment credentials');
     const jobs = source.slice(source.indexOf('\njobs:\n'));
-    for (const [, job] of jobs.matchAll(/^  ([a-z0-9_-]+):$/gm)) {
+    for (const [, job] of jobs.matchAll(/^ {2}([a-z0-9_-]+):$/gm)) {
       const block = workflowJobBlock(source, job);
-      const callee = block.match(/^    uses: \.\/\.github\/workflows\/([^\s]+)$/m)?.[1];
+      const callee = block.match(/^ {4}uses: \.\/\.github\/workflows\/([^\s]+)$/m)?.[1];
       if (!callees.has(callee)) {
         if (file !== 'deploy-self-hosted.yml') assert.doesNotMatch(block, /DEPLOY_/);
         continue;
@@ -748,7 +748,7 @@ test('pull requests build and smoke only Web-impacting changes while exhaustive 
   );
   const releaseConfig = workflowJobBlock(workflow, 'release-config');
 
-  assert.match(workflow, /on:[\s\S]*?\n  pull_request:/);
+  assert.match(workflow, /on:[\s\S]*?\n {2}pull_request:/);
   assert.match(workflow, /workflow_dispatch:[\s\S]*validation_scope:[\s\S]*configuration-only/);
   assert.match(changes, /if: inputs\.release_sha == '' && github\.event_name == 'pull_request'/);
   assert.doesNotMatch(webPaths, /- 'backend\/\*\*'/);
@@ -814,16 +814,16 @@ test('pull requests run backend builds only for backend-impacting paths', () => 
   assert.match(backendBuild, /needs: changes/);
   assert.match(backendBuild, /if: needs\.changes\.outputs\.backend == 'true'/);
   assert.match(backendBuild, /npm run build/);
-  assert.doesNotMatch(workflow, /\n  performance-regression:/);
+  assert.doesNotMatch(workflow, /\n {2}performance-regression:/);
 });
 
 test('Android SDK setup explicitly excludes the retired tools package', () => {
   let setupCount = 0;
   for (const file of readdirSync(workflowsDirectory).filter((name) => /\.ya?ml$/.test(name))) {
-    for (const step of readWorkflow(file).split(/\n(?=      - )/)) {
+    for (const step of readWorkflow(file).split(/\n(?= {6}- )/)) {
       if (!/uses: android-actions\/setup-android@/.test(step)) continue;
       setupCount += 1;
-      assert.match(step, /^          packages: platform-tools$/m,
+      assert.match(step, /^ {10}packages: platform-tools$/m,
         `${file} must override setup-android's obsolete default tools package`);
     }
   }
@@ -1089,7 +1089,7 @@ test('release images publish immutable identity and guard the moving latest tag'
   const packageConfig = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
 
   assert.match(workflow, /workflow_call:/);
-  assert.doesNotMatch(workflow, /^  (?:workflow_dispatch|push):/gm);
+  assert.doesNotMatch(workflow, /^ {2}(?:workflow_dispatch|push):/gm);
   assert.match(workflow, /release_tag:/);
   assert.match(workflow, /release_commit:/);
   assert.match(workflow, /publish_latest:/);
@@ -1204,7 +1204,7 @@ test('release images publish immutable identity and guard the moving latest tag'
   );
   assert.doesNotMatch(publisher, /server-release-tag-protection/);
   const freshness = publisher.match(
-    /\n      - name: Require current protected workflow authority before image artifact access\n[\s\S]*?(?=\n      - name:)/
+    /\n {6}- name: Require current protected workflow authority before image artifact access\n[\s\S]*?(?=\n {6}- name:)/
   )?.[0];
   assert.ok(freshness, 'publisher must define a current protected workflow authority gate');
   assert.match(freshness, /WORKFLOW_SHA: \$\{\{ job\.workflow_sha \}\}/);
@@ -1240,7 +1240,7 @@ test('release images publish immutable identity and guard the moving latest tag'
   assert.match(publisher, /packages: write/);
   assert.equal([...publisher.matchAll(/\$\{\{ github\.token \}\}/g)].length, 3);
   const finalFreshness = publisher.match(
-    /\n      - name: Recheck current protected workflow authority immediately before GHCR authentication\n[\s\S]*?(?=\n      - name:)/
+    /\n {6}- name: Recheck current protected workflow authority immediately before GHCR authentication\n[\s\S]*?(?=\n {6}- name:)/
   )?.[0];
   assert.ok(finalFreshness);
   assert.match(finalFreshness, /verify-current-release-workflow/);
@@ -1429,7 +1429,7 @@ test('active workflows and package scripts do not retain the hosted-result or ex
 
   assert.doesNotMatch(
     workflows,
-    /release-acceptance\.mjs hosted-result|\n  external-launch:|releaseAcceptanceEvidence|evidence_commit/
+    /release-acceptance\.mjs hosted-result|\n {2}external-launch:|releaseAcceptanceEvidence|evidence_commit/
   );
   assert.equal(packageConfig.scripts['release:acceptance:external'], undefined);
   assert.equal(packageConfig.scripts['test:risk-evidence:release'], undefined);
@@ -1502,20 +1502,9 @@ test('pull request test suites run only for their affected surfaces', () => {
   assert.match(mobile, /if: needs\.changes\.outputs\.mobile == 'true'/);
   assert.match(mobile, /npm run test:api-client/);
   assert.match(mobile, /npm --prefix mobile test/);
-  for (const expectedPath of [
-    '.github/workflows/lint.yml',
-    'backend/**',
-    'knip.json',
-    'mobile/**',
-    'package.json',
-    'package-lock.json',
-    'packages/**',
-    'scripts/**',
-    'shared/**'
-  ]) {
-    assert.ok(lintWorkflow.includes(`- '${expectedPath}'`), `lint paths must include ${expectedPath}`);
-  }
-  assert.doesNotMatch(lintWorkflow, /- 'docs\/\*\*'|- 'quality\/\*\*'/);
+  // Required checks must report a result even for docs-only pull requests.
+  assert.match(lintWorkflow, / {2}pull_request:\s+workflow_dispatch:/);
+  assert.doesNotMatch(lintWorkflow, /\bpaths(?:-ignore)?:/);
 
   const filters = ['backend', 'mobile'];
   for (const [candidatePath, expectedFilters] of [
@@ -1627,11 +1616,11 @@ test('dependency audit runs all workspaces only during scheduled or manual maint
 
   assert.ok(triggers);
   assert.deepEqual(
-    [...triggers.matchAll(/^  ([a-z_]+):/gm)].map(([, event]) => event).sort(),
+    [...triggers.matchAll(/^ {2}([a-z_]+):/gm)].map(([, event]) => event).sort(),
     ['schedule', 'workflow_dispatch']
   );
   assert.match(triggers, /cron: '30 13 \* \* 1'/);
-  assert.doesNotMatch(workflow, /pull_request|merge_group|\n  changes:|paths-filter|needs:/);
+  assert.doesNotMatch(workflow, /pull_request|merge_group|\n {2}changes:|paths-filter|needs:/);
   assert.deepEqual(workflowPermissions(workflow, 0), { contents: 'read' });
   assert.match(audit, /fail-fast: false/);
   assert.match(audit, /workspace: Root and Mobile\n\s+directory: \.\n\s+node: '22\.13\.0'\n\s+audit_args: '--omit=dev'/);
@@ -1655,7 +1644,7 @@ test('release configuration and PR workflows do not gate merges on package advis
   }
   for (const file of readdirSync(workflowsDirectory).filter((name) => /\.ya?ml$/.test(name))) {
     const workflow = readWorkflow(file);
-    if (!/^  (?:pull_request|pull_request_target|push|merge_group):/m.test(workflow)) continue;
+    if (!/^ {2}(?:pull_request|pull_request_target|push|merge_group):/m.test(workflow)) continue;
     assert.doesNotMatch(
       workflow,
       /npm(?:\.cmd)?(?: --prefix \S+)? audit\b|npm(?:\.cmd)? run audit:|dependency-advisory-exceptions/,
@@ -1861,7 +1850,7 @@ test('PR rollback owns migration safety without a redundant Cut release replay',
   assert.match(pullRequest, /npm run test:db:rollback:unit/);
   assert.match(pullRequest, /npm run test:db:rollback/);
   assert.doesNotMatch(pullRequest, /upload-artifact|hosted-result|retention-days:/);
-  assert.doesNotMatch(release, /\n  database-rollback:|database_migrations_changed|test:db:rollback/);
+  assert.doesNotMatch(release, /\n {2}database-rollback:|database_migrations_changed|test:db:rollback/);
   assert.match(releaseFinalize, /needs: \[prepare, publish_candidate, release-validation, candidate-lint, candidate-tests, candidate-builds, candidate-container-scan, candidate-database-upgrade\]/);
   assert.doesNotMatch(releaseFinalize, /ux-regression/);
 });

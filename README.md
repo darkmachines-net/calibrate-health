@@ -193,7 +193,10 @@ database is otherwise ready:
   targeting the current worktree's exposed backend port.
 - `npm run test:mobile`: run mobile unit tests.
 - `npm run test:web:e2e`: build the Expo web release export and run its local Chrome E2E suite.
-- `npm run lint`: type-check the backend, shared domain package, API client, and Expo client with unused-code checks.
+- `npm run lint`: run ESLint with zero warnings, then type-check the backend, shared domain package, API client, and Expo client with unused-code checks.
+- `npm run lint:eslint`: check authored JavaScript and TypeScript, including React hook dependencies; any warning or error fails the command. `npm run typecheck` runs just the TypeScript checks.
+- PR merges require **ESLint (zero warnings)**, **Backend, Shared, API Client, and Mobile Typecheck**, and **Required Tests**. The test gate requires selected backend/API/mobile suites to pass and permits skips only for unaffected surfaces.
+- Automated release PRs satisfy these checks through the protected finalizer, which verifies the exact candidate's reusable CI results before publishing the three required checks. Validation jobs remain read-only.
 - `npm run ci:local`: run the local equivalent of PR CI (backend and Expo web builds, Expo release validation, backend/API/mobile type-checking, and backend/mobile tests).
 - `npm run test:coverage`: collect backend and Expo client coverage.
 

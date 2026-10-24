@@ -118,6 +118,7 @@ const parseFieldErrors = (value: unknown): ApiFieldErrors | undefined => {
     const parsed: Record<string, readonly string[]> = {};
     for (const [field, messages] of Object.entries(value).slice(0, MAX_FIELD_COUNT)) {
         const normalizedField = nonEmptyBoundedString(field, MAX_FIELD_NAME_LENGTH);
+        // eslint-disable-next-line no-control-regex -- Reject control characters in server-provided field names.
         if (!normalizedField || /[\u0000-\u001f\u007f]/.test(normalizedField) || !Array.isArray(messages)) continue;
 
         const normalizedMessages = messages.slice(0, MAX_MESSAGES_PER_FIELD)

@@ -411,7 +411,7 @@ async function openRecentAdd(name, date, timeoutMs = 45_000) {
     } catch {
       // Keep failure diagnostics bounded if UI automation itself is unavailable.
     }
-    throw new Error(`${error.message} Safe UI markers: ${markers}.`);
+    throw new Error(`${error.message} Safe UI markers: ${markers}.`, { cause: error });
   }
 }
 
@@ -429,7 +429,7 @@ async function logRecentFood(name, date, timeoutMs = 45_000) {
 }
 
 async function runAndroidE2e(onCheckpoint = () => undefined) {
-  let apiProxy = null;
+  let apiProxy;
   adb(['wait-for-device'], { quiet: true });
   const qemu = adb(['shell', 'getprop', 'ro.kernel.qemu'], { quiet: true });
   const characteristics = adb(['shell', 'getprop', 'ro.build.characteristics'], { quiet: true });

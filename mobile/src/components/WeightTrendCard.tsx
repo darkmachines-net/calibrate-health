@@ -123,7 +123,7 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
     });
     const isOnline = useOnlineStatus();
     const trendState = useAsyncResourceState(trendQuery, (data) => data.metrics.length === 0);
-    const metrics = trendQuery.data?.metrics ?? [];
+    const metrics = useMemo(() => trendQuery.data?.metrics ?? [], [trendQuery.data?.metrics]);
     const trendSummary = trendQuery.data?.meta.trend_summary;
     const chartLayout = useMemo(
         () => buildWeightTrendVisualization(metrics, {

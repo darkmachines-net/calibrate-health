@@ -119,7 +119,7 @@ export function verifyReleaseRequestArtifact({ artifactDirectory, ...expected })
   try {
     request = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
   } catch (error) {
-    throw new Error(`Release request ${REQUEST_FILE} is not valid JSON: ${error.message}`);
+    throw new Error(`Release request ${REQUEST_FILE} is not valid JSON: ${error.message}`, { cause: error });
   }
   return verifyReleaseRequest(request, expected);
 }

@@ -396,7 +396,7 @@ export function parseAabManifestMetadata(output) {
   if (!manifestTag) throw new Error('Unable to parse AAB manifest metadata.');
   const attribute = (name) => {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return manifestTag.match(new RegExp(`\\s${escaped}=(['\"])(.*?)\\1`, 'i'))?.[2] ?? null;
+    return manifestTag.match(new RegExp(`\\s${escaped}=(['"])(.*?)\\1`, 'i'))?.[2] ?? null;
   };
   const applicationId = attribute('package');
   const versionName = attribute('android:versionName');
@@ -426,9 +426,9 @@ export async function inspectNativeReleaseArtifactSet(root, tooling, runner) {
       throw new Error(`${contract.id} release artifact is missing at ${contract.path}. Build the signed release pair first.`);
     }
     let signerSha256;
-    let applicationId = manifest?.android?.application_id;
-    let versionName = expected[contract.role].versionName;
-    let versionCode = expected[contract.role].versionCode;
+    let applicationId;
+    let versionName;
+    let versionCode;
     if (contract.format === 'apk') {
       const [badging, signing] = await Promise.all([
         runner({

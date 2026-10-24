@@ -112,7 +112,7 @@ export function parseDatabaseUrlToPgConfig(databaseUrl: string): PgConnectionCon
     url = new URL(databaseUrl);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`DATABASE_URL is not a valid URL (${message}).`);
+    throw new Error(`DATABASE_URL is not a valid URL (${message}).`, { cause: error });
   }
 
   if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
@@ -188,6 +188,7 @@ export function resolveDatabaseConnection(env: NodeJS.ProcessEnv = process.env):
   poolConfig: PoolConfig;
 } {
   const socket = env.DB_SOCKET_DIR;
+  // eslint-disable-next-line no-control-regex -- Socket paths must reject NUL and line breaks.
   if (socket !== undefined && (!socket.startsWith('/') || socket.trim() !== socket || /[\x00\r\n\\]/.test(socket))) {
     throw new Error('DB_SOCKET_DIR must be an absolute POSIX socket directory.');
   }

@@ -145,7 +145,7 @@ export function PageExpansion({ config, columnStyle, children, footer }: PageExp
                 setMoving(true);
             });
         });
-        return () => { generation.current++; };
+        return () => { generation.current += 1; };
     }, [id, progress]);
 
     useEffect(() => {

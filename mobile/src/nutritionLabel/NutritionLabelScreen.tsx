@@ -82,7 +82,6 @@ export default function NutritionLabelScreen() {
         if (busyRef.current || !isOnline || !nutritionLabelScanning) return;
         busyRef.current = true;
         const scanId = ++scanSequence.current;
-        let selected: LabelImage | null = null;
         try {
             if (hasDetails && !await confirmDiscardChanges()) return;
             if (!mounted.current || scanId !== scanSequence.current) return;
@@ -90,7 +89,7 @@ export default function NutritionLabelScreen() {
             const pendingImage = chooseLabelImage(source);
             setScanning(true);
             setError(null);
-            selected = await pendingImage;
+            const selected = await pendingImage;
             if (!selected) return;
             if (!mounted.current || scanId !== scanSequence.current) {
                 releaseLabelImage(selected);

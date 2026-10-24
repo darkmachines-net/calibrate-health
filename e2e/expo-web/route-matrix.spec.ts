@@ -48,7 +48,7 @@ function collectRouteFiles(directory: string): string[] {
 function routePathFromFile(filePath: string): string | null {
   const relativePath = path.relative(appRoot, filePath).replaceAll('\\', '/');
   if (!relativePath.endsWith('.tsx')) return null;
-  if (/(?:^|\/)\_layout(?:\.web)?\.tsx$/.test(relativePath)) return null;
+  if (/(?:^|\/)_layout(?:\.web)?\.tsx$/.test(relativePath)) return null;
   if (relativePath === '+html.tsx' || relativePath === '+not-found.tsx') return null;
 
   const routeSegments = relativePath

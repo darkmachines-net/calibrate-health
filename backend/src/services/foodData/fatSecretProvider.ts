@@ -297,7 +297,7 @@ class FatSecretFoodDataProvider implements FoodDataProvider {
         }
 
         let numberSystem = '0';
-        let upceBody = '';
+        let upceBody: string;
         let checkDigit: string | null = null;
 
         if (rawDigits.length === 6) {
@@ -329,7 +329,7 @@ class FatSecretFoodDataProvider implements FoodDataProvider {
         const d5 = digits[4];
         const d6 = digits[5];
 
-        let upcAWithoutCheck = '';
+        let upcAWithoutCheck: string;
         if (d6 === '0' || d6 === '1' || d6 === '2') {
             upcAWithoutCheck = `${numberSystem}${d1}${d2}${d6}0000${d3}${d4}${d5}`;
         } else if (d6 === '3') {

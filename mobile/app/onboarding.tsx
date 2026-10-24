@@ -53,6 +53,7 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
         field, React.createRef<FocusableFormControl>()
     ])) as OnboardingControlRefs, []);
     const currentStep = ONBOARDING_STEPS[controller.activeIndex];
+    const handledFocusAttempt = useRef(0);
     useEffect(() => {
         if (controller.isHydrating) return;
         if (Platform.OS === 'web') headingRef.current?.focus();
@@ -62,16 +63,18 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
         }
     }, [controller.step, controller.isHydrating]);
     useEffect(() => {
-        if (!controller.focusAttempt || controller.isHydrating) return;
+        if (!controller.focusAttempt || controller.isHydrating || handledFocusAttempt.current === controller.focusAttempt) return;
         const firstError = CONTROL_ORDER.find((field) => controller.errors[field]);
         if (!firstError) return;
         // Let the submitting press finish before moving keyboard focus into the form.
         const frame = requestAnimationFrame(() => {
+            // Editing field errors must not move focus again after this submission.
+            handledFocusAttempt.current = controller.focusAttempt;
             controls[firstError].current?.focus();
             AccessibilityInfo.announceForAccessibility(controller.errors[firstError]!);
         });
         return () => cancelAnimationFrame(frame);
-    }, [controller.focusAttempt, controller.step, controller.isHydrating, controls]);
+    }, [controller.errors, controller.focusAttempt, controller.step, controller.isHydrating, controls]);
 
     const busy = controller.completion.isPending;
     const actions = (

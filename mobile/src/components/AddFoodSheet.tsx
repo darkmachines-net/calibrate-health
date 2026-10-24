@@ -205,9 +205,10 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     });
     const recentFoodsState = useAsyncResourceState(recentFoodsQuery, (data) => data.items.length === 0);
     const providerSearchState = useAsyncResourceState(providerSearchQuery, (data) => data.items.length === 0);
-    const savedFoods = isOnline
+    const savedFoods = useMemo(() => isOnline
         ? myFoodsQuery.data ?? []
-        : getCachedSavedFoods(queryClient, myFoodsQuery.data, myFoodsQuery.dataUpdatedAt);
+        : getCachedSavedFoods(queryClient, myFoodsQuery.data, myFoodsQuery.dataUpdatedAt),
+    [isOnline, myFoodsQuery.data, myFoodsQuery.dataUpdatedAt, queryClient]);
     const myFoodsState = useAsyncResourceState({
         ...myFoodsQuery,
         data: savedFoods.length > 0 ? savedFoods : myFoodsQuery.data,
@@ -289,6 +290,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
         }
     });
 
+    const { reset: resetLogFood } = logFood;
     useEffect(() => {
         if (!visible) return;
         const requestedMeal = initialMeal && MEAL_OPTIONS.includes(initialMeal)
@@ -303,8 +305,8 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
         setSelection(null);
         setIsMealSelectorOpen(false);
         setIsSearchFieldFocused(false);
-        logFood.reset();
-    }, [initialMeal, visible]);
+        resetLogFood();
+    }, [initialMeal, resetLogFood, visible]);
 
     const providerData = requestedQuery === normalizedQuery ? providerSearchQuery.data : undefined;
     const recentData = requestedQuery === normalizedQuery

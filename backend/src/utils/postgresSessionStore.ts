@@ -182,7 +182,8 @@ export class PostgresSessionStore extends session.Store {
     } catch (error) {
       if (this.isMissingSessionSchemaError(error)) {
         throw new Error(
-          'Session store table is missing. Apply database migrations (npm run db:migrate) and restart the server.'
+          'Session store table is missing. Apply database migrations (npm run db:migrate) and restart the server.',
+          { cause: error }
         );
       }
 

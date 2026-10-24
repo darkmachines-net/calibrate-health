@@ -61,7 +61,7 @@ export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ 
         queryKey: ['mobile-metrics-trend', 'month'],
         queryFn: () => api.getTrendMetrics({ range: 'month' })
     });
-    const metrics = trendQuery.data?.metrics ?? [];
+    const metrics = useMemo(() => trendQuery.data?.metrics ?? [], [trendQuery.data?.metrics]);
     const trendSummary = trendQuery.data?.meta.trend_summary;
     const latestSnapshot = getLatestWeightTrendSnapshot(metrics, trendSummary);
     const freshness = trendSummary?.freshness ?? (trendSummary?.status === 'stale' ? 'stale' : 'current');

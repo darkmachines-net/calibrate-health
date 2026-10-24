@@ -440,6 +440,7 @@ export const ResumeTrackingPrompt: React.FC = () => {
     const styles = useMemo(() => createStyles(theme), [theme]);
     const today = useCurrentLocalDate(user?.timezone);
     const pauseQuery = useFoodTrackingPause();
+    const { refetch: refetchPause } = pauseQuery;
     const [dismissedThisForeground, setDismissedThisForeground] = useState(false);
     const [showExtend, setShowExtend] = useState(false);
     const [customDate, setCustomDate] = useState('');
@@ -448,10 +449,10 @@ export const ResumeTrackingPrompt: React.FC = () => {
         const subscription = AppState.addEventListener('change', (state) => {
             if (state !== 'active') return;
             setDismissedThisForeground(false);
-            void pauseQuery.refetch();
+            void refetchPause();
         });
         return () => subscription.remove();
-    }, [pauseQuery.refetch]);
+    }, [refetchPause]);
 
     const refresh = useRefreshTrackingState(today);
     const resume = useMutation({

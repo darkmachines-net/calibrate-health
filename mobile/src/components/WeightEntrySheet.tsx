@@ -191,15 +191,17 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
         onError: () => setPhase('delete-confirm')
     });
 
+    const { reset: resetAddWeight } = addWeight;
+    const { reset: resetDeleteWeight } = deleteWeight;
     useEffect(() => {
         if (!visible) return;
         setPhase('loading');
         setPendingAction('save');
         setValidationError(null);
         setResult(null);
-        addWeight.reset();
-        deleteWeight.reset();
-    }, [date, visible]); // Mutation reset functions are stable React Query callbacks.
+        resetAddWeight();
+        resetDeleteWeight();
+    }, [date, resetAddWeight, resetDeleteWeight, visible]);
 
     useEffect(() => {
         const hasUsableMetrics = Boolean(metricsQuery.data && metricsQuery.data.length > 0);

@@ -61,7 +61,7 @@ export function readNativeConfiguration({ root, environment = process.env, platf
   try { contents = fs.readFileSync(file, 'utf8'); }
   catch (error) {
     if (error.code === 'ENOENT') return { file, config: { schemaVersion: 1 } };
-    throw new Error('Cannot read native machine configuration. Check access to ' + file + '.');
+    throw new Error('Cannot read native machine configuration. Check access to ' + file + '.', { cause: error });
   }
   let config;
   try { config = JSON.parse(contents); }

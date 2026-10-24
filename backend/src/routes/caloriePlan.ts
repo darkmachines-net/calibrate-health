@@ -48,7 +48,7 @@ function parseDraft(body: unknown): DraftParseResult {
   if (!record.weight || typeof record.weight !== 'object' || Array.isArray(record.weight)) return { ok: false, field: 'weight', message: 'Weight is required.' };
   const weight = record.weight as Record<string, unknown>;
   if (weight.unit !== 'KG' && weight.unit !== 'LB') return { ok: false, field: 'weight.unit', message: 'Weight unit is invalid.' };
-  let weightGrams: number | null = null;
+  let weightGrams: number | null;
   try { weightGrams = parseWeightToGrams(weight.value, weight.unit); } catch { weightGrams = null; }
 
   return {

@@ -699,6 +699,7 @@ jobs:
       contents: write
       pull-requests: write
       actions: read
+      checks: write
     outputs:
       merge_commit: ${{ steps.merge.outputs.merge_commit }}
       pull_request_url: ${{ steps.pr.outputs.pull_request_url }}
@@ -867,7 +868,7 @@ jobs:
           RELEASE_CI_RUN_ID: ${{ github.run_id }}
           RELEASE_CI_RUN_ATTEMPT: ${{ github.run_attempt }}
           WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node .release-tooling/scripts/release-ci-gate.mjs
+        run: node .release-tooling/scripts/release-ci-gate.mjs --publish-required-checks
 
       - name: Merge the exact release pull request through GitHub
         id: merge

@@ -139,13 +139,6 @@ router.post('/loseit/execute', upload.single('file'), async (req, res) => {
 
   const bodyFatByDate = new Map(parsed.bodyFat.map((entry) => [entry.localDate, entry.value]));
 
-  let importedFoodLogs = 0;
-  let skippedFoodLogs = 0;
-  let importedWeights = 0;
-  let updatedWeights = 0;
-  let skippedWeights = 0;
-  let updatedBodyFat = 0;
-
   const foodLogsToInsert = await resolveFoodLogsToInsert({
     userId: user.id,
     imports: parsed.foodLogs,
@@ -157,8 +150,8 @@ router.post('/loseit/execute', upload.single('file'), async (req, res) => {
     await prisma.foodLog.createMany({ data: batch });
   }
 
-  importedFoodLogs = foodLogsToInsert.rows.length;
-  skippedFoodLogs = foodLogsToInsert.skippedCount;
+  const importedFoodLogs = foodLogsToInsert.rows.length;
+  const skippedFoodLogs = foodLogsToInsert.skippedCount;
 
   const weightResult = await prisma.$transaction(async (tx) => {
     await lockCaloriePlanningInputs(tx, user.id);
@@ -186,10 +179,10 @@ router.post('/loseit/execute', upload.single('file'), async (req, res) => {
     return { ...result, futureCount: partitionedWeights.future.length, invalidCount: boundedWeights.invalid.length };
   });
 
-  importedWeights = weightResult.imported;
-  updatedWeights = weightResult.updated;
-  skippedWeights = weightResult.skipped + weightResult.futureCount + weightResult.invalidCount;
-  updatedBodyFat = weightResult.bodyFatUpdated;
+  const importedWeights = weightResult.imported;
+  const updatedWeights = weightResult.updated;
+  const skippedWeights = weightResult.skipped + weightResult.futureCount + weightResult.invalidCount;
+  const updatedBodyFat = weightResult.bodyFatUpdated;
   const futureWeightWarning = buildFutureWeightWarning(weightResult.futureCount);
   const invalidWeightWarning = buildInvalidWeightWarning(weightResult.invalidCount);
   if (importedWeights > 0 || updatedWeights > 0) {

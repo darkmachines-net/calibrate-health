@@ -434,6 +434,11 @@ async function runDatabaseCommand(command, args = []) {
 
 async function ci() {
   await setupHost();
+  await timed("Lint with zero warnings", () => {
+    run("npm", ["run", "test:lint"]);
+    run("node", ["--test", "scripts/ci-test-gate.test.mjs"]);
+    run("npm", ["run", "lint:eslint"]);
+  });
   await timed("Validate release configuration", () => {
     run("npm", ["run", "release:check"]);
     run("npm", ["run", "test:release"]);

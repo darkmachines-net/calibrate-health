@@ -81,7 +81,7 @@ test('root scripts expose only one guarded snapshot-update command', () => {
 
 test('local CI replaces the standalone web build with the blocking UX build and gate', () => {
   const source = fs.readFileSync(path.join(repositoryRoot, 'scripts', 'dev-env.mjs'), 'utf8');
-  const expoBlock = source.match(/await timed\("Build Expo web"[\s\S]*?\n  \}\);/)?.[0] ?? '';
+  const expoBlock = source.match(/await timed\("Build Expo web"[\s\S]*?\n {2}\}\);/)?.[0] ?? '';
   assert.match(
     expoBlock,
     /process\.platform === "win32" \? "test:ux" : "test:ux:a11y"/,

@@ -245,9 +245,9 @@ export function readNativeOtaBaseline(root, baselinePath = null) {
     baseline = JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
     if (error?.code === 'ENOENT') {
-      throw new Error('OTA baseline is missing. Run npm run native:build, then npm run native:install before publishing OTA.');
+      throw new Error('OTA baseline is missing. Run npm run native:build, then npm run native:install before publishing OTA.', { cause: error });
     }
-    throw new Error(`Unable to read OTA baseline: ${error.message}`);
+    throw new Error(`Unable to read OTA baseline: ${error.message}`, { cause: error });
   }
   if (baseline.schema_version !== 1 || baseline.platform !== 'android' ||
       !EXPO_PROJECT_ID_PATTERN.test(baseline.project_id ?? '') ||

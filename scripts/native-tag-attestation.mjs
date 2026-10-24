@@ -262,7 +262,7 @@ function invokeGit(gitRunner, repositoryRoot, args, label) {
   try {
     result = gitRunner({ repositoryRoot, args: [...args] });
   } catch (error) {
-    throw new Error(`${label} could not run: ${error instanceof Error ? error.message : error}`);
+    throw new Error(`${label} could not run: ${error instanceof Error ? error.message : error}`, { cause: error });
   }
   return requireGitSuccess(result, label);
 }

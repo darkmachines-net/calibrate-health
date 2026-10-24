@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { REQUIRED_CI, assertCandidateInputs, assertIdentity, evaluateRuns, evaluateTrustedJobs, githubApi, inspectCi, inspectTrustedCi, waitForCi } from './release-ci-gate.mjs';
+import { REQUIRED_CI, assertCandidateInputs, assertIdentity, evaluateRuns, evaluateTrustedJobs, githubApi, githubCheckWriter, inspectCi, inspectTrustedCi, publishRequiredChecks, waitForCi } from './release-ci-gate.mjs';
 
 /** Suppress progress output in deterministic CI gate tests. */
 const noReport = () => {};
@@ -107,6 +107,15 @@ test('zero jobs, missing required success, unexpected skips and failing jobs fai
   }
 });
 
+test('missing lint or aggregate test success cannot authorize a release', () => {
+  for (const [workflow, name] of [['lint.yml', 'ESLint (zero warnings)'], ['tests.yml', 'Required Tests']]) {
+    const f = fixture();
+    const run = f.runs.find(item => item.path === `.github/workflows/${workflow}`);
+    run.jobs = run.jobs.filter(job => job.name !== name);
+    assert.throws(() => evaluateRuns(f.runs, identity), /required job/);
+  }
+});
+
 test('moved head/base/master, closed or draft PR cannot merge', () => {
   for (const mutate of [f => f.pull.head.sha = 'c'.repeat(40), f => f.pull.base.sha = 'c'.repeat(40),
     f => f.master.object.sha = 'c'.repeat(40), f => f.pull.state = 'closed', f => f.pull.draft = true,
@@ -176,7 +185,9 @@ test('workflow gates merge twice, retains blocked candidates and preserves expli
   assert.match(workflow, /needs\.release-validation\.result != 'success'/);
   assert.match(workflow, /publish:\n[\s\S]*needs: \[select, reserve, prepare, finalize\]/);
   assert.match(workflow, /release_status:\n[\s\S]*if: \$\{\{ always\(\) \}\}/);
-  assert.doesNotMatch(workflow, /pull_request_target|actions: write|checks: write/);
+  assert.doesNotMatch(workflow, /pull_request_target|actions: write/);
+  assert.equal((workflow.match(/checks: write/g) ?? []).length, 1);
+  assert.match(workflow, /run: node \.release-tooling\/scripts\/release-ci-gate.mjs --publish-required-checks/);
 });
 
 /** Bind candidate jobs to a single protected originating run and workflow revision. */
@@ -201,6 +212,61 @@ test('trusted candidate CI succeeds without any pull-request-event workflow run'
   const f = trustedFixture();
   f.runs.length = 0;
   assert.equal((await inspectTrustedCi(f.api, f.binding)).selected.length, 5);
+});
+
+test('required release checks are published on the validated candidate with links to trusted CI', async () => {
+  const f = trustedFixture();
+  const writes = [];
+  await publishRequiredChecks(f.api, async (repository, check) => writes.push({ repository, ...check }), f.binding);
+  assert.deepEqual(writes.map(check => check.name), [
+    'Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)', 'Required Tests',
+  ]);
+  for (const check of writes) {
+    assert.equal(check.repository, identity.repository);
+    assert.equal(check.head_sha, identity.head);
+    assert.equal(check.conclusion, 'success');
+    assert.equal(check.status, 'completed');
+    assert.equal(check.external_id, `456:2:${identity.head}`);
+    assert.equal(check.details_url, 'https://github.com/owner/repo/actions/runs/456/attempts/2');
+  }
+});
+
+test('failed, missing, stale or untrusted CI never publishes successful required checks', async () => {
+  for (const mutate of [
+    f => f.jobs[0].conclusion = 'failure',
+    f => f.jobs.length = 0,
+    f => f.master.object.sha = identity.head,
+    f => f.run.run_attempt++,
+    f => delete f.binding.runId,
+  ]) {
+    const f = trustedFixture();
+    mutate(f);
+    const writes = [];
+    await assert.rejects(publishRequiredChecks(f.api, async (...args) => writes.push(args), f.binding));
+    assert.equal(writes.length, 0);
+  }
+});
+
+test('check publication sends the exact check and rejects denied or mismatched GitHub responses', async () => {
+  const check = { name: 'Required Tests', head_sha: identity.head, status: 'completed', conclusion: 'success' };
+  let request;
+  const writer = githubCheckWriter({ token: 'synthetic', fetchImpl: async (url, options) => {
+    request = { url, options };
+    return { ok: true, json: async () => ({ ...check, app: { slug: 'github-actions' } }) };
+  } });
+  await writer(identity.repository, check);
+  assert.equal(request.url, 'https://api.github.com/repos/owner/repo/check-runs');
+  assert.equal(request.options.method, 'POST');
+  assert.deepEqual(JSON.parse(request.options.body), check);
+  for (const result of [
+    { ok: false, status: 403 },
+    ...[{ head_sha: identity.base }, { name: 'Other' }, { conclusion: 'failure' },
+      { status: 'queued' }, { app: { slug: 'other' } }].map(overrides => ({
+      ok: true, json: async () => ({ ...check, app: { slug: 'github-actions' }, ...overrides }),
+    })),
+  ]) {
+    await assert.rejects(githubCheckWriter({ token: 'synthetic', fetchImpl: async () => result })(identity.repository, check));
+  }
 });
 
 test('trusted CI rejects wrong run, source, event, workflow and attempt', async () => {

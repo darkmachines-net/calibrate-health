@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
@@ -168,14 +168,14 @@ export function useOnboardingController(user: UserClientPayload) {
         }
     }
 
-    function back() {
+    const back = useCallback(() => {
         if (completion.isPending) return;
         setErrors({});
         setActionError(null);
         if (returnToPlan) { setReturnToPlan(false); setStep('plan'); return; }
         if (step === 'plan') setStep('activity');
         if (step === 'activity') setStep('about');
-    }
+    }, [completion.isPending, returnToPlan, setStep, step]);
 
     useEffect(() => {
         if (Platform.OS === 'web') return;
@@ -186,7 +186,7 @@ export function useOnboardingController(user: UserClientPayload) {
             return true;
         });
         return () => subscription.remove();
-    }, [step, returnToPlan, completion.isPending]);
+    }, [back, step, returnToPlan, completion.isPending]);
 
     const activeIndex = ONBOARDING_STEPS.findIndex((candidate) => candidate.key === step);
     return {

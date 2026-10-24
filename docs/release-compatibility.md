@@ -113,7 +113,8 @@ the reusable worker. Use the existing repository configuration:
 
 Candidate preparation, validation, and image construction use read-only repository tokens with no registry write
 permission. Separate publication jobs receive only the permissions needed for their operation: Contents write for
-candidate branches and stable tags, Contents and Pull requests write for finalization/cleanup, and Packages write
+candidate branches and stable tags, Contents and Pull requests write for finalization/cleanup, Checks write only for
+attaching verified CI results to the release candidate during finalization, and Packages write
 for GHCR. The image-receipt signer has only Contents read, OIDC write, and Attestations write and runs the full-SHA-pinned
 attestation action before package authentication. Source-owned build commands never run on the package publisher.
 The publisher verifies artifacts and current workflow authority with reviewed tooling before logging into GHCR.
@@ -171,6 +172,9 @@ merge. Both the initial CI gate and its immediate premerge recheck require succe
 same trusted run and verified workflow source. Failed-job retries may reuse earlier successes only from that run and
 candidate; newer failures cannot fall back to older green jobs. Missing, failed, cancelled or wholly skipped required
 validation blocks finalization without waiting for approval of token-created PR workflows.
+After verification, finalization publishes **ESLint (zero warnings)**, **Backend, Shared, API Client, and Mobile
+Typecheck**, and **Required Tests** on the exact candidate. Each check links to the trusted run; these satisfy the
+same required-check rules as ordinary PR jobs without bypassing branch protection.
 It rechecks `master` immediately before calling the PR merge API with the exact validated head SHA. The API
 honors branch protection and locks the head, but does not offer a base-SHA compare-and-swap. The workflow therefore
 checks the actual merged parents, tree, and current `master` again before allowing tag/image publication. A concurrent

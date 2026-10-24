@@ -65,6 +65,7 @@ export function createHostedAndroidMetroEnvironment(environment = process.env) {
 /** Remove credentials and control sequences before retaining or printing hosted diagnostics. */
 export function redactHostedAndroidDiagnostics(value) {
   return String(value)
+    // eslint-disable-next-line no-control-regex -- Strip terminal escape sequences from retained diagnostics.
     .replaceAll(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
     .replaceAll(/(https?:\/\/)[^\s/@:]+:[^\s/@]+@/gi, '$1[redacted]@')
     .replaceAll(/\b(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, '$1[redacted]')

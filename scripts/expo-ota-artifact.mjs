@@ -180,7 +180,7 @@ function readJson(file, label) {
   try {
     value = JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
-    throw new Error(`Unable to read ${label}: ${error.message}`);
+    throw new Error(`Unable to read ${label}: ${error.message}`, { cause: error });
   }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be a JSON object.`);

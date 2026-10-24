@@ -283,9 +283,8 @@ export function waitForScrollableWearUi(expectedText, readUi, scrollForward, max
     throw new Error('Scrollable Wear UI readiness attempts must be a positive integer.');
   }
   const missing = new Set(expectedText);
-  let xml = '';
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    xml = readUi();
+    const xml = readUi();
     for (const text of missing) {
       if (findTextNode(xml, text)) missing.delete(text);
     }

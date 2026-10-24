@@ -168,7 +168,7 @@ const normalizeNativeText = (value: unknown, maxLength: number): string => {
 };
 
 const isExpoPushToken = (token: string): boolean =>
-  /^(?:Exponent|Expo)PushToken\[[^\[\]]+\]$/.test(token);
+  /^(?:Exponent|Expo)PushToken\[[^[\]]+\]$/.test(token);
 
 router.post('/native-subscription', async (req, res) => {
   const user = getAuthenticatedUser(req);

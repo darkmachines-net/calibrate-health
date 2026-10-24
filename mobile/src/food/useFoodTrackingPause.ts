@@ -18,10 +18,11 @@ export function useFoodTrackingPause(enabled = true) {
     const acknowledged = applyQueuedPauseIntent(query.data?.pause, dayIntents, namespace);
     const intent = applyQueuedPauseIntent(acknowledged.pause, mutations, namespace);
     const hadQueuedIntent = useRef(intent.hasQueuedIntent);
+    const { refetch } = query;
     useEffect(() => {
         // Replay failure/discard also removes the overlay; recover canonical metadata in those cases.
-        if (hadQueuedIntent.current && !intent.hasQueuedIntent && enabled && user) void query.refetch();
+        if (hadQueuedIntent.current && !intent.hasQueuedIntent && enabled && user) void refetch();
         hadQueuedIntent.current = intent.hasQueuedIntent;
-    }, [intent.hasQueuedIntent, enabled, user, query.refetch]);
+    }, [intent.hasQueuedIntent, enabled, user, refetch]);
     return { ...query, data: intent.pause ? { pause: intent.pause } : query.data };
 }
