@@ -1,5 +1,6 @@
 {
   "name": "@calibrate/shared",
+  "license": "SEE LICENSE IN LICENSE",
   "version": "0.0.0",
   "private": true,
   "main": "./dist/cjs/index.js",

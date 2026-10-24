@@ -1,4 +1,4 @@
-/** @file about: Render the about screen interface. */
+/** @file About screen with product information and canonical support, privacy, and software-license links. */
 
 /**
  * Defines the about Expo Router screen.
@@ -51,7 +51,7 @@ const PRODUCT_LINKS = [
     { label: 'Terms of service', href: CALIBRATE_PRODUCT_LINKS.terms },
     { label: 'Support', href: CALIBRATE_PRODUCT_LINKS.support },
     { label: 'Feedback', href: CALIBRATE_PRODUCT_LINKS.feedback },
-    { label: 'Open-source licenses', href: CALIBRATE_PRODUCT_LINKS.licenses },
+    { label: 'Software license', href: CALIBRATE_PRODUCT_LINKS.licenses },
     { label: 'Release notes', href: CALIBRATE_PRODUCT_LINKS.releases }
 ] as const;
 

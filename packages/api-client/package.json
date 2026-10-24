@@ -1,5 +1,6 @@
 {
   "name": "@calibrate/api-client",
+  "license": "SEE LICENSE IN LICENSE",
   "version": "0.0.0",
   "private": true,
   "type": "module",

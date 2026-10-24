@@ -1,4 +1,4 @@
-/** @file Regression coverage for hosted product trust: hosted web entry and sign-in share canonical public trust destinations. */
+/** @file Verifies hosted entry, sign-in, and About surfaces share canonical trust and software-license destinations. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -109,7 +109,7 @@ test('About keeps product and trust links distinct on compact web', async ({ pag
   await expectLink(page, 'Terms of service', CALIBRATE_PRODUCT_LINKS.terms);
   await expectLink(page, 'Support', CALIBRATE_PRODUCT_LINKS.support);
   await expectLink(page, 'Feedback', CALIBRATE_PRODUCT_LINKS.feedback);
-  await expectLink(page, 'Open-source licenses', CALIBRATE_PRODUCT_LINKS.licenses);
+  await expectLink(page, 'Software license', CALIBRATE_PRODUCT_LINKS.licenses);
   await expectLink(page, 'Release notes', CALIBRATE_PRODUCT_LINKS.releases);
 
   await expect(page.getByRole('button', { name: 'Show advanced details', exact: true })).toHaveCount(0);

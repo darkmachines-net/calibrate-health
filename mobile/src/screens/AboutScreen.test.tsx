@@ -1,4 +1,4 @@
-/** @file Regression coverage for About Screen: AboutScreen. */
+/** @file Covers About screen product information and canonical trust and software-license links. */
 
 import type { ReactNode } from 'react';
 import { render } from '@testing-library/react-native';
@@ -60,7 +60,7 @@ describe('AboutScreen', () => {
             'Terms of service',
             'Support',
             'Feedback',
-            'Open-source licenses',
+            'Software license',
             'Release notes'
         ]) {
             expect(view.getByRole('link', { name: label })).toBeTruthy();

@@ -1,4 +1,4 @@
-/** @file Regression coverage for launch 18 settings trust center: settings trust center preserves hierarchy, session control, reminder truth, and safe navigation. */
+/** @file Verifies settings hierarchy, session control, reminder state, and trust links including the software license. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -358,7 +358,7 @@ test('settings trust center preserves hierarchy, session control, reminder truth
           'Support and feedback',
           'Privacy policy',
           'Terms of service',
-          'Open-source licenses',
+          'Software license',
           'About Calibrate',
           'Advanced settings',
         ],

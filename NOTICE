@@ -1,0 +1,18 @@
+Calibrate
+
+Required Notice: Copyright (c) 2026 Matthew Chartier (https://github.com/MChartier/calibrate-health).
+
+Except where separate terms are stated, this repository is licensed by
+Matthew Chartier under the PolyForm Shield License 1.0.0 in LICENSE:
+https://polyformproject.org/licenses/shield/1.0.0
+
+Third-party material retains its own copyright and license terms, including
+dependencies and the Apache-2.0 Gradle wrapper. Food-provider data and services
+retain their separate terms and attribution requirements; see README.md.
+
+The software license does not grant trademark rights in the Calibrate name
+or visual identity, or permission to imply official endorsement. Factual
+attribution and preservation of required notices do not imply endorsement.
+
+Previously published versions retain the licenses under which they were
+provided. This license change does not revoke those earlier grants.

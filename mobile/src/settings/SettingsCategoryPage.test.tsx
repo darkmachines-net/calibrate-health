@@ -1,4 +1,4 @@
-/** @file Regression coverage for Settings Category Page: SettingsCategoryPage. */
+/** @file Covers settings category navigation, offline summaries, and software-license access. */
 
 import { fireEvent, render } from '@testing-library/react-native';
 import { SettingsCategoryPage } from './SettingsCategoryPage';
@@ -196,7 +196,7 @@ describe('SettingsCategoryPage', () => {
         fireEvent.press(screen.getByRole('button', { name: 'Support and feedback' }));
         fireEvent.press(screen.getByRole('button', { name: 'Privacy policy' }));
         fireEvent.press(screen.getByRole('button', { name: 'Terms of service' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Open-source licenses' }));
+        fireEvent.press(screen.getByRole('button', { name: 'Software license' }));
         fireEvent.press(screen.getByRole('button', { name: 'About Calibrate' }));
         fireEvent.press(screen.getByRole('button', { name: 'Advanced settings' }));
 
