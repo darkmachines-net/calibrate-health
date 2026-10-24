@@ -9,6 +9,6 @@ permissions: { contents: read }
 jobs:
   release:
     permissions: { contents: write, deployments: write, packages: write }
-    uses: MChartier/expo-release-template/.github/workflows/release.yml@f1f765d2094627aefea889844694a878874b9d7c
+    uses: MChartier/expo-release-template/.github/workflows/release.yml@03535b724d7922c130dbe02c775749ff141566f7
     with: { profile: '${{ inputs.profile }}', rebuild: '${{ inputs.rebuild }}' }
     secrets: inherit
