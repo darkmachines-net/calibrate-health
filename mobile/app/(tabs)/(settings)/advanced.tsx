@@ -1,20 +1,64 @@
+/** @file advanced: Format update date for stable display or serialization. */
+
 /**
  * Defines the Advanced settings Expo Router screen.
  */
 import React, { useState } from 'react';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { ActivityIndicator, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import Ionicons from '@expo/vector-icons/Ionicons';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { AppButton } from '../../../src/components/AppButton';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { AppSection } from '../../../src/components/AppSection';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { AppNotice } from '../../../src/components/AppNotice';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { AppText } from '../../../src/components/AppText';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { SectionHeader } from '../../../src/components/SectionHeader';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { ServerUrlControl } from '../../../src/components/ServerUrlControl';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { TabScreen } from '../../../src/components/TabScreen';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { useAuth } from '../../../src/auth/AuthContext';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { HOSTED_SERVER_URL, normalizeServerUrl } from '../../../src/config/server';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { spacing, useAppTheme } from '../../../src/theme';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { useAppUpdateController } from '../../../src/updates/useAppUpdateController';
+/**
+ * Defines the Advanced settings Expo Router screen.
+ */
 import { getNativePlatformLabel } from '../../../src/platform/nativePlatform';
 
 const DIAGNOSTIC_ROW_MIN_HEIGHT = 52; // Keeps support values readable without inflating every row into a full control.

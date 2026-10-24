@@ -1,3 +1,5 @@
+/** @file with Shared Android Signing: Persist shared release signing in regenerated Expo Android projects. */
+
 const { withAppBuildGradle } = require('@expo/config-plugins');
 
 const MARKER = '// calibrate: shared phone/watch release signing';
@@ -97,6 +99,7 @@ function injectSharedAndroidSigning(source) {
   return `${result.trimEnd()}\n${RELEASE_TASK_GUARD}`;
 }
 
+/** Injects shared release-signing configuration into the generated Groovy Android app build. */
 const withSharedAndroidSigning = (config) => withAppBuildGradle(config, (gradleConfig) => {
   if (gradleConfig.modResults.language !== 'groovy') {
     throw new Error('Shared Android signing requires the generated Groovy app/build.gradle.');

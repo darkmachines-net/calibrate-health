@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Client Compatibility. */
+
 package app.calibratehealth.wear.network
 
 import org.junit.Assert.assertEquals
@@ -6,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearClientCompatibilityTest {
+    /** Verifies that identity headers accept release and internal semantic versions. */
     @Test
     fun `identity headers accept release and internal semantic versions`() {
         assertEquals(
@@ -18,6 +21,7 @@ class WearClientCompatibilityTest {
         assertTrue(runCatching { WearClientCompatibility.headers("development") }.isFailure)
     }
 
+    /** Verifies that strict upgrade response retains the server floor and safe message. */
     @Test
     fun `strict upgrade response retains the server floor and safe message`() {
         val requirement = WearClientCompatibility.parseUpgradeRequired(
@@ -31,6 +35,7 @@ class WearClientCompatibilityTest {
         )
     }
 
+    /** Verifies that malformed 426 uses only a validated minimum header and non-426 is ignored. */
     @Test
     fun `malformed 426 uses only a validated minimum header and non-426 is ignored`() {
         val fallback = WearClientCompatibility.parseUpgradeRequired(426, "<html>", "0.3.0")

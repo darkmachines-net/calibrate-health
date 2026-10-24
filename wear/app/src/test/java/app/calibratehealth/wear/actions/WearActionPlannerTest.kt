@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Action Planner. */
+
 package app.calibratehealth.wear.actions
 
 import app.calibratehealth.wear.WearSummary
@@ -7,6 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WearActionPlannerTest {
+    /** Verifies that quick add preserves the immutable server draft. */
     @Test
     fun `quick add preserves the immutable server draft`() {
         val draft = "{\"date\":\"2026-07-12\",\"name\":\"Oats\",\"calories\":320}"
@@ -14,6 +17,7 @@ class WearActionPlannerTest {
         assertEquals(PlannedMutation("food.create", draft), WearActionPlanner.quickAdd(item))
     }
 
+    /** Verifies that completion and weight carry their entity revisions. */
     @Test
     fun `completion and weight carry their entity revisions`() {
         val summary = summary()
@@ -33,6 +37,7 @@ class WearActionPlannerTest {
         )
     }
 
+    /** Verifies that undo is planned only from a complete server candidate. */
     @Test
     fun `undo is planned only from a complete server candidate`() {
         assertEquals(

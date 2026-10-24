@@ -1,3 +1,5 @@
+/** @file Food-day status queries and pause/completion presentation shared across tracking surfaces. */
+
 import { useFoodTrackingPause } from '../food/useFoodTrackingPause';
 import { foodTrackingPauseQueryKey } from '../food/queryKeys';
 import { queuedFoodDayStatus } from '../offline/foodDayIntent';
@@ -25,6 +27,7 @@ import { DatePickerField } from './DatePickerField';
 import { SectionHeader } from './SectionHeader';
 import { getSafeActionErrorMessage } from '../errors/presentation';
 
+/** Builds the stable React Query key for one user-local food day. */
 export const foodDayQueryKey = (date: string) => ['mobile-food-day', date] as const;
 
 
@@ -74,6 +77,7 @@ function useRefreshTrackingState(date?: string) {
     };
 }
 
+/** Reads the food day and overlays pending account-scoped offline day intents. */
 export function useFoodDayStatus(date: string, enabled = true) {
     const { api } = useAuth();
     const mutations = useScopedTrackingMutations();
@@ -89,6 +93,7 @@ export function useFoodDayStatus(date: string, enabled = true) {
     return { ...query, data };
 }
 
+/** Presents day completion and pause actions with offline-aware mutations and responsive controls. */
 export const DayStatusCard: React.FC<{
     date: string;
     isToday: boolean;
@@ -432,6 +437,7 @@ export const DayStatusCard: React.FC<{
     );
 };
 
+/** Prompts for resuming paused tracking using the account timezone and queued local intents. */
 export const ResumeTrackingPrompt: React.FC = () => {
     const { api, user } = useAuth();
     const { enqueue, withOutbox, mutations = [] } = useOfflineOutbox();

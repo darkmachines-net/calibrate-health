@@ -1,3 +1,5 @@
+/** @file Health Connect Card: Read-only Health Connect consent and device-access controls. */
+
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Switch, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for with Optional Camera Hardware: withOptionalCameraHardware config plugin. */
+
 jest.mock('@expo/config-plugins', () => ({
     withAndroidManifest: (config: any, action: (config: any) => any) => action(config)
 }));

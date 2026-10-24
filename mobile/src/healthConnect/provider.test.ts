@@ -1,3 +1,5 @@
+/** @file Regression coverage for provider: Health Connect stored preferences. */
+
 import {
     DEFAULT_HEALTH_CONNECT_SELECTION,
     HEALTH_CONNECT_FEATURES

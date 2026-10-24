@@ -1,3 +1,5 @@
+/** @file Explicit native device installation and source-bound physical validation evidence collection. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -30,6 +32,7 @@ function requiredValue(argv, index, option) {
   return value;
 }
 
+/** Parses native device installation and evidence options with explicit target and source controls. */
 export function parseNativeReleaseDeviceArgs(argv) {
   const values = {
     skipBuild: false,
@@ -120,6 +123,7 @@ export function resolveNativeReleaseDeviceTooling(environment = process.env, opt
   return tooling;
 }
 
+/** Fills missing Java and Android SDK environment paths from validated native tooling. */
 export function nativeReleaseToolEnvironment(environment, tooling) {
   return {
     ...environment,
@@ -211,6 +215,7 @@ export function deduplicateReleaseDevices(devices) {
   return [...unique.values()];
 }
 
+/** Classifies Android hardware characteristics as phone, watch, or unsupported. */
 export function classifyReleaseDevice(characteristics) {
   const values = characteristics.toLowerCase().split(',').map((value) => value.trim()).filter(Boolean);
   if (values.includes('watch')) {
@@ -374,12 +379,14 @@ async function buildReleaseArtifacts(root, environment, runner) {
   });
 }
 
+/** Extracts Android application ID, version code, and version name from APK badging output. */
 export function parseApkBadging(output) {
   const match = output.match(/package:\s+name='([^']+)'\s+versionCode='(\d+)'\s+versionName='([^']+)'/);
   if (!match) throw new Error('Unable to parse APK package metadata.');
   return { applicationId: match[1], versionCode: Number(match[2]), versionName: match[3] };
 }
 
+/** Requires exactly one distinct valid signer SHA-256 fingerprint in inspection output. */
 export function parseSignerFingerprint(output) {
   const fingerprints = [...output.matchAll(/certificate SHA-256 digest:\s*([0-9a-f:]+)/gi)]
     .map((match) => match[1].replaceAll(':', '').toLowerCase())
@@ -391,6 +398,7 @@ export function parseSignerFingerprint(output) {
   return unique[0];
 }
 
+/** Extracts and validates package/version metadata from a dumped AAB manifest. */
 export function parseAabManifestMetadata(output) {
   const manifestTag = output.match(/<manifest\b[^>]*>/i)?.[0];
   if (!manifestTag) throw new Error('Unable to parse AAB manifest metadata.');
@@ -411,6 +419,7 @@ function formatFingerprint(value) {
   return value.toUpperCase().match(/.{1,2}/g)?.join(':') ?? value;
 }
 
+/** Inspects all native release artifacts against the canonical phone/watch versions and signing contract. */
 export async function inspectNativeReleaseArtifactSet(root, tooling, runner) {
   const manifestContent = fs.readFileSync(path.join(root, 'shared', 'release.json'));
   const manifest = JSON.parse(manifestContent.toString('utf8'));
@@ -560,6 +569,7 @@ export function assertNativeReleaseArtifactVersions(artifacts, expected) {
   }
 }
 
+/** Formats device identity while omitting raw device serials from retained evidence descriptions. */
 export function displayNativeReleaseTarget(device, evidenceMode = false) {
   if (evidenceMode) return `${device.model} (physical ${device.role})`;
   const kind = device.isEmulator ? 'emulator' : 'physical';
@@ -570,6 +580,7 @@ function displayDevice(device) {
   return displayNativeReleaseTarget(device, false);
 }
 
+/** Prefers physical devices for a requested role, falling back to emulators only when none are physical. */
 export function releaseDeviceCandidates(role, devices) {
   const allCandidates = devices.filter((device) => device.role === role);
   const physicalCandidates = allCandidates.filter((device) => !device.isEmulator);
@@ -633,6 +644,7 @@ function packagePathFromPm(output) {
   return output.match(/^package:(.+)$/m)?.[1]?.trim() ?? null;
 }
 
+/** Extracts installed version and first-install metadata, retaining null for unavailable values. */
 export function parseInstalledPackageState(output) {
   const versionCode = Number(output.match(/\bversionCode=(\d+)/)?.[1]);
   const versionName = output.match(/\bversionName=([^\r\n\s]+)/)?.[1]?.trim() ?? null;
@@ -644,6 +656,7 @@ export function parseInstalledPackageState(output) {
   };
 }
 
+/** Requires frozen artifacts, explicit targets, and exact source identity before physical evidence mode. */
 export function assertNativeReleaseEvidenceMode(config, checkout) {
   if (!config.evidenceObservation) return false;
   if (!config.skipBuild) throw new Error('Evidence observation requires --skip-build against frozen candidate outputs.');
@@ -666,6 +679,7 @@ export function assertNativeReleaseEvidenceMode(config, checkout) {
   return true;
 }
 
+/** Requires genuine physical handset and watch targets with the expected hardware characteristics. */
 export function assertNativeReleaseEvidenceTargets(targets) {
   for (const role of ['phone', 'watch']) {
     const target = targets?.[role];
@@ -686,6 +700,7 @@ export function assertNativeReleaseEvidenceTargets(targets) {
   }
 }
 
+/** Retains only the allowlisted physical device metadata needed for release evidence. */
 export function retainedNativeReleaseDevices(targets) {
   return ['phone', 'watch'].map((role) => {
     const target = targets[role];
@@ -702,6 +717,7 @@ export function retainedNativeReleaseDevices(targets) {
   });
 }
 
+/** Requires same-signer in-place upgrades from strictly lower installed codes for physical upgrade evidence. */
 export function assertNativeReleaseEvidenceUpgradePlans(plans) {
   for (const plan of plans) {
     if (plan.state !== 'upgrade') {
@@ -719,6 +735,7 @@ export function assertNativeReleaseEvidenceUpgradePlans(plans) {
   }
 }
 
+/** Compares pre/post installation observations to produce verified in-place upgrade evidence for both roles. */
 export function createNativeReleaseUpgradeEvidence(prePlans, postPlans) {
   const result = {};
   for (const role of ['phone', 'watch']) {
@@ -901,6 +918,7 @@ Signing passwords are accepted only through hidden prompts or CALIBRATE_ANDROID_
 `);
 }
 
+/** Verifies retained artifacts and explicit device plans before installation, launch, or physical evidence collection. */
 export async function runNativeReleaseDevices(options = {}) {
   const root = options.repositoryRoot ?? repositoryRoot;
   const environment = options.environment ?? process.env;

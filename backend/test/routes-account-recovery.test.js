@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes account recovery: known-account SMTP work cannot delay the generic password reset response. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

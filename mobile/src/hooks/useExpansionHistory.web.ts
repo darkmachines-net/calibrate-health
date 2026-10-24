@@ -1,3 +1,5 @@
+/** @file use Expansion History: Keep Router's exact state intact while Back/Forward visits the local expansion. */
+
 import { useEffect, useId, useRef } from 'react';
 
 const EXPANSION_HISTORY_KEY = '__calibratePageExpansion';

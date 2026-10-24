@@ -1,3 +1,5 @@
+/** @file Bounded operational signal collection, durable aggregate state, and synthetic staging smoke checks. */
+
 import crypto from 'node:crypto';
 import { readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -235,6 +237,7 @@ async function boundedJsonRequest({ url, init, fetchImpl, label, timeoutMs = REQ
   }
 }
 
+/** Creates an authenticated HTTPS alert sink with environment-scoped idempotency keys and request deadlines. */
 export function createHttpAlertSink({
   sinkUrl,
   sinkToken,
@@ -342,6 +345,7 @@ async function readCollectorState(statePath) {
   }
 }
 
+/** Atomically replaces collector state and removes the temporary file even after failure. */
 export async function atomicWriteCollectorState(
   statePath,
   value,
@@ -356,6 +360,7 @@ export async function atomicWriteCollectorState(
   }
 }
 
+/** Acquires an exclusive collector lock with an opaque owner, applying the stale-lock recovery policy. */
 export async function acquireCollectorLock(lockPath, now) {
   const owner = crypto.randomBytes(16).toString('hex');
   const payload = `${JSON.stringify({ acquired_at: now.toISOString(), owner })}\n`;
@@ -379,6 +384,7 @@ export async function acquireCollectorLock(lockPath, now) {
   return owner;
 }
 
+/** Removes the collector lock only when the persisted owner still matches the caller. */
 export async function releaseCollectorLock(lockPath, owner) {
   try {
     const persisted = JSON.parse(await readFile(lockPath, 'utf8'));
@@ -443,6 +449,7 @@ async function dispatchPendingWindow({ pending, baseline, statePath, sink, initi
   return { alerts, receipts, initialized, rebaselined: false, retried: baseline !== null };
 }
 
+/** Collects one operational snapshot under an exclusive lock, evaluates alerts, and persists delivery state. */
 export async function collectOperationalAlertsOnce(input) {
   const now = input.now ?? new Date();
   const statePath = path.resolve(input.statePath);
@@ -523,6 +530,7 @@ export async function collectOperationalAlertsOnce(input) {
     await releaseCollectorLock(lockPath, lockOwner);
   }
 }
+/** Exercises alert delivery with synthetic data only when the sink explicitly targets staging. */
 export async function runSyntheticStagingSmoke({ sink }) {
   if (sink?.environment !== 'staging') {
     throw new Error('Synthetic staging smoke requires CALIBRATE_ALERT_ENVIRONMENT=staging.');
@@ -554,6 +562,7 @@ export async function runSyntheticStagingSmoke({ sink }) {
   return { alerts, receipts };
 }
 
+/** Returns a fixed privacy-safe collector failure line without embedding exception details. */
 export function collectorFailureLine() {
   return '[operational-alert-collector] FAILED stage=collector category=operation_failed';
 }

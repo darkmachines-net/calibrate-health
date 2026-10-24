@@ -1,3 +1,5 @@
+/** @file Regression coverage for transport: default browser transport preserves the global fetch receiver. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ApiError, CalibrateApiClient, parseApiError } from '../src/client.ts';

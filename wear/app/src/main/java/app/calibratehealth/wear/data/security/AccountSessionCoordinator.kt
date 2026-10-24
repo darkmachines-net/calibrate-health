@@ -1,3 +1,5 @@
+/** Serializes account replacement and synchronization commits to prevent cross-account cache or credential reuse. */
+
 package app.calibratehealth.wear.data.security
 
 import androidx.room.withTransaction
@@ -7,21 +9,25 @@ import kotlinx.coroutines.sync.withLock
 
 data class AccountScope(val serverOrigin: String, val userId: Long)
 
+/** Extracts the immutable server-and-user scope from a secure session. */
 fun SecureSession.accountScope(): AccountScope = AccountScope(serverOrigin, userId)
 
 /** Serializes account swaps with the short capture/commit sections used by sync workers. */
 class AccountStateCriticalSection private constructor() {
     private val mutex = Mutex()
 
+    /** Serializes account transitions and short synchronization capture/commit sections. */
     suspend fun <T> withLock(block: suspend () -> T): T = mutex.withLock { block() }
 
     companion object {
         val Shared = AccountStateCriticalSection()
+        /** Creates an independent account critical section for isolated contract tests. */
         fun isolatedForTest(): AccountStateCriticalSection = AccountStateCriticalSection()
     }
 }
 
 fun interface AccountDataStore {
+    /** Clears every account-owned cache and outbox table before switching accounts. */
     suspend fun clearAll()
 }
 
@@ -44,6 +50,7 @@ class AccountSessionCoordinator(
     private val accountDataStore: AccountDataStore,
     private val criticalSection: AccountStateCriticalSection = AccountStateCriticalSection.Shared
 ) {
+    /** Replaces credentials under the account lock, preserving same-account caches and clearing data for account changes. */
     suspend fun replace(session: SecureSession) = criticalSection.withLock {
         session.requireValid()
         val existing = try {
@@ -66,6 +73,7 @@ class AccountSessionCoordinator(
         tokenStore.write(session)
     }
 
+    /** Clears credentials before account data under the shared critical section. */
     suspend fun clear() = criticalSection.withLock {
         // Clearing credentials first prevents stale account rows from being read if deletion fails.
         tokenStore.clear()

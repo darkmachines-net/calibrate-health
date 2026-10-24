@@ -1,3 +1,5 @@
+/** Watch/server contract compatibility and actionable upgrade-required responses. */
+
 package app.calibratehealth.wear.network
 
 import app.calibratehealth.wear.BuildConfig

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Plan Check Card: Plan check card. */
+
 import React from 'react';
 import { Dimensions } from 'react-native';
 import { act, cleanupAsync, fireEvent, render, waitFor } from '@testing-library/react-native';

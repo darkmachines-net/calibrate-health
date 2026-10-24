@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Modal Focus Management: useModalFocusManagement. */
+
 import { act, renderHook } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { useModalFocusManagement } from './useModalFocusManagement';

@@ -1,3 +1,5 @@
+/** Receives bounded pairing, invalidation, and disconnect messages from authorized Data Layer peers. */
+
 package app.calibratehealth.wear.pairing
 
 import android.content.Context

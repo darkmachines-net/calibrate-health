@@ -1,3 +1,5 @@
+/** @file weight Trend V1: Estimate latent "true weight" from noisy daily weigh-ins with a scalar Kalman filter. */
+
 import { MS_PER_DAY } from '../utils/date';
 
 const TREND_CONFIDENCE_Z_SCORE = 1.96; // 95% confidence interval for latent true-weight estimate.

@@ -1,3 +1,5 @@
+/** @file Fixed Page: Constrain copy inside an edge-to-edge interaction surface without shrinking its hit target. */
+
 import React from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent, type StyleProp, type ViewStyle, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

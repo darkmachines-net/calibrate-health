@@ -1,3 +1,5 @@
+/** @file Regression coverage for my foods recipe utils: myFoodsRecipeUtils: parseMyFoodIngredientInput validates ids and quantities. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

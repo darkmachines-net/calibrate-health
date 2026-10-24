@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Fake Wear Repositories. */
+
 package app.calibratehealth.wear.data
 
 import app.calibratehealth.wear.data.local.DailySnapshotEntity

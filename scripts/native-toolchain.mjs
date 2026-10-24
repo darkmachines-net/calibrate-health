@@ -1,3 +1,5 @@
+/** @file Canonical native tool versions, verified download identities, and host prerequisite inspection. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,6 +42,7 @@ export const NATIVE_SDK_PACKAGES = Object.freeze({
   CMake: 'cmake;' + NATIVE_TOOLCHAIN.cmake
 });
 
+/** Runs a bounded hidden native-tool inspection and returns trimmed standard output. */
 export function captureNativeTool(command, args, environment) {
   return execFileSync(command, args, {
     env: environment, encoding: 'utf8', windowsHide: true,
@@ -47,6 +50,7 @@ export function captureNativeTool(command, args, environment) {
   }).trim();
 }
 
+/** Rejects a Node runtime below the supported native-toolchain minimum. */
 export function assertNativeNodeVersion(version = process.versions.node) {
   const [major, minor] = version.split('.').map(Number);
   const [minimumMajor, minimumMinor] = NATIVE_TOOLCHAIN.nodeMinimum.split('.').map(Number);
@@ -57,6 +61,7 @@ export function assertNativeNodeVersion(version = process.versions.node) {
   return version;
 }
 
+/** Finds a supported SDK command-line tools installation whose revision and required files match. */
 export function findNativeSdkManager(sdkRoot) {
   for (const directory of [NATIVE_TOOLCHAIN.commandLineTools, 'latest']) {
     const root = path.join(sdkRoot, 'cmdline-tools', directory);
@@ -71,6 +76,7 @@ export function findNativeSdkManager(sdkRoot) {
   return null;
 }
 
+/** Computes the SHA-256 digest used to verify a downloaded native tool. */
 export function nativeFileSha256(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }

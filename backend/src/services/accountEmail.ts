@@ -1,3 +1,5 @@
+/** @file Verification and recovery email composition, configured transport reuse, and delivery errors. */
+
 import {
   EMAIL_DELIVERY_MODES,
   resolveEmailDeliveryConfig,
@@ -55,6 +57,7 @@ const transportFor = (config: Extract<EmailDeliveryConfig, { mode: 'smtp' }>): T
   return cachedTransport;
 };
 
+/** Create verification/reset text using the configured public origin and a fragment token that avoids URL-query logging. */
 export const buildAccountEmailMessage = (
   email: AccountEmail,
   config: Extract<EmailDeliveryConfig, { mode: 'smtp' }>

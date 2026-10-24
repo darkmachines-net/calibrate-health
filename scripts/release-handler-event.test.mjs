@@ -1,3 +1,5 @@
+/** @file Regression coverage for release handler event: accepts an exact protected request with GitHub live dynamic run-name. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 

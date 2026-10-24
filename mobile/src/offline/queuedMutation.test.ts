@@ -1,3 +1,5 @@
+/** @file Regression coverage for queued Mutation: queued mutation serialization. */
+
 import {
     createOutboxNamespace,
     parseMutationPayload,

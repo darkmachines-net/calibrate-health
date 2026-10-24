@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 22 visual: onboarding imperial measurements with enlarged text. */
+
 import { applyTwoHundredPercentText } from './text-scaling';
 import { existsSync } from 'node:fs';
 import { mkdir, rm } from 'node:fs/promises';

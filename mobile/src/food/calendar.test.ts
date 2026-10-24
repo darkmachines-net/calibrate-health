@@ -1,3 +1,5 @@
+/** @file Regression coverage for calendar: food-day calendar. */
+
 import type { FoodLogDay, FoodLogDaySource, FoodLogDayStatus } from '@calibrate/api-client';
 import {
     getCalendarMonthRange,

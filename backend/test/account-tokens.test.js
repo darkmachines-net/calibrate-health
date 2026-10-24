@@ -1,3 +1,5 @@
+/** @file Regression coverage for account tokens: account token hashes are purpose-bound and never equal raw credentials. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

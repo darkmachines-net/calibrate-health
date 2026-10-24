@@ -1,3 +1,5 @@
+/** @file Regression coverage for Number Stepper Field: NumberStepperField. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { TextInput } from 'react-native';
 import { NumberStepperField } from './NumberStepperField';

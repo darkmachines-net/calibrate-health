@@ -1,3 +1,5 @@
+/** @file Bounded privacy-safe diagnostic event contracts and support correlation identifiers. */
+
 export const CLIENT_DIAGNOSTIC_EVENTS = [
     'client_failure',
     'operation_failure',
@@ -30,6 +32,7 @@ export const CLIENT_DIAGNOSTIC_PLATFORMS = ['web', 'android_phone', 'ios', 'wear
 
 export const CLIENT_DIAGNOSTIC_REQUEST_ID_PATTERN = /^(?:[a-fA-F0-9]{16,64}|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12})$/;
 
+/** Recognize bounded opaque trace IDs that are safe to use for support correlation. */
 export const isClientDiagnosticRequestId = (value: unknown): value is string =>
     typeof value === 'string' && CLIENT_DIAGNOSTIC_REQUEST_ID_PATTERN.test(value);
 

@@ -1,9 +1,12 @@
+/** Regression tests and fixtures for Weight Picker Values. */
+
 package app.calibratehealth.wear
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WeightPickerValuesTest {
+    /** Verifies that metric picker separates whole and decimal values. */
     @Test
     fun `metric picker separates whole and decimal values`() {
         val picker = WeightPickerValues.from(72_400, "kg")
@@ -15,6 +18,7 @@ class WeightPickerValuesTest {
         assertEquals(72_400, picker.gramsFor(picker.selectedWholeIndex, picker.selectedDecimal))
     }
 
+    /** Verifies that picker combines independently selected whole and decimal values. */
     @Test
     fun `picker combines independently selected whole and decimal values`() {
         val picker = WeightPickerValues.from(72_400, "kg")
@@ -22,6 +26,7 @@ class WeightPickerValuesTest {
         assertEquals(81_700, picker.gramsFor(81 - picker.minimumWhole, 7))
     }
 
+    /** Verifies that imperial picker preserves canonical grams until selection changes. */
     @Test
     fun `imperial picker preserves canonical grams until selection changes`() {
         val picker = WeightPickerValues.from(72_400, "LB")
@@ -33,6 +38,7 @@ class WeightPickerValuesTest {
         assertEquals(72_892, picker.gramsFor(160 - picker.minimumWhole, 7))
     }
 
+    /** Verifies that picker clamps decimal options at canonical boundaries. */
     @Test
     fun `picker clamps decimal options at canonical boundaries`() {
         val metricMaximum = WeightPickerValues.from(WeightPickerValues.MAX_WEIGHT_GRAMS, "kg")

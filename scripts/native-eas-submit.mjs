@@ -1,4 +1,4 @@
-/** Queue exact retained AABs through EAS, recording intent before any externally visible submission. */
+/** @file Queue exact retained AABs through EAS, recording intent before any externally visible submission. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';

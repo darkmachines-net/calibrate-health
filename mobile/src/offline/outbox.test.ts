@@ -1,3 +1,5 @@
+/** @file Regression coverage for outbox: SqliteOutbox. */
+
 import type { OutboxDatabase } from './database';
 import { SqliteOutbox } from './outbox';
 import { OUTBOX_MUTATION_STATES, type OutboxMutationState } from './queuedMutation';

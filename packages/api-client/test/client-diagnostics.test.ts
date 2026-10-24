@@ -1,3 +1,5 @@
+/** @file Regression coverage for client diagnostics: root-render failure remains anonymous and normal diagnostics do not request keepalive. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

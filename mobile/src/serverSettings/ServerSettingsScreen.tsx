@@ -1,3 +1,5 @@
+/** @file Server Settings Screen: Presents administrator feature controls and refreshes authoritative server settings after changes. */
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../auth/AuthContext';
@@ -16,6 +18,7 @@ import { serverSettingsQueryKey, useServerSettings } from './useServerSettings';
 // Reserve the settings control's space while its server value loads.
 const SETTINGS_PLACEHOLDER_HEIGHT = 64;
 
+/** Presents administrator feature controls and refreshes authoritative server settings after changes. */
 export default function ServerSettingsScreen() {
     const { api, user, isLoading, serverUrl } = useAuth();
     const settings = useServerSettings();

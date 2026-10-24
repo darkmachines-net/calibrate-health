@@ -1,7 +1,10 @@
+/** @file plan Check Presentation: Maps assessed pace to user-facing copy without changing the configured goal. */
+
 import type React from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import type { CalibrationAssessmentBlocker, CalibrationPaceStatus } from '@calibrate/shared/calibration';
 
+/** Maps assessed pace to user-facing copy without changing the configured goal. */
 export function paceTitle(status: CalibrationPaceStatus): string {
     switch (status) {
         case 'aligned':
@@ -17,10 +20,12 @@ export function paceTitle(status: CalibrationPaceStatus): string {
     }
 }
 
+/** Selects the aligned or speedometer icon for the assessed pace. */
 export function paceIcon(status: CalibrationPaceStatus): React.ComponentProps<typeof Ionicons>['name'] {
     return status === 'aligned' ? 'checkmark-circle-outline' : 'speedometer-outline';
 }
 
+/** Maps the assessment blocker to the next useful plan-check instruction. */
 export function waitingTitle(blocker: CalibrationAssessmentBlocker | null): string {
     switch (blocker) {
         case 'tracking_paused':

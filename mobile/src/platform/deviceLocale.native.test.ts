@@ -1,3 +1,5 @@
+/** @file Regression coverage for device Locale native: native device locale preferences. */
+
 jest.mock('expo', () => ({ requireOptionalNativeModule: jest.fn() }));
 jest.mock('./deviceLocale.shared', () => ({
     readRuntimeLocale: jest.fn(() => ({ languageTag: 'en-US', regionCode: null, measurementSystem: null }))

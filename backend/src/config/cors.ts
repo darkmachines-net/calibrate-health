@@ -1,3 +1,5 @@
+/** @file cors: Normalize an Origin header or CORS allowlist entry for comparison. */
+
 const DEVELOPMENT_LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const BROWSER_PROTOCOLS = new Set(['http:', 'https:']);
 

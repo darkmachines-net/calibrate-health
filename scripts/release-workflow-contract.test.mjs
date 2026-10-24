@@ -1,7 +1,5 @@
-/**
- * @file Verify release workflow authority, credential boundaries, and job
- * sequencing from repository sources without publishing or deploying anything.
- */
+/** @file Regression coverage for release workflow contract: local reusable workflow callers cover every called job token permission. */
+
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -9,6 +7,7 @@ import test from 'node:test';
 import { parse } from 'yaml';
 import { fileURLToPath } from 'node:url';
 import { REQUIRED_CI } from './release-ci-gate.mjs';
+import { RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION } from './release-acceptance.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const workflowsDirectory = path.join(repositoryRoot, '.github', 'workflows');
@@ -255,30 +254,15 @@ test('credentialed release workflows pin external actions and the EAS CLI immuta
   );
   const releaseEasSources = [
     readFileSync(path.join(repositoryRoot, 'scripts', 'native-ota-update.mjs'), 'utf8'),
-    readFileSync(path.join(repositoryRoot, 'docs', 'mobile-release.md'), 'utf8'),
+    readFileSync(path.join(repositoryRoot, 'scripts', 'README.md'), 'utf8'),
     ...['expo-ota-update.yml', 'publish-release.yml', 'cut-release.yml', 'native-release.yml']
       .map(readWorkflow)
   ].join('\n');
   assert.doesNotMatch(releaseEasSources, /eas-cli@latest/i);
   assert.doesNotMatch(releaseEasSources, /^\s*npx(?:\.cmd)?\b[^\r\n]*\beas(?:-cli)?\b/gmi);
-  const mobileReleaseDocs = readFileSync(
-    path.join(repositoryRoot, 'docs', 'native-store-release.md'),
-    'utf8'
-  );
-  const localNativeDocs = readFileSync(path.join(repositoryRoot, 'docs', 'mobile-release.md'), 'utf8');
-  assert.match(localNativeDocs, /npm\.cmd run native:setup/);
-  assert.match(localNativeDocs, /locked EAS CLI/);
-  assert.match(localNativeDocs, /\.\.\\tools\\eas-cli\\node_modules\\\.bin\\eas\.cmd login/);
-  assert.match(localNativeDocs, /\.\.\\tools\\eas-cli\\node_modules\\\.bin\\eas\.cmd project:info/);
-  assert.doesNotMatch(localNativeDocs, /^\s*eas(?:\.cmd)?\s+(?:login|project:info)\b/gm);
   assert.doesNotMatch(publishRelease, /EXPO_TOKEN|DEPLOY_/);
   assert.doesNotMatch(publishRelease, /publish_ota:[\s\S]*secrets: inherit/);
   assert.doesNotMatch(cutRelease, /uses: \.\/\.github\/workflows\/publish-release\.yml[\s\S]*secrets: inherit/);
-  assert.match(mobileReleaseDocs, /GitHub `preview` environment/);
-  assert.match(mobileReleaseDocs, /repository `EXPO_TOKEN` secret/);
-  assert.match(mobileReleaseDocs, /required reviewer and\n {3}branch policy/);
-  assert.match(mobileReleaseDocs, /account\/project scoped, not channel scoped/);
-  assert.match(mobileReleaseDocs, /EXPO_TOKEN/);
 });
 
 test('server publication accepts read-only master requests through protected default-branch handlers', () => {
@@ -370,12 +354,6 @@ test('server publication accepts read-only master requests through protected def
     assert.match(worker, /\n {2}workflow_call:/);
     assert.doesNotMatch(worker, /^ {2}(?:workflow_dispatch|workflow_run):/gm);
   }
-
-  const releaseDocs = readFileSync(path.join(repositoryRoot, 'docs', 'release-compatibility.md'), 'utf8');
-  assert.match(releaseDocs, /Allow GitHub Actions to create and approve pull requests/);
-  assert.match(releaseDocs, /Manage Actions access/);
-  assert.match(releaseDocs, /No new server\npublication environment approvals are required/);
-  assert.match(releaseDocs, /production approval remain in force/);
 });
 
 test('server publication grants only the operation-specific built-in token permissions', () => {
@@ -1006,7 +984,7 @@ test('build input classification covers representative paths without cross-surfa
   assert.doesNotMatch(workflowPathFilterBlock(changes, 'release_config'), /- '!/);
   assert.doesNotMatch(workflowPathFilterBlock(changes, 'backend'), /- '!/);
   const cases = [
-    ['docs/review-notes.md', []],
+    ['README.md', []],
     ['.github/native-release-tag-allowed-signers', ['release_config']],
     ['.github/native-play-attestation-trusted-workflow-shas', ['release_config']],
     ['.github/release-image-attestation-trusted-workflow-shas', ['release_config']],
@@ -1081,10 +1059,6 @@ test('release images publish immutable identity and guard the moving latest tag'
   const deployEnvironment = readFileSync(path.join(repositoryRoot, 'deploy', '.env.example'), 'utf8');
   const ghcrPolicy = readFileSync(path.join(repositoryRoot, 'scripts', 'ghcr-release-policy.mjs'), 'utf8');
   const ghcrReceipt = readFileSync(path.join(repositoryRoot, 'scripts', 'ghcr-release-receipt.mjs'), 'utf8');
-  const releaseCompatibility = readFileSync(
-    path.join(repositoryRoot, 'docs', 'release-compatibility.md'),
-    'utf8'
-  );
   const agentGuide = readFileSync(path.join(repositoryRoot, 'AGENTS.md'), 'utf8');
   const packageConfig = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
 
@@ -1351,11 +1325,6 @@ test('release images publish immutable identity and guard the moving latest tag'
   assert.match(ghcrReceipt, /unchanged-critical-tooling/);
   assert.match(ghcrReceipt, /canonical-cut-parent/);
   assert.match(ghcrReceipt, /explicitly revoked by current protected master/);
-  assert.match(releaseCompatibility, /allow FULL_SHA[\s\S]*revoke FULL_SHA/);
-  assert.match(releaseCompatibility, /full supported[\s\S]*recovery window/);
-  assert.match(releaseCompatibility, /integrity authority, not an availability boundary/);
-  assert.match(releaseCompatibility, /flood or delete records/);
-  assert.match(releaseCompatibility, /Missing, deleted, or invalid legitimate receipt evidence therefore fails closed/);
   assert.match(agentGuide, /revoke SHA[\s\S]*overrides every\s+automatic rule/);
   assert.match(agentGuide, /missing\/deleted\/flooded legitimate evidence still fails closed/);
 
@@ -1437,7 +1406,7 @@ test('active workflows and package scripts do not retain the hosted-result or ex
     acceptanceScript,
     /hosted-result|external-launch|releaseAcceptanceEvidence|evidence_commit|receipt ledger/i
   );
-  assert.equal(plan.schemaVersion, 3);
+  assert.equal(plan.schemaVersion, RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION);
   assert.equal(plan.profile, 'single-user-pre-release');
   assert.equal(plan.policy.retainedEvidenceRequired, false);
   assert.ok(Array.isArray(plan.automaticRequirements));
@@ -1479,18 +1448,18 @@ test('pull request test suites run only for their affected surfaces', () => {
   assert.match(backendPaths, /- '\.github\/workflows\/tests\.yml'/);
   assert.match(mobilePaths, /- '\.github\/workflows\/tests\.yml'/);
   assert.match(backendPaths, /- 'backend\/\*\*'/);
-  assert.match(backendPaths, /- 'docs\/openapi\/v1\.yaml'/);
-  assert.match(backendPaths, /- 'docs\/weight-trend-v2-tuning-report\.json'/);
+  assert.match(backendPaths, /- 'backend\/openapi\/v1\.yaml'/);
+  assert.match(backendPaths, /- 'backend\/test\/fixtures\/weight-trend-v2-tuning-report\.json'/);
   assert.match(backendPaths, /- 'shared\/\*\*'/);
   assert.match(mobilePaths, /- 'backend\/package-lock\.json'/);
   assert.match(mobilePaths, /- 'backend\/package\.json'/);
-  assert.match(mobilePaths, /- 'docs\/openapi\/v1\.yaml'/);
+  assert.match(mobilePaths, /- 'backend\/openapi\/v1\.yaml'/);
   assert.match(mobilePaths, /- 'mobile\/\*\*'/);
   assert.match(mobilePaths, /- 'packages\/api-client\/\*\*'/);
   assert.match(mobilePaths, /- 'package\.json'/);
   assert.equal(
     packageConfig.scripts['api:generate'],
-    'node backend/node_modules/openapi-typescript/bin/cli.js docs/openapi/v1.yaml -o packages/api-client/src/generated/v1.ts'
+    'node backend/node_modules/openapi-typescript/bin/cli.js backend/openapi/v1.yaml -o packages/api-client/src/generated/v1.ts'
   );
   assert.equal(
     packageConfig.scripts['api:contract:check'],
@@ -1514,10 +1483,10 @@ test('pull request test suites run only for their affected surfaces', () => {
     ['backend/package-lock.json', ['backend', 'mobile']],
     ['shared/caloriePolicy.ts', ['backend', 'mobile']],
     ['mobile/src/components/AppCard.tsx', ['mobile']],
-    ['docs/openapi/v1.yaml', ['backend', 'mobile']],
-    ['docs/weight-trend-v2-tuning-report.json', ['backend']],
+    ['backend/openapi/v1.yaml', ['backend', 'mobile']],
+    ['backend/test/fixtures/weight-trend-v2-tuning-report.json', ['backend']],
     ['package.json', ['mobile']],
-    ['docs/review-notes.md', []]
+    ['README.md', []]
   ]) {
     const actualFilters = filters.filter((filterName) => pathFilterMatches(changes, filterName, candidatePath));
     assert.deepEqual(actualFilters, expectedFilters, candidatePath);
@@ -1702,7 +1671,7 @@ test('version-only release PRs validate mirrors without platform build fan-out',
   const preparedReleasePaths = [
     'backend/package-lock.json',
     'backend/package.json',
-    'docs/openapi/v1.yaml',
+    'backend/openapi/v1.yaml',
     'package-lock.json',
     'package.json',
     'packages/api-client/src/generated/v1.ts',

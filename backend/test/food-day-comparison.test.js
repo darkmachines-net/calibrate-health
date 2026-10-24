@@ -1,3 +1,5 @@
+/** @file Regression coverage for food day comparison: captures only the actual local day and preserves the first plan through reopen/recomplete and later settings. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';

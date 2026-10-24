@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Day Intent web: preserves earlier paused dates when a later date resumes and folds legacy completion. */
+
 import { IDBFactory } from 'fake-indexeddb';
 import { IndexedDbOutbox, openIndexedDbOutboxDatabase } from './indexedDbOutbox.web';
 import { assertQueuedDayTransition, assertQueuedFoodDayOpen, queuedFoodDayStatus } from './foodDayIntent';

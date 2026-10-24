@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes activity: activity route requires trusted mobile provenance for Health Connect writes. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

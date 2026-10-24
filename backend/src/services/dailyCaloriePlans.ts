@@ -1,3 +1,5 @@
+/** @file Durable local-day calorie plan snapshots written under the caller-owned planning transaction guard. */
+
 import { Prisma } from '@prisma/client';
 import { CALORIE_POLICY_VERSION, localDateInTimeZone } from '../../../shared/caloriePolicy';
 import { parseLocalDateOnly } from '../utils/date';

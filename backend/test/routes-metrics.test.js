@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes metrics: metrics baseline: same-day first weight and correction preserve the goal and synchronize its baseline. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

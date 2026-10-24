@@ -1,3 +1,5 @@
+/** @file fixtures: Keep unrelated late PWA lifecycle notices from intercepting feature-test actions. */
+
 import {
   expect,
   test as base,
@@ -130,12 +132,16 @@ export type ExpectedApiFailure = {
 };
 
 export type UxStateController = {
+  /** Switches the fixture transport into offline behavior for connectivity scenarios. */
   activateOffline(): Promise<void>;
+  /** Releases responses held by the fixture's loading state. */
   releaseLoading(): void;
 };
 
 export type UxHarness = {
+  /** Installs the requested synthetic authenticated state and returns its transition controls. */
   install(state: UxFixtureState, options?: AuthenticatedApiOptions): Promise<UxStateController>;
+  /** Installs this fixture on the supplied page and returns its transition controls. */
   installOnPage(page: Page): Promise<UxStateController>;
 };
 

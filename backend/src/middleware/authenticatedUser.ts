@@ -1,3 +1,5 @@
+/** @file authenticated User: Small, non-sensitive principal shared by browser, phone, and Wear requests. */
+
 import type { HeightUnit, WeightUnit } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -15,6 +17,7 @@ export type AuthenticatedUser = {
   height_unit?: HeightUnit;
 };
 
+/** Narrow an unknown principal only when it carries a positive safe integer account ID. */
 export const isAuthenticatedUser = (
   value: unknown
 ): value is AuthenticatedUser => {

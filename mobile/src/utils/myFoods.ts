@@ -1,3 +1,5 @@
+/** @file my Foods: Mirrors the API's pinned/name/id order while updating the React Query cache. */
+
 import type { MyFoodSummary, RecentFoodSummary } from '@calibrate/api-client';
 
 function compareNames(left: string, right: string): number {

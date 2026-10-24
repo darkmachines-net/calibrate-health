@@ -1,3 +1,5 @@
+/** @file Regression coverage for planned pause: real pause form, failed resume, recovery and preserved historical edit. */
+
 import { expect, test, hideTransientPwaNotices, expectApiFailure, activateFixtureOffline, FROZEN_LOCAL_DATE, type UxHarness } from './fixtures';
 import type { Page } from '@playwright/test';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';

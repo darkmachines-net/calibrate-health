@@ -1,3 +1,5 @@
+/** @file mobile Auth: Authenticate native bearer tokens before route-level `req.isAuthenticated()` guards run. */
+
 import type { NextFunction, Request, Response } from 'express';
 import { authenticateMobileAccessToken } from '../services/mobileAuth';
 

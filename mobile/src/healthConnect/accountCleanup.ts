@@ -1,3 +1,5 @@
+/** @file account Cleanup: Revoke Android access and remove every device-local value scoped to the deleted server account. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { disconnectHealthConnect } from './native';
 import {

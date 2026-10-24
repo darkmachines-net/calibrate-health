@@ -1,3 +1,5 @@
+/** @file Regression coverage for geometry: weight trend chart geometry. */
+
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import { buildWeightTrendChartGeometry, normalizeWeightTrendMetrics } from './geometry';
 

@@ -1,3 +1,5 @@
+/** @file Weight Trend Preview Card: Loads and renders the compact weight trend preview with responsive chart measurements. */
+
 import React, { useLayoutEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -43,6 +45,7 @@ function formatPreviewDate(value: string): string {
         .format(dateOnlyToLocalDate(value));
 }
 
+/** Loads and renders the compact weight trend preview with responsive chart measurements. */
 export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ onPress, onLogWeight, onMinimumHeightChange, suppressStaleNotice, expanded = false }) => {
     const { api, user } = useAuth();
     const theme = useAppTheme();

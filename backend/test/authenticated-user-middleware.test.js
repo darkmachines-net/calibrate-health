@@ -1,3 +1,5 @@
+/** @file Regression coverage for authenticated user middleware: authenticated user middleware accepts a hydrated principal. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

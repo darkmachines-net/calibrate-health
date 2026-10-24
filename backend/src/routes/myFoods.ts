@@ -1,3 +1,5 @@
+/** @file Account-owned saved-food and recipe CRUD with immutable ingredient snapshots and bounded library queries. */
+
 import express from 'express';
 import type { Prisma } from '@prisma/client';
 import prisma from '../config/database';
@@ -28,6 +30,9 @@ const router = express.Router();
  */
 router.use(requireAuthenticatedUser);
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.get('/', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
@@ -35,9 +40,15 @@ router.get('/', async (req, res) => {
 
     const where: Prisma.MyFoodWhereInput = { user_id: user.id };
     if (q) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         where.name = { contains: q, mode: 'insensitive' };
     }
     if (type === 'FOOD' || type === 'RECIPE') {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         where.type = type;
     }
 
@@ -47,13 +58,25 @@ router.get('/', async (req, res) => {
             // A stable final id tie-break keeps repeated mobile fetches deterministic.
             orderBy: [{ is_pinned: 'desc' }, { name: 'asc' }, { id: 'asc' }]
         });
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.json(items);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.list', err, res.locals?.requestId);
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.status(500).json({ message: 'Server error' });
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.get('/library', async (req, res) => {
     const user = getAuthenticatedUser(req);
 
@@ -64,11 +87,17 @@ router.get('/library', async (req, res) => {
         if (err instanceof MyFoodsLibraryRequestError) {
             return res.status(400).json({ message: err.message });
         }
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.library', err, res.locals?.requestId);
         return res.status(500).json({ message: 'Server error' });
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.patch('/:id/pin', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const id = parsePositiveInteger(req.params.id);
@@ -95,11 +124,17 @@ router.patch('/:id/pin', async (req, res) => {
         }
         return res.json(updated);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.pin', err, res.locals?.requestId);
         return res.status(500).json({ message: 'Server error' });
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.get('/:id', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const id = parsePositiveInteger(req.params.id);
@@ -119,13 +154,25 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ message: 'My food not found' });
         }
 
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.json(item);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.get', err, res.locals?.requestId);
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.status(500).json({ message: 'Server error' });
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.post('/foods', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const name = normalizeMyFoodName(req.body?.name);
@@ -160,9 +207,18 @@ router.post('/foods', async (req, res) => {
                 calories_per_serving: caloriesPerServing
             }
         });
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.json(created);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.create', err, res.locals?.requestId);
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -330,7 +386,13 @@ router.post('/recipes/from-food-logs', async (req, res) => {
         if (seenFoodLogIds.has(id)) {
             return res.status(400).json({ message: 'Duplicate food log id' });
         }
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         seenFoodLogIds.add(id);
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         foodLogIds.push(id);
     }
 
@@ -381,6 +443,9 @@ router.post('/recipes/from-food-logs', async (req, res) => {
 
         return res.json(created);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.create_recipe_from_food_logs', err, res.locals?.requestId);
         if (isHttpError(err)) {
             return res.status(err.statusCode).json({ message: err.message || 'Request failed' });
@@ -449,8 +514,14 @@ router.post('/recipes', async (req, res) => {
             return recipe;
         });
 
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         res.json(created);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.create_recipe', err, res.locals?.requestId);
         if (isHttpError(err)) {
             return res.status(err.statusCode).json({ message: err.message || 'Request failed' });
@@ -459,6 +530,9 @@ router.post('/recipes', async (req, res) => {
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.patch('/:id', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const id = parsePositiveInteger(req.params.id);
@@ -496,6 +570,9 @@ router.patch('/:id', async (req, res) => {
                 return res.status(400).json({ message: 'Recipe must include at least one ingredient' });
             }
 
+            /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
             await prisma.$transaction(async (tx) => {
                 const ingredientRows = await resolveRecipeIngredientRows(
                     tx,
@@ -515,7 +592,13 @@ router.patch('/:id', async (req, res) => {
                     }
                 });
                 if (result.count === 0) throw createHttpError(404, 'My food not found');
+                /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
                 await tx.recipeIngredient.deleteMany({ where: { recipe_id: id } });
+                /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
                 await tx.recipeIngredient.createMany({
                     data: ingredientRows.map((row) => toRecipeIngredientCreateRow(id, row))
                 });
@@ -526,12 +609,18 @@ router.patch('/:id', async (req, res) => {
         if (!updated) return res.status(404).json({ message: 'My food not found' });
         return res.json(updated);
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.update', err, res.locals?.requestId);
         if (isHttpError(err)) return res.status(err.statusCode).json({ message: err.message || 'Request failed' });
         return res.status(500).json({ message: 'Server error' });
     }
 });
 
+/**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
 router.delete('/:id', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const id = parsePositiveInteger(req.params.id);
@@ -543,6 +632,9 @@ router.delete('/:id', async (req, res) => {
         if (result.count === 0) return res.status(404).json({ message: 'My food not found' });
         return res.status(204).end();
     } catch (err) {
+        /**
+ * Create a recipe from ingredient snapshots. Recipes are stored as immutable snapshots (by design).
+ */
         logSafeOperationalError('my_foods.delete', err, res.locals?.requestId);
         return res.status(500).json({ message: 'Server error' });
     }

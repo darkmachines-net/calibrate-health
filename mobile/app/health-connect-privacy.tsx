@@ -1,3 +1,5 @@
+/** @file health connect privacy: Explains Health Connect data use and links to the selected server's complete privacy policy. */
+
 import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { AppButton } from '../src/components/AppButton';
@@ -9,6 +11,7 @@ import { Screen } from '../src/components/Screen';
 import { useAuth } from '../src/auth/AuthContext';
 import { spacing, useAppTheme } from '../src/theme';
 
+/** Explains Health Connect data use and links to the selected server's complete privacy policy. */
 export default function HealthConnectPrivacyScreen() {
     const { serverUrl } = useAuth();
     const { colors } = useAppTheme();

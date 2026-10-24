@@ -1,3 +1,5 @@
+/** @file Regression coverage for operations: retryable mutation classification. */
+
 import { ApiError, type CalibrateApiClient } from '@calibrate/api-client';
 import {
     createQueuedMutationExecutor,

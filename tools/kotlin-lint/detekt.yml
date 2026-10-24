@@ -1,0 +1,13 @@
+build:
+  maxIssues: 0
+config:
+  validation: true
+comments:
+  active: true
+  # This built-in header rule accepts a descriptive KDoc overview, not a fixed license.
+  AbsentOrWrongFileLicense:
+    active: true
+    licenseTemplateFile: file-overview.regex
+    licenseTemplateIsRegex: true
+  UndocumentedPublicFunction:
+    active: true

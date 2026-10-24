@@ -1,3 +1,5 @@
+/** @file Regression coverage for Reminder Settings Panel: ReminderSettingsPanel. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { ReminderSettingsPanel } from './ReminderSettingsPanel';
 

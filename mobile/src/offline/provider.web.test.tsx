@@ -1,3 +1,5 @@
+/** @file Regression coverage for provider web: browser offline outbox provider. */
+
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for verify risk evidence: repository manifest covers every required capability and reports the optional physical gap. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

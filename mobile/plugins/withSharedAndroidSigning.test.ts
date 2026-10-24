@@ -1,3 +1,5 @@
+/** @file Regression coverage for with Shared Android Signing: withSharedAndroidSigning config plugin. */
+
 const signingPlugin = require('./withSharedAndroidSigning') as {
     injectSharedAndroidSigning(source: string): string;
 };

@@ -1,3 +1,5 @@
+/** @file Hosted native evidence schema validation, checkpoint collection, and source/artifact identity binding. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -250,6 +252,7 @@ function validateUpgradeSummary(lane, value, sourceCommit, status, errors) {
   }
 }
 
+/** Collects schema, identity, checkpoint, and artifact errors for a hosted native evidence record. */
 export function validateHostedNativeEvidence(evidence) {
   const errors = [];
   if (!exactFields(evidence, TOP_LEVEL_FIELDS)) errors.push('Hosted native evidence fields are invalid.');
@@ -275,6 +278,7 @@ export function validateHostedNativeEvidence(evidence) {
   return errors;
 }
 
+/** Creates an initialized evidence record with every required lane checkpoint unset. */
 export function createStartedHostedNativeEvidence(lane, sourceCommit) {
   const checkpoints = Object.fromEntries(HOSTED_NATIVE_CHECKPOINTS[lane]?.map((key) => [key, false]) ?? []);
   const evidence = {
@@ -294,6 +298,7 @@ export function createStartedHostedNativeEvidence(lane, sourceCommit) {
   return evidence;
 }
 
+/** Validates and atomically writes hosted evidence through a temporary file. */
 export function writeHostedNativeEvidence(file, evidence) {
   const errors = validateHostedNativeEvidence(evidence);
   if (errors.length) throw new Error(`Hosted native evidence is invalid:\n- ${errors.join('\n- ')}`);
@@ -309,6 +314,7 @@ export function writeHostedNativeEvidence(file, evidence) {
   return destination;
 }
 
+/** Returns the SHA-256 digest of a local artifact's bytes. */
 export function sha256File(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
@@ -319,6 +325,7 @@ function requiredOption(argv, index, option) {
   return value;
 }
 
+/** Parses the evidence initialization command and its lane, source, and destination options. */
 export function parseHostedNativeEvidenceArgs(argv) {
   const [command, ...options] = argv;
   if (command !== 'init') throw new Error('Hosted native evidence command must be init.');

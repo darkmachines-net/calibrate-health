@@ -1,3 +1,5 @@
+/** @file Regression coverage for Progress Bar: ProgressBar. */
+
 import { render } from '@testing-library/react-native';
 import { ProgressBar } from './ProgressBar';
 

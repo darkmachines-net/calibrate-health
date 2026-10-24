@@ -1,3 +1,5 @@
+/** @file Regression coverage for Client Web Vitals Runtime web: ClientWebVitalsRuntime. */
+
 import { render } from '@testing-library/react-native';
 import { usePathname } from 'expo-router';
 import { useAuth } from '../auth/AuthContext';

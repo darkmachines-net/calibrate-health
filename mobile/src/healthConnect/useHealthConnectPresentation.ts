@@ -1,3 +1,5 @@
+/** @file use Health Connect Presentation: Bind the pure shared presentation contract to the active Health Connect provider. */
+
 import { useMemo } from 'react';
 import { getHealthConnectPresentation } from './presentation';
 import { useHealthConnect } from './provider';

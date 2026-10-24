@@ -1,3 +1,5 @@
+/** @file Configured provider selection, credential-aware sequential fallback, and stable paginated food search. */
+
 import FatSecretFoodDataProvider from './fatSecretProvider';
 import OpenFoodFactsProvider from './openFoodFactsProvider';
 import UsdaFoodDataProvider from './usdaFoodDataProvider';

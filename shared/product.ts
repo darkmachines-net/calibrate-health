@@ -1,3 +1,5 @@
+/** @file product: Canonical product identity and public destinations shared by every client and server. */
+
 /** Canonical product identity and public destinations shared by every client and server. */
 export const CALIBRATE_PRODUCT_NAME = 'Calibrate';
 export const CALIBRATE_HOSTED_ORIGIN = 'https://calibratehealth.app';

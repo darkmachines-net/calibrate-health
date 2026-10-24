@@ -1,3 +1,5 @@
+/** @file use Food Tracking Pause: Reads pause state and overlays active offline intents scoped to the current account and server. */
+
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
@@ -6,6 +8,7 @@ import { createOutboxNamespace } from '../offline/queuedMutation';
 import { applyQueuedPauseIntent } from './pendingPause';
 import { foodTrackingPauseQueryKey } from './queryKeys';
 
+/** Reads pause state and overlays active offline intents scoped to the current account and server. */
 export function useFoodTrackingPause(enabled = true) {
     const { api, user, serverUrl } = useAuth();
     const { mutations = [], dayIntents = [], readFoodPause } = useOfflineOutbox();

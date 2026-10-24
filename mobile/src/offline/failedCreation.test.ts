@@ -1,3 +1,5 @@
+/** @file Regression coverage for failed Creation: matches failed updates/deletes on a server row without crossing dates or account namespaces. */
+
 import { failedFoodDiscardIds, findFailedFood } from './failedCreation';
 import type { QueuedMutation } from './queuedMutation';
 const row = (id: string, payload: QueuedMutation['payload'], overrides: Partial<QueuedMutation> = {}): QueuedMutation => ({ id, namespace: 'origin::user:1', operation: 'food.update', payload, state: 'pending', sequence: 1, attemptCount: 0, createdAt: 1, updatedAt: 1, lastError: null, ...overrides });

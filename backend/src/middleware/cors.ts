@@ -1,3 +1,5 @@
+/** @file cors: Build request-aware CORS handling from the environment's browser-origin policy. */
+
 import type { IncomingHttpHeaders } from 'node:http';
 import type { CorsOptionsDelegate } from 'cors';
 import {

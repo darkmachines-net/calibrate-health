@@ -1,9 +1,12 @@
+/** @file layout: Adds date navigation only on the food-log route within the Today stack. */
+
 import { StyleSheet, View } from 'react-native';
 import { Stack, usePathname } from 'expo-router';
 import { DateNavigationHeader } from '../../../src/components/DateNavigationHeader';
 import { useSharedLogDateNavigation } from '../../../src/context/LogDateContext';
 import { getRouteByPath } from '../../../src/navigation/routeRegistry';
 
+/** Adds date navigation only on the food-log route within the Today stack. */
 export default function TodayStackLayout() {
     const pathname = usePathname();
     const dateNavigation = useSharedLogDateNavigation();

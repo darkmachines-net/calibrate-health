@@ -1,3 +1,5 @@
+/** @file Regression coverage for user serialization: userSerialization: USER_CLIENT_SELECT does not include sensitive columns. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

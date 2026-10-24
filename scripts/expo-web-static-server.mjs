@@ -1,3 +1,5 @@
+/** @file Host-safe Expo preview HTTP server with strict static paths, route fallbacks, and cache headers. */
+
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -66,6 +68,7 @@ function cacheControl(filePath) {
   return 'public, max-age=3600';
 }
 
+/** Serves exported Expo files for GET/HEAD requests with the production route-resolution policy. */
 export function createExpoWebStaticServer({ distDir = DEFAULT_DIST_DIR } = {}) {
   return http.createServer((request, response) => {
     const method = request.method ?? 'GET';

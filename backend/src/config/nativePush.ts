@@ -1,3 +1,5 @@
+/** @file Explicit native push opt-in and provider configuration for self-hosted servers. */
+
 export const NATIVE_PUSH_MODES = {
   DISABLED: 'disabled',
   EXPO: 'expo'

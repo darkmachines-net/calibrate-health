@@ -1,3 +1,5 @@
+/** @file Barcode Manual Input: Renders barcode text entry with validation feedback and caller-owned submit and cancel actions. */
+
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppButton } from '../components/AppButton';
@@ -13,6 +15,7 @@ type BarcodeManualInputProps = {
     onCancel?: () => void;
 };
 
+/** Renders barcode text entry with validation feedback and caller-owned submit and cancel actions. */
 export function BarcodeManualInput({
     value,
     error,

@@ -1,3 +1,5 @@
+/** @file my foods: Coordinates the saved-food library and food/recipe editing sheets. */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -38,6 +40,7 @@ type MyFoodSheet = 'food' | 'recipe' | null;
 // A serving stepper needs room for both 48px controls and a readable numeric input.
 const EDITOR_FIELD_BASIS = 200;
 
+/** Coordinates the saved-food library and food/recipe editing sheets. */
 export default function MyFoodsScreen() {
     const theme = useAppTheme();
     const { fontScale } = useWindowDimensions();

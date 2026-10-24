@@ -1,3 +1,5 @@
+/** @file Regression coverage for Android Integration Settings Screens: mounts the connection controls on Android. */
+
 import { render } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import HealthConnectSettingsScreen from '../../app/(tabs)/(settings)/health-connect';

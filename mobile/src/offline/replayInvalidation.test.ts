@@ -1,3 +1,5 @@
+/** @file Regression coverage for replay Invalidation: offline replay query invalidation. */
+
 import { OFFLINE_MUTATION_OPERATIONS } from './operations';
 import { invalidateQueriesAfterOfflineReplay } from './replayInvalidation';
 

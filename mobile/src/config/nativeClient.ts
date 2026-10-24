@@ -1,3 +1,5 @@
+/** @file native Client: Server contract version expected by the JavaScript bundle, independent of the native app version. */
+
 import * as Application from 'expo-application';
 import type { NativeClientIdentity } from '@calibrate/shared';
 import appConfig from '../../app.json';

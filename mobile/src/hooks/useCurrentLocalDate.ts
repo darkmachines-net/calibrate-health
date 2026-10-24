@@ -1,3 +1,5 @@
+/** @file Shared foreground clock that keeps timezone-specific dates current without a timer per subscriber. */
+
 import { useCallback, useSyncExternalStore } from 'react';
 import { isAppForeground, subscribeAppForeground } from '../platform/appForeground';
 import { getTodayDate } from '../utils/dates';

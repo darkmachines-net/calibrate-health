@@ -1,9 +1,12 @@
+/** Regression tests and fixtures for Summary Formatter. */
+
 package app.calibratehealth.wear
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SummaryFormatterTest {
+    /** Verifies that formats cached summary without changing calorie sign meaning. */
     @Test
     fun `formats cached summary without changing calorie sign meaning`() {
         val base = summary(caloriesRemaining = 640)
@@ -12,6 +15,7 @@ class SummaryFormatterTest {
         assertEquals("1,360 of 2,000 kcal", SummaryFormatter.calorieProgress(base))
     }
 
+    /** Verifies that formats canonical grams at the selected unit edge. */
     @Test
     fun `formats canonical grams at the selected unit edge`() {
         assertEquals("72.4 kg", SummaryFormatter.weight(72_400, "kg"))
@@ -19,6 +23,7 @@ class SummaryFormatterTest {
         assertEquals("--", SummaryFormatter.weight(null, "kg"))
     }
 
+    /** Verifies that surfaces pending and error sync states explicitly. */
     @Test
     fun `surfaces pending and error sync states explicitly`() {
         val base = summary()

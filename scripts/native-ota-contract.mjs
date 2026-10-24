@@ -1,3 +1,5 @@
+/** @file Native runtime fingerprint and installed dependency contract used to validate Expo OTA compatibility. */
+
 /** Native input evidence and targeting defaults for local Android builds and OTA publication. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

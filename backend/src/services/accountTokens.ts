@@ -1,3 +1,5 @@
+/** @file Purpose-bound verification and recovery token hashing, expiry, issuance, and consumption. */
+
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { AccountTokenPurpose, type Prisma } from '@prisma/client';
@@ -21,6 +23,7 @@ const tokenTtl = (purpose: AccountTokenPurpose): number =>
     ? EMAIL_VERIFICATION_TTL_MS
     : PASSWORD_RESET_TTL_MS;
 
+/** Invalidate earlier unused tokens for this purpose and store only the new token hash and expiry. */
 export async function issueAccountActionToken(
   userId: number,
   purpose: AccountTokenPurpose,
@@ -86,6 +89,7 @@ export async function sendPasswordReset(userId: number, email: string): Promise<
 
 class TokenClaimFailed extends Error {}
 
+/** Consume an unexpired verification token transactionally and return refreshed access, or null for invalid credentials. */
 export async function confirmEmailVerification(
   token: string,
   now = new Date()
@@ -128,6 +132,7 @@ export async function confirmEmailVerification(
   }
 }
 
+/** Consume a valid reset token, replace the password and revoke account sessions/grants in one transaction. */
 export async function resetPasswordWithToken(
   token: string,
   newPassword: string,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for native Platform: native platform mapping. */
+
 import {
     getMobileDevicePlatform,
     getNativeDeviceName,

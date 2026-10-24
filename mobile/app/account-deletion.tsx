@@ -1,3 +1,5 @@
+/** @file account deletion: Renders canonical deletion instructions and authenticated restricted-account data actions. */
+
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { PublicLegalPage } from '../src/components/legal/PublicLegalPage';
 import {
@@ -8,6 +10,7 @@ import {
 import { RestrictedAccountDataActions } from '../src/components/legal/RestrictedAccountDataActions';
 import { useAuth } from '../src/auth/AuthContext';
 
+/** Renders canonical deletion instructions and authenticated restricted-account data actions. */
 export default function AccountDeletionRoute() {
     const { user } = useAuth();
     return (

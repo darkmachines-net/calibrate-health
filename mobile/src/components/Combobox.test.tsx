@@ -1,3 +1,5 @@
+/** @file Regression coverage for Combobox: Combobox. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { useState } from 'react';
 import { Combobox, Listbox } from './Combobox';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Weight Trend Preview Card: WeightTrendPreviewCard. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';

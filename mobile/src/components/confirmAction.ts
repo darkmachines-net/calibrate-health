@@ -1,3 +1,5 @@
+/** @file confirm Action: Resolves a destructive confirmation consistently on web and native. */
+
 import { Alert, Platform } from 'react-native';
 
 type ConfirmActionOptions = {

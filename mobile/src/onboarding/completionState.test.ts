@@ -1,3 +1,5 @@
+/** @file Regression coverage for completion State: onboarding measurements and completion. */
+
 import { ACTIVITY_LEVELS, HEIGHT_UNITS, WEIGHT_UNITS } from '@calibrate/shared';
 import type { UserClientPayload } from '@calibrate/api-client';
 import {

@@ -1,3 +1,5 @@
+/** @file Database connection resolution from URL or DB_* environment settings while preserving datasource parameters. */
+
 import type { PoolConfig } from 'pg';
 
 type PgSslConfig = PoolConfig['ssl'];
@@ -165,6 +167,7 @@ function resolveSslMode(databaseUrl: string, env: NodeJS.ProcessEnv): string | u
   return modes[0];
 }
 
+/** Resolve explicit TLS mode for pg; require encrypts without verification, while verification modes retain driver checks. */
 export function resolvePgSslConfig(
   databaseUrl: string,
   env: NodeJS.ProcessEnv = process.env

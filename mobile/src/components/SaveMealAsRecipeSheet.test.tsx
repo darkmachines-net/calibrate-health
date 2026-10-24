@@ -1,3 +1,5 @@
+/** @file Regression coverage for Save Meal As Recipe Sheet: SaveMealAsRecipeSheet. */
+
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

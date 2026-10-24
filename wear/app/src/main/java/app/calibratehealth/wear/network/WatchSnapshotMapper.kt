@@ -1,3 +1,5 @@
+/** Strict wire validation and mapping of watch snapshots into persisted cache entities. */
+
 package app.calibratehealth.wear.network
 
 import app.calibratehealth.wear.data.local.DailySnapshotEntity
@@ -29,6 +31,7 @@ object WatchSnapshotMapper {
     private const val MAX_REMINDERS = 2
     private val DAILY_DEFICITS = setOf(-1_000, -750, -500, -250, 0, 250, 500, 750, 1_000)
 
+    /** Validates the bounded watch wire snapshot and maps it into cache entities using the supplied fetch time. */
     fun map(body: String, fetchedAtEpochMs: Long): MappedWatchSnapshot {
         require(fetchedAtEpochMs > 0) { "Snapshot fetch time must be positive." }
         val root = StrictJson.parse(body).requireObject()

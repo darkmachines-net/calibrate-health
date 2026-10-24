@@ -1,3 +1,5 @@
+/** @file Text Field: Text input compatibility wrapper backed by the shared accessible field contract. */
+
 import React, { useRef, useState } from 'react';
 import { StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { type AppTheme, useAppTheme } from '../theme';

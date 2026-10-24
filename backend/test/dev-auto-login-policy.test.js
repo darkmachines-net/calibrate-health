@@ -1,3 +1,5 @@
+/** @file Regression coverage for dev auto login policy: devAutoLoginPolicy: shouldAutoLoginTestUser returns false when not explicitly enabled. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

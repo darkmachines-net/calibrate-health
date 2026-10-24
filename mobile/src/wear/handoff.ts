@@ -1,3 +1,5 @@
+/** @file Lazy native Wear handoffs with allowlisted destinations and pairing context checks. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Href } from 'expo-router';
 import type { WearPairingMessage } from '@calibrate/wear-pairing';
@@ -152,6 +154,7 @@ async function readPendingHandoffs(
     return handoffs;
 }
 
+/** Reads pending watch handoffs scoped to the normalized server origin and account. */
 export async function getPendingWearHandoffs(
     serverOrigin: string,
     userId: number
@@ -160,6 +163,7 @@ export async function getPendingWearHandoffs(
     return readPendingHandoffs(origin, userId);
 }
 
+/** Removes handled watch message IDs from account-scoped storage, deleting the key when empty. */
 export async function markWearHandoffsHandled(
     serverOrigin: string,
     userId: number,
@@ -269,6 +273,7 @@ export async function processWearHandoffInbox(options: {
     return { persisted, errors };
 }
 
+/** Maps a dated food-log handoff to its app route, returning null for unsupported destinations. */
 export function getWearHandoffHref(handoff: WearHandoff): Href | null {
     if (handoff.destination !== 'food_log' || handoff.localDate === null) return null;
     return {

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Connected Apps Panel: ConnectedAppsPanel. */
+
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import type { ConnectedAppSummary } from '@calibrate/api-client';

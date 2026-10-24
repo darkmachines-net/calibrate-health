@@ -1,3 +1,5 @@
+/** @file profile Image: Helpers for parsing and serializing small profile images. */
+
 /**
  * Helpers for parsing and serializing small profile images.
  *

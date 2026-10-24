@@ -1,3 +1,5 @@
+/** @file Durable account access gates, required legal acceptance, and serialization of restricted-account states. */
+
 import prisma from '../config/database';
 import {
   CURRENT_PRIVACY_VERSION,
@@ -30,6 +32,7 @@ export type LegalStatusPayload = {
   };
 };
 
+/** Return required and genuinely accepted legal versions, preserving missing acceptance as null. */
 export function serializeLegalStatus(source: AccountAccessSource): LegalStatusPayload {
   const latestAcceptance = source.legal_acceptances[0] ?? null;
   return {
@@ -46,6 +49,7 @@ export function serializeLegalStatus(source: AccountAccessSource): LegalStatusPa
   };
 }
 
+/** Read current verification/legal gates for an account, returning null when that account no longer exists. */
 export async function getAccountAccess(userId: number): Promise<AccountAccess | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -54,6 +58,7 @@ export async function getAccountAccess(userId: number): Promise<AccountAccess | 
   return user ? serializeAccountAccess(user) : null;
 }
 
+/** Read current legal requirements and acceptance history without synthesizing consent for an existing account. */
 export async function getLegalStatus(userId: number): Promise<LegalStatusPayload | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },

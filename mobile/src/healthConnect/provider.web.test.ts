@@ -1,3 +1,5 @@
+/** @file Regression coverage for provider web: Health Connect localhost web fixture. */
+
 import {
     getHealthConnectWebFixtureForHost,
     isHealthConnectWebFixtureHost,

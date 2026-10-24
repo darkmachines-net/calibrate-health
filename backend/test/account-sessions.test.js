@@ -1,3 +1,5 @@
+/** @file Regression coverage for account sessions: account session listing is owner-scoped, privacy-safe, and places current first. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Form Error Summary: FormErrorSummary. */
+
 import { createRef } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { act, render } from '@testing-library/react-native';

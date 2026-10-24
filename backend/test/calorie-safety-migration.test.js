@@ -1,3 +1,5 @@
+/** @file Regression coverage for calorie safety migration: calorie safety migration preserves values and adds date-only sticky review fields. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

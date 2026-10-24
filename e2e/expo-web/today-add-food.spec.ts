@@ -1,3 +1,5 @@
+/** @file Regression coverage for today add food. */
+
 import { expect, test, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 
 for (const status of ['COMPLETE', 'INCOMPLETE'] as const) {

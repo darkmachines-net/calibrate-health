@@ -1,3 +1,5 @@
+/** @file Focused-editor navigation guards and explicitly permitted transitions after save or discard. */
+
 type Navigate = () => void;
 export type PrepareNavigation = () => Promise<boolean>;
 
@@ -21,6 +23,7 @@ export function interceptGuardedNavigation(navigate: Navigate, preventDefault: (
     return true;
 }
 
+/** Runs the active discard guard and optional preparation before invoking navigation. */
 export function requestGuardedNavigation(navigate: Navigate, prepare?: PrepareNavigation): void {
     if (activeGuard) void activeGuard(navigate, prepare);
     else if (prepare) void prepare().then((ready) => { if (ready) navigate(); });

@@ -45,7 +45,7 @@
     "build:mobile": "npm --prefix mobile run typecheck",
     "build:expo-web": "npm --prefix mobile run build:web",
     "release:acceptance": "node scripts/release-acceptance.mjs verify",
-    "api:generate": "node backend/node_modules/openapi-typescript/bin/cli.js docs/openapi/v1.yaml -o packages/api-client/src/generated/v1.ts",
+    "api:generate": "node backend/node_modules/openapi-typescript/bin/cli.js backend/openapi/v1.yaml -o packages/api-client/src/generated/v1.ts",
     "api:contract:check": "npm run api:generate && git diff --exit-code -- packages/api-client/src/generated/v1.ts",
     "release:check": "node scripts/release-config.mjs check && node scripts/release-acceptance.mjs verify",
     "release:check:container": "node scripts/postgres-backup-restore-smoke.mjs && node scripts/release-config.mjs check && node scripts/release-acceptance.mjs verify",
@@ -60,7 +60,7 @@
     "test:native:upgrade:unit": "node --test scripts/native-upgrade-rehearsal.test.mjs",
     "audit:production": "npm audit --package-lock-only --omit=dev --audit-level=high",
     "audit:eas-cli:high": "npm audit --prefix tools/eas-cli --package-lock-only --audit-level=high",
-    "lint": "npm run lint:eslint && npm run typecheck",
+    "lint": "npm run lint:eslint && npm run lint:kotlin && npm run typecheck",
     "lint:eslint": "eslint . --max-warnings 0",
     "test:lint": "node --test scripts/eslint-config.test.mjs",
     "typecheck": "npm run lint:backend && npm run lint:shared && npm run lint:api-client && npm run lint:mobile",
@@ -109,7 +109,8 @@
     "test:coverage:mobile": "npm --prefix mobile test -- --coverage --runInBand",
     "knip": "knip",
     "knip:production": "knip --production --exclude exports,types",
-    "test:dead-code": "node --test scripts/knip-config.test.mjs && npm run knip && npm run knip:production"
+    "test:dead-code": "node --test scripts/knip-config.test.mjs && npm run knip && npm run knip:production",
+    "lint:kotlin": "node scripts/kotlin-lint.mjs"
   },
   "keywords": [],
   "author": "",
@@ -134,6 +135,7 @@
     "knip": "6.29.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.72.0",
-    "yaml": "2.9.0"
+    "yaml": "2.9.0",
+    "eslint-plugin-jsdoc": "63.3.3"
   }
 }

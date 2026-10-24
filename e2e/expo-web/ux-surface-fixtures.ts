@@ -1,3 +1,5 @@
+/** @file ux surface fixtures: Resolves a typed UX locator contract to a test-ID or accessible-role locator. */
+
 import type { Locator, Page, Route } from '@playwright/test';
 import { expect } from './fixtures';
 import { ROUTE_IDS } from '../../mobile/src/navigation/routeRegistry';
@@ -19,6 +21,7 @@ const RESUME_CONFIRMATION_DUE_PAUSE_RESPONSE = {
   },
 };
 
+/** Resolves a typed UX locator contract to a test-ID or accessible-role locator. */
 export function locatorForContract(page: Page, contract: UxLocatorContract): Locator {
   if (contract.kind === 'test-id') return page.getByTestId(contract.value);
   return page.getByRole(contract.role, {
@@ -27,6 +30,7 @@ export function locatorForContract(page: Page, contract: UxLocatorContract): Loc
   });
 }
 
+/** Waits for the contract's surface marker and loaded fonts before inspecting layout. */
 export async function waitForReadySurface(page: Page, contract: UxLocatorContract): Promise<void> {
   await expect(locatorForContract(page, contract).first()).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -40,6 +44,7 @@ async function fulfillJson(route: Route, body: unknown): Promise<void> {
   });
 }
 
+/** Adds synthetic route-specific API responses needed to exercise accessibility surfaces. */
 export async function installAccessibilityApiExtensions(
   page: Page,
   routeId: (typeof ROUTE_IDS)[number],

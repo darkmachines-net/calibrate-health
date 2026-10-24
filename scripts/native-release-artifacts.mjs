@@ -1,4 +1,4 @@
-/** Retain and independently verify signed native build evidence before EAS or Play credentials are admitted. */
+/** @file Retain and independently verify signed native build evidence before EAS or Play credentials are admitted. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';

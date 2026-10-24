@@ -1,4 +1,4 @@
-/** Resolve the same managed Expo runtime for native builds and credential-free OTA exports. */
+/** @file Resolve the same managed Expo runtime for native builds and credential-free OTA exports. */
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

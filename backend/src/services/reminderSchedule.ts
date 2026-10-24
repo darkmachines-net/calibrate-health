@@ -1,3 +1,5 @@
+/** @file Timezone-aware reminder schedule parsing and next eligible local-day occurrence calculations. */
+
 const DEFAULT_REMINDER_LOCAL_MINUTE = 9 * 60;
 const MINUTES_PER_DAY = 24 * 60;
 
@@ -14,6 +16,7 @@ export const parseLocalWallClockTime = (value: unknown): number | null => {
   return Number(match[1]) * 60 + Number(match[2]);
 };
 
+/** Format a valid minute-of-day as HH:MM, using the default reminder time for invalid input. */
 export const formatLocalWallClockMinute = (minute: number): string => {
   const safeMinute = Number.isInteger(minute) && minute >= 0 && minute < MINUTES_PER_DAY
     ? minute
@@ -64,5 +67,6 @@ export const isWithinQuietHours = (
   return minuteOfDay >= startMinute || minuteOfDay < endMinute;
 };
 
+/** Treat a wall-clock reminder as due from its configured minute onward within the selected local day. */
 export const isReminderDue = (minuteOfDay: number, reminderMinute: number): boolean =>
   minuteOfDay >= reminderMinute;

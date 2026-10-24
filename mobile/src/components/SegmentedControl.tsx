@@ -1,3 +1,5 @@
+/** @file Segmented Control: Named exclusive selector with native touch behavior and web roving focus. */
+
 import React from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, Pressable, StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

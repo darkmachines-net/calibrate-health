@@ -1,3 +1,5 @@
+/** @file Regression coverage for Client Diagnostics Runtime: ClientDiagnosticsRuntime. */
+
 import { render } from '@testing-library/react-native';
 import { useAuth } from '../auth/AuthContext';
 import { registerClientDiagnosticReporter } from './clientDiagnostics';

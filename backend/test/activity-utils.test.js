@@ -1,3 +1,5 @@
+/** @file Regression coverage for activity utils: activity utils parse source identity and derive local day in the account timezone. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

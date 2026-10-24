@@ -1,3 +1,5 @@
+/** @file Regression coverage for pause Intent: checks every active/inactive transition and coalesces only identical final pending intent. */
+
 import { IDBFactory } from 'fake-indexeddb';
 import { validatePauseTransition } from './pauseIntent';
 import { assertRecoverableEnqueue } from './failedMutationRecovery';

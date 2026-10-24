@@ -1,3 +1,5 @@
+/** @file Regression coverage for web Vitals web: privacy-safe client web vitals. */
+
 import type { ClientDiagnosticSignal } from './clientDiagnostics';
 import { reportClientDiagnostic } from './clientDiagnostics';
 import {

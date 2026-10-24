@@ -1,3 +1,5 @@
+/** @file Validated profile and initial-goal setup committed atomically under account planning guards. */
+
 import { observeCurrentCaloriePlan } from './dailyCaloriePlans';
 import type {
   ActivityLevel,
@@ -181,6 +183,7 @@ function parseCompleteData(value: unknown): OnboardingParseResult<CompleteOnboar
   return { ok: true, value: data };
 }
 
+/** Validate the complete profile/goal payload and return structured field errors without partial writes. */
 export function parseCompleteOnboardingBody(
   body: unknown
 ): OnboardingParseResult<CompleteOnboardingInput> {
@@ -219,6 +222,7 @@ async function existingCompletionResponse(
     : null;
 }
 
+/** Lock the account and commit profile, goal and completion together, preserving idempotent completed responses. */
 export async function completeOnboardingInTransaction(
   tx: MutationDatabase,
   userId: number,

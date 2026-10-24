@@ -1,3 +1,5 @@
+/** @file types: Shared food data provider types used by provider implementations and routes. */
+
 /**
  * Shared food data provider types used by provider implementations and routes.
  */
@@ -52,5 +54,6 @@ export interface FoodSearchResult {
 export interface FoodDataProvider {
     name: FoodDataSource;
     supportsBarcodeLookup: boolean;
+    /** Return normalized foods for one provider/page while preserving serving and provider attribution metadata. */
     searchFoods(request: FoodSearchRequest): Promise<FoodSearchResult>;
 }

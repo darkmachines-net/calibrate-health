@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes legal: self-hosted deployments do not expose Calibrate hosted legal-consent routes. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

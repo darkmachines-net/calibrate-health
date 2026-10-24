@@ -1,3 +1,5 @@
+/** @file weight: Opens dated weight entry on each focus and restores navigation when the entry sheet closes. */
+
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,6 +8,7 @@ import { TabScreen } from '../../../src/components/TabScreen';
 import { WeightEntrySheet } from '../../../src/components/WeightEntrySheet';
 import { useLogDateNavigation } from '../../../src/hooks/useLogDateNavigation';
 
+/** Opens dated weight entry on each focus and restores navigation when the entry sheet closes. */
 export default function WeightScreen() {
     const router = useRouter();
     const { date } = useLocalSearchParams<{ date?: string }>();

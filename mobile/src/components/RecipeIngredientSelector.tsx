@@ -1,3 +1,5 @@
+/** @file Recipe Ingredient Selector: Search and page through every owned saved food that can be used as a recipe ingredient. */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';

@@ -1,3 +1,5 @@
+/** @file Offline Workspace Status: Local continuity is independent of permission to resume server synchronization. */
+
 import { FailedMutationRecovery } from './FailedChangeRecoveryPanel';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for storage: orders an in-flight old token write before logout clearing and replacement-account persistence. */
+
 const mockValues = new Map<string, string>();
 let mockHold: Promise<void> | undefined;
 jest.mock('expo-secure-store', () => ({

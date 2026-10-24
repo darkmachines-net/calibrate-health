@@ -1,3 +1,5 @@
+/** @file Regression coverage for dev test data: dev seed marks onboarding complete only after baseline goal and metric writes. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

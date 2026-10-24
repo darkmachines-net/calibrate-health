@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Hosted Android test setup and execution with explicit runner, SDK, Metro, and evidence ownership. */
+
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import fs from 'node:fs';
@@ -27,6 +29,7 @@ function assertHostedAndroidRunner(environment = process.env, platform = process
   buildAndroidE2eAdbArgs([], environment.ANDROID_ADB_SERIAL);
 }
 
+/** Builds the hosted Android install, Metro, and emulator commands only for a valid hosted runner. */
 export function createHostedAndroidCommandPlan(
   environment = process.env,
   platform = process.platform,
@@ -58,6 +61,7 @@ export function createHostedAndroidCommandPlan(
   };
 }
 
+/** Forces noninteractive CI behavior while preserving the hosted Metro environment. */
 export function createHostedAndroidMetroEnvironment(environment = process.env) {
   return { ...environment, CI: '1' };
 }
@@ -72,6 +76,7 @@ export function redactHostedAndroidDiagnostics(value) {
     .replaceAll(/\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|API_KEY))=([^\s]+)/gi, '$1=[redacted]');
 }
 
+/** Redacts hosted diagnostics and keeps a bounded UTF-8 tail without splitting a code point. */
 export function boundHostedAndroidLog(value, maxBytes = HOSTED_ANDROID_LOG_MAX_BYTES) {
   const sanitized = Buffer.from(redactHostedAndroidDiagnostics(value), 'utf8');
   if (sanitized.byteLength <= maxBytes) return sanitized.toString('utf8');
@@ -112,6 +117,7 @@ function metroExited(child) {
   return child.exitCode !== null || child.signalCode !== null;
 }
 
+/** Waits for a healthy Metro endpoint within a deadline and reports early process failure. */
 export async function waitForHostedAndroidMetro(child, options = {}) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Date.now;
@@ -181,6 +187,7 @@ async function terminateHostedAndroidMetro(child, options = {}) {
   }
 }
 
+/** Runs hosted Android evidence collection with owned Metro lifecycle and bounded diagnostic cleanup. */
 export async function runHostedAndroidE2e(environment = process.env, dependencies = {}) {
   const plan = createHostedAndroidCommandPlan(environment, dependencies.platform ?? process.platform);
   const log = (dependencies.createLog ?? createHostedAndroidLog)(plan.config.logFile);

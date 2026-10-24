@@ -1,3 +1,5 @@
+/** @file Regression coverage for unknown route gates: unknown-route fallback waits for the existing session gate before exposing Today. */
+
 import { expect, expectApiFailure, test } from './fixtures';
 
 for (const missing of ['/notifications?cursor=stale#history', '/missing/account/page?old=true#section']) {

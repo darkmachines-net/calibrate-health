@@ -1,3 +1,5 @@
+/** @file Regression coverage for copy Food When Synchronized: rejects stale-tab copy after durable food intent and serializes a copy before later intent. */
+
 import { IDBFactory } from 'fake-indexeddb';
 import { IndexedDbOutbox, openIndexedDbOutboxDatabase } from '../offline/indexedDbOutbox.web';
 import { createOutboxDispatch } from '../offline/mutationDispatch';

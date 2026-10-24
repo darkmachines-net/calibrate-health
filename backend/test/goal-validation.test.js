@@ -1,3 +1,5 @@
+/** @file Regression coverage for goal validation: goalValidation: validateGoalWeightsForDailyDeficit enforces loss direction for positive deficits. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

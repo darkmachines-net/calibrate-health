@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Day Receipts: serializes a slow authoritative read before a newer direct completion receipt. */
+
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'request' }));
 import AsyncStorage from '@react-native-async-storage/async-storage';

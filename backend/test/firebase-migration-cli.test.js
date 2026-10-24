@@ -1,3 +1,5 @@
+/** @file Regression coverage for firebase migration cli: offline CLI reports synthetic inventory and holds collisions without disclosing input. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

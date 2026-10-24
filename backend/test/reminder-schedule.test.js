@@ -1,3 +1,5 @@
+/** @file Regression coverage for reminder schedule: reminder wire times use canonical HH:mm values. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {

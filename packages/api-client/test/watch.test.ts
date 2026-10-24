@@ -1,3 +1,5 @@
+/** @file Regression coverage for watch: watch snapshot uses the versioned restricted surface. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

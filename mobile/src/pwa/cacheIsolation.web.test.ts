@@ -1,3 +1,5 @@
+/** @file Regression coverage for cache Isolation web: browser PWA cache isolation. */
+
 import {
     PWA_CACHE_MESSAGES,
     clearBrowserUserScopedCaches

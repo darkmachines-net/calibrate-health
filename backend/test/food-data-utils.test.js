@@ -1,3 +1,5 @@
+/** @file Regression coverage for food data utils: foodData utils: round rounds using the requested precision. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

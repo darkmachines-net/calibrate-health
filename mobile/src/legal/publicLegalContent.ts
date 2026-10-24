@@ -1,3 +1,5 @@
+/** @file Canonical public privacy, account-deletion, and legal contact content shared by client surfaces. */
+
 export type PublicLegalSection = {
     title: string;
     paragraphs?: string[];
@@ -222,6 +224,7 @@ export const ACCOUNT_DELETION_SECTIONS: PublicLegalSection[] = [
     }
 ];
 
+/** Builds the hosted-account deletion email with verification guidance and no request for a password. */
 export function buildAccountDeletionRequestMailto(): string {
     const subject = 'Calibrate hosted account deletion request';
     const body = [

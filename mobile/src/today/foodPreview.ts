@@ -1,3 +1,5 @@
+/** @file food Preview: Include every meal period so an empty slot stays distinct from food logged with zero calories. */
+
 import type { FoodLogEntry } from '@calibrate/api-client';
 import { MEAL_PERIODS, type MealPeriod } from '@calibrate/shared';
 

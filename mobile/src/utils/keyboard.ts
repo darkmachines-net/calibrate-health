@@ -1,3 +1,5 @@
+/** @file keyboard: Keeps form content visible above the native keyboard on each supported platform. */
+
 export type KeyboardAvoidingBehavior = 'height' | 'padding' | undefined;
 
 /** Keeps form content visible above the native keyboard on each supported platform. */

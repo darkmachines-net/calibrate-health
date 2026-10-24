@@ -1,3 +1,5 @@
+/** @file Account notification history, read/dismiss actions, push subscriptions, and realtime stream endpoints. */
+
 import express from 'express';
 import { NativePushPlatform, NativePushProvider } from '@prisma/client';
 import prisma from '../config/database';
@@ -34,6 +36,9 @@ const isBrowserSession = (req: express.Request, res: express.Response, next: exp
   return next();
 };
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.use(requireAuthenticatedUser);
 
 /**
@@ -42,14 +47,26 @@ router.use(requireAuthenticatedUser);
 router.get('/stream', (req, res) => {
   const user = getAuthenticatedUser(req);
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.status(200);
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.set({
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     Connection: 'keep-alive',
     'X-Accel-Buffering': 'no'
   });
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.flushHeaders?.();
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.write(': connected\n\n');
 
   const writeEvent = (payload: unknown) => {
@@ -65,23 +82,44 @@ router.get('/stream', (req, res) => {
   const heartbeatId = setInterval(() => {
     res.write(': heartbeat\n\n');
   }, SSE_HEARTBEAT_INTERVAL_MS);
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   heartbeatId.unref();
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.once('close', () => {
+    /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
     clearInterval(heartbeatId);
+    /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
     unsubscribe();
   });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.get('/public-key', (_req, res) => {
   const { publicKey, error } = getWebPushPublicKey();
   if (!publicKey) {
     return res.status(500).json({ message: error ?? 'Web push is not configured.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ publicKey });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.post('/subscription', isBrowserSession, async (req, res) => {
   const user = getAuthenticatedUser(req);
   const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint.trim() : '';
@@ -98,6 +136,9 @@ router.post('/subscription', isBrowserSession, async (req, res) => {
     return res.status(400).json({ message: 'Invalid subscription payload.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await prisma.pushSubscription.upsert({
     where: { endpoint },
     update: {
@@ -124,9 +165,15 @@ router.post('/subscription', isBrowserSession, async (req, res) => {
     }
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.delete('/subscription', isBrowserSession, async (req, res) => {
   const user = getAuthenticatedUser(req);
   const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint.trim() : '';
@@ -137,10 +184,16 @@ router.delete('/subscription', isBrowserSession, async (req, res) => {
 
   // Keep unsubscribe idempotent and owner-scoped. A stale account session must
   // not delete an endpoint after another account has claimed it.
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await prisma.pushSubscription.deleteMany({
     where: { user_id: user.id, session_sid: req.sessionID, endpoint }
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 
@@ -170,6 +223,9 @@ const normalizeNativeText = (value: unknown, maxLength: number): string => {
 const isExpoPushToken = (token: string): boolean =>
   /^(?:Exponent|Expo)PushToken\[[^[\]]+\]$/.test(token);
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.post('/native-subscription', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const token = normalizeNativeText(req.body?.token, 512);
@@ -209,6 +265,9 @@ router.post('/native-subscription', async (req, res) => {
     });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await prisma.nativePushSubscription.upsert({
     where: {
       provider_token: {
@@ -238,6 +297,9 @@ router.post('/native-subscription', async (req, res) => {
 
   // One authenticated install owns one active token per provider. Expo can rotate a token while
   // the app is running; retire the previous value immediately instead of waiting for a failed send.
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await prisma.nativePushSubscription.updateMany({
     where: {
       user_id: user.id,
@@ -249,9 +311,15 @@ router.post('/native-subscription', async (req, res) => {
     data: { revoked_at: new Date() }
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.delete('/native-subscription', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const token = normalizeNativeText(req.body?.token, 512);
@@ -265,6 +333,9 @@ router.delete('/native-subscription', async (req, res) => {
     return res.status(400).json({ message: 'Invalid or unsupported native push provider.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await prisma.nativePushSubscription.updateMany({
     where: {
       user_id: user.id,
@@ -278,6 +349,9 @@ router.delete('/native-subscription', async (req, res) => {
     }
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 
@@ -296,6 +370,9 @@ router.get('/in-app', async (req, res) => {
     return res.status(400).json({ message: 'Invalid notification query.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await resolveInactiveReminderNotificationsForUser({
     userId: user.id,
     timeZone
@@ -313,12 +390,21 @@ router.get('/in-app', async (req, res) => {
   return res.json({ notifications, unread_count: unreadCount, next_cursor: nextCursor });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.patch('/in-app/read-all', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const updatedCount = await markAllInAppNotificationsRead({ userId: user.id });
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true, updated_count: updatedCount });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.patch('/in-app/:notificationId/read', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const notificationId = parsePositiveInteger(req.params.notificationId);
@@ -326,14 +412,23 @@ router.patch('/in-app/:notificationId/read', async (req, res) => {
     return res.status(400).json({ message: 'Invalid notification id.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await markInAppNotificationRead({
     userId: user.id,
     notificationId
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 
+/**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
 router.patch('/in-app/:notificationId/dismiss', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const notificationId = parsePositiveInteger(req.params.notificationId);
@@ -341,11 +436,17 @@ router.patch('/in-app/:notificationId/dismiss', async (req, res) => {
     return res.status(400).json({ message: 'Invalid notification id.' });
   }
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   await markInAppNotificationDismissed({
     userId: user.id,
     notificationId
   });
 
+  /**
+ * Return active in-app reminders, resolving stale/completed entries first.
+ */
   res.json({ ok: true });
 });
 

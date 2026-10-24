@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Log Amount: food log snapshot amounts. */
+
 import type { FoodLogEntry } from '@calibrate/api-client';
 import { getFoodLogAmountText, getFoodLogEditableAmount } from './foodLogAmount';
 

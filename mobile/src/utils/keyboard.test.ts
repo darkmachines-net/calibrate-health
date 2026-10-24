@@ -1,3 +1,5 @@
+/** @file Regression coverage for keyboard: keyboard avoidance. */
+
 import { getKeyboardAvoidingBehavior } from './keyboard';
 
 describe('keyboard avoidance', () => {

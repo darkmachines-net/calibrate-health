@@ -1,3 +1,5 @@
+/** @file Date Picker Field: Pressable native date field used where typed date strings are error-prone on mobile. */
+
 import React, { useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';

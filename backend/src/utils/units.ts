@@ -1,3 +1,5 @@
+/** @file units: Unit parsing + conversion helpers for API payloads and storage. */
+
 /**
  * Unit parsing + conversion helpers for API payloads and storage.
  *

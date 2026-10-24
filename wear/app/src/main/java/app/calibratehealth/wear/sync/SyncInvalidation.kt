@@ -1,3 +1,5 @@
+/** Trusted-phone invalidation intake and scheduling of account-scoped watch refresh. */
+
 package app.calibratehealth.wear.sync
 
 import android.content.Context

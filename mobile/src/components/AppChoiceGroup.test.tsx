@@ -1,3 +1,5 @@
+/** @file Regression coverage for App Choice Group: AppChoiceGroup. */
+
 import { useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { fireEvent, render } from '@testing-library/react-native';

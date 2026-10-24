@@ -1,3 +1,5 @@
+/** @file Source-qualified food selections preserving provider attribution and immutable serving metadata. */
+
 import type { FoodLogCreatePayload, MyFoodSummary, RecentFoodSummary } from '@calibrate/api-client';
 import type { MealPeriod } from '@calibrate/shared';
 import {
@@ -166,6 +168,7 @@ function getCurrentMyFoodDefaultServings(selection: Extract<FoodLogSelection, { 
     return selection.recent.servings_consumed ?? 1;
 }
 
+/** Creates a provider selection with a stable source-qualified key and its full serving metadata. */
 export function createProviderFoodSelection(item: SearchedFoodItem): FoodLogSelection {
     return {
         kind: 'provider',
@@ -175,6 +178,7 @@ export function createProviderFoodSelection(item: SearchedFoodItem): FoodLogSele
     };
 }
 
+/** Creates a recent-log selection, attaching current library data only when its identifier matches. */
 export function createRecentFoodSelection(
     recent: RecentFoodSummary,
     currentMyFood?: MyFoodSummary | null
@@ -203,6 +207,7 @@ export function isRecentFoodSelectionReady(
     return hasResolvedMyFoods;
 }
 
+/** Creates a saved-food selection with a stable library-item key. */
 export function createMyFoodSelection(item: MyFoodSummary): FoodLogSelection {
     return {
         kind: 'my-food',
@@ -212,6 +217,7 @@ export function createMyFoodSelection(item: MyFoodSummary): FoodLogSelection {
     };
 }
 
+/** Detects calorie-only recent entries that have no saved-food or serving snapshot metadata. */
 export function isManualRecentSelection(selection: FoodLogSelection): boolean {
     return selection.kind === 'recent'
         && selection.recent.my_food_id === null
@@ -221,6 +227,7 @@ export function isManualRecentSelection(selection: FoodLogSelection): boolean {
         && selection.recent.measure_label_snapshot === null;
 }
 
+/** Initializes quantity and measure inputs from the selected source's serving defaults. */
 export function createFoodSelectionDraft(selection: FoodLogSelection): FoodSelectionDraft {
     if (selection.kind === 'provider') {
         const preferredIndex = getPreferredFoodMeasureIndex(selection.item) ?? 0;
@@ -293,6 +300,7 @@ export function changeFoodSelectionMeasure(
     };
 }
 
+/** Returns the active serving unit while preserving historical snapshot units for recent entries. */
 export function getFoodSelectionUnit(selection: FoodLogSelection, draft: FoodSelectionDraft): string {
     if (selection.kind === 'provider') {
         const measure = selection.item.measures[Number(draft.measureIndex)] ?? null;
@@ -303,10 +311,12 @@ export function getFoodSelectionUnit(selection: FoodLogSelection, draft: FoodSel
     return getRecentServingBasis(selection.recent)?.unitLabel ?? 'serving';
 }
 
+/** Chooses the quantity step appropriate to the selected serving unit. */
 export function getFoodSelectionStep(selection: FoodLogSelection, draft: FoodSelectionDraft): number {
     return getFoodQuantityStep(getFoodSelectionUnit(selection, draft));
 }
 
+/** Validates quantity and builds a dated meal snapshot while retaining provider and serving provenance. */
 export function buildFoodSelectionPayload(options: {
     selection: FoodLogSelection;
     draft: FoodSelectionDraft;
@@ -447,6 +457,7 @@ export function buildFoodSelectionPayload(options: {
     };
 }
 
+/** Builds concise source and serving context for the selected food. */
 export function describeFoodSelection(selection: FoodLogSelection): string {
     if (selection.kind === 'provider') {
         return selection.item.brand ?? 'Food provider result';

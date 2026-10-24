@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend benchmark: weight trend benchmark: recovers representative steady rates without outlier-driven reversal. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { performance } = require('node:perf_hooks');

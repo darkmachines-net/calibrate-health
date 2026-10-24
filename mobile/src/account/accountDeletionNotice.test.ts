@@ -1,3 +1,5 @@
+/** @file Regression coverage for account Deletion Notice: account deletion cleanup notice. */
+
 const mockStorage = new Map<string, string>();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({

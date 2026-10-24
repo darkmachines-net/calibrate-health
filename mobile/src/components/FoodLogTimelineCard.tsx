@@ -1,3 +1,5 @@
+/** @file Food Log Timeline Card: Full meal log with expansion for populated meals and snapshot edit/delete actions. */
+
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

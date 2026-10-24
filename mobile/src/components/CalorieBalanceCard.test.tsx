@@ -1,3 +1,5 @@
+/** @file Regression coverage for Calorie Balance Card: CalorieBalanceCard. */
+
 import { act, render } from '@testing-library/react-native';
 import { Dimensions, processColor, StyleSheet } from 'react-native';
 import { themes } from '../theme';

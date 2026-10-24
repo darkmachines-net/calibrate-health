@@ -1,3 +1,5 @@
+/** @file Regression coverage for my food pinning: setMyFoodPinned sends an ownership-safe resource patch payload. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

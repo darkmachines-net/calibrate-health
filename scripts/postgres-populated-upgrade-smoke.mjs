@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Populated PostgreSQL migration upgrade rehearsal with data integrity and schema validation. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

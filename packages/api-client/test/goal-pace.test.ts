@@ -1,3 +1,5 @@
+/** @file Regression coverage for goal pace: pace preview bypasses cache and adjustment retries retain operation and expected version. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

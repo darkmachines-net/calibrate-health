@@ -1,3 +1,5 @@
+/** @file Lazy Android Health Connect SDK boundary for availability, permissions, records, and aggregates. */
+
 import { Platform } from 'react-native';
 import type {
     AggregateResult,
@@ -35,6 +37,7 @@ async function loadNativeModule(): Promise<NativeHealthConnect> {
     return nativeModulePromise;
 }
 
+/** Maps Health Connect SDK availability codes into the supported connection states. */
 export function mapSdkStatus(status: number): HealthConnectAvailability {
     if (status === SDK_AVAILABLE) return 'available';
     if (status === SDK_PROVIDER_UPDATE_REQUIRED) return 'provider_update_required';
@@ -63,6 +66,7 @@ export async function getHealthConnectConnection(): Promise<HealthConnectConnect
     };
 }
 
+/** Requests only the selected read permissions after initialization and returns actual granted features. */
 export async function requestHealthConnectFeatures(
     selection: HealthConnectFeatureSelection
 ): Promise<HealthConnectConnection> {
@@ -77,6 +81,7 @@ export async function requestHealthConnectFeatures(
     };
 }
 
+/** Reads Health Connect changes using an existing token or starts a feed for one record type. */
 export async function getHealthConnectChanges(
     recordType: RecordType,
     changesToken?: string
@@ -85,6 +90,7 @@ export async function getHealthConnectChanges(
     return native.getChanges(changesToken ? { changesToken } : { recordTypes: [recordType] });
 }
 
+/** Reads one ascending page of native records within the supplied time interval. */
 export async function readHealthConnectRecords<T extends RecordType>(
     recordType: T,
     timeRangeFilter: HealthConnectTimeRangeFilter,
@@ -100,6 +106,7 @@ export async function readHealthConnectRecords<T extends RecordType>(
     return native.readRecords(recordType, options);
 }
 
+/** Aggregates one supported Health Connect metric over the supplied time interval. */
 export async function aggregateHealthConnectRecords<T extends AggregateResultRecordType>(
     recordType: T,
     timeRangeFilter: HealthConnectTimeRangeFilter
@@ -108,11 +115,13 @@ export async function aggregateHealthConnectRecords<T extends AggregateResultRec
     return native.aggregateRecord({ recordType, timeRangeFilter });
 }
 
+/** Opens the native Health Connect access-management screen. */
 export async function openHealthConnectAccess(): Promise<void> {
     const native = await loadNativeModule();
     native.openHealthConnectSettings();
 }
 
+/** Revokes Health Connect permissions on Android and normalizes platform-specific revocation results. */
 export async function disconnectHealthConnect(): Promise<RevokeAllPermissionsResponse | void> {
     if (Platform.OS !== 'android') return;
     const native = await loadNativeModule();

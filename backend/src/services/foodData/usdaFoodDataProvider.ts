@@ -1,3 +1,5 @@
+/** @file USDA FoodData Central search and serving normalization with configured API credentials. */
+
 import { FoodDataProvider, FoodMeasure, FoodSearchRequest, FoodSearchResult, NormalizedFoodItem, Nutrients } from './types';
 import { parseNumber, round, scaleNutrients } from './utils';
 import {
@@ -94,6 +96,7 @@ class UsdaFoodDataProvider implements FoodDataProvider {
         this.apiKey = apiKey;
     }
 
+    /** Normalize USDA barcode or paginated text results; empty/invalid query input yields no items. */
     async searchFoods(request: FoodSearchRequest): Promise<FoodSearchResult> {
         const rawQuery = request.barcode || request.query;
         const trimmedQuery = rawQuery?.trim();

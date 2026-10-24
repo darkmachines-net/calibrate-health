@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 20 keyboard accessibility: critical web flows remain keyboard-operable across forced colors, reflow, and chart alternatives. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-20');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-20');
 const TRANSIENT_PWA_TITLES = new Set([
   'Back online',
   'Update ready',

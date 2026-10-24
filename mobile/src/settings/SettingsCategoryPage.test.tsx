@@ -1,3 +1,5 @@
+/** @file Regression coverage for Settings Category Page: SettingsCategoryPage. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { SettingsCategoryPage } from './SettingsCategoryPage';
 

@@ -1,3 +1,5 @@
+/** @file Public no-store client compatibility and capability configuration endpoint. */
+
 import express from 'express';
 import { CALIBRATE_HOSTED_ORIGIN } from '../../../shared/product';
 import release from '../../../shared/release.json';
@@ -15,7 +17,13 @@ const CURRENT_API_VERSION = release.server.api.current;
 router.get('/', (_req, res) => {
   const nativePushMode = resolveNativePushMode();
   const webPushEnabled = Boolean(getWebPushPublicKey().publicKey);
+  /**
+ * Lightweight capability document for native clients and self-hosted deployments.
+ */
   res.set('Cache-Control', 'no-store');
+  /**
+ * Lightweight capability document for native clients and self-hosted deployments.
+ */
   res.json({
     api_version: CLIENT_API_VERSION,
     api_versions: {

@@ -1,3 +1,5 @@
+/** @file Creates the deterministic local test account and profile through the configured Prisma datasource. */
+
 import { disconnectDatabase } from '../src/config/database';
 import { seedDevTestData } from '../src/services/devTestData';
 

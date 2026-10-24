@@ -1,3 +1,5 @@
+/** @file Regression coverage for account lifecycle: exportAccount requests the versioned authenticated endpoint. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

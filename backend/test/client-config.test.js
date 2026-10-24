@@ -1,3 +1,5 @@
+/** @file Regression coverage for client config: client config advertises the stable v1 API, release floors, and privacy-safe push default. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

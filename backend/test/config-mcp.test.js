@@ -1,3 +1,5 @@
+/** @file Regression coverage for config mcp: official hosted deployments expose the canonical HTTPS MCP resource. */
+
 const assert = require('node:assert/strict');
 const test = require('node:test');
 

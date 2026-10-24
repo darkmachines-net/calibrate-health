@@ -1,3 +1,5 @@
+/** @file Web Navigation Rail: Renders the browser navigation rail and reports its measured width to the shared shell. */
+
 import React from 'react';
 import { router } from 'expo-router';
 import { GuardedTabButton } from './GuardedTabButton';
@@ -15,6 +17,7 @@ const PILL_WIDTH = 56;
 const PILL_HEIGHT = 32;
 const ITEM_MIN_HEIGHT = 64;
 
+/** Renders the browser navigation rail and reports its measured width to the shared shell. */
 export function WebNavigationRail({ state, descriptors, navigation, insets, onWidthChange }: WebNavigationRailProps) {
     const { colors } = useAppTheme();
     const railRef = React.useRef<HTMLElement>(null);

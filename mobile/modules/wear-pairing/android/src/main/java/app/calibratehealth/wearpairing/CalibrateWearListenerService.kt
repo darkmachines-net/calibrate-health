@@ -1,3 +1,5 @@
+/** Phone-side intake of bounded pairing, handoff, and relay messages from watch nodes. */
+
 package app.calibratehealth.wearpairing
 
 import com.google.android.gms.wearable.MessageEvent

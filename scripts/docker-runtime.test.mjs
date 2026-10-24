@@ -1,3 +1,5 @@
+/** @file Regression coverage for docker runtime: an already-running Docker daemon needs no desktop startup. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ensureDockerRuntime } from './docker-runtime.mjs';

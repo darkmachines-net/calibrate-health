@@ -1,3 +1,5 @@
+/** @file docker runtime: Ensure the Docker daemon used by the repository development stack is available. */
+
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 

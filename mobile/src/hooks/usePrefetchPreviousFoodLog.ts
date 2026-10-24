@@ -1,3 +1,5 @@
+/** @file use Prefetch Previous Food Log: Warms the most likely adjacent food-log query without crossing the account's history boundary. */
+
 import type { FoodLogEntry } from '@calibrate/api-client';
 import { useScopedTrackingMutations } from '../offline/useTrackingQueries';
 import { hasActiveFoodMutation, preserveFoodReceiptIdentities, type LocalEntry } from '../offline/trackingProjection';

@@ -1,3 +1,5 @@
+/** @file Opaque native bearer credentials, purpose-specific hashes, and session credential validation. */
+
 import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
@@ -9,12 +11,15 @@ const TOKEN_BYTES = 32;
 const ACCESS_TOKEN_TTL_MS = 15 * MS_PER_MINUTE; // Short-lived token limits exposure if device storage is compromised.
 const REFRESH_TOKEN_TTL_MS = 30 * MS_PER_DAY; // Native clients can stay signed in without storing passwords.
 
+/** Generate an opaque cryptographically random bearer credential; native clients need not retain passwords. */
 export const randomMobileToken = (): string =>
   crypto.randomBytes(TOKEN_BYTES).toString('base64url');
 
+/** Derive the server storage/lookup digest without retaining the plaintext bearer token. */
 export const hashMobileToken = (token: string): string =>
   crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
+/** Allocate independent access/refresh credentials with expiries relative to the same issuance time. */
 export const buildMobileTokenPair = (now = new Date()): MobileTokenPair => ({
   accessToken: randomMobileToken(),
   refreshToken: randomMobileToken(),

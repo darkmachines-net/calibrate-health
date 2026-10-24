@@ -1,3 +1,5 @@
+/** @file Regression coverage for profile Completion: profile setup completion redirect policy. */
+
 import type { UserProfileResponse } from '@calibrate/api-client';
 import { isProfileSetupComplete } from './profileCompletion';
 

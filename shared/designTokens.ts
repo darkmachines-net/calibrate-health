@@ -1,3 +1,5 @@
+/** @file design Tokens: Cross-platform visual identity for Calibrate. */
+
 /**
  * Cross-platform visual identity for Calibrate.
  *

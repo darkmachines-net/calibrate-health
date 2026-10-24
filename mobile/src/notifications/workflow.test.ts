@@ -1,3 +1,5 @@
+/** @file Regression coverage for workflow: native notification workflow. */
+
 import {
     getNotificationAction,
     getNotificationPermissionState,

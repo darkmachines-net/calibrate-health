@@ -1,3 +1,5 @@
+/** @file Regression coverage for quantity Input: food quantity input. */
+
 import { getFoodQuantityStep } from './quantityInput';
 
 describe('food quantity input', () => {

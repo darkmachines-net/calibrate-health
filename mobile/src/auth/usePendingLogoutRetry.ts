@@ -1,3 +1,5 @@
+/** @file use Pending Logout Retry: Signed-out sessions still finish revocation on reconnect/foreground; failures retain durable intent. */
+
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';

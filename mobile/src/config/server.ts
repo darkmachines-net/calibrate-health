@@ -1,3 +1,5 @@
+/** @file Native server selection, origin validation, and fixed browser-origin configuration. */
+
 import { Platform } from 'react-native';
 import type { ClientConfigResponse } from '@calibrate/api-client';
 import { compareClientVersions } from '@calibrate/shared/clientCompatibility';

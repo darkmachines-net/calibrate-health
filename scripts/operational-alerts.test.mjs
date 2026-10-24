@@ -1,3 +1,5 @@
+/** @file Regression coverage for operational alerts: uses volume-qualified threshold precedence and fixed owner roles. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { evaluateOperationalAlerts } from './operational-alerts.mjs';

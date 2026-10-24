@@ -1,4 +1,4 @@
-/** Exercise component selection, partial release recovery, and the independent OTA/submission gates. */
+/** @file Exercise component selection, partial release recovery, and the independent OTA/submission gates. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { affectsComponent, selectRelease, applicationContent, wearInputHash } from './release-selection.mjs';
@@ -52,7 +52,7 @@ test('abandoned allocations remain burned while irrelevant bookkeeping is exclud
 });
 
 test('release classification separates browser/native modules and excludes docs/tests', () => {
-  for (const file of ['mobile/src/view.test.tsx', 'backend/docs/README.md', 'AGENTS.md', 'docs/mobile-release.md']) {
+  for (const file of ['mobile/src/view.test.tsx', 'backend/docs/README.md', 'AGENTS.md', 'scripts/README.md']) {
     assert.equal(affectsComponent(file, 'server'), false);
     assert.equal(affectsComponent(file, 'ota'), false);
   }

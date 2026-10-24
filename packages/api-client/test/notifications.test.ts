@@ -1,3 +1,5 @@
+/** @file Regression coverage for notifications: notification methods preserve legacy reads and send additive paging/read-all requests. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

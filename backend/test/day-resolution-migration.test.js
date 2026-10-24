@@ -1,3 +1,5 @@
+/** @file Regression coverage for day resolution migration: day resolution migration preserves legacy completion and enforces one active pause. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

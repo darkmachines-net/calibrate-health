@@ -1,3 +1,5 @@
+/** @file Versioned weight-trend snapshot persistence, source-revision validation, and transactional recomputation. */
+
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
 import { diagnosticsRegistry } from '../observability';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for timezones: mobile timezone presentation. */
+
 import {
     detectDeviceTimeZone,
     formatTimeZoneClock,

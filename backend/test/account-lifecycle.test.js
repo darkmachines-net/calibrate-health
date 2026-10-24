@@ -1,3 +1,5 @@
+/** @file Regression coverage for account lifecycle: account export returns canonical versioned tracking data without credentials. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

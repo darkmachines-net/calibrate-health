@@ -1,5 +1,8 @@
+/** @file Validated date-only conversion helpers; account timezone derivation remains explicit at callers. */
+
 export const MS_PER_DAY = 24 * 60 * 60 * 1000; // Shared day-duration constant for UTC date-range math.
 
+/** Validate an instant/date input and retain its UTC calendar day; callers must derive account-local dates separately. */
 export function normalizeToUtcDateOnly(input: unknown): Date {
   const date =
     input instanceof Date
@@ -38,6 +41,7 @@ export function addUtcYearsClamped(date: Date, deltaYears: number): Date {
   return new Date(Date.UTC(targetYear, month, Math.min(day, lastDayOfTargetMonth)));
 }
 
+/** Return today's UTC date-only value for UTC-scoped tasks, not user-local tracking calculations. */
 export function getUtcTodayDateOnly(): Date {
   return normalizeToUtcDateOnly(new Date());
 }

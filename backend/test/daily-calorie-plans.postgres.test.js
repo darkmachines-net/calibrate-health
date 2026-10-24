@@ -1,3 +1,5 @@
+/** @file Regression coverage for daily calorie plans postgres: daily plan lifecycle through real Postgres and normal phone/Wear handlers. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');

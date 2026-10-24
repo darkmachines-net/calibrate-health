@@ -1,4 +1,5 @@
 #!/bin/sh
+# Restores an explicitly selected encrypted backup only into a confirmed empty, disposable database.
 set -eu
 
 : "${DB_HOST:?Missing DB_HOST}"

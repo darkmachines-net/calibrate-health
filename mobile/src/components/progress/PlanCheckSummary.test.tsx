@@ -1,3 +1,5 @@
+/** @file Regression coverage for Plan Check Summary: PlanCheckSummary. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import type { CalibrationStatusResponse } from '@calibrate/api-client';
 import { PlanCheckSummaryView } from './PlanCheckSummary';

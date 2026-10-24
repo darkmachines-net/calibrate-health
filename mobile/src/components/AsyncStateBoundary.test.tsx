@@ -1,3 +1,5 @@
+/** @file Regression coverage for Async State Boundary: AsyncStateBoundary. */
+
 import { Text } from 'react-native';
 import type { ReactTestInstance } from 'react-test-renderer';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';

@@ -1,3 +1,5 @@
+/** Phone-side bounded network relay restricted to the retained watch, account, and server binding. */
+
 package app.calibratehealth.wearpairing
 
 import android.content.Context

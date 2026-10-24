@@ -1,3 +1,5 @@
+/** @file Exercises operational alert evaluation with deterministic synthetic inputs. */
+
 import assert from 'node:assert/strict';
 import { dispatchOperationalAlerts } from './operational-alerts.mjs';
 

@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Data Layer Contract. */
+
 package app.calibratehealth.wear
 
 import org.junit.Assert.assertFalse
@@ -5,11 +7,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearDataLayerContractTest {
+    /** Verifies that publishes stable pairing capability. */
     @Test
     fun `publishes stable pairing capability`() {
         assertTrue(WearDataLayerContract.PAIRING_CAPABILITY == "calibrate_wear_pairing_v1")
     }
 
+    /** Verifies that accepts only versioned coordination paths. */
     @Test
     fun `accepts only versioned coordination paths`() {
         assertTrue(WearDataLayerContract.supports(WearDataLayerContract.PAIR_HELLO))

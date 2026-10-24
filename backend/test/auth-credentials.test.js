@@ -1,3 +1,5 @@
+/** @file Regression coverage for auth credentials: password credentials reject bcrypt-truncated UTF-8 values. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

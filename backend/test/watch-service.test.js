@@ -1,3 +1,5 @@
+/** @file Regression coverage for watch service: watch mutation parser accepts canonical grams and rejects unknown fields. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

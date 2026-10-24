@@ -1,3 +1,5 @@
+/** @file reset password: Consumes the recovery token and validates a replacement password before submitting it. */
+
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Link, useLocalSearchParams } from 'expo-router';
@@ -12,6 +14,7 @@ import { useAppTheme } from '../src/theme';
 
 const MIN_PASSWORD_LENGTH = 8;
 
+/** Consumes the recovery token and validates a replacement password before submitting it. */
 export default function ResetPasswordRoute() {
     const params = useLocalSearchParams<{ token?: string | string[]; '#'?: string | string[] }>();
     const { api } = useAuth();

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Disposable database rollback rehearsal with explicit migration boundaries and owned cleanup. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -176,6 +178,7 @@ export function assertOwnedRollbackDatabaseUrl(rawUrl, plan, target) {
   return parsed;
 }
 
+/** Hashes the ordered migration ledger into a deterministic fingerprint. */
 export function ledgerFingerprint(migrationNames) {
   return crypto.createHash('sha256').update(`${migrationNames.join('\n')}\n`).digest('hex');
 }
@@ -219,6 +222,7 @@ export function resolveRollbackSourceCommit(
   return assertRollbackSourceCommit(candidateCommit, environment.CALIBRATE_SOURCE_COMMIT);
 }
 
+/** Accepts only generated rollback-test schema names before returning a quoted SQL identifier. */
 export function assertSafeRollbackSchema(schemaName) {
   if (!GENERATED_SCHEMA_PATTERN.test(schemaName)) {
     throw new Error(`Refusing unsafe rollback schema: ${schemaName}`);
@@ -240,6 +244,7 @@ export function sanitizeRollbackDiagnostic(value, redactions = []) {
     .slice(-4_000);
 }
 
+/** Builds rollback evidence only for an exact candidate and a completed encrypted backup artifact. */
 export function createRollbackEvidence({ candidateCommit, durationSeconds, encryptedFile, reupgraded }) {
   if (!/^[a-f0-9]{40}$/.test(candidateCommit)) {
     throw new Error('Candidate commit must be a full Git SHA.');
@@ -284,6 +289,7 @@ export function createRollbackEvidence({ candidateCommit, durationSeconds, encry
   };
 }
 
+/** Rejects all external targets and arguments so rollback smoke remains confined to its owned environment. */
 export function parseRollbackArguments(argumentsList) {
   if (argumentsList.length !== 0) {
     throw new Error('postgres-rollback-smoke accepts no arguments or external database target.');
@@ -291,6 +297,7 @@ export function parseRollbackArguments(argumentsList) {
   return {};
 }
 
+/** Preserves an explicit command encoding override and otherwise uses UTF-8. */
 export function resolveCommandEncoding(options = {}) {
   return Object.hasOwn(options, 'encoding') ? options.encoding : 'utf8';
 }
@@ -338,6 +345,7 @@ function gitBuffer(commandRunner, args) {
   }).stdout;
 }
 
+/** Lists candidate migration directory names in deterministic lexical order. */
 export function discoverCandidateMigrationNames(directory = migrationsDirectory) {
   return fs.readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -909,6 +917,7 @@ async function readRepresentativeSnapshot(client, schemaName) {
   };
 }
 
+/** Asserts that the restored baseline retains the expected representative account and tracking data. */
 export function validateBaseRepresentativeSnapshot(snapshot) {
   assert.equal(snapshot.users.length, 1);
   assert.equal(snapshot.users[0].email, ROLLBACK_SEED_EXPECTATIONS.email);
@@ -927,6 +936,7 @@ export function validateBaseRepresentativeSnapshot(snapshot) {
   return snapshot;
 }
 
+/** Derives expected post-upgrade data by applying the reviewed recommendation invalidation to the baseline snapshot. */
 export function expectedCandidateRepresentativeSnapshot(baseSnapshot) {
   return {
     ...baseSnapshot,
@@ -1150,6 +1160,7 @@ export async function runPostgresRollbackSmoke({ commandRunner = defaultCommandR
   return result;
 }
 
+/** Builds failed rollback evidence with an exact source identity and sanitized diagnostics. */
 export function createFailedRollbackEvidence(error, candidateCommit) {
   return {
     schema_version: 1,

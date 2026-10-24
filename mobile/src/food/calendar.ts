@@ -1,3 +1,5 @@
+/** @file Food calendar query identity, local-date ranges, and saved-comparison presentation. */
+
 import type { FoodLogDay } from '@calibrate/api-client';
 
 export type FoodDayCalendarMarker = 'complete-target' | 'complete-between' | 'complete-beyond' | 'complete-unavailable' | 'incomplete' | 'not-started' | 'paused' | 'none';
@@ -5,10 +7,12 @@ export type FoodDayCalorieBand = 'target' | 'between' | 'beyond' | 'unavailable'
 
 export const foodDayRangeQueryRoot = ['mobile-food-days'] as const;
 
+/** Builds a stable query key for an explicit food-day date range. */
 export function foodDayRangeQueryKey(startDate: string, endDate: string) {
     return [...foodDayRangeQueryRoot, startDate, endDate] as const;
 }
 
+/** Classifies intake against the saved target and maintenance ordering; invalid or missing snapshots are unavailable. */
 export function getFoodDayCalorieBand(day: FoodLogDay | undefined): FoodDayCalorieBand {
     const comparison = day?.calorie_comparison;
     if (!comparison) return 'unavailable';
@@ -26,6 +30,7 @@ export function getFoodDayCalorieBand(day: FoodLogDay | undefined): FoodDayCalor
     return consumed <= maintenance ? 'between' : 'beyond';
 }
 
+/** Classifies calendar completion using the day's saved calorie comparison and valid snapshot evidence. */
 export function getFoodDayCalendarMarker(
     day: FoodLogDay | undefined,
     today: string
@@ -41,6 +46,7 @@ export function getFoodDayCalendarMarker(
     return 'none';
 }
 
+/** Describes a calendar marker accessibly, accounting for gain versus loss target direction. */
 export function getFoodDayCalendarLabel(day: FoodLogDay | undefined, today: string): string {
     const marker = getFoodDayCalendarMarker(day, today);
     if (marker === 'incomplete' || day?.status === 'COMPLETE') {
@@ -66,16 +72,19 @@ function getFoodDayComparisonLabel(day: FoodLogDay | undefined): string {
     }
 }
 
+/** Extracts the year-month key from a canonical date-only string. */
 export function getMonthKey(date: string): string {
     return date.slice(0, 7);
 }
 
+/** Offsets a year-month key with UTC calendar arithmetic so host timezone cannot shift the result. */
 export function shiftMonth(monthKey: string, offset: number): string {
     const [yearString, monthString] = monthKey.split('-');
     const date = new Date(Date.UTC(Number(yearString), Number(monthString) - 1 + offset, 1));
     return date.toISOString().slice(0, 7);
 }
 
+/** Intersects a calendar month with the allowed tracking-date bounds. */
 export function getCalendarMonthRange(monthKey: string, minDate: string, maxDate: string) {
     const [yearString, monthString] = monthKey.split('-');
     const year = Number(yearString);
@@ -88,6 +97,7 @@ export function getCalendarMonthRange(monthKey: string, minDate: string, maxDate
     };
 }
 
+/** Builds Sunday-first calendar rows with null padding outside the requested month. */
 export function getCalendarWeeks(monthKey: string): Array<Array<string | null>> {
     const [yearString, monthString] = monthKey.split('-');
     const year = Number(yearString);

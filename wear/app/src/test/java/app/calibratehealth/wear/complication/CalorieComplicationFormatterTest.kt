@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Calorie Complication Formatter. */
+
 package app.calibratehealth.wear.complication
 
 import app.calibratehealth.wear.tile.CalibrateTileSnapshot
@@ -5,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CalorieComplicationFormatterTest {
+    /** Verifies that formats calories remaining for text and ranged slots. */
     @Test
     fun `formats calories remaining for text and ranged slots`() {
         val result = CalorieComplicationFormatter.format(snapshot(remaining = 595), NOW)
@@ -15,6 +18,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(1_835f, result.rangeMaximum)
     }
 
+    /** Verifies that formats over-budget state without pink or ambiguous copy. */
     @Test
     fun `formats over-budget state without pink or ambiguous copy`() {
         val result = CalorieComplicationFormatter.format(snapshot(remaining = -145, consumed = 1_980), NOW)
@@ -25,6 +29,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(1_835f, result.rangeValue)
     }
 
+    /** Verifies that returns a useful empty state when cache is unavailable. */
     @Test
     fun `returns a useful empty state when cache is unavailable`() {
         val result = CalorieComplicationFormatter.format(null, NOW)
@@ -34,6 +39,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(1f, result.rangeMaximum)
     }
 
+    /** Verifies that marks an old cache as visibly approximate. */
     @Test
     fun `marks an old cache as visibly approximate`() {
         val result = CalorieComplicationFormatter.format(
@@ -45,6 +51,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(true, result.contentDescription.startsWith("Cached data may be out of date."))
     }
 
+    /** Verifies that shows paused instead of calorie progress. */
     @Test
     fun `shows paused instead of calorie progress`() {
         val result = CalorieComplicationFormatter.format(
@@ -57,6 +64,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(1f, result.rangeMaximum)
     }
 
+    /** Verifies that suppresses cached target when the plan is not available. */
     @Test
     fun `suppresses cached target when the plan is not available`() {
         val result = CalorieComplicationFormatter.format(
@@ -69,6 +77,7 @@ class CalorieComplicationFormatterTest {
         assertEquals(1f, result.rangeMaximum)
     }
 
+    /** Verifies that shows syncing instead of cached balance during a pending weight change. */
     @Test
     fun `shows syncing instead of cached balance during a pending weight change`() {
         val result = CalorieComplicationFormatter.format(

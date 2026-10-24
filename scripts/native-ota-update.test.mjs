@@ -1,3 +1,5 @@
+/** @file Regression coverage for native ota update: OTA CLI parses explicit release targeting options. */
+
 /** Regression coverage for native ota update and its failure boundaries. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -1,10 +1,12 @@
+/** @file Regression coverage for launch 13 saved foods library: Saved foods supports create, search, pin, edit, deep recipe use, and snapshot-safe delete. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { DEEP_SAVED_FOOD_NAME, installSavedFoodsFixture } from './saved-foods.fixture';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-13');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-13');
 const CREATED_FOOD_NAME = 'Launch almond crunch';
 const EDITED_FOOD_NAME = 'Launch almond crunch edited';
 const RECIPE_NAME = 'Launch library bowl';

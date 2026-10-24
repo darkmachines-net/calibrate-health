@@ -1,3 +1,5 @@
+/** @file Related-mutation recovery grouping and safe retry/discard boundaries for failed offline intent. */
+
 import { OfflineMutationConflict } from './mutationConflict';
 import { validatePauseTransition } from './pauseIntent';
 import { assertQueuedDayTransition, assertQueuedFoodDayOpen } from './foodDayIntent';
@@ -12,6 +14,7 @@ const families: Record<OfflineMutationOperation, 'food' | 'metric' | 'control'> 
     'food-tracking-pause.start': 'control', 'food-tracking-pause.update': 'control', 'food-tracking-pause.resume': 'control'
 };
 const fields = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+/** Extracts the local date from a metric mutation or its retained creation/base snapshot. */
 export function metricMutationDate(payload: unknown): string | null {
     const p = fields(payload);
     const date = p.date ?? fields(fields(p.localCreation).payload).date ?? fields(p.localBase).date;
@@ -32,9 +35,11 @@ function related(parent: QueuedMutation, row: QueuedMutation): boolean {
     // Pause/resume can span days. Review all queued tracking-control intent together, never food/weight records.
     return family(parent.operation) === 'control';
 }
+/** Finds a failed weight mutation affecting the requested date, including failures with unknown dates. */
 export function findFailedMetric(rows: readonly QueuedMutation[], date: string): QueuedMutation | undefined {
     return rows.find(row => row.state === 'failed' && family(row.operation) === 'metric' && (!metricMutationDate(row.payload) || metricMutationDate(row.payload) === date));
 }
+/** Returns the related failed mutation IDs safe to discard and rejects changed or actively replaying work. */
 export function failedMutationDiscardIds(rows: readonly QueuedMutation[], id: string): string[] {
     const parent = rows.find(row => row.id === id);
     if (!parent || parent.state !== 'failed') throw new Error('The failed change changed. Refresh and review it again.');

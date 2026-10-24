@@ -1,3 +1,5 @@
+/** @file Regression coverage for workflow: barcode workflow. */
+
 import {
     BarcodeScanGate,
     getBarcodeLookupErrorMessage,

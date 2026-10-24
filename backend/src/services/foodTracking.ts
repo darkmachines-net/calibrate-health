@@ -1,3 +1,5 @@
+/** @file Account-local food-day completion, tracking pauses, and daily tracking state transitions. */
+
 import prisma from '../config/database';
 import { foodDayCalorieComparison, observedFoodDayCalorieComparison, readFoodDayComparison, type FoodDayCalorieComparison } from './foodDayComparison';
 import {
@@ -53,10 +55,12 @@ export type FoodDayWriteBlock = {
   };
 };
 
+/** Serialize a canonical UTC date-only value as YYYY-MM-DD without applying a second timezone conversion. */
 export function formatDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Recognize only the shared food-day status values before accepting untyped input. */
 export function isFoodDayStatus(value: unknown): value is FoodDayStatus {
   return typeof value === 'string' && (FOOD_DAY_STATUSES as readonly string[]).includes(value);
 }
@@ -105,6 +109,7 @@ function serializePause(pause: {
   };
 }
 
+/** Read the account timezone and earliest tracking evidence used to bound inferred food-day history. */
 export async function getTrackingStartDate(
   userId: number,
   db: MutationDatabase = prisma
@@ -149,6 +154,7 @@ export async function getTrackingStartDate(
   };
 }
 
+/** Prefer stored day/comparison state, otherwise infer status from account-local tracking and pause evidence. */
 export async function getEffectiveFoodDay(
   userId: number,
   localDate: Date,
@@ -252,6 +258,7 @@ export async function getFoodDayWriteBlock(options: {
   };
 }
 
+/** Resolve an inclusive local-date range from stored days, pauses and food evidence without fabricating captured targets. */
 export async function getEffectiveFoodDayRange(
   userId: number,
   startDate: Date,
@@ -357,6 +364,7 @@ export async function getEffectiveFoodDayRange(
   return days;
 }
 
+/** Serialize the active pause relative to the account-local day, distinguishing no pause from a missing account. */
 export async function getActiveFoodTrackingPause(
   userId: number,
   now = new Date(),
@@ -425,6 +433,7 @@ async function storePausedDay(
   });
 }
 
+/** Write paused days through the inclusive boundary inside the caller's transaction and advance its materialization marker. */
 export async function materializePauseThrough(options: {
   tx: MutationDatabase;
   pause: {
@@ -453,6 +462,7 @@ export async function materializePauseThrough(options: {
   }
 }
 
+/** Extend eligible accounts' active pauses through each account's current local day in separate transactions. */
 export async function materializeActiveFoodTrackingPauses(
   now = new Date(),
   db: typeof prisma = prisma
@@ -472,6 +482,7 @@ export async function materializeActiveFoodTrackingPauses(
   }
 }
 
+/** Create one active pause and its starting day in the caller's transaction; reject an already active pause. */
 export async function startFoodTrackingPause(options: {
   tx: MutationDatabase;
   userId: number;
@@ -508,6 +519,7 @@ export async function startFoodTrackingPause(options: {
   return serializePause(pause, options.startsOn);
 }
 
+/** Change an active pause's expected resume date without actually resuming tracking; reject invalid boundaries. */
 export async function updateFoodTrackingPauseExpectation(options: {
   tx: MutationDatabase;
   userId: number;
@@ -539,6 +551,7 @@ export async function updateFoodTrackingPauseExpectation(options: {
   return body;
 }
 
+/** Materialize preceding paused days, close the active pause and reopen the selected resume day atomically. */
 export async function resumeFoodTracking(options: {
   tx: MutationDatabase;
   userId: number;
@@ -595,6 +608,7 @@ export async function resumeFoodTracking(options: {
   return { pause: pauseBody, day: dayBody };
 }
 
+/** Construct stored day wire flags; only COMPLETE days count as representative intake evidence. */
 export function serializeFoodDayStatus(options: {
   date: Date;
   status: FoodDayStatus;

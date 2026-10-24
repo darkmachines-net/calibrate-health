@@ -1,4 +1,5 @@
 #!/bin/sh
+# Creates encrypted PostgreSQL backups and prunes only this backup directory's retained archives.
 set -eu
 
 require_positive_integer() {

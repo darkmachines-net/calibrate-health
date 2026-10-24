@@ -1,3 +1,5 @@
+/** @file Regression coverage for Health Connect Connection Action: HealthConnectConnectionAction. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { useHealthConnect } from '../healthConnect/provider';
 import { DEFAULT_HEALTH_CONNECT_SELECTION } from '../healthConnect/types';

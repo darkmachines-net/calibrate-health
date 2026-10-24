@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 17 notification center: empty reminders remain accessible from Today, Progress and Settings without an archive. */
+
 import { expect, expectApiFailure, FROZEN_LOCAL_DATE, hideTransientPwaNotices, test } from './fixtures';
 import {
   emitNotificationUpdate,

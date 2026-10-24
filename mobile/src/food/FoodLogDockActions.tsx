@@ -1,3 +1,5 @@
+/** @file Food Log Dock Actions: Keep one Add food button anchored while the day action slides beyond the right edge. */
+
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useExpansionMotion } from '../components/PageExpansion';

@@ -1,3 +1,5 @@
+/** @file weight Trend Source Revision: Fingerprint the exact raw observations that feed one materialized model snapshot. */
+
 import { createHash } from 'node:crypto';
 
 export type WeightTrendSourceMetric = {

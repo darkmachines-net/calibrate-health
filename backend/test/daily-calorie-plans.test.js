@@ -1,3 +1,5 @@
+/** @file Regression coverage for daily calorie plans: observe D, change all inputs on D+1, complete D keeps the last D plan and its original inputs. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';

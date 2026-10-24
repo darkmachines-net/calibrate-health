@@ -1,4 +1,4 @@
-/** Promote an attested EAS-submitted native pair by exact Play version codes and AAB hashes, never release names. */
+/** @file Promote an attested EAS-submitted native pair by exact Play version codes and AAB hashes, never release names. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

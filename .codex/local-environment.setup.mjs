@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Codex worktree setup: installs host dependencies and allocates local configuration without starting containers. */
+
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";

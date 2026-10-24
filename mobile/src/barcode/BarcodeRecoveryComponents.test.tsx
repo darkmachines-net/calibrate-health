@@ -1,3 +1,5 @@
+/** @file Regression coverage for Barcode Recovery Components: barcode recovery components. */
+
 import { useState } from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import { TextInput } from 'react-native';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for account access: registration sends explicit legal versions and acceptance. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

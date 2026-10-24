@@ -1,3 +1,5 @@
+/** @file Validates proposed profile inputs and returns available calorie-plan options without persisting a goal. */
+
 import express from 'express';
 import { evaluateCaloriePlan } from '../../../shared/caloriePolicy';
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';

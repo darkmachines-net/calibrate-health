@@ -1,3 +1,5 @@
+/** Watch summary/state models, calorie and sync presentation, and unit-safe weight picker bounds. */
+
 package app.calibratehealth.wear
 
 import java.util.Locale
@@ -77,11 +79,13 @@ sealed interface WearSyncStatus {
 }
 
 object SummaryFormatter {
+    /** Formats remaining or excess calories only when the snapshot has an available calorie plan. */
     fun caloriesRemaining(summary: WearSummary): String =
         summary.caloriesRemaining.takeIf { summary.isCaloriePlanAvailable }?.let { value ->
             if (value >= 0) "${calorieCount(value)} kcal left" else "${calorieCount(-value)} kcal over"
         } ?: "Calorie target unavailable"
 
+    /** Formats consumed-versus-target progress or an actionable unavailable-plan explanation. */
     fun calorieProgress(summary: WearSummary): String =
         if (summary.isCaloriePlanAvailable && summary.caloriesConsumed != null && summary.calorieTarget != null) {
             "${calorieCount(summary.caloriesConsumed)} of ${calorieCount(summary.calorieTarget)} kcal"
@@ -93,8 +97,10 @@ object SummaryFormatter {
             }
         }
 
+    /** Formats a calorie integer or a missing-data placeholder. */
     fun calorieCount(value: Int?): String = value?.let(::formatWholeNumber) ?: "--"
 
+    /** Converts canonical grams into a one-decimal weight label or a missing-data placeholder. */
     fun weight(grams: Long?, unit: String): String {
         if (grams == null) return "--"
         return if (unit.lowercase(Locale.US) == "lb") {
@@ -104,6 +110,7 @@ object SummaryFormatter {
         }
     }
 
+    /** Formats pending, failed, and idle synchronization state with first-sync awareness. */
     fun sync(status: WearSyncStatus, lastSyncAtEpochMs: Long?): String = when (status) {
         WearSyncStatus.Idle -> if (lastSyncAtEpochMs == null) "Waiting for first sync" else "Synced"
         is WearSyncStatus.Pending -> "${status.count} change${if (status.count == 1) "" else "s"} pending"
@@ -131,9 +138,11 @@ class WeightPickerValues private constructor(
     val wholeOptionCount: Int get() = maximumWhole - minimumWhole + 1
     val selectedWholeIndex: Int get() = selectedWhole - minimumWhole
 
+    /** Maps a picker index to a whole-number value clamped to the supported display range. */
     fun wholeAt(optionIndex: Int): Int =
         (minimumWhole + optionIndex).coerceIn(minimumWhole, maximumWhole)
 
+    /** Clamps the fractional selection at the lower and upper supported weight boundaries. */
     fun decimalAt(wholeOptionIndex: Int, decimal: Int): Int {
         val whole = wholeAt(wholeOptionIndex)
         val minimumDecimal = if (whole == minimumWhole) minimumTenths % DECIMAL_OPTION_COUNT else 0
@@ -141,6 +150,7 @@ class WeightPickerValues private constructor(
         return decimal.coerceIn(minimumDecimal, maximumDecimal)
     }
 
+    /** Converts a bounded picker selection to grams, preserving the original grams when the selection is unchanged. */
     fun gramsFor(wholeOptionIndex: Int, decimal: Int): Long {
         val whole = wholeAt(wholeOptionIndex)
         val boundedDecimal = decimalAt(wholeOptionIndex, decimal)
@@ -166,6 +176,7 @@ class WeightPickerValues private constructor(
         private const val METRIC_TENTH_GRAMS = 100L
         private const val GRAMS_PER_POUND = 453.59237
 
+        /** Builds unit-specific picker bounds and initial selection from clamped canonical grams. */
         fun from(grams: Long, unit: String): WeightPickerValues {
             val boundedGrams = grams.coerceIn(MIN_WEIGHT_GRAMS, MAX_WEIGHT_GRAMS)
             val unitLabel = if (unit.lowercase(Locale.US) == IMPERIAL_UNIT) IMPERIAL_UNIT else METRIC_UNIT

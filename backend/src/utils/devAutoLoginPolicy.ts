@@ -1,3 +1,5 @@
+/** @file dev Auto Login Policy: Decide whether the current request should auto-login the local test user. */
+
 import type { Request } from 'express';
 
 import { isProductionOrStagingEnv } from '../config/environment';

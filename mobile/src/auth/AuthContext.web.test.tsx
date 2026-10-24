@@ -1,3 +1,5 @@
+/** @file Regression coverage for Auth Context web: browser onboarding draft cleanup. */
+
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveOfflineWorkspace, restoreOfflineWorkspace } from './offlineWorkspace';

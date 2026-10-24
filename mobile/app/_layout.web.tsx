@@ -1,3 +1,5 @@
+/** @file Browser Expo root: shared providers, responsive shell, route metadata, PWA lifecycle, and error recovery. */
+
 import 'react-native-gesture-handler';
 // Record browser history before any lazily loaded editor can register a discard guard.
 import '../src/hooks/useBrowserDiscardNavigation.web';
@@ -171,6 +173,7 @@ const WebRootRuntime: React.FC = () => {
     );
 };
 
+/** Mounts browser providers and shell runtime inside the root render-error boundary. */
 export default function RootLayout() {
     return (
         <AppErrorBoundary>

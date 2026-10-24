@@ -1,3 +1,5 @@
+/** @file Checks deployment Compose configuration against the supported self-hosted service and secret boundaries. */
+
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

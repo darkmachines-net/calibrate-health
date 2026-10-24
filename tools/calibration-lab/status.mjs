@@ -1,9 +1,12 @@
+/** @file status: Builds synthetic plan-check status from a lab evaluation without persisting account data. */
+
 function addDays(date, delta) {
   const parsed = new Date(`${date}T00:00:00.000Z`);
   parsed.setUTCDate(parsed.getUTCDate() + delta);
   return parsed.toISOString().slice(0, 10);
 }
 
+/** Builds synthetic plan-check status from a lab evaluation without persisting account data. */
 export function buildPreviewStatus(result, fingerprint, generatedAt = new Date().toISOString()) {
   return {
     generatedAt,
@@ -19,6 +22,7 @@ export function buildPreviewStatus(result, fingerprint, generatedAt = new Date()
   };
 }
 
+/** Applies the matching lab recommendation to in-memory scheduled state only. */
 export function applyPreviewRecommendation(status, recommendationId) {
   const recommendation = status?.evaluation.recommendation;
   const metadata = status?.recommendation;
@@ -35,6 +39,7 @@ export function applyPreviewRecommendation(status, recommendationId) {
   };
 }
 
+/** Cancels a matching in-memory scheduled change and restores its preview recommendation. */
 export function cancelPreviewScheduledChange(status, recommendationId) {
   if (!status || status.scheduledChange?.recommendationId !== recommendationId) return status;
   return {

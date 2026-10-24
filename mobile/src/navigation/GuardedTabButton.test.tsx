@@ -1,3 +1,5 @@
+/** @file Regression coverage for Guarded Tab Button: prevents default before asking and only replays an approved destination. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { GuardedTabButton } from './GuardedTabButton';

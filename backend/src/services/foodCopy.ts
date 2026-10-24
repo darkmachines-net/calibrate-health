@@ -1,3 +1,5 @@
+/** @file Validated meal/day copying with account ownership checks and immutable food-log snapshots. */
+
 import type { FoodLog, MealPeriod } from '@prisma/client';
 import { observeFoodActivityPlan } from './dailyCaloriePlans';
 import { parseClientOperationId, recordSyncChange, type MutationDatabase } from './clientOperations';

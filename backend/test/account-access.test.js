@@ -1,3 +1,5 @@
+/** @file Regression coverage for account access: account access prioritizes email verification before legal acceptance. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

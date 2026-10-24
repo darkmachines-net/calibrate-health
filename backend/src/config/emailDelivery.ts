@@ -1,3 +1,5 @@
+/** @file Environment-based email delivery configuration and hosted-service policy. */
+
 import { CALIBRATE_HOSTED_ORIGIN } from '../../../shared/product';
 import { isProductionOrStagingEnv } from './environment';
 
@@ -82,5 +84,6 @@ export function resolveEmailDeliveryConfig(env: NodeJS.ProcessEnv = process.env)
   };
 }
 
+/** Require verification for hosted accounts or any instance with SMTP delivery enabled. */
 export const isEmailVerificationRequired = (config: EmailDeliveryConfig): boolean =>
   config.hostedRequired || config.mode === EMAIL_DELIVERY_MODES.SMTP;

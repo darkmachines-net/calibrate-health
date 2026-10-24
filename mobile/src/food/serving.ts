@@ -1,3 +1,5 @@
+/** @file Provider serving normalization and conversions between selected amounts and immutable log snapshots. */
+
 import type { FoodLogCreatePayload } from '@calibrate/api-client';
 import type { MealPeriod } from '@calibrate/shared';
 

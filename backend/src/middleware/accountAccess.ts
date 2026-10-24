@@ -1,3 +1,5 @@
+/** @file account Access: Recheck authenticated account gates for protected routes and reject restricted access without clearing the session. */
+
 import type { NextFunction, Request, Response } from 'express';
 import { isAuthenticatedUser } from './authenticatedUser';
 import { getAccountAccess, type AccountAccess } from '../services/accountAccess';
@@ -16,6 +18,7 @@ const AUTH_ALLOWED_PATHS = new Set([
   '/auth/password-reset/confirm'
 ]);
 
+/** Allow only recovery, legal, portability and supporting requests while normal account access is restricted. */
 const isRestrictedPathAllowed = (req: Request): boolean => {
   if (req.method === 'OPTIONS') return true;
   if (AUTH_ALLOWED_PATHS.has(req.path)) return true;
@@ -43,6 +46,7 @@ const restrictedResponse = (access: AccountAccess) => {
 const isBackendAccountPath = (path: string): boolean =>
   path === '/auth' || path.startsWith('/auth/') || path === '/api' || path.startsWith('/api/');
 
+/** Recheck authenticated account gates for protected routes and reject restricted access without clearing the session. */
 export async function enforceAccountAccess(
   req: Request,
   res: Response,

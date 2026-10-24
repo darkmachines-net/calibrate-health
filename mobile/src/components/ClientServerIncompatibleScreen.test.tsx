@@ -1,3 +1,5 @@
+/** @file Regression coverage for Client Server Incompatible Screen: ClientServerIncompatibleScreen. */
+
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ClientServerIncompatibleScreen } from './ClientServerIncompatibleScreen';
 

@@ -1,3 +1,5 @@
+/** @file pause Intent: Fold acknowledged state then durable pending intent before accepting any pause transition. */
+
 import { OfflineMutationConflict } from './mutationConflict';
 import type { QueuedMutation } from './queuedMutation';
 import { OFFLINE_MUTATION_OPERATIONS as K } from './mutationKinds';

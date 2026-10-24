@@ -1,3 +1,5 @@
+/** @file Regression coverage for saved target: Daily Balance retains a saved target through completion, refetch and reload. */
+
 import { expect, test, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';

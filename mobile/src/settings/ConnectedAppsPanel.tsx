@@ -1,3 +1,5 @@
+/** @file Connected Apps Panel: Lists authorized applications and retains revocation confirmation when the server action fails. */
+
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ConnectedAppSummary } from '@calibrate/api-client';
@@ -31,6 +33,7 @@ function scopeSummary(scopes: string[]): string {
     return scopes.map((scope) => SCOPE_LABELS[scope] ?? scope).join(' | ');
 }
 
+/** Lists authorized applications and retains revocation confirmation when the server action fails. */
 export function ConnectedAppsPanel({
     connections,
     pendingConnectionId,

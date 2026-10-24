@@ -1,3 +1,5 @@
+/** @file Body-metric history, weight mutations, trend queries, and transactional progress receipts. */
+
 import express from 'express';
 import { type BodyMetric, type BodyMetricTrend, type Prisma } from '@prisma/client';
 import prisma from '../config/database';

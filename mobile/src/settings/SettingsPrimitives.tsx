@@ -1,3 +1,5 @@
+/** @file Settings Primitives: Renders a keyboard-accessible preference switch with explicit checked and disabled states. */
+
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
@@ -12,6 +14,7 @@ type PreferenceSwitchProps = {
     disabled?: boolean;
 };
 
+/** Renders a keyboard-accessible preference switch with explicit checked and disabled states. */
 export const PreferenceSwitch: React.FC<PreferenceSwitchProps> = ({
     label,
     value,
@@ -62,6 +65,7 @@ export const PreferenceSwitch: React.FC<PreferenceSwitchProps> = ({
     );
 };
 
+/** Presents a compact label/value pair using shared settings typography. */
 export const SummaryRow: React.FC<{ label: string; value: string }> = ({
     label,
     value
@@ -85,6 +89,7 @@ type SettingsDetailSheetProps = {
     children: React.ReactNode;
 };
 
+/** Wraps settings detail content in the shared adaptive dialog with dirty-state dismissal protection. */
 export const SettingsDetailSheet: React.FC<SettingsDetailSheetProps> = ({
     visible,
     maxHeight,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for client Diagnostics: client diagnostics reporter. */
+
 jest.mock('expo-application', () => ({
     nativeApplicationVersion: '0.2.6'
 }));

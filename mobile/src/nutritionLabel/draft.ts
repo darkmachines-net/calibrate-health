@@ -1,7 +1,10 @@
+/** @file draft: Validates reviewed OCR food fields and returns the first actionable error or null. */
+
 import type { CreateMyFoodPayload } from '@calibrate/api-client';
 
 export type LabelFoodFields = { title: string; quantity: string; unit: string; calories: string };
 
+/** Validates reviewed OCR food fields and returns the first actionable error or null. */
 export function validateLabelFood(fields: LabelFoodFields): string | null {
     if (!fields.title.trim()) return 'Enter a title for this saved food.';
     if (fields.title.trim().length > 120) return 'Use a title of 120 characters or fewer.';
@@ -15,6 +18,7 @@ export function validateLabelFood(fields: LabelFoodFields): string | null {
     return null;
 }
 
+/** Validates and normalizes reviewed OCR fields into a saved-food request, throwing on invalid input. */
 export function labelFoodPayload(fields: LabelFoodFields): CreateMyFoodPayload {
     const error = validateLabelFood(fields);
     if (error) throw new Error(error);

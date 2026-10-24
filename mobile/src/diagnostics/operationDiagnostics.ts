@@ -1,3 +1,5 @@
+/** @file operation Diagnostics: Emit one fixed operation tuple; the unknown failure is used only to extract a bounded API request ID. */
+
 import { useEffect, useRef } from 'react';
 import type { ClientDiagnosticOperation, ClientDiagnosticRoute } from '@calibrate/shared';
 import {

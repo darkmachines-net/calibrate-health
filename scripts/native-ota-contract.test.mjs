@@ -1,3 +1,5 @@
+/** @file Regression coverage for native ota contract: native runtime fingerprint ignores server, JS source, and JS-only dependency changes. */
+
 /** Regression coverage for native ota contract and its failure boundaries. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

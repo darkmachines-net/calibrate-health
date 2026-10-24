@@ -1,3 +1,5 @@
+/** @file Regression coverage for client diagnostics: strict parser accepts only canonical coherent registry tuples. */
+
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const express = require('express');

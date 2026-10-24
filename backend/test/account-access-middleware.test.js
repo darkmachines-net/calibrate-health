@@ -1,3 +1,5 @@
+/** @file Regression coverage for account access middleware: restricted sessions receive stable verification and legal error codes. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

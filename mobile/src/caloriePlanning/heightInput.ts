@@ -1,3 +1,5 @@
+/** @file height Input: Converts valid metric or imperial height inputs into rounded canonical millimeters, otherwise null. */
+
 import {
     HEIGHT_UNITS,
     MAX_HEIGHT_MM,
@@ -9,6 +11,7 @@ const MILLIMETERS_PER_CENTIMETER = 10;
 const MILLIMETERS_PER_INCH = 25.4;
 const INCHES_PER_FOOT = 12;
 
+/** Converts valid metric or imperial height inputs into rounded canonical millimeters, otherwise null. */
 export function heightInputToCanonicalMillimeters(args: {
     unit: HeightUnit;
     centimeters?: number;
@@ -31,6 +34,7 @@ export function heightInputToCanonicalMillimeters(args: {
     return Math.round(((args.feet! * INCHES_PER_FOOT) + args.inches!) * MILLIMETERS_PER_INCH);
 }
 
+/** Checks converted height against the shared supported profile range. */
 export function isHeightWithinPolicy(args: {
     unit: HeightUnit;
     centimeters?: number;
@@ -41,6 +45,7 @@ export function isHeightWithinPolicy(args: {
     return millimeters !== null && millimeters >= MIN_HEIGHT_MM && millimeters <= MAX_HEIGHT_MM;
 }
 
+/** Returns the supported height range in the selected input units. */
 export function getHeightPolicyError(unit: HeightUnit): string {
     return unit === HEIGHT_UNITS.CM
         ? 'Enter a height from 100 to 250 cm.'

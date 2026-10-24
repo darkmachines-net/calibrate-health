@@ -1,3 +1,5 @@
+/** @file Regression coverage for mutation Lock web: requires durable queueing when cross-tab locks are unavailable. */
+
 import { withMutationLock } from './mutationLock.web';
 
 it('requires durable queueing when cross-tab locks are unavailable', async () => {

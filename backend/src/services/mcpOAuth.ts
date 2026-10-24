@@ -1,3 +1,5 @@
+/** @file mcp OAuth: Database-backed OAuth 2.1 credential lifecycle for Calibrate's remote MCP server. */
+
 import { verifyLocalPassword } from './credentialVerification';
 import { createHash, randomBytes } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@prisma/client';
@@ -22,6 +24,7 @@ export type McpOAuthErrorReason =
   | 'not_found';
 
 export class McpOAuthError extends Error {
+  /** Expose a bounded OAuth failure reason without retaining credential or provider payload details. */
   constructor(public readonly reason: McpOAuthErrorReason) {
     super(reason);
     this.name = 'McpOAuthError';
@@ -98,11 +101,13 @@ const APPROVAL_USER_SELECT = {
 
 /** Database-backed OAuth 2.1 credential lifecycle for Calibrate's remote MCP server. */
 export class McpOAuthService {
+  /** Bind the persistent OAuth registry and injectable clock used for expiry and rotation checks. */
   constructor(
     private readonly database: PrismaClient = prisma,
     private readonly clock: () => Date = () => new Date()
   ) {}
 
+  /** Read validated public-client metadata, returning undefined for missing or malformed registrations. */
   async getClient(clientId: string): Promise<StoredOAuthClient | undefined> {
     const client = await this.database.mcpOAuthClient.findUnique({
       where: { client_id: clientId },
@@ -111,6 +116,7 @@ export class McpOAuthService {
     return client ? parseStoredClient(client.metadata_json) : undefined;
   }
 
+  /** Sanitize public registration metadata, prune abandoned clients and persist the normalized client. */
   async saveClient(client: StoredOAuthClient): Promise<StoredOAuthClient> {
     const sanitized = sanitizePublicClient(client);
     const abandonedBefore = new Date(this.clock().getTime() - MCP_OAUTH_UNUSED_CLIENT_TTL_MS);
@@ -133,6 +139,7 @@ export class McpOAuthService {
     return sanitized;
   }
 
+  /** Validate client, redirect, PKCE, scopes and resource before persisting a short-lived consent request. */
   async beginAuthorization(
     input: McpOAuthAuthorizationRequestInput
   ): Promise<McpOAuthAuthorizationRequestView> {
@@ -171,6 +178,7 @@ export class McpOAuthService {
     });
   }
 
+  /** Resolve a hashed consent credential only while its request and registered client remain valid. */
   async authorizationRequest(requestId: string): Promise<McpOAuthAuthorizationRequestView | null> {
     const row = await this.database.mcpOAuthAuthorizationRequest.findUnique({
       where: { request_hash: hashCredential('request', requestId) },
@@ -181,6 +189,7 @@ export class McpOAuthService {
     return client ? authorizationView(requestId, client, row) : null;
   }
 
+  /** Consume an active consent request and return its bound redirect context; expired or raced requests fail. */
   async cancelAuthorization(requestId: string): Promise<McpOAuthAuthorizationRequestView> {
     const request = await this.authorizationRequest(requestId);
     if (!request) throw new McpOAuthError('expired');
@@ -194,6 +203,7 @@ export class McpOAuthService {
     return request;
   }
 
+  /** Reauthenticate and check account access/security version transactionally before minting a one-use authorization code. */
   async approveAuthorization(input: {
     requestId: string;
     email: string;
@@ -261,6 +271,7 @@ export class McpOAuthService {
     return { code, redirectUri: request.redirect_uri, state: request.state ?? undefined };
   }
 
+  /** Read the PKCE challenge only for an unexpired code bound to the requesting client. */
   async challengeForAuthorizationCode(clientId: string, authorizationCode: string): Promise<string> {
     const code = await this.database.mcpOAuthAuthorizationCode.findFirst({
       where: {
@@ -274,6 +285,7 @@ export class McpOAuthService {
     return code.code_challenge;
   }
 
+  /** Consume a code bound to client, redirect and resource, creating the grant and opaque token pair atomically. */
   async exchangeAuthorizationCode(
     clientId: string,
     authorizationCode: string,
@@ -308,6 +320,7 @@ export class McpOAuthService {
     return tokens;
   }
 
+  /** Rotate an unexpired resource/client-bound refresh token; replay revokes the grant instead of issuing another successor. */
   async exchangeRefreshToken(
     clientId: string,
     refreshToken: string,
@@ -364,6 +377,7 @@ export class McpOAuthService {
     return rotation.tokens;
   }
 
+  /** Resolve account/scopes from an unexpired unrevoked grant and recheck current account-access eligibility. */
   async verifyAccessToken(token: string): Promise<McpOAuthAccessInfo> {
     const now = this.clock();
     const stored = await this.database.mcpOAuthAccessToken.findUnique({
@@ -388,6 +402,7 @@ export class McpOAuthService {
     };
   }
 
+  /** Revoke the matching client's entire grant for either token type without disclosing unknown-token state. */
   async revokeToken(clientId: string, token: string): Promise<void> {
     const [access, refresh] = await Promise.all([
       this.database.mcpOAuthAccessToken.findUnique({
@@ -403,6 +418,7 @@ export class McpOAuthService {
     if (match) await this.revokeGrant(match.grant_id, this.clock());
   }
 
+  /** List only this account's active grants with an unused unexpired refresh credential. */
   async listConnectionsForUser(userId: number): Promise<McpOAuthConnection[]> {
     const now = this.clock();
     const grants = await this.database.mcpOAuthGrant.findMany({
@@ -437,6 +453,7 @@ export class McpOAuthService {
     });
   }
 
+  /** Revoke a valid connection ID only under its owning account; return false for missing or already revoked grants. */
   async revokeConnectionForUser(userId: number, connectionId: string): Promise<boolean> {
     if (!isUuid(connectionId)) return false;
     const revoked = await this.database.mcpOAuthGrant.updateMany({

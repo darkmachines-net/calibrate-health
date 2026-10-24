@@ -1,3 +1,5 @@
+/** @file Regression coverage for sync: foreground Health Connect sync. */
+
 jest.mock('expo-crypto', () => ({
     CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
     digestStringAsync: async (_algorithm: string, value: string) =>

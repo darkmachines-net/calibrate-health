@@ -1,3 +1,5 @@
+/** @file Regression coverage for expo native dev: native Expo defaults to the current worktree backend from the Android emulator. */
+
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";

@@ -1,3 +1,5 @@
+/** @file Evidence-based calorie-target calibration that preserves profile-estimated TDEE and configured deficit. */
+
 import type { WeightUnit } from './domain';
 import { computeWeightTrend } from './weightTrend';
 import { ABSOLUTE_MIN_TARGET_KCAL, minimumTargetForBmr } from './caloriePolicy';

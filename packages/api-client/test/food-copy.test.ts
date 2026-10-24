@@ -1,3 +1,5 @@
+/** @file Regression coverage for food copy: copyFoodLogs sends the atomic copy payload and returns the committed receipt. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

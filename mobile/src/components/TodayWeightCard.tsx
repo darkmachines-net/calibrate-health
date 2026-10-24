@@ -1,3 +1,5 @@
+/** @file Today Weight Card: Compact daily weigh-in summary and entry point for Today. */
+
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

@@ -1,3 +1,5 @@
+/** @file Legal Consent Fields: Explicit, independently recorded legal choices with adjacent document links. */
+
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Link, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';

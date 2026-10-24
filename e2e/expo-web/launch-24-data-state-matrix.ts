@@ -1,3 +1,5 @@
+/** @file launch 24 data state matrix: One reviewed primary resource and truthful surface contract for every data-backed route. */
+
 import type { ApiResourceFixture } from './fixtures';
 import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
 import {

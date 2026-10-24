@@ -1,3 +1,5 @@
+/** @file Serialized native credential persistence and cleanup through secure storage. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
@@ -20,6 +22,7 @@ function serializeTokens<T>(work: () => Promise<T>): Promise<T> {
     return task;
 }
 
+/** Reads access and refresh credentials together through the serialized secure-storage queue. */
 export async function readStoredTokens(): Promise<StoredTokens> {
     return serializeTokens(async () => {
         const [accessToken, refreshToken] = await Promise.all([
@@ -30,6 +33,7 @@ export async function readStoredTokens(): Promise<StoredTokens> {
     });
 }
 
+/** Serializes persistence of the access and refresh credential pair in secure storage. */
 export async function writeStoredTokens(tokens: { accessToken: string; refreshToken: string }): Promise<void> {
     await serializeTokens(() => Promise.all([
         SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken),
@@ -37,6 +41,7 @@ export async function writeStoredTokens(tokens: { accessToken: string; refreshTo
     ]));
 }
 
+/** Serializes removal of both native authentication credentials from secure storage. */
 export async function clearStoredTokens(): Promise<void> {
     await serializeTokens(() => Promise.all([
         SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
@@ -44,6 +49,7 @@ export async function clearStoredTokens(): Promise<void> {
     ]));
 }
 
+/** Returns the persisted installation identifier, creating and storing one when absent. */
 export async function getOrCreateDeviceId(): Promise<string> {
     const existing = await SecureStore.getItemAsync(DEVICE_ID_KEY);
     if (existing) {
@@ -57,6 +63,7 @@ export async function getOrCreateDeviceId(): Promise<string> {
     return next;
 }
 
+/** Resolves the initial server from saved selection, build configuration, defaults, and development policy. */
 export async function readServerUrl(): Promise<string> {
     return resolveInitialServerUrl(
         await AsyncStorage.getItem(SERVER_URL_KEY),
@@ -66,6 +73,7 @@ export async function readServerUrl(): Promise<string> {
     );
 }
 
+/** Persists the selected server URL for subsequent application launches. */
 export async function writeServerUrl(serverUrl: string): Promise<void> {
     await AsyncStorage.setItem(SERVER_URL_KEY, serverUrl);
 }

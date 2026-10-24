@@ -1,3 +1,5 @@
+/** @file Validated atomic onboarding completion with profile and initial-goal persistence. */
+
 import express from 'express';
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';
 import {

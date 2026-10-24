@@ -1,3 +1,5 @@
+/** @file Today Food Preview: Presents the day's meal summary as a focusable entry point into the food log. */
+
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -16,6 +18,7 @@ type TodayFoodPreviewProps = {
     expanded?: boolean;
 };
 
+/** Presents the day's meal summary as a focusable entry point into the food log. */
 export function TodayFoodPreview({ entries, onPress, style, expanded = false }: TodayFoodPreviewProps) {
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);

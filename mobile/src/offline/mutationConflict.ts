@@ -1,3 +1,5 @@
+/** @file mutation Conflict: Only bounded local validation messages may bypass generic action error copy. */
+
 const messages = {
     pausedDay: 'Tracking changed to paused. Resume tracking or explicitly backfill this day before changing its status.',
     "failed": "Resolve the failed pause change in Review saved changes before trying again.",
@@ -10,6 +12,7 @@ const messages = {
 
 /** Only bounded local validation messages may bypass generic action error copy. */
 export class OfflineMutationConflict extends Error {
+    /** Creates a safe user-facing conflict error from the supported offline conflict reasons. */
     constructor(reason: keyof typeof messages) {
         super(messages[reason]);
         this.name = 'OfflineMutationConflict';

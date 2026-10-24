@@ -1,3 +1,5 @@
+/** @file Regression coverage for goal deficit: parseDailyDeficit accepts only the allowed deficit/surplus magnitudes. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

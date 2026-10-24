@@ -1,3 +1,5 @@
+/** @file Regression coverage for native setup: setup flags keep check read-only and reject unknown or conflicting options. */
+
 /** Regression coverage for native setup and its failure boundaries. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';

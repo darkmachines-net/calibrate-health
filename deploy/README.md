@@ -74,11 +74,11 @@ logs, and diagnostics.
 
 Only the official `calibratehealth.app` deployment sets `CALIBRATE_HOSTED_SERVICE=true`.
 Registration then fails closed until complete provider-neutral SMTP configuration and delivery are
-available. See `../docs/account-access-and-recovery.md` for the endpoint and access-state contract.
+available. See `../backend/README.md#authentication-and-account-isolation` for the endpoint and access-state contract.
 
 The official hosted web tier must publish both `/.well-known/assetlinks.json` and
 `/.well-known/apple-app-site-association` as static, unauthenticated, non-redirecting JSON responses. The Android
-package/certificate and iOS application/team contracts are recorded in `../docs/android-app-links.md`;
+package/certificate and iOS application/team contracts are recorded in `../mobile/README.md#hosted-app-links`;
 self-hosted domains are not automatically associated with the official mobile apps.
 
 ### Connected assistants (MCP)
@@ -89,7 +89,7 @@ Set `MCP_PUBLIC_URL` or `MCP_ALLOWED_HOSTS` only for an intentional routing over
 OAuth, and discovery paths to the app; no extra port or sidecar is required.
 
 OAuth uses dynamic public-client registration, authorization code with S256 PKCE, rotating refresh tokens, and
-revocable user grants. Apply the included Prisma migration before enabling the endpoint. See `../docs/mcp.md` for the
+revocable user grants. Apply the included Prisma migration before enabling the endpoint. See `../backend/src/mcp/README.md` for the
 tool data contract, discovery routes, local testing, privacy boundaries, and the tracked Codex plugin.
 
 ### Split frontend and API origins

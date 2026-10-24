@@ -1,3 +1,5 @@
+/** @file Food deletion, undo, and failure recovery state with stable operation identity. */
+
 import type { QueuedMutation } from '../offline/queuedMutation';
 import { OUTBOX_MUTATION_STATES } from '../offline/queuedMutation';
 import { OFFLINE_MUTATION_OPERATIONS } from '../offline/operations';
@@ -25,6 +27,7 @@ export type FoodDeleteRecoveryState<TEntry extends FoodDeleteEntry> = Readonly<{
     failures: readonly FoodDeleteFailure<TEntry>[];
 }>;
 
+/** Creates an empty deletion-recovery state with no pending, committed, or failed removals. */
 export function createEmptyFoodDeleteRecoveryState<
     TEntry extends FoodDeleteEntry
 >(): FoodDeleteRecoveryState<TEntry> {
@@ -36,6 +39,7 @@ export function createEmptyFoodDeleteRecoveryState<
     };
 }
 
+/** Combines queued and local deletions into hidden IDs while restoring failed completed deletions. */
 export function getFoodDeleteHiddenIds<TEntry extends FoodDeleteEntry>(
     state: FoodDeleteRecoveryState<TEntry>,
     queuedDeleteIds: readonly number[] = [],
@@ -50,6 +54,7 @@ export function getFoodDeleteHiddenIds<TEntry extends FoodDeleteEntry>(
     ]));
 }
 
+/** Returns a copy of the log list excluding entries hidden by deletion recovery. */
 export function filterVisibleFoodLogEntries<TEntry extends FoodDeleteEntry>(
     entries: readonly TEntry[],
     hiddenIds: readonly number[]

@@ -1,9 +1,11 @@
+/** @file Regression coverage for auth legal trust: legal update keeps restricted account controls visible in a desktop composition. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, Route } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-08');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-08');
 const RESTRICTED_USER = {
   id: 17,
   email: 'release@example.invalid',

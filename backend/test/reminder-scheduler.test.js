@@ -1,3 +1,5 @@
+/** @file Regression coverage for reminder scheduler: staggered reminder times remain separate so an earlier type can be receipt-deduped. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

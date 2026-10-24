@@ -1,3 +1,5 @@
+/** Bounded versioned invalidation messages containing coordination identity rather than health summaries. */
+
 package app.calibratehealth.wear.sync
 
 import app.calibratehealth.wear.network.StrictJson

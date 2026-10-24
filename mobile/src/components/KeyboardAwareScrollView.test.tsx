@@ -1,3 +1,5 @@
+/** @file Regression coverage for Keyboard Aware Scroll View: KeyboardAwareScrollView. */
+
 import { Keyboard, ScrollView, StyleSheet } from 'react-native';
 import { act, render } from '@testing-library/react-native';
 import { AppText } from './AppText';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for mcp oauth: MCP OAuth stores a hashed, ten-minute approval credential for an exact resource. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

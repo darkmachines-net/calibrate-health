@@ -1,7 +1,10 @@
+/** @file Consistent food-day labels and available actions for open, complete, paused, and unavailable data. */
+
 import type { FoodLogDay, FoodLogDayStatus } from '@calibrate/api-client';
 
 export type FoodDayStatusLabel = 'Fully logged' | 'Not fully logged' | 'Paused';
 
+/** Maps pause, completion, and failed loading into the visible food-day status label. */
 export function getFoodDayStatusLabel({
     status,
     failed = false
@@ -14,6 +17,7 @@ export function getFoodDayStatusLabel({
     if (status === 'COMPLETE') return 'Fully logged';
     return 'Not fully logged';
 }
+/** Shows comparison for completed days or open days that are current or contain food. */
 export function shouldShowCalorieComparison({
     status,
     isToday,
@@ -27,6 +31,7 @@ export function shouldShowCalorieComparison({
     return status === 'OPEN' && (isToday || hasFoodEntries);
 }
 
+/** Emphasizes a pause only on an empty, fully loaded current day. */
 export function shouldEmphasizePausedStatus({
     status,
     isToday,

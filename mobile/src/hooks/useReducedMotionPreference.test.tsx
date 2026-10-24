@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Reduced Motion Preference: useReducedMotionPreference. */
+
 import { AccessibilityInfo } from 'react-native';
 import { act, render, waitFor } from '@testing-library/react-native';
 import { AppText } from '../components/AppText';

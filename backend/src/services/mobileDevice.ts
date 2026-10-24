@@ -1,3 +1,5 @@
+/** @file Bounded native device identity parsing and account-scoped device metadata handling. */
+
 import { MobileDevicePlatform } from '@prisma/client';
 import {
   MOBILE_DEVICE_PLATFORMS,
@@ -17,6 +19,7 @@ type ParseMobileDeviceResult =
   | { ok: true; device: ParsedMobileDevice }
   | { ok: false; message: string };
 
+/** Trim a required bounded string, returning null for nontext, empty or oversized values. */
 export const normalizeRequiredText = (value: unknown, maxLength: number): string | null => {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -45,6 +48,7 @@ const parseMobileDevicePlatform = (value: unknown): MobileDevicePlatform | null 
   return null;
 };
 
+/** Translate persisted device platforms into supported native wire values, defaulting to Android phone. */
 export const serializeMobileDevicePlatform = (
   value: MobileDevicePlatform
 ): MobileDevicePlatformWire => {

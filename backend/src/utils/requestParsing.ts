@@ -1,3 +1,5 @@
+/** @file Strict reusable request parsers for bounded numeric and textual API inputs. */
+
 /**
  * Parse a value into a positive integer (>= 1).
  *

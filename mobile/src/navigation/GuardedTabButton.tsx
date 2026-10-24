@@ -1,3 +1,5 @@
+/** @file Guarded Tab Button: Preserve Expo's canonical tab links while guarding retained-editor departures. */
+
 import { Platform, Pressable } from 'react-native';
 import { Link, router, type Href } from 'expo-router';
 import type { BottomTabBarButtonProps } from 'expo-router/build/react-navigation/bottom-tabs';

@@ -1,3 +1,5 @@
+/** @file Goal Daily Change Select: Shared deficit/surplus selector used during onboarding and later goal edits. */
+
 import React, { useMemo } from 'react';
 import type { CaloriePlanOption } from '@calibrate/shared';
 import { OverlaySelect, type OverlaySelectOption } from './OverlaySelect';

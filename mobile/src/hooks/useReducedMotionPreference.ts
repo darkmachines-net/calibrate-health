@@ -1,3 +1,5 @@
+/** @file use Reduced Motion Preference: Tracks the OS reduce-motion preference for custom native animations. */
+
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 

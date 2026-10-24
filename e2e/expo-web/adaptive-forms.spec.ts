@@ -1,9 +1,11 @@
+/** @file Regression coverage for adaptive forms: Add Food uses a centered wide dialog at the desktop breakpoint. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-06');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-06');
 
 async function captureEvidence(page: Page, filename: string) {
   if (process.env.CALIBRATE_CAPTURE_EVIDENCE !== '1') return;

@@ -1,3 +1,5 @@
+/** @file Barcode camera, permission, lookup, and manual-entry state transitions. */
+
 export const BARCODE_PERMISSION_STATES = {
     CHECKING: 'checking',
     FIRST_REQUEST: 'first-request',

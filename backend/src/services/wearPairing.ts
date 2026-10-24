@@ -1,3 +1,5 @@
+/** @file Short-lived phone/watch pairing credentials, trusted server origins, and account-bound exchange. */
+
 import crypto from 'node:crypto';
 import { MobileDevicePlatform } from '@prisma/client';
 import prisma from '../config/database';
@@ -32,6 +34,7 @@ const WEAR_PAIRING_CHALLENGE_BYTES = 32;
 const MAX_ACTIVE_WEAR_PAIRING_CREDENTIALS = 5;
 export const WEAR_PAIRING_PROTOCOL_VERSION = 1;
 
+/** Expose only the account identity/preferences needed by Wear, falling back to a supported language. */
 const serializeWearAuthPrincipal = (user: {
   id: number;
   timezone: string;
@@ -62,6 +65,7 @@ const isLocalPairingHostname = (hostname: string): boolean => {
 
 /** Match the Android client policy: HTTPS remotely, HTTP only on loopback/private/LAN hosts. */
 let hasWarnedAboutInsecureWearPairing = false;
+/** Accept credential-free pairing origins under HTTPS/private-development policy; deployed cleartext needs explicit opt-in. */
 export const normalizePairingServerOrigin = (
   value: unknown,
   env: NodeJS.ProcessEnv = process.env,

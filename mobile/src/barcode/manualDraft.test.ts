@@ -1,3 +1,5 @@
+/** @file Regression coverage for manual Draft: barcode manual food draft. */
+
 import { MEAL_PERIODS } from '@calibrate/shared';
 import { BARCODE_RETURN_DESTINATIONS } from './context';
 import {

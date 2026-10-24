@@ -1,3 +1,5 @@
+/** @file haptics: Honor the account preference without letting optional device feedback block logging flows. */
+
 import * as Haptics from 'expo-haptics';
 
 export type HapticFeedbackKind = 'selection' | 'success' | 'warning' | 'error';

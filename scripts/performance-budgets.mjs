@@ -1,3 +1,5 @@
+/** @file performance budgets: Exact level-9 gzip bytes for every JavaScript bundle reachable from representative route HTML. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -109,6 +111,7 @@ export function measureRouteBundleGraphs(distDir = DEFAULT_EXPO_WEB_DIST, routes
   }));
 }
 
+/** Validates exact performance budget fields, supported limits, and reproducible runtime metadata. */
 export function validatePerformanceBudgetManifest(manifest) {
   assertExactKeys(manifest, REQUIRED_MANIFEST_KEYS, 'Performance budget manifest');
   if (manifest?.schema_version !== 1) throw new Error('Performance budget manifest schema_version must be 1.');
@@ -159,6 +162,7 @@ export function validatePerformanceBudgetManifest(manifest) {
   return manifest;
 }
 
+/** Requires the benchmark process to match the manifest's reviewed Node, V8, platform, and architecture. */
 export function assertBenchmarkRuntime(manifest, runtime = {
   node: process.versions.node,
   v8: process.versions.v8,
@@ -175,6 +179,7 @@ export function assertBenchmarkRuntime(manifest, runtime = {
   }
 }
 
+/** Requires bundle measurements to match the reviewed Node, compression, platform, and architecture runtime. */
 export function assertBundleRuntime(manifest, runtime = {
   node: process.versions.node,
   v8: process.versions.v8,
@@ -192,6 +197,7 @@ export function assertBundleRuntime(manifest, runtime = {
   }
 }
 
+/** Compares representative route bundle sizes with baselines and reports growth-budget violations. */
 export function evaluateRouteBundleGrowth(measured, manifest) {
   validatePerformanceBudgetManifest(manifest);
   const allowedGrowth = manifest.limits.route_bundle_growth_percent;

@@ -1,3 +1,5 @@
+/** @file Calendar Modal: Native calendar presentation keeps the app's standard animated bottom sheet. */
+
 import React from 'react';
 import { BottomSheetModal } from './BottomSheetModal';
 

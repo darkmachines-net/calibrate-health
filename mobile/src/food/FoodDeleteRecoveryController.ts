@@ -1,3 +1,5 @@
+/** @file Food Delete Recovery Controller: Owns the single Undo window while serializing every eventual delete commit. */
+
 import * as Crypto from 'expo-crypto';
 import { getSafeActionErrorMessage } from '../errors/presentation';
 import {
@@ -34,6 +36,7 @@ export class FoodDeleteRecoveryController<TEntry extends FoodDeleteEntry, TOutco
     private commitTail: Promise<void> = Promise.resolve();
     private readonly commitPromises = new Map<string, Promise<FoodDeleteCommitResult<TEntry, TOutcome>>>();
 
+    /** Binds the deletion persistence, undo timing, and state callbacks supplied by the caller. */
     constructor(private readonly options: FoodDeleteRecoveryControllerOptions<TEntry, TOutcome>) {}
 
     getSnapshot = (): FoodDeleteRecoveryState<TEntry> => this.state;

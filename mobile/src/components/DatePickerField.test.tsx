@@ -1,3 +1,5 @@
+/** @file Regression coverage for Date Picker Field: confirms an iOS draft only on Done and forwards local date bounds. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import * as ReactNative from 'react-native';

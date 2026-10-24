@@ -1,3 +1,5 @@
+/** @file Regression coverage for progress fixed layout: Trend heading, fullscreen icon, and graph share one full-width navigation target. */
+
 import { applyTwoHundredPercentText } from './text-scaling';
 import type { Page } from '@playwright/test';
 import { expect, test, hideTransientPwaNotices } from './fixtures';

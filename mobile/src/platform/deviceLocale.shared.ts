@@ -1,3 +1,5 @@
+/** @file device Locale: Browsers expose preferred languages, while older native binaries still expose their Intl locale. */
+
 import type { Locale } from 'expo-localization';
 
 export type DeviceLocale = Pick<Locale, 'measurementSystem' | 'regionCode'> & { languageTag: string | null };

@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 19 hosted pwa trust: failed update remains dismissible and leaves app navigation reachable. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, expectApiFailure, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-19');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-19');
 const LANDING_TITLE = 'Calibrate - Private calorie tracking';
 const LANDING_DESCRIPTION = 'Track food, weight, activity, and goals with a private Calibrate account or your own compatible server.';
 const PRIVACY_DESCRIPTION = 'Learn how Calibrate handles account, food, weight, activity, and technical information.';

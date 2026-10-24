@@ -1,3 +1,5 @@
+/** @file Regression coverage for Date Picker Field web: DatePickerField web. */
+
 import React from 'react';
 import { DatePickerField } from './DatePickerField.web';
 

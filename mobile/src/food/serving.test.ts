@@ -1,3 +1,5 @@
+/** @file Regression coverage for serving: searched food serving calculations. */
+
 import { MEAL_PERIODS } from '@calibrate/shared';
 import {
     buildSearchedFoodLogPayload,

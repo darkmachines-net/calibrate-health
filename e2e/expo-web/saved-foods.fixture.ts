@@ -1,3 +1,5 @@
+/** @file saved foods: Stateful deterministic Saved Foods API used only by the focused Launch 13 lifecycle spec. */
+
 import type { Page, Route } from '@playwright/test';
 
 export const DEEP_SAVED_FOOD_NAME = 'Saved pantry 25';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for theme: mobile semantic theme. */
+
 import { resolveAppTheme, themes, typeScale } from './theme';
 
 function channelToLinear(channel: number): number {

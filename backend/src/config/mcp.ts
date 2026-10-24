@@ -1,3 +1,5 @@
+/** @file Trusted public origin, resource identity, and enablement configuration for the remote MCP service. */
+
 import { CALIBRATE_HOSTED_ORIGIN } from '../../../shared/product';
 import { isHostedServiceDeployment } from './emailDelivery';
 import { isProductionOrStagingEnv } from './environment';

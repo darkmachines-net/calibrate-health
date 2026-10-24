@@ -1,3 +1,5 @@
+/** @file Required legal document status and explicit versioned account acceptance endpoints. */
+
 import express from 'express';
 import {
   CURRENT_PRIVACY_VERSION,

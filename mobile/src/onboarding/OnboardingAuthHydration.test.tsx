@@ -1,3 +1,5 @@
+/** @file Regression coverage for Onboarding Auth Hydration: onboarding direct-entry auth hydration. */
+
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import OnboardingScreen from '../../app/onboarding';

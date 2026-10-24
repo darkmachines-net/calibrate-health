@@ -1,3 +1,5 @@
+/** @file Regression coverage for my food library: getMyFoodsLibrary encodes filters and returns the paged envelope. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

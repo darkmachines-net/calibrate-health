@@ -1,3 +1,5 @@
+/** @file Meal/day copy selection, destination date validation, and submission recovery UI. */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -32,12 +34,14 @@ type CopyFoodSheetProps = {
     onSubmit: (selection: FoodCopySelection) => void;
 };
 
+/** Prefers the following day for copying, otherwise the preceding day, clamped to the allowed range. */
 export function getDefaultCopyTargetDate(sourceDate: string, minDate: string, maxDate: string): string {
     if (sourceDate < maxDate) return clampDateOnly(addDaysToDateOnly(sourceDate, 1), minDate, maxDate);
     if (sourceDate > minDate) return clampDateOnly(addDaysToDateOnly(sourceDate, -1), minDate, maxDate);
     return sourceDate;
 }
 
+/** Collects a bounded destination date and meal for copying food snapshots, retaining caller-owned submission state. */
 export const CopyFoodSheet: React.FC<CopyFoodSheetProps> = ({
     visible,
     source,

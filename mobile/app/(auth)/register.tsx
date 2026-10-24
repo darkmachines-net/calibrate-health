@@ -1,3 +1,5 @@
+/** @file register: Presents account creation with explicit legal acceptance and optional native server selection. */
+
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Link, useLocalSearchParams, type Href } from 'expo-router';
@@ -23,6 +25,7 @@ import {
     utf8ByteLength
 } from '../../../shared/authCredentials';
 
+/** Presents account creation with explicit legal acceptance and optional native server selection. */
 export default function RegisterScreen() {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();

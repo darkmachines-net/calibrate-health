@@ -1,3 +1,5 @@
+/** @file Regression coverage for planned Pause: projects only future days before the expectation, never the target or recorded history. */
+
 import type { FoodTrackingPause } from '@calibrate/api-client';
 import { getActivePausePlan, getPauseBrowseMonth, getPauseExpectationCopy, isPlannedPauseDate } from './plannedPause';
 import { getTodayDate } from '../utils/dates';

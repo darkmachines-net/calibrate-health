@@ -1,3 +1,5 @@
+/** @file Expo browser test projects, viewport coverage, server lifecycle, and artifact configuration. */
+
 import { defineConfig } from '@playwright/test';
 import process from 'node:process';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for migration journal: actual disk journal resumes successful imports without resubmitting the account. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

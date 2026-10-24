@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Home Controller. */
+
 package app.calibratehealth.wear.actions
 
 import app.calibratehealth.wear.WearSummary
@@ -16,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearHomeControllerTest {
+    /** Verifies that durable weight enqueue refreshes calorie glance surfaces immediately. */
     @Test
     fun `durable weight enqueue refreshes calorie glance surfaces immediately`() {
         val storage = FakeWearStorage()
@@ -34,6 +37,7 @@ class WearHomeControllerTest {
         scopeJob.cancel()
     }
 
+    /** Verifies that non-weight enqueue does not refresh calorie glance surfaces. */
     @Test
     fun `non-weight enqueue does not refresh calorie glance surfaces`() {
         val storage = FakeWearStorage()

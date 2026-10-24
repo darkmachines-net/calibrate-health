@@ -1,3 +1,5 @@
+/** @file Consistent public account-access state for HTTP requests and background operations. */
+
 import type { Prisma } from '@prisma/client';
 import {
   CURRENT_PRIVACY_VERSION,

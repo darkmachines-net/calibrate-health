@@ -58,6 +58,15 @@ jobs:
       - name: Lint with zero warnings
         run: npm run lint:eslint
 
+      - name: Setup Java for Kotlin documentation lint
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Lint Kotlin documentation
+        run: npm run lint:kotlin
+
   typecheck:
     name: Backend, Shared, API Client, and Mobile Typecheck${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
     runs-on: ubuntu-latest

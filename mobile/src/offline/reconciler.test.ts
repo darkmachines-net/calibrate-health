@@ -1,3 +1,5 @@
+/** @file Regression coverage for reconciler: OutboxReconciler. */
+
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import { ApiError } from '@calibrate/api-client';
 import type { OutboxStore } from './outbox';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for native push config: native push defaults to disabled and requires an explicit Expo opt-in. */
+
 const assert = require('node:assert/strict');
 const test = require('node:test');
 

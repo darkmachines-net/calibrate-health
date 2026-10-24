@@ -1,3 +1,5 @@
+/** @file use Log Date Navigation: Native counterpart to the PWA local-day navigation model. */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';

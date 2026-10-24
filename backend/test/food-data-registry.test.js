@@ -1,3 +1,5 @@
+/** @file Regression coverage for food data registry: foodData registry: listFoodDataProviders marks FatSecret + USDA as not ready when credentials are missing. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

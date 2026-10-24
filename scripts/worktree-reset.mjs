@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Explicitly resets a named disposable worktree branch to local master, with optional dry-run output. */
+
 import { execFileSync, spawnSync } from "node:child_process";
 import path from "node:path";
 

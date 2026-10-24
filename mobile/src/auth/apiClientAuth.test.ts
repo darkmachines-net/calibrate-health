@@ -1,3 +1,5 @@
+/** @file Regression coverage for api Client Auth: CalibrateApiClient mobile authentication recovery. */
+
 import { ApiError, CalibrateApiClient } from '@calibrate/api-client';
 
 const jsonResponse = (body: unknown, status = 200): Response =>

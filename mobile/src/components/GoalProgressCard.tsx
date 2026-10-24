@@ -1,3 +1,5 @@
+/** @file Goal Progress Card: Compact native snapshot that keeps current weight and goal projection together. */
+
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

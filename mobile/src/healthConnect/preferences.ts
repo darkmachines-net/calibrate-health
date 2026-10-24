@@ -1,3 +1,5 @@
+/** @file Account/server-scoped Health Connect opt-ins, connection preferences, and durable synchronization checkpoints. */
+
 import {
     DEFAULT_HEALTH_CONNECT_SELECTION,
     HEALTH_CONNECT_FEATURES,
@@ -20,10 +22,12 @@ export const DEFAULT_HEALTH_CONNECT_PREFERENCES: StoredHealthConnectPreferences 
     selection: DEFAULT_HEALTH_CONNECT_SELECTION
 };
 
+/** Builds a preference key isolated by canonical server origin and account identifier. */
 export function healthConnectPreferencesStorageKey(serverUrl: string, userId: number): string {
     return `${STORAGE_KEY_PREFIX}/${healthConnectAccountScope(serverUrl, userId)}`;
 }
 
+/** Builds an account-scoped key for the last successful Health Connect synchronization time. */
 export function healthConnectLastSuccessStorageKey(serverUrl: string, userId: number): string {
     return `${LAST_SUCCESS_STORAGE_KEY_PREFIX}/${healthConnectAccountScope(serverUrl, userId)}`;
 }

@@ -1,3 +1,5 @@
+/** @file Regression coverage for native release evidence: validates four signed artifacts, physical Samsung metadata, strict upgrades, and derived capabilities. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import test from 'node:test';
@@ -245,7 +247,7 @@ test('rejects future execution dates and non-allowlisted protocol text', () => {
   });
 
   assert.ok(result.errors.includes('Native release evidence executedOn cannot be in the future.'));
-  assert.ok(result.errors.some((error) => error.includes('protocol must be docs/physical-galaxy-validation.md')));
+  assert.ok(result.errors.some((error) => error.includes('protocol must be quality/README.md')));
 });
 
 test('rejects calendar dates that JavaScript would otherwise normalize', () => {

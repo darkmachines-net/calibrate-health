@@ -1,4 +1,4 @@
-/** Protect the unified release graph: server health and native handoff gate OTA, store completion does not. */
+/** @file Protect the unified release graph: server health and native handoff gate OTA, store completion does not. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

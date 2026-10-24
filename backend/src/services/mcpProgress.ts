@@ -1,3 +1,5 @@
+/** @file Read-only MCP progress views derived from the authenticated account and its local-day boundaries. */
+
 import { Prisma, type MealPeriod } from '@prisma/client';
 import prisma from '../config/database';
 import {

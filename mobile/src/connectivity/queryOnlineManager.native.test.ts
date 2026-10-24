@@ -1,3 +1,5 @@
+/** @file Regression coverage for query Online Manager native: native Query connectivity. */
+
 jest.mock('@react-native-community/netinfo', () => ({
     __esModule: true,
     default: { addEventListener: jest.fn(() => jest.fn()) }

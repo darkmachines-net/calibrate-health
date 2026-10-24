@@ -1,8 +1,11 @@
+/** @file ESLint policy for authored JavaScript/TypeScript: correctness, React hooks, and required source documentation. */
+
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import jsdoc from 'eslint-plugin-jsdoc';
 
 export default defineConfig([
   globalIgnores([
@@ -16,8 +19,24 @@ export default defineConfig([
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.node },
     linterOptions: { reportUnusedDisableDirectives: 'error' },
+    plugins: { jsdoc },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_', ignoreRestSiblings: true }],
+      'jsdoc/require-file-overview': 'error',
+      'jsdoc/require-jsdoc': ['error', {
+        publicOnly: true,
+        enableFixer: false,
+        require: {
+          FunctionDeclaration: true,
+          FunctionExpression: true,
+          ArrowFunctionExpression: true,
+          MethodDefinition: true,
+        },
+        contexts: [
+          'TSDeclareFunction',
+          'TSMethodSignature',
+        ],
+      }],
     },
   },
   {

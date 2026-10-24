@@ -1,3 +1,5 @@
+/** @file Calendar Modal: Web portal avoids React Native Modal painting and hit-testing inconsistencies in browsers. */
+
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useWindowDimensions } from 'react-native';

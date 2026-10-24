@@ -1,3 +1,5 @@
+/** @file Restricted Account Data Actions: Export and irreversible deletion remain available while routine health access is restricted. */
+
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';

@@ -1,3 +1,5 @@
+/** @file Authenticated calibration assessment, recommendation acceptance, and scheduled-change cancellation endpoints. */
+
 import express from 'express';
 import { parsePositiveInteger } from '../utils/requestParsing';
 import { ClientOperationConflictError, parseClientOperationId } from '../services/clientOperations';

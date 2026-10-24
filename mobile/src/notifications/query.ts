@@ -1,3 +1,5 @@
+/** @file Notification cache identity and optimistic read/dismiss reconciliation with unread totals. */
+
 import type { QueryClient } from '@tanstack/react-query';
 import type { InAppNotification } from '@calibrate/api-client';
 
@@ -16,6 +18,7 @@ export const activeNotificationQueryKey = [
     ACTIVE_NOTIFICATION_LIMIT
 ] as const;
 
+/** Removes a read notification from the active cache and reconciles its unread count. */
 export function reconcileNotificationRead(
     queryClient: QueryClient,
     notificationId: number
@@ -29,6 +32,7 @@ export function reconcileNotificationRead(
     }) : current);
 }
 
+/** Applies the same active-list reconciliation for a dismissed notification as for a read notification. */
 export function reconcileNotificationDismissed(
     queryClient: QueryClient,
     notificationId: number
@@ -36,6 +40,7 @@ export function reconcileNotificationDismissed(
     reconcileNotificationRead(queryClient, notificationId);
 }
 
+/** Invalidates every notification query under the shared account cache root. */
 export function invalidateNotificationQueries(queryClient: QueryClient): Promise<void> {
     return queryClient.invalidateQueries({ queryKey: [...MOBILE_NOTIFICATION_QUERY_KEY] });
 }

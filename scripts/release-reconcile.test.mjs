@@ -1,4 +1,4 @@
-/** Exercise explicit recovery evidence, exact provider readback, and prevention of duplicate enqueue. */
+/** @file Exercise explicit recovery evidence, exact provider readback, and prevention of duplicate enqueue. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { reconcileRelease, validateReconciliation } from './release-reconcile.mjs';

@@ -1,3 +1,5 @@
+/** @file Auth Brand: Branded introduction shared by the native sign-in and registration screens. */
+
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '../AppText';

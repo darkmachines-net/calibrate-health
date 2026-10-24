@@ -1,3 +1,5 @@
+/** @file client Compatibility: Enforce release floors on every bearer-authenticated request and the unauthenticated Wear exchange. Browser cookie sessions omit native identity headers and remain unaffected. */
+
 import type { NextFunction, Request, Response } from 'express';
 import {
   CLIENT_UPGRADE_REQUIRED_CODE,

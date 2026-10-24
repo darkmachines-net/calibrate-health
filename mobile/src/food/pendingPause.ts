@@ -1,3 +1,5 @@
+/** @file pending Pause: Keep accepted local pause intent visible while canonical reads catch up with replay. */
+
 import type { FoodTrackingPause } from '@calibrate/api-client';
 import { OFFLINE_MUTATION_OPERATIONS } from '../offline/operations';
 import { OUTBOX_MUTATION_STATES, type QueuedMutation } from '../offline/queuedMutation';

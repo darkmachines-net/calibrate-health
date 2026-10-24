@@ -1,3 +1,5 @@
+/** @file tracking Receipts: Persist acknowledged rows before removing their durable intent, including partial replay failures. */
+
 import type { QueryClient } from '@tanstack/react-query';
 import type { FoodLogEntry, MetricEntry } from '@calibrate/api-client';
 import type { QueuedMutation } from './queuedMutation';

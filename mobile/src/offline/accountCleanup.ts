@@ -1,3 +1,5 @@
+/** @file account Cleanup: Explicit deletion cleanup opens the account namespace without replaying it. */
+
 import { openOutboxDatabase } from './database';
 import { SqliteOutbox } from './outbox';
 import { createOutboxNamespace } from './queuedMutation';

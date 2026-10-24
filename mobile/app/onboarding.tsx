@@ -1,3 +1,5 @@
+/** @file onboarding: Guards onboarding access and clears obsolete drafts for accounts that already completed setup. */
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, KeyboardAvoidingView, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Redirect } from 'expo-router';
@@ -26,6 +28,7 @@ const MIN_FORM_VIEWPORT_HEIGHT = 240;
 
 const CONTROL_ORDER: OnboardingField[] = ['sex', 'dateOfBirth', 'currentWeight', 'height', 'timezone', 'activityLevel', 'goalMode', 'targetWeight', 'dailyChangeAbs'];
 
+/** Guards onboarding access and clears obsolete drafts for accounts that already completed setup. */
 export default function OnboardingScreen() {
     const { user, serverUrl, isLoading } = useAuth();
     const accessRoute = restrictedAccountRoute(user);

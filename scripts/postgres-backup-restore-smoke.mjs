@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Isolated PostgreSQL backup/restore rehearsal with owned-resource cleanup and data verification. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -432,6 +434,7 @@ export function inspectDockerResourceOwnership(dockerRunner, kind, name, ownerId
       };
 }
 
+/** Removes only smoke-test resources whose ownership labels still match this run, retaining cleanup failures. */
 export function cleanupGeneratedResources(dockerRunner, plan, created) {
   const failures = [];
   const removeOwned = (kind, name, removeArgs) => {

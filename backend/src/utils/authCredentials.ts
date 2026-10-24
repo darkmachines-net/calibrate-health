@@ -1,3 +1,5 @@
+/** @file Credential normalization and password handling at backend authentication boundaries. */
+
 import {
   MAX_AUTH_PASSWORD_BYTES,
   MIN_AUTH_PASSWORD_LENGTH,

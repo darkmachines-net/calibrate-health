@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file postgres weight trend concurrency smoke: Runs weight-trend concurrency checks in a uniquely named isolated PostgreSQL schema and cleans up owned state. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -40,6 +42,7 @@ async function waitForQueuedRecomputes(client, namespace, userId, expectedCount)
   throw new Error('Timed out waiting for ' + expectedCount + ' queued weight-trend recomputations.');
 }
 
+/** Runs weight-trend concurrency checks in a uniquely named isolated PostgreSQL schema and cleans up owned state. */
 export async function runWeightTrendConcurrencySmoke(rawDatabaseUrl = process.env.DATABASE_URL) {
   if (!rawDatabaseUrl) {
     throw new Error('DATABASE_URL is required for the Postgres weight-trend concurrency smoke test.');

@@ -1,3 +1,5 @@
+/** @file Regression coverage for numeric Input: numeric input helpers. */
+
 import { adjustDecimalInput, formatDecimalInput, normalizeDecimalInput, parseDecimalInput } from './numericInput';
 
 describe('numeric input helpers', () => {

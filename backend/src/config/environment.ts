@@ -1,3 +1,5 @@
+/** @file Named runtime environment predicates used to separate development behavior from deployed services. */
+
 /**
  * Determine whether a NODE_ENV value indicates a deployed environment (production or staging).
  *

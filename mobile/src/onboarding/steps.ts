@@ -1,3 +1,5 @@
+/** @file Canonical onboarding step identities, order, and screen labels. */
+
 export type OnboardingStepKey = 'about' | 'activity' | 'plan';
 
 export type OnboardingStep = {

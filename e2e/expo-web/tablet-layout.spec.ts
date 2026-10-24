@@ -1,3 +1,5 @@
+/** @file Regression coverage for tablet layout. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from './fixtures';
@@ -23,7 +25,7 @@ for (const viewport of [{ width: 820, height: 1180 }, { width: 1180, height: 820
     expect(await page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(viewport.width);
     if (process.env.CALIBRATE_CAPTURE_EVIDENCE === '1') {
-      const directory = path.resolve('docs/screenshots/stack-review');
+      const directory = path.resolve('.codex-screenshots/stack-review');
       await mkdir(directory, { recursive: true });
       await page.screenshot({ path: path.join(directory, `367-tablet-${viewport.width}x${viewport.height}.png`) });
     }

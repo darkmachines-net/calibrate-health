@@ -1,3 +1,5 @@
+/** System complication service that reads account-scoped cached calorie data without network work. */
+
 package app.calibratehealth.wear.complication
 
 import android.app.PendingIntent

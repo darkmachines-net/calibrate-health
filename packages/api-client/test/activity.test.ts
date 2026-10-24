@@ -1,3 +1,5 @@
+/** @file Regression coverage for activity: activity day query uses versioned date parameters. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

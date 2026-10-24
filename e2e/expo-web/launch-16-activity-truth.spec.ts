@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 16 activity truth: Activity keeps connection, sync, source, and calorie-target truth across responsive layouts. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, Route, TestInfo } from '@playwright/test';
 import { expect, FROZEN_LOCAL_DATE, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-16');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-16');
 const HEALTH_CONNECT_FIXTURE_EVENT = 'calibrate:health-connect-fixture';
 const HEALTH_CONNECT_FIXTURE_GLOBAL = '__CALIBRATE_HEALTH_CONNECT_E2E__';
 const TRANSIENT_PWA_TITLES = new Set([
@@ -329,7 +331,7 @@ test('Activity date navigation stays anchored and usable after scrolling', async
   await expect.poll(async () => (await header.boundingBox())?.y).toBe(initialHeaderBox!.y);
   await expect(header.getByRole('button', { name: 'Choose date', exact: true })).toBeInViewport();
   if (process.env.CALIBRATE_CAPTURE_EVIDENCE === '1') {
-    const directory = path.resolve('docs/screenshots/stack-review');
+    const directory = path.resolve('.codex-screenshots/stack-review');
     await mkdir(directory, { recursive: true });
     await page.screenshot({ path: path.join(directory, `369-activity-scrolled-${testInfo.project.name}.png`) });
   }

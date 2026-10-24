@@ -1,3 +1,5 @@
+/** @file Regression coverage for device Locale: browser and runtime locale preferences. */
+
 import { readRuntimeLocale } from './deviceLocale.shared';
 import { getDeviceLocale } from './deviceLocale.web';
 

@@ -1,3 +1,5 @@
+/** @file App Choice Group: Descriptive, exclusive choices with one tab stop and native radio announcements. */
+
 import React, { useId, useImperativeHandle, useRef } from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for security middleware: browser mutation origin guard rejects cross-origin and same-site sibling requests. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');

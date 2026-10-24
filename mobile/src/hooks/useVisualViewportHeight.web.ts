@@ -1,3 +1,5 @@
+/** @file use Visual Viewport Height: Uses the browser's unobscured viewport rather than the layout viewport behind a software keyboard. */
+
 import { useSyncExternalStore } from 'react';
 
 function subscribe(onStoreChange: () => void): () => void {

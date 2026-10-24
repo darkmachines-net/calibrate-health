@@ -1,3 +1,5 @@
+/** @file Accessible selectable combobox and listbox primitives with shared option and keyboard behavior. */
+
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {

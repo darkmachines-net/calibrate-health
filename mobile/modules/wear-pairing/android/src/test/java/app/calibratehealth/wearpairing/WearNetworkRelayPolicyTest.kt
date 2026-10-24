@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Network Relay Policy. */
+
 package app.calibratehealth.wearpairing
 
 import org.junit.Assert.assertEquals
@@ -6,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearNetworkRelayPolicyTest {
+    /** Verifies that allows only fixed watch server operations. */
     @Test
     fun `allows only fixed Watch server operations`() {
         assertTrue(WearNetworkRelayPolicy.supports("POST", WearNetworkRelayPolicy.PAIRING_EXCHANGE_PATH))
@@ -17,6 +20,7 @@ class WearNetworkRelayPolicyTest {
         assertFalse(WearNetworkRelayPolicy.supports("GET", "/api/v1/users"))
     }
 
+    /** Verifies that allows only headers required by the fixed operations. */
     @Test
     fun `allows only headers required by the fixed operations`() {
         assertTrue(WearNetworkRelayPolicy.supportsHeader("Authorization"))
@@ -28,6 +32,7 @@ class WearNetworkRelayPolicyTest {
         assertFalse(WearNetworkRelayPolicy.supportsHeader("X-Forwarded-Host"))
     }
 
+    /** Verifies that accepts the bounded authenticated snapshot headers. */
     @Test
     fun `accepts the bounded authenticated snapshot headers`() {
         assertTrue(
@@ -43,6 +48,7 @@ class WearNetworkRelayPolicyTest {
         )
     }
 
+    /** Verifies that rejects empty bearer tokens and mutation-only headers on snapshots. */
     @Test
     fun `rejects empty bearer tokens and mutation-only headers on snapshots`() {
         val base = mapOf(
@@ -67,6 +73,7 @@ class WearNetworkRelayPolicyTest {
         )
     }
 
+    /** Verifies that rejects arbitrary headers at the phone trust boundary. */
     @Test
     fun `rejects arbitrary headers at the phone trust boundary`() {
         val headers = mapOf(
@@ -79,6 +86,7 @@ class WearNetworkRelayPolicyTest {
         assertFalse(WearNetworkRelayPolicy.hasValidHeaders(WearNetworkRelayPolicy.WATCH_SNAPSHOT_PATH, headers))
     }
 
+    /** Verifies that retains a successful refresh response for the correlated watch retry. */
     @Test
     fun `retains a successful refresh response for the correlated watch retry`() {
         var nowEpochMs = 1_000L

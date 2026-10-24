@@ -1,3 +1,5 @@
+/** @file Privacy-safe browser performance observation and bounded web-vital aggregation. */
+
 import type {
     ClientDiagnosticDurationBucket,
     ClientDiagnosticOperation,
@@ -110,6 +112,7 @@ function addLayoutShiftEntries(accumulator: ClsAccumulator, entries: readonly La
     }
 }
 
+/** Computes the maximum cumulative layout-shift session score from eligible samples. */
 export function calculateMaximumClsSessionValue(entries: readonly LayoutShiftSample[]): number {
     const accumulator: ClsAccumulator = {
         lastEntryTime: null,
@@ -259,6 +262,7 @@ export function calculateInteractionToNextPaint(entries: readonly InteractionTim
     return selectInteractionToNextPaint(accumulator);
 }
 
+/** Converts a valid nonnegative web-vital measurement into a bounded diagnostic signal. */
 export function createWebVitalSignal(
     operation: WebVitalOperation,
     value: number,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for calorie planning: stored planning marks a current-safe but scheduled-unsafe revision and fails all reads closed. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

@@ -1,3 +1,5 @@
+/** @file Allowlisted offline mutation operations used by queue persistence and replay dispatch. */
+
 export const OFFLINE_MUTATION_OPERATIONS = {
     CREATE_FOOD_LOG: 'food.create',
     UPDATE_FOOD_LOG: 'food.update',

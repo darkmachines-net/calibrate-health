@@ -1,3 +1,5 @@
+/** @file Regression coverage for route Registry: route registry. */
+
 import {
   REGISTERED_ROUTE_PATHS,
   ROUTE_IDS,

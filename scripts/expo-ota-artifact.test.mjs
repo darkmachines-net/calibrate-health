@@ -1,3 +1,5 @@
+/** @file Regression coverage for expo ota artifact: OTA artifact CLI parses source-bound packaging options. */
+
 /** Verify credential-separated OTA artifacts and exact fingerprint runtime provenance. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

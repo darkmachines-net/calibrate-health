@@ -1,3 +1,5 @@
+/** @file Account-scoped transaction guards that serialize planning decisions with their input mutations. */
+
 import { Prisma } from '@prisma/client';
 
 /** Serialize planning checks with input writes inside the same transaction. */

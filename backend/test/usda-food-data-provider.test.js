@@ -1,3 +1,5 @@
+/** @file Regression coverage for usda food data provider: UsdaFoodDataProvider normalizes search results (measures + nutrients per 100g + scaled nutrients). */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

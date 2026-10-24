@@ -1,3 +1,5 @@
+/** @file notification Delivery: Deliver one logical notification to one or both channels with per-channel status reporting. */
+
 import { InAppNotificationType } from '@prisma/client';
 import type { NativePushProvider } from '@prisma/client';
 import prisma from '../config/database';

@@ -1,3 +1,5 @@
+/** @file Date Navigation: Renders an accessible date-navigation action with shared focus and disabled treatment. */
+
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -12,6 +14,7 @@ type DateNavigationIconButtonProps = {
     unified?: boolean;
 };
 
+/** Renders an accessible date-navigation action with shared focus and disabled treatment. */
 export const DateNavigationIconButton: React.FC<DateNavigationIconButtonProps> = ({
     label,
     icon,
@@ -47,6 +50,7 @@ export const DateNavigationIconButton: React.FC<DateNavigationIconButtonProps> =
     );
 };
 
+/** Memoizes themed date-navigation styles for the current application theme. */
 export function useDateNavigationPresentation() {
     const theme = useAppTheme();
     const styles = React.useMemo(() => createDateNavigationStyles(theme), [theme]);

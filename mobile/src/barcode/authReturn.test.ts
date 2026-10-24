@@ -1,3 +1,5 @@
+/** @file Regression coverage for auth Return: barcode auth return. */
+
 import { MEAL_PERIODS } from '@calibrate/shared';
 import { createBarcodeLoginDestination, resolveBarcodeAuthDestination, type BarcodeAuthReturnParams } from './authReturn';
 import { BARCODE_RESUME_STEPS, BARCODE_RETURN_DESTINATIONS } from './context';

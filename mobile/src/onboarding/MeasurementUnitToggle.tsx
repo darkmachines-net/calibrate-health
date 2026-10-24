@@ -1,3 +1,5 @@
+/** @file Measurement Unit Toggle: Renders a unit-switch action and optionally restores keyboard focus after height fields change. */
+
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -16,6 +18,7 @@ type MeasurementUnitToggleProps = {
     focusOnMount?: boolean;
 };
 
+/** Renders a unit-switch action and optionally restores keyboard focus after height fields change. */
 export function MeasurementUnitToggle({ measurement, unit, nextUnit, onPress, disabled, focusOnMount = false }: MeasurementUnitToggleProps) {
     const { colors } = useAppTheme();
     const buttonRef = useRef<View>(null);

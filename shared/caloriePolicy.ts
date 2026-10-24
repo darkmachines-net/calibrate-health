@@ -1,3 +1,5 @@
+/** @file Calorie target safety bounds, age/date policy, and supported plan eligibility. */
+
 import type { ActivityLevel, Sex } from './domain';
 
 export const MAX_ELIGIBLE_AGE_YEARS = 120;
@@ -111,6 +113,7 @@ export function calculateCalendarAge(dateOfBirth: string, localDate: string): nu
     return age;
 }
 
+/** Resolve age eligibility against the account-local current date, preserving missing/invalid birth-date reasons. */
 export function evaluateCalorieProfileEligibility(options: { dateOfBirth?: unknown; timezone?: unknown; now?: Date }): CalorieEligibility {
     if (options.dateOfBirth === undefined || options.dateOfBirth === null || options.dateOfBirth === '') {
         return { status: 'unknown', reasonCode: 'DATE_OF_BIRTH_REQUIRED', ageYears: null, localDate: null };
@@ -126,20 +129,27 @@ export function evaluateCalorieProfileEligibility(options: { dateOfBirth?: unkno
 }
 
 
+/** Compute Mifflin-St Jeor resting calories from canonical grams/millimeters and age, rounded to one decimal. */
 export function calculatePolicyBmr(sex: Sex, weightGrams: number, heightMm: number, ageYears: number): number {
     const base = 10 * (weightGrams / 1_000) + 6.25 * (heightMm / 10) - 5 * ageYears;
     return roundOneDecimal(sex === 'MALE' ? base + 5 : base - 161);
 }
 
+/** Apply the configured profile activity multiplier to BMR without incorporating imported exercise calories. */
 export function calculatePolicyTdee(bmr: number, activityLevel: ActivityLevel): number {
     return roundOneDecimal(bmr * activityMultipliers[activityLevel]);
 }
 
+/** Round the greater of BMR and the absolute safety minimum upward to a whole-calorie target floor. */
 export const minimumTargetForBmr = (bmr: number): number => Math.ceil(Math.max(bmr, ABSOLUTE_MIN_TARGET_KCAL));
+/** Accept only integer gram weights inside the shared planning range. */
 export const isPolicyWeight = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= MIN_WEIGHT_GRAMS && value <= MAX_WEIGHT_GRAMS;
+/** Accept only integer millimeter heights inside the shared planning range. */
 export const isPolicyHeight = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= MIN_HEIGHT_MM && value <= MAX_HEIGHT_MM;
+/** Accept only the supported signed whole-calorie deficit/surplus choices, including maintenance. */
 export const isPolicyDailyDeficit = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && allowedDeficits.has(value);
 
+/** Return the first weight, deficit or direction violation, or null when the goal satisfies shared policy. */
 export function validateGoalPolicy(goal: CaloriePolicyGoal): CaloriePlanReasonCode | null {
     if (!isPolicyWeight(goal.startWeightGrams) || !isPolicyWeight(goal.targetWeightGrams)) return 'GOAL_WEIGHTS_OUT_OF_RANGE';
     if (!isPolicyDailyDeficit(goal.dailyDeficit)) return 'DAILY_DEFICIT_INVALID';

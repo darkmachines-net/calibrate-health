@@ -1,3 +1,5 @@
+/** @file App Action Row: A full-width action with a passive heading and independently focusable secondary controls. */
+
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { type AppTheme, useAppTheme } from '../theme';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes watch: watch routes reject non-Wear principals. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');

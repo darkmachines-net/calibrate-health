@@ -1,3 +1,5 @@
+/** @file Regression coverage for mcp http: MCP discovery advertises the exact resource and public PKCE authorization server. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

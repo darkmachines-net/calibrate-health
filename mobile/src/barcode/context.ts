@@ -1,3 +1,5 @@
+/** @file Validated barcode route context for local date, meal period, and allowlisted return destinations. */
+
 import { isDateOnly, MEAL_PERIODS, type MealPeriod } from '@calibrate/shared';
 
 export const BARCODE_RETURN_DESTINATIONS = {

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Paused Day Message: shows the saved date alongside an explicit manual resume explanation. */
+
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'id' }));
 jest.mock('../offline/provider', () => ({ useOfflineOutbox: () => ({ mutations: [] }) }));
 import { render, waitFor } from '@testing-library/react-native';

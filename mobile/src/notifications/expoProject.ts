@@ -1,3 +1,5 @@
+/** @file expo Project: Resolve the stable Expo project identity required for reliable push-token registration. */
+
 export const EXPO_PROJECT_ID_ENV = 'EXPO_PUBLIC_EAS_PROJECT_ID';
 
 type ExpoProjectConstants = {

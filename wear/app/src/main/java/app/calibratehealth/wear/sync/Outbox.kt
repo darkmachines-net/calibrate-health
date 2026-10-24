@@ -1,3 +1,5 @@
+/** Stable operation creation, account-safe FIFO replay, and constrained WorkManager scheduling. */
+
 package app.calibratehealth.wear.sync
 
 import android.content.Context
@@ -25,6 +27,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 fun interface OperationIdFactory {
+    /** Allocates the stable operation identity used for one durable mutation. */
     fun create(): String
 }
 
@@ -36,6 +39,7 @@ class QueuedMutationFactory(
     private val operationIds: OperationIdFactory = UuidOperationIdFactory,
     private val nowEpochMs: () -> Long = System::currentTimeMillis
 ) {
+    /** Creates a queued mutation with its operation identity and creation timestamp before persistence. */
     fun create(mutationType: String, payloadJson: String): QueuedMutationEntity =
         QueuedMutationEntity(
             operationId = operationIds.create(),
@@ -59,6 +63,7 @@ sealed interface MutationSendResult {
 }
 
 fun interface MutationSender {
+    /** Sends one queued operation under the captured secure session and returns a classified retry or completion result. */
     suspend fun send(mutation: QueuedMutationEntity, session: SecureSession): MutationSendResult
 }
 
@@ -70,6 +75,7 @@ sealed interface OutboxDrainResult {
 }
 
 fun interface OutboxProcessor {
+    /** Drains a bounded FIFO batch while preserving account ownership and earlier retry ordering. */
     suspend fun drain(): OutboxDrainResult
 }
 
@@ -152,7 +158,9 @@ private sealed interface CapturedOutboxWork {
 private enum class OutboxCommit { Committed, Failed, AccountChanged }
 
 interface OutboxScheduler {
+    /** Schedules unique constrained outbox work. */
     fun schedule()
+    /** Schedules immediate continuation after a healthy bounded batch without applying retry backoff. */
     fun scheduleContinuation()
 }
 
@@ -165,6 +173,7 @@ object OutboxWorkPolicy {
     private const val PREFERENCES_NAME = "calibrate_outbox_work"
     private const val LATEST_WORK_ID_KEY = "latest_work_id"
 
+    /** Synchronously persists the latest work identity before observers consume worker state. */
     fun recordLatestWorkId(context: Context, workId: UUID) {
         context.applicationContext
             .getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -174,6 +183,7 @@ object OutboxWorkPolicy {
             .commit()
     }
 
+    /** Reads the latest valid scheduled work UUID, returning null for absent or malformed state. */
     fun latestWorkId(context: Context): UUID? {
         val stored = context.applicationContext
             .getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)

@@ -1,3 +1,5 @@
+/** @file postgres Session Store: Lightweight Postgres-backed session store to avoid in-memory session loss when the server restarts. Data is serialized to JSONB alongside an expiration timestamp so express-session can persist and prune sessions. */
+
 import session from 'express-session';
 import { browserLoginSave, BrowserLoginRejected, type BrowserLoginSave } from './browserLoginCredentials';
 import type { Pool } from 'pg';
@@ -16,6 +18,7 @@ export class PostgresSessionStore extends session.Store {
 
   private readonly ttlMs: number;
 
+  /** Use the shared pg pool and default lifetime without taking ownership of pool shutdown. */
   constructor(pool: Pool, ttlMs: number = DEFAULT_SESSION_TTL_MS) {
     super();
     this.pool = pool;
@@ -32,6 +35,7 @@ export class PostgresSessionStore extends session.Store {
     await this.assertSessionStoreSchema();
   }
 
+  /** Load a session through the Express callback contract and remove expired rows before returning null. */
   async get(sid: string, callback: (err: any, session?: session.SessionData | null) => void): Promise<void> {
     try {
       const result = await this.pool.query('SELECT sess, expire FROM session_store WHERE sid = $1', [sid]);
@@ -56,6 +60,7 @@ export class PostgresSessionStore extends session.Store {
     }
   }
 
+  /** Persist session ownership/expiry, serializing verified-login saves against the credential-security guard. */
   async set(sid: string, sess: session.SessionData, callback?: (err?: any) => void): Promise<void> {
     const expire = this.calculateExpiry(sess);
     const sessionData = JSON.stringify(sess);
@@ -124,6 +129,7 @@ export class PostgresSessionStore extends session.Store {
     }
   }
 
+  /** Delete the exact session row and report completion or database failure through the optional callback. */
   async destroy(sid: string, callback?: (err?: any) => void): Promise<void> {
     try {
       await this.pool.query('DELETE FROM session_store WHERE sid = $1', [sid]);
@@ -133,6 +139,7 @@ export class PostgresSessionStore extends session.Store {
     }
   }
 
+  /** Refresh an existing session's expiry and last-use metadata without recreating a revoked row. */
   async touch(sid: string, sess: session.SessionData, callback?: (err?: any) => void): Promise<void> {
     const expire = this.calculateExpiry(sess);
     const sessionData = JSON.stringify(sess);

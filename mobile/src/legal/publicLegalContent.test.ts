@@ -1,3 +1,5 @@
+/** @file Regression coverage for public Legal Content: Expo web public legal content. */
+
 import {
     ACCOUNT_DELETION_SECTIONS,
     PRIVACY_SECTIONS,

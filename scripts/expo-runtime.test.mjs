@@ -1,4 +1,4 @@
-/** Fail closed when SDK discovery returns an incomplete native graph rather than a reliable fingerprint. */
+/** @file Fail closed when SDK discovery returns an incomplete native graph rather than a reliable fingerprint. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

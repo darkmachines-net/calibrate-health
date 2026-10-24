@@ -1,3 +1,5 @@
+/** @file Calibrate Logo: Map the optional logo label to platform-safe SVG accessibility props. */
+
 import React from 'react';
 import { Platform } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';

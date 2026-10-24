@@ -1,3 +1,5 @@
+/** @file Profile field validation and canonical normalization for persisted account data. */
+
 import { ActivityLevel, Sex } from '@prisma/client';
 
 /** Type guard for supported sex values stored by Prisma. */

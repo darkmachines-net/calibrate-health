@@ -1,3 +1,5 @@
+/** @file account Data: Prevent an unavailable platform service from retaining deleted-account credentials indefinitely. */
+
 import type { AccountExport } from '@calibrate/api-client';
 import type { AccountDeletionCleanupNotice } from './accountDeletionNotice';
 import {

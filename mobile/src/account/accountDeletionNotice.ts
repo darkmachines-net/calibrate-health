@@ -1,3 +1,5 @@
+/** @file Durable account-deletion cleanup notices and malformed-state recovery. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -19,6 +21,7 @@ function isNotice(value: unknown): value is AccountDeletionCleanupNotice {
         && typeof notice.credentialCleanupRequired === 'boolean';
 }
 
+/** Loads pending device-cleanup guidance and removes malformed stored notices. */
 export async function readAccountDeletionCleanupNotice(): Promise<AccountDeletionCleanupNotice | null> {
     const encoded = await AsyncStorage.getItem(STORAGE_KEY);
     if (!encoded) return null;
@@ -32,6 +35,7 @@ export async function readAccountDeletionCleanupNotice(): Promise<AccountDeletio
     return null;
 }
 
+/** Persists cleanup work that must remain visible after account deletion signs the user out. */
 export async function writeAccountDeletionCleanupNotice(notice: AccountDeletionCleanupNotice): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(notice));
 }
@@ -41,6 +45,7 @@ export async function clearAccountDeletionCleanupNotice(): Promise<void> {
     await AsyncStorage.removeItem(STORAGE_KEY);
 }
 
+/** Builds platform-specific recovery instructions for watch, app-data, or credential cleanup failures. */
 export function accountDeletionCleanupGuidance(
     notice: AccountDeletionCleanupNotice,
     platform: string = Platform.OS

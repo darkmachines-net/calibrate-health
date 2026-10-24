@@ -1,3 +1,5 @@
+/** @file Recipe Ingredient Editor: Owns scalable ingredient selection while preserving the recipe editor's row controls. */
+
 import React, { useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { MyFoodSummary } from '@calibrate/api-client';

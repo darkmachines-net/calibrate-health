@@ -1,3 +1,5 @@
+/** @file Regression coverage for server: server URL parsing. */
+
 import {
     HOSTED_SERVER_URL,
     getConfiguredServerUrl,

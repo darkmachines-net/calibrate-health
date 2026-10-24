@@ -1,3 +1,5 @@
+/** @file Regression coverage for release request: release requests accept only exact operation-specific primitive inputs. */
+
 /** Regression coverage for release request and its failure boundaries. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

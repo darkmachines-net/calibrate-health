@@ -1,3 +1,5 @@
+/** @file Accessible PWA connectivity/update notices positioned clear of navigation and safe areas. */
+
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useAppTheme } from '../theme';
@@ -16,6 +18,7 @@ const DESKTOP_ACTION_CLEARANCE = 104; // Keeps persistent notices clear of the a
 // Clears the largest compact nav, contextual action, and spacing at 200% text.
 const COMPACT_SHELL_CLEARANCE = 174;
 
+/** Places PWA notices clear of navigation and safe-area insets for the current viewport. */
 export function resolvePwaNoticePlacement(
     viewportWidth: number,
     hasCompactNavigation: boolean
@@ -52,6 +55,7 @@ export function resolvePwaNoticePlacement(
     };
 }
 
+/** Detects an active document dialog so global notices can avoid competing with modal interaction. */
 export function isDocumentModalOpen(): boolean {
     if (typeof document === 'undefined') return false;
     return document.querySelector('[role="dialog"]') !== null;
@@ -147,6 +151,7 @@ type PwaStatusBannerProps = {
     hasCompactNavigation?: boolean;
 };
 
+/** Presents actionable connectivity and update notices from the external PWA runtime store. */
 export function PwaStatusBanner({
     runtime = browserPwaRuntime,
     showUpdateNotices = true,

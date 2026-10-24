@@ -1,3 +1,5 @@
+/** @file Regression coverage for camera Runtime: native barcode camera runtime. */
+
 import { isBarcodeCameraAvailable } from './cameraRuntime';
 
 describe('native barcode camera runtime', () => {

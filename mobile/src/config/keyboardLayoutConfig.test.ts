@@ -1,3 +1,5 @@
+/** @file Regression coverage for keyboard Layout Config: Android keyboard layout configuration. */
+
 const appConfig = require('../../app.json') as {
     expo?: { android?: { softwareKeyboardLayoutMode?: string } };
 };

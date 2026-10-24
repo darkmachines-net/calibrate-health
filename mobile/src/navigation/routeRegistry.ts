@@ -1,3 +1,5 @@
+/** @file route Registry: Canonical route metadata shared by the Expo shell and exported-web route tests. Route groups are intentionally absent because they never appear in public URLs. */
+
 export const ROUTE_IDS = [
   'root',
   'login',
@@ -521,14 +523,17 @@ export const REGISTERED_ROUTE_PATHS = ROUTE_IDS.flatMap((routeId) => {
   return [definition.path, ...definition.aliases.map((alias) => alias.path)];
 });
 
+/** Reads the canonical definition for a typed route identifier. */
 export function getRouteDefinition(routeId: RouteId): RouteDefinition {
   return ROUTE_REGISTRY[routeId];
 }
 
+/** Returns the registered canonical path for a typed route identifier. */
 export function canonicalPathForRoute(routeId: RouteId): RouteDefinition['path'] {
   return ROUTE_REGISTRY[routeId].path;
 }
 
+/** Matches normalized paths and aliases to their canonical route definition, returning null for unknown paths. */
 export function getRouteByPath(pathname: string): RouteMatch | null {
   const matchedPath = trimRoutePath(pathname);
   for (const routeId of ROUTE_IDS) {
@@ -555,15 +560,18 @@ export function getRouteByPath(pathname: string): RouteMatch | null {
   return null;
 }
 
+/** Tests route identity after alias normalization. */
 export function isRouteActive(pathname: string, routeId: RouteId): boolean {
   return getRouteByPath(pathname)?.routeId === routeId;
 }
 
+/** Returns the declared parent route or null for a root route. */
 export function getRouteParent(routeId: RouteId): RouteDefinition | null {
   const parent = ROUTE_REGISTRY[routeId].parent;
   return parent ? ROUTE_REGISTRY[parent] : null;
 }
 
+/** Returns the declared fallback destination or null when none is configured. */
 export function getRouteFallback(routeId: RouteId): RouteDefinition | null {
   const fallback = ROUTE_REGISTRY[routeId].fallback;
   return fallback ? ROUTE_REGISTRY[fallback] : null;

@@ -1,3 +1,5 @@
+/** @file client Diagnostics: Validate bounded client diagnostics and separate anonymous support reports from authenticated alert-driving aggregates. */
+
 import express, { type RequestHandler } from 'express';
 import { NATIVE_CLIENT_HEADERS, isMobileDevicePlatform } from '../../../shared/clientCompatibility';
 import type { ClientDiagnosticResponse } from '../../../shared/clientDiagnostics';
@@ -17,6 +19,7 @@ type ClientDiagnosticsHandlerOptions = {
   write?: (line: string) => void;
 };
 
+/** Validate bounded client diagnostics and separate anonymous support reports from authenticated alert-driving aggregates. */
 export function createClientDiagnosticsHandler(options: ClientDiagnosticsHandlerOptions = {}): RequestHandler {
   const config = options.config ?? resolveObservabilityConfig();
   const registry = options.registry ?? diagnosticsRegistry;

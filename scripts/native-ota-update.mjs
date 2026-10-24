@@ -1,3 +1,5 @@
+/** @file Explicit Expo OTA export, compatibility checks, publication, and channel readback. */
+
 /** Publish client-only Expo updates; fingerprint runtimes select compatible installed binaries. */
 import fs from 'node:fs';
 import os from 'node:os';

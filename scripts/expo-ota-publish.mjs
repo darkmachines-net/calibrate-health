@@ -1,4 +1,4 @@
-/** Publish a verified pre-exported update and retain its exact EAS result for interruption-safe recovery. */
+/** @file Publish a verified pre-exported update and retain its exact EAS result for interruption-safe recovery. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';

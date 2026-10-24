@@ -1,3 +1,5 @@
+/** @file Goal Reached Confetti: Animates a bounded goal celebration only while active and when reduced motion permits it. */
+
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -11,6 +13,7 @@ type GoalReachedConfettiProps = {
 const CONFETTI_DURATION_MS = 850; // Brief one-shot recognition without delaying the user's next action.
 const CONFETTI_PARTICLE_COUNT = 24;
 
+/** Animates a bounded goal celebration only while active and when reduced motion permits it. */
 export const GoalReachedConfetti: React.FC<GoalReachedConfettiProps> = ({ active, reduceMotion }) => {
     const theme = useAppTheme();
     const progress = useRef(new Animated.Value(0)).current;

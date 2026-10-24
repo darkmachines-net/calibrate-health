@@ -1,3 +1,5 @@
+/** @file Refreshes day-sensitive server queries at the tab shell while preserving local editing state. */
+
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';

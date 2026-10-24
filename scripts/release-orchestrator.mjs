@@ -1,4 +1,4 @@
-/** Coordinate component selection, one pending release, and durable recovery checkpoints for Cut release. */
+/** @file Coordinate component selection, one pending release, and durable recovery checkpoints for Cut release. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

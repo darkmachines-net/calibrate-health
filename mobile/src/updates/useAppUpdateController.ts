@@ -1,3 +1,5 @@
+/** @file use App Update Controller: Combines Expo-owned update lifecycle state with manual check, download, and restart actions. */
+
 import { useCallback, useMemo, useState } from 'react';
 import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
@@ -17,6 +19,7 @@ function updateFailureMessage(action: 'check' | 'install'): string {
         : "Couldn't install the update. Check your connection and try again.";
 }
 
+/** Combines Expo-owned update lifecycle state with manual check, download, and restart actions. */
 export function useAppUpdateController() {
     const updates = Updates.useUpdates();
     const isDevelopment = typeof __DEV__ !== 'undefined' && __DEV__;

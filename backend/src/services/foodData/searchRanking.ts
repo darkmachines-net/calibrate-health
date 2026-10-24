@@ -1,3 +1,5 @@
+/** @file Provider-independent search token normalization and deterministic food relevance ranking. */
+
 export type FoodSearchTokenOptions = {
   minTokenLength?: number;
   stopWords?: ReadonlySet<string>;
@@ -27,6 +29,7 @@ function stemFoodSearchToken(token: string): string {
   return token;
 }
 
+/** Normalize, stem and deduplicate query tokens, optionally excluding short terms and supplied stop words. */
 export function tokenizeFoodSearchQuery(
   query: string,
   options: FoodSearchTokenOptions = {}
@@ -45,6 +48,7 @@ export function tokenizeFoodSearchQuery(
   return Array.from(new Set(tokens));
 }
 
+/** Join normalized tokens, preserving the caller's fallback when tokenization yields no searchable text. */
 export function buildFoodSearchQuery(tokens: string[], fallback: string): string {
   const joined = tokens.join(' ').trim();
   return joined || fallback;
@@ -63,6 +67,7 @@ export function buildProductTokenGroups(productTokens: string[]): string[][] {
   return groups.map((group) => group.map(stemFoodSearchToken).filter(Boolean));
 }
 
+/** Count query-token membership in the normalized product token set. */
 export function countTokenMatches(
   haystack: ReadonlySet<string>,
   tokens: string[]
@@ -73,6 +78,7 @@ export function countTokenMatches(
   );
 }
 
+/** Award full-match weight only for a nonempty complete match; otherwise weight each matched term. */
 export function scoreTokenMatches(
   matchCount: number,
   tokenCount: number,
@@ -84,6 +90,7 @@ export function scoreTokenMatches(
   return matchCount * partialMatchWeight;
 }
 
+/** Use the strongest alternative token-group match rather than accumulating duplicate query interpretations. */
 export function scoreProductTokenGroups(
   haystack: ReadonlySet<string>,
   groups: string[][]

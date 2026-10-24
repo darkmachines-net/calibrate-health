@@ -1,3 +1,5 @@
+/** @file Regression coverage for Weight Value Input: WeightValueInput. */
+
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { Dimensions, StyleSheet } from 'react-native';
 import { WeightValueInput } from './WeightValueInput';

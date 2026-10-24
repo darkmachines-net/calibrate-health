@@ -1,3 +1,5 @@
+/** @file database: Opens the process-wide SQLite connection used by every authenticated outbox namespace. */
+
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 const OUTBOX_DATABASE_NAME = 'calibrate-offline.db';

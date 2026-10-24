@@ -1,3 +1,5 @@
+/** @file Regression coverage for height utils: height utils: resolveHeightMmUpdate returns not-provided when all fields are omitted. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

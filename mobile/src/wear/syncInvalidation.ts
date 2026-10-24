@@ -1,3 +1,5 @@
+/** @file Serialized phone-to-watch invalidation delivery that preserves newer pending account state. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import {

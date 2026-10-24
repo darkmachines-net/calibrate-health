@@ -1,3 +1,5 @@
+/** @file Regression coverage for shared goal deficit: shared goalDeficit exports stable allowed values and defaults. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for native: Health Connect availability. */
+
 import { mapSdkStatus, normalizeRevocationResponse } from './native';
 
 describe('Health Connect availability', () => {

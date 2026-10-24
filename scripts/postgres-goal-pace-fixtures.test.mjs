@@ -1,4 +1,4 @@
-/** Guard the smoke timeline against wall-clock date collisions and DST changes. */
+/** @file Guard the smoke timeline against wall-clock date collisions and DST changes. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { goalPaceFixtureDates } from './postgres-goal-pace-fixtures.mjs';

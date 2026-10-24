@@ -1,3 +1,5 @@
+/** @file Regression coverage for workflow Recovery: barcode workflow recovery. */
+
 import { buildSearchedFoodLogPayload } from '../food/serving';
 import {
     BarcodeRequestGate,

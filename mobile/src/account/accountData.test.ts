@@ -1,3 +1,5 @@
+/** @file Regression coverage for account Data: account export sharing. */
+
 import type { AccountExport } from '@calibrate/api-client';
 import {
     canSubmitAccountDeletion,

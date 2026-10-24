@@ -1,3 +1,5 @@
+/** @file Regression coverage for Notification Card: NotificationCard active reminder presentation. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import type { InAppNotificationPageItem } from '@calibrate/api-client';
 import { IN_APP_NOTIFICATION_TYPES } from '@calibrate/shared/inAppNotifications';

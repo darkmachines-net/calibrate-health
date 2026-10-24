@@ -1,3 +1,5 @@
+/** @file Regression coverage for account Trust Routes: account trust routes. */
+
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import VerifyEmailRoute from '../../app/verify-email';

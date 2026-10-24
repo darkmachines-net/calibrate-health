@@ -1,6 +1,8 @@
+/** Allowlisted versioned paths for phone/watch coordination and bounded network relay. */
+
 package app.calibratehealth.wear
 
-/** Versioned coordination paths shared by the future phone and watch Data Layer adapters. */
+/** Versioned coordination and relay paths shared by the phone and watch Data Layer adapters. */
 object WearDataLayerContract {
     const val PAIRING_CAPABILITY = "calibrate_wear_pairing_v1"
     const val PAIR_HELLO = "/calibrate/v1/pair/hello"
@@ -13,6 +15,7 @@ object WearDataLayerContract {
     const val NETWORK_REQUEST = "/calibrate/v1/network/request"
     const val NETWORK_RESPONSE = "/calibrate/v1/network/response"
 
+    /** Accepts only the explicitly versioned Data Layer coordination and relay paths. */
     fun supports(path: String): Boolean =
         path == PAIR_HELLO ||
             path == PAIR_CREDENTIAL ||

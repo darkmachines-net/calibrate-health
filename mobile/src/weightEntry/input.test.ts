@@ -1,3 +1,5 @@
+/** @file Regression coverage for input: weight entry input helpers. */
+
 import {
     formatWeightInput,
     getWeightDisplayBounds,

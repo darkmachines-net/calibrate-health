@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 15 progress trend: Progress and Trend explain fresh, stale, gapped, and raw-only weight history. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, Route, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-15');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-15');
 const TRANSIENT_PWA_TITLES = new Set([
   'Back online',
   'Update ready',

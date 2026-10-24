@@ -1,3 +1,5 @@
+/** @file Regression coverage for postgres rollback smoke: resource plan owns only generated Docker and database names. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';

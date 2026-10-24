@@ -1,3 +1,5 @@
+/** @file use Barcode Search Handoff: Consumes a barcode Search foods handoff once, after its target local date is active. */
+
 import { useEffect, useRef } from 'react';
 import type { MealPeriod } from '@calibrate/shared';
 import { MEAL_OPTIONS } from '../utils/meals';

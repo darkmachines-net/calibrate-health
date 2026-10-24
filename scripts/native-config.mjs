@@ -1,3 +1,5 @@
+/** @file Atomic external machine settings for native builds, signing files, Play credentials, and Expo project identity. */
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,6 +18,7 @@ const FILE_OPTIONS = {
 };
 const CONFIG_FIELDS = ['schemaVersion', ...Object.values(FILE_OPTIONS)];
 
+/** Resolves the external per-user native settings path and rejects missing or relative configuration roots. */
 export function nativeConfigurationPath(environment = process.env, platform = process.platform) {
   const base = platform === 'win32'
     ? environment.LOCALAPPDATA
@@ -24,6 +27,7 @@ export function nativeConfigurationPath(environment = process.env, platform = pr
   return path.join(base, 'calibrate-health', 'native.json');
 }
 
+/** Parses the optional external Play key override and rejects duplicate or unknown configuration options. */
 export function parseNativeConfigureArguments(argv) {
   const values = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -55,6 +59,7 @@ function externalConfigurationPath(root, environment, platform) {
   return resolved;
 }
 
+/** Loads validated machine-local native settings, returning an empty schema when no settings file exists. */
 export function readNativeConfiguration({ root, environment = process.env, platform = process.platform }) {
   const file = externalConfigurationPath(root, environment, platform);
   let contents;
@@ -182,6 +187,7 @@ function downloadCredentials(root, parent, environment, options, downloadPlay) {
   }
 }
 
+/** Refreshes native credentials from current EAS assignments and atomically replaces validated external settings. */
 export function configureNative(values, options) {
   const { root, environment = process.env, platform = process.platform } = options;
   const configurationFile = externalConfigurationPath(root, environment, platform);
@@ -207,6 +213,7 @@ export function configureNative(values, options) {
   return { configurationFile, ...config };
 }
 
+/** Resolves a one-run credential override or configured external file, with actionable setup errors when absent. */
 export function resolveNativeCredentialFile(field, override, options) {
   const file = override || readNativeConfiguration(options).config[field];
   if (!file) throw new Error(field === 'credentialsFile'

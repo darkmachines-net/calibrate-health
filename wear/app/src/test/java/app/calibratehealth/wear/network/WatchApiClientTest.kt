@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Watch Api Client. */
+
 package app.calibratehealth.wear.network
 
 import app.calibratehealth.wear.data.security.AccountDataStore
@@ -10,6 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WatchApiClientTest {
+    /** Verifies that fixed endpoint url rejects query and authority replacement. */
     @Test
     fun `fixed endpoint URL rejects query and authority replacement`() {
         assertEquals(
@@ -24,6 +27,7 @@ class WatchApiClientTest {
         }.isFailure)
     }
 
+    /** Verifies that mutation request carries stable operation id and wraps payload once. */
     @Test
     fun `mutation request carries stable operation id and wraps payload once`() = runBlocking {
         val store = MemoryTokenStore(session())
@@ -58,6 +62,7 @@ class WatchApiClientTest {
         )
     }
 
+    /** Verifies that expired access token refreshes and persists rotated same-account session. */
     @Test
     fun `expired access token refreshes and persists rotated same-account session`() = runBlocking {
         val store = MemoryTokenStore(session().copy(accessExpiresAtEpochMs = 1_001L))
@@ -91,6 +96,7 @@ class WatchApiClientTest {
         assertTrue(requests.all { it.headers["X-Calibrate-Client-Version"] != null })
     }
 
+    /** Verifies that second unauthorized response after forced refresh requires pairing. */
     @Test
     fun `second unauthorized response after forced refresh requires pairing`() = runBlocking {
         val store = MemoryTokenStore(session())
@@ -119,6 +125,7 @@ class WatchApiClientTest {
         assertTrue(result is AuthenticatedApiResult.AuthenticationRequired)
     }
 
+    /** Verifies that upgrade response is terminal for the request without refreshing or clearing session. */
     @Test
     fun `upgrade response is terminal for the request without refreshing or clearing session`() = runBlocking {
         val store = MemoryTokenStore(session())

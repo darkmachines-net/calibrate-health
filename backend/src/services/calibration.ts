@@ -1,3 +1,5 @@
+/** @file Transactional calibration evidence, recommendation acceptance, and scheduled target correction lifecycle. */
+
 import { lockCaloriePlanningInputs } from './caloriePlanningLock';
 import { observeCurrentCaloriePlan } from './dailyCaloriePlans';
 import crypto from 'node:crypto';
@@ -59,6 +61,7 @@ export type CalibrationStatus = {
 };
 
 export class CalibrationConflictError extends Error {
+    /** Identify a stale calibration decision that callers must refresh before another apply or undo attempt. */
     constructor(message: string) {
         super(message);
         this.name = 'CalibrationConflictError';

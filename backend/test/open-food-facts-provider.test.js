@@ -1,3 +1,5 @@
+/** @file Regression coverage for open food facts provider: OpenFoodFactsProvider normalizes barcode lookups (nutrients + measures + scaled nutrients). */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

@@ -32,7 +32,7 @@ on:
         required: false
         type: string
       reconciliation:
-        description: "For reconcile only: JSON evidence described in docs/native-store-release.md"
+        description: "For reconcile only: JSON evidence described in .github/workflows/README.md#durable-records-and-recovery"
         required: false
         type: string
 

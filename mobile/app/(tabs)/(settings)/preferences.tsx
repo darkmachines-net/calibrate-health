@@ -1,3 +1,5 @@
+/** @file preferences: Render the route-owned editor for units, reminders, and interaction feedback. */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

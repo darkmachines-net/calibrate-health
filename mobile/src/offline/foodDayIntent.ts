@@ -1,3 +1,5 @@
+/** @file food Day Intent: Fold only explicit queued control intent, in durable order, without inventing a server snapshot. */
+
 import { OfflineMutationConflict } from './mutationConflict';
 import type { QueuedMutation } from './queuedMutation';
 

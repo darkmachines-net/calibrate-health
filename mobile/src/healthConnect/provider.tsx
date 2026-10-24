@@ -1,3 +1,5 @@
+/** @file provider: Own per-account Health Connect consent choices without coupling them to server sync. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking } from 'react-native';
@@ -401,6 +403,7 @@ export function HealthConnectProvider({ children }: { children: React.ReactNode 
     return <HealthConnectContext.Provider value={value}>{children}</HealthConnectContext.Provider>;
 }
 
+/** Reads native Health Connect state and throws outside its provider. */
 export function useHealthConnect(): HealthConnectContextValue {
     const context = useContext(HealthConnectContext);
     if (!context) throw new Error('useHealthConnect must be used within HealthConnectProvider.');

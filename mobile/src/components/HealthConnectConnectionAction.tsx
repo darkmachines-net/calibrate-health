@@ -1,3 +1,5 @@
+/** @file Health Connect Connection Action: One stable connection action shared by Activity and Health Connect settings. */
+
 import { type ComponentProps } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

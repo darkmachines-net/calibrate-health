@@ -1,3 +1,5 @@
+/** @file Regression coverage for Saved Foods Library: SavedFoodsLibrary. */
+
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';

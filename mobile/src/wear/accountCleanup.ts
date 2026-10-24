@@ -1,3 +1,5 @@
+/** @file account Cleanup: Best-effort remote watch erase followed by mandatory account-scoped phone coordination cleanup. */
+
 import { clearWearHandoffStorage } from './handoff';
 import {
     clearWearPairingStorage,

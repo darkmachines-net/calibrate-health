@@ -1,3 +1,5 @@
+/** @file domain: Shared calorie-tracking domain constants used by web, mobile, and backend clients. */
+
 /**
  * Shared calorie-tracking domain constants used by web, mobile, and backend clients.
  */

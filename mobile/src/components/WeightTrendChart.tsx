@@ -1,3 +1,5 @@
+/** @file Responsive weight trend chart with observation/interval geometry and accessible point selection. */
+
 import React, { useMemo } from 'react';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Path, Polygon, Text as SvgText, type SvgProps } from 'react-native-svg';
@@ -22,9 +24,11 @@ const MOBILE_CHART_MIN_HEIGHT = 188;
 const DESKTOP_CHART_MIN_HEIGHT = 260;
 // Reserve two heading lines until the preview reports its measured heading height.
 const PREVIEW_HEADING_HEIGHT = 50;
+/** Selects the minimum full-chart height for phone or desktop viewports. */
 export function getWeightTrendChartMinimumHeight(viewportWidth: number) {
     return viewportWidth >= DESKTOP_CHART_BREAKPOINT ? DESKTOP_CHART_MIN_HEIGHT : MOBILE_CHART_MIN_HEIGHT;
 }
+/** Reserves chart, heading, spacing, and optional action height for a stable preview layout. */
 export function getWeightTrendPreviewMinimumHeight(viewportWidth: number, {
     chartScale = 1,
     headingHeight = PREVIEW_HEADING_HEIGHT,
@@ -35,6 +39,7 @@ export function getWeightTrendPreviewMinimumHeight(viewportWidth: number, {
         + headingHeight + spacing.lg + spacing.sm + spacing.xs + actionSpace;
 }
 
+/** Measures effective native or browser text scaling to keep chart axes readable. */
 export function useWeightTrendChartTypography() {
     const { width, fontScale } = useWindowDimensions();
     const [webAxisScale, setWebAxisScale] = React.useState(1);
@@ -71,6 +76,7 @@ type ChartLayoutOptions = {
     modelStartDate?: string | null;
 };
 
+/** Builds chart geometry with shared padding, weight-span bounds, and text-scale-aware date ticks. */
 export function buildWeightTrendVisualization(metrics: TrendMetricEntry[], options: ChartLayoutOptions) {
     const axisScale = (options.padding?.left ?? WEIGHT_TREND_CHART_PADDING.left) / WEIGHT_TREND_CHART_PADDING.left;
     return buildWeightTrendChartGeometry(metrics, {
@@ -115,6 +121,7 @@ type WeightTrendChartProps = {
     axisFontSize?: number;
 };
 
+/** Draws trend, observations, axes, and optional model boundaries from precomputed SVG geometry. */
 export function WeightTrendChart({
     chartLayout, unit, accessibleChartSummary, selectedPoint,
     showModelBoundary = false,
@@ -258,6 +265,7 @@ export function WeightTrendChart({
     );
 }
 
+/** Explains scale readings and the modeled weight trend with accessible legend labels. */
 export const TrendChartLegend: React.FC = () => {
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);

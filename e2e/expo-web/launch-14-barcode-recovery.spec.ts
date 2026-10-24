@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 14 barcode recovery: Barcode logging recovers through manual success, no result, offline, and safe provider failure. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, Route, TestInfo } from '@playwright/test';
 import { expect, expectApiFailure, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-14');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-14');
 const SELECTED_DATE = '2026-07-18';
 const SELECTED_MEAL = 'DINNER';
 const SUCCESS_BARCODE = '012345678905';

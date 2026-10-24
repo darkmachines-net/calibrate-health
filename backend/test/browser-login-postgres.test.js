@@ -1,3 +1,5 @@
+/** @file Regression coverage for browser login postgres: real Passport browser login persists atomically and cannot resurrect a rejected session. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');

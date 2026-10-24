@@ -1,3 +1,5 @@
+/** @file Credential-free account export validation and portable serialization shared by browser and native download flows. */
+
 import type { AccountExport } from '@calibrate/api-client';
 import type { AccountDeletionCleanupNotice } from './accountDeletionNotice';
 
@@ -44,10 +46,12 @@ export function serializeAccountExport(accountExport: AccountExport): string {
     return JSON.stringify(accountExport, null, 2);
 }
 
+/** Enables deletion only after a password is supplied and the exact confirmation phrase matches. */
 export function canSubmitAccountDeletion(currentPassword: string, confirmation: string): boolean {
     return currentPassword.length > 0 && confirmation === DELETE_ACCOUNT_CONFIRMATION;
 }
 
+/** Builds a dated JSON export filename, using today when the export timestamp is invalid. */
 export function buildAccountExportFilename(exportedAt: string): string {
     const parsed = new Date(exportedAt);
     const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;

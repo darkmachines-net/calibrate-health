@@ -1,3 +1,5 @@
+/** @file Regression coverage for Barcode Search Handoff Persistence: barcode Search foods handoff persistence. */
+
 import { useState } from 'react';
 import { Text } from 'react-native';
 import { render, waitFor } from '@testing-library/react-native';

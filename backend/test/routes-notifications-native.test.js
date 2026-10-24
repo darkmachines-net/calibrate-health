@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes notifications native: notifications route: transfers a browser endpoint and updates the owning session in place. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

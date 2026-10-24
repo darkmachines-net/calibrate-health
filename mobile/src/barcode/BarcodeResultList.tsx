@@ -1,3 +1,5 @@
+/** @file Barcode Result List: Renders selectable provider results while preserving their source and serving information. */
+
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { SearchedFoodItem } from '../food/serving';
@@ -11,6 +13,7 @@ type BarcodeResultListProps = {
     onChoose: (candidate: SearchedFoodItem) => void;
 };
 
+/** Renders selectable provider results while preserving their source and serving information. */
 export function BarcodeResultList({ candidates, disabled = false, onChoose }: BarcodeResultListProps) {
     const theme = useAppTheme();
 

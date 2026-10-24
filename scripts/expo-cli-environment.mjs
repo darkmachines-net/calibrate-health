@@ -1,3 +1,5 @@
+/** @file expo cli environment: Make app-local workspace packages visible to the root-hoisted Expo CLI. */
+
 import path from 'node:path';
 import process from 'node:process';
 

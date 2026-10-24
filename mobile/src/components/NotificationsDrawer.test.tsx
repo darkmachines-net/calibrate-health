@@ -1,3 +1,5 @@
+/** @file Regression coverage for Notifications Drawer: NotificationsDrawer. */
+
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { Modal, StyleSheet } from 'react-native';

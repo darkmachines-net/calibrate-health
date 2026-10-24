@@ -1,3 +1,5 @@
+/** @file operations: Uses one operation ID for the uncertain direct attempt and every later replay. */
+
 import { validatePauseTransition } from './pauseIntent';
 import { assertQueuedDayTransition, assertQueuedFoodDayOpen } from './foodDayIntent';
 import type { OutboxDispatch } from './mutationDispatch';

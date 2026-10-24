@@ -1,3 +1,5 @@
+/** @file Transaction-consistent profile, goal, and calibration inputs for authoritative daily calorie planning. */
+
 import { Prisma } from '@prisma/client';
 import {
   evaluateCaloriePlan,
@@ -202,6 +204,7 @@ export function getStoredCaloriePlanningSnapshot(userId: number, now: Date = new
   );
 }
 
+/** Expose available planning values while omitting null calculations instead of inventing numeric targets. */
 export const calorieSummaryWire = (evaluation: CaloriePlanEvaluation) => ({
   ...(evaluation.bmr === null ? {} : { bmr: evaluation.bmr }),
   ...(evaluation.tdee === null ? {} : { tdee: evaluation.tdee }),
@@ -218,6 +221,7 @@ export const calorieSummaryWire = (evaluation: CaloriePlanEvaluation) => ({
   minimumDailyCalorieTarget: evaluation.minimumDailyCalorieTarget
 });
 
+/** Translate the projection status, nullable date and reason into the API's snake-case shape. */
 export const projectionWire = (projection: GoalProjection) => ({
   status: projection.status,
   projected_end_date: projection.projectedEndDate,

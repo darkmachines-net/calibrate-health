@@ -1,3 +1,5 @@
+/** @file Accessible form-error summary with focus control for failed submissions. */
+
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { AccessibilityInfo, findNodeHandle, View, type TextStyle } from 'react-native';
 import { AppText } from './AppText';

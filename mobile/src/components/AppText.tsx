@@ -1,7 +1,10 @@
+/** @file App Text: Applies the selected typography variant while preserving native Text properties. */
+
 import React from 'react';
 import { Text, type TextProps, StyleSheet } from 'react-native';
 import { type AppTheme, useAppTheme } from '../theme';
 
+/** Applies the selected typography variant while preserving native Text properties. */
 export const AppText: React.FC<TextProps & { variant?: 'page' | 'section' | 'card' | 'body' | 'label' | 'caption' | 'metric' | 'title' | 'screenTitle' | 'subtitle' | 'muted' }> = ({
     style,
     variant = 'body',

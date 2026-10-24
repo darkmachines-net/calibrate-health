@@ -1,3 +1,5 @@
+/** @file Foreground read-only Health Connect reconciliation with idempotent upload and acknowledged checkpoint advancement. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
     ActivityDaySummaryPayload,
@@ -100,6 +102,7 @@ function pendingKey(serverUrl: string, userId: number, recordType: ActivityRecor
 }
 
 export class HealthConnectSyncCancelledError extends Error {
+    /** Signals cancellation when synchronization loses its account or connection ownership. */
     constructor() {
         super('Health Connect sync was cancelled because the active account or connection changed.');
         this.name = 'HealthConnectSyncCancelledError';
@@ -604,6 +607,7 @@ export async function synchronizeHealthConnect(
     };
 }
 
+/** Turns permission and connectivity failures into actionable Health Connect recovery guidance. */
 export function getActionableHealthConnectSyncError(error: unknown): string {
     const message = error instanceof Error ? error.message : '';
     if (/permission|security|access|denied/i.test(message)) {

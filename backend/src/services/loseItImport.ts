@@ -1,3 +1,5 @@
+/** @file Lose It export parsing and normalized food/weight import preparation with local-date validation. */
+
 import path from 'node:path';
 import AdmZip from 'adm-zip';
 import { MealPeriod, type WeightUnit } from '@prisma/client';

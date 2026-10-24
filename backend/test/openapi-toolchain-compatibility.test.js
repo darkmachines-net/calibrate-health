@@ -1,3 +1,5 @@
+/** @file Regression coverage for openapi toolchain compatibility: Redocly minimatch supports brace-bearing OpenAPI paths. */
+
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,13 +13,13 @@ test('Redocly minimatch supports brace-bearing OpenAPI paths', () => {
   const minimatch = requireFromRedocly('minimatch');
 
   assert.equal(
-    minimatch('docs/openapi/v1.yaml', 'docs/openapi/{v1,v2}.yaml'),
+    minimatch('backend/openapi/v1.yaml', 'backend/openapi/{v1,v2}.yaml'),
     true
   );
 });
 
 test('OpenAPI preserves unsafe historical goal deficits while constraining new goal writes', () => {
-  const yaml = fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'openapi', 'v1.yaml'), 'utf8');
+  const yaml = fs.readFileSync(path.join(__dirname, '..', 'openapi', 'v1.yaml'), 'utf8');
   const goalEntry = yaml.slice(yaml.indexOf('    GoalEntry:'), yaml.indexOf('    GoalCreateRequest:'));
   const goalCreate = yaml.slice(yaml.indexOf('    GoalCreateRequest:'), yaml.indexOf('    MetricEntry:'));
 

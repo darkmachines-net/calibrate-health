@@ -1,3 +1,5 @@
+/** @file food Log Amount: Resolve the amount users recognize from immutable serving snapshots and map edits back to servings. */
+
 import type { FoodLogEntry } from '@calibrate/api-client';
 
 export type FoodLogEditableAmount = {

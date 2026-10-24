@@ -1,3 +1,5 @@
+/** @file one Time Token: Capture before the route tree mounts so fragments never reach child effects or diagnostics. */
+
 import { Platform } from 'react-native';
 
 type BrowserLocation = Pick<Location, 'hash' | 'pathname' | 'search'>;

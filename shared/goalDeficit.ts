@@ -1,3 +1,5 @@
+/** @file goal Deficit: Allowed daily calorie deficit/surplus magnitudes (kcal/day). */
+
 /**
  * Allowed daily calorie deficit/surplus magnitudes (kcal/day).
  *

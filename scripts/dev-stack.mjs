@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Owns the current worktree's Docker Compose lifecycle, database, and supported development commands. */
+
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -190,6 +192,7 @@ function printHelp() {
   );
 }
 
+/** Dispatches the requested Compose lifecycle operation against the current worktree's resolved configuration. */
 export async function main(argv = process.argv.slice(2)) {
   const command = argv[0];
   const passthrough = argv.slice(1);

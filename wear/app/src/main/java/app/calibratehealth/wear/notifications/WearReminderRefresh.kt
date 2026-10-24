@@ -1,3 +1,5 @@
+/** Network- and battery-constrained periodic refresh for standalone watch reminders. */
+
 package app.calibratehealth.wear.notifications
 
 import android.content.Context
@@ -18,6 +20,7 @@ import java.util.concurrent.TimeUnit
 class WearReminderRefreshScheduler(context: Context) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
+    /** Schedules unique periodic reminder refresh with network and battery constraints. */
     fun schedule() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

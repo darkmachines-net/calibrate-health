@@ -1,9 +1,12 @@
+/** Regression tests and fixtures for Calorie Progress. */
+
 package app.calibratehealth.wear
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CalorieProgressTest {
+    /** Verifies that dashboard diameter uses the full smaller screen dimension. */
     @Test
     fun `dashboard diameter uses the full smaller screen dimension`() {
         assertEquals(120f, summaryDashboardDiameter(widthDp = 192f, heightDp = 120f))
@@ -11,6 +14,7 @@ class CalorieProgressTest {
         assertEquals(3f, summaryDashboardDiameter(widthDp = 3f, heightDp = 3f))
     }
 
+    /** Verifies that ring expands outward while it fades away. */
     @Test
     fun `ring expands outward while it fades away`() {
         assertEquals(1f, calorieRingScale(1f))
@@ -18,6 +22,7 @@ class CalorieProgressTest {
         assertEquals(1.12f, calorieRingScale(0f), 0.001f)
     }
 
+    /** Verifies that progress is bounded and handles unavailable targets. */
     @Test
     fun `progress is bounded and handles unavailable targets`() {
         assertEquals(0.5f, calorieProgressFraction(consumed = 1_000, target = 2_000))
@@ -26,6 +31,7 @@ class CalorieProgressTest {
         assertEquals(null, calorieProgressFraction(consumed = 500, target = 0))
     }
 
+    /** Verifies that accessibility description states consumed target and signed balance. */
     @Test
     fun `accessibility description states consumed target and signed balance`() {
         val summary = summary(caloriesRemaining = 640)
@@ -39,6 +45,7 @@ class CalorieProgressTest {
         )
     }
 
+    /** Verifies that pending weight mutation suppresses cached target and projection until snapshot refresh. */
     @Test
     fun `pending weight mutation suppresses cached target and projection until snapshot refresh`() {
         val cached = summary(caloriesRemaining = 640).copy(
@@ -55,6 +62,7 @@ class CalorieProgressTest {
         assertEquals(cached, cached.suppressPlanForPendingWeight(setOf("food.create")))
     }
 
+    /** Verifies that goal copy prioritizes progress and handles completion. */
     @Test
     fun `goal copy prioritizes progress and handles completion`() {
         val goal = summary(caloriesRemaining = 640).copy(

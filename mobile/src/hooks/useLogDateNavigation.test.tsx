@@ -1,3 +1,5 @@
+/** @file Guards selected log dates across local midnight, explicit navigation, and route intents. */
+
 import { act, cleanupAsync, renderHook } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useLogDateNavigation } from './useLogDateNavigation';

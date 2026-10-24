@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes sync: sync route returns ordered changes with string cursors. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

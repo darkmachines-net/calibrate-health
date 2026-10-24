@@ -1,3 +1,5 @@
+/** @file Barcode Manual Food Form: Collects a manual food fallback for a barcode and submits only a finite nonnegative calorie value. */
+
 import { StyleSheet, View } from 'react-native';
 import type { FoodLogCreatePayload } from '@calibrate/api-client';
 import type { MealPeriod } from '@calibrate/shared';
@@ -19,6 +21,7 @@ type BarcodeManualFoodFormProps = {
     onSubmit: (request: { payload: FoodLogCreatePayload; closeAfterLogging: boolean }) => void;
 };
 
+/** Collects a manual food fallback for a barcode and submits only a finite nonnegative calorie value. */
 export function BarcodeManualFoodForm({
     date,
     meal,

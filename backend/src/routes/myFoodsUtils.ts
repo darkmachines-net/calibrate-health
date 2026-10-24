@@ -1,3 +1,5 @@
+/** @file my Foods Utils: Utilities for the `/api/my-foods` routes. */
+
 /**
  * Utilities for the `/api/my-foods` routes.
  *

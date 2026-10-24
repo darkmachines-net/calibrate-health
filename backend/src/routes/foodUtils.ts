@@ -1,3 +1,5 @@
+/** @file Request validation and normalization shared by food search, logging, and edit routes. */
+
 import type { MealPeriod } from '@prisma/client';
 import { getSafeUtcTodayDateOnlyInTimeZone, parseLocalDateOnly } from '../utils/date';
 import { parseMealPeriod } from '../utils/mealPeriod';

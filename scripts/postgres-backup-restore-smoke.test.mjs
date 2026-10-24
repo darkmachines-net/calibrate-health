@@ -1,3 +1,5 @@
+/** @file Regression coverage for postgres backup restore smoke: resource plan isolates every Docker and SQL resource. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 

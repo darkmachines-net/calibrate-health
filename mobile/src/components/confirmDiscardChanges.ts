@@ -1,3 +1,5 @@
+/** @file confirm Discard Changes: Cross-platform confirmation shared by dismissible editing overlays. */
+
 import { confirmAction } from './confirmAction';
 
 const DISCARD_TITLE = 'Discard changes?';

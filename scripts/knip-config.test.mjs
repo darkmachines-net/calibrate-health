@@ -1,3 +1,5 @@
+/** @file Regression coverage for knip config: Knip is pinned and dead-code scripts never auto-fix. */
+
 /** Verify dynamically loaded release/config entrypoints remain covered by dead-code analysis. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

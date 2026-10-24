@@ -1,3 +1,5 @@
+/** @file Configured native push delivery with bounded payloads and provider error handling. */
+
 import { NativePushProvider } from '@prisma/client';
 import { type PushNotificationPayload } from './pushNotificationPayloads';
 

@@ -1,3 +1,5 @@
+/** @file Stable saved-food library filtering, pagination, cursor identity, and immutable serving snapshots. */
+
 import { Prisma } from '@prisma/client';
 import type { MyFoodType } from '@prisma/client';
 import { createHash } from 'node:crypto';
@@ -144,6 +146,7 @@ function encodeCursor(cursor: MyFoodsLibraryCursor): string {
   return Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
 }
 
+/** Validate bounded search/type/page inputs and require cursor identity to match the normalized query. */
 export function parseMyFoodsLibraryQuery(query: Record<string, unknown>): MyFoodsLibraryQuery {
   const rawQuery = parseSingleQueryValue(query.q, 'q');
   const q = normalizeQuery(rawQuery ?? '');
@@ -170,6 +173,7 @@ function buildCursorClause(cursor: MyFoodsLibraryCursor): Prisma.Sql {
   return Prisma.sql`((${samePinStateAfterCursor}) OR "is_pinned" = false)`;
 }
 
+/** Page an account's saved foods using stable cursor bounds and literal search text, never SQL wildcard interpretation. */
 export async function listMyFoodsLibrary(
   database: MyFoodsLibraryDatabase,
   userId: number,

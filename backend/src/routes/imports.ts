@@ -1,3 +1,5 @@
+/** @file Account-owned food/weight import endpoints with validated conflict policies and atomic persistence. */
+
 import express from 'express';
 import multer from 'multer';
 import type { Prisma } from '@prisma/client';

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Bounded GitHub Actions emulator lifecycle for the paired phone/watch test environment. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -18,6 +20,7 @@ function executableName(name, platform) {
   return platform === 'win32' ? `${name}.exe` : name;
 }
 
+/** Requires GitHub Actions Linux with explicit Android SDK and temporary workspace configuration. */
 export function assertHostedNativeRunner(environment = process.env) {
   if (environment.GITHUB_ACTIONS !== 'true' || environment.RUNNER_OS !== 'Linux') {
     throw new Error('Hosted native emulator lifecycle is restricted to GitHub Actions Linux runners.');
@@ -43,6 +46,7 @@ function resolveHostedWearConfiguration(environment = process.env, platform = pr
   };
 }
 
+/** Builds the hosted Wear emulator preparation and lifecycle commands from validated runner configuration. */
 export function createHostedWearCommandPlan(environment = process.env, platform = process.platform) {
   const config = resolveHostedWearConfiguration(environment, platform);
   return {
@@ -165,6 +169,7 @@ function stopHostedWearAvd(environment = process.env) {
   runCommand(stop, { allowFailure: true, timeout: 30_000 });
 }
 
+/** Accepts exactly one supported Wear emulator lifecycle command. */
 export function parseHostedNativeEmulatorCommand(argv) {
   if (argv.length !== 1 || !['prepare-wear', 'start-wear', 'wait-wear', 'stop-wear'].includes(argv[0])) {
     throw new Error('Usage: node scripts/hosted-native-emulators.mjs <prepare-wear|start-wear|wait-wear|stop-wear>');

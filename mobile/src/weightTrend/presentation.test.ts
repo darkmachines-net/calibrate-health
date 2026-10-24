@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: describeVisibleWeightTrend. */
+
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import type { TrendMetricsResponse, WeightTrendSummary } from '@calibrate/api-client';
 import {

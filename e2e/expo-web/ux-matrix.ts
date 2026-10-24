@@ -1,3 +1,5 @@
+/** @file ux matrix: Canonical destinations only; alias redirect behavior remains covered by route-matrix.spec.ts. */
+
 import {
   ROUTE_IDS,
   ROUTE_REGISTRY,

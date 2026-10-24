@@ -1,4 +1,4 @@
-/** Include native inputs copied by our CNG plugins but located outside Expo's discovery roots. */
+/** @file Include native inputs copied by our CNG plugins but located outside Expo's discovery roots. */
 module.exports = {
   // Tests and documentation do not contribute code to the production native binary.
   // Kotlin daemon session/cache files appear during Gradle execution, then disappear on exit.

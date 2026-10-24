@@ -1,9 +1,12 @@
+/** Regression tests and fixtures for Watch Sync Policy. */
+
 package app.calibratehealth.wear.sync
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WatchSyncPolicyTest {
+    /** Verifies that status classification distinguishes conflict retry and permanent failures. */
     @Test
     fun `status classification distinguishes conflict retry and permanent failures`() {
         assertEquals(HttpOutcome.SUCCESS, classifyWatchHttpStatus(200))
@@ -15,6 +18,7 @@ class WatchSyncPolicyTest {
         assertEquals(HttpOutcome.PERMANENT, classifyWatchHttpStatus(403))
     }
 
+    /** Verifies that only explicit operation in progress conflict remains retryable. */
     @Test
     fun `only explicit operation in progress conflict remains retryable`() {
         assertEquals(

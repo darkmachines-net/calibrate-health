@@ -1,3 +1,5 @@
+/** @file Regression coverage for query Invalidation: profile planning query invalidation. */
+
 import { invalidateProfilePlanningQueries } from './queryInvalidation';
 
 describe('profile planning query invalidation', () => {

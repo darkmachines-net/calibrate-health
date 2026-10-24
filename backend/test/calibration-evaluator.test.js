@@ -1,3 +1,5 @@
+/** @file Regression coverage for calibration evaluator: reports progress before the seven-day insight threshold. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

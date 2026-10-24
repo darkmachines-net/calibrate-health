@@ -1,3 +1,5 @@
+/** @file Durable food-day intent receipts and acknowledged-state reconciliation during offline replay. */
+
 const storage = (): typeof import('@react-native-async-storage/async-storage').default => {
     const module = require('@react-native-async-storage/async-storage');
     return module.default ?? module;
@@ -16,6 +18,7 @@ async function read(namespace: string): Promise<Journal> {
     if (parsed.version !== 1 || !Number.isSafeInteger(parsed.sequence) || !Array.isArray(parsed.rows) || parsed.rows.some(row => row.namespace !== namespace)) throw new Error('Saved tracking state is invalid. Reconnect before changing food.');
     return parsed;
 }
+/** Reads persisted completed day intents that protect local presentation during synchronization. */
 export async function readFoodDayReceipts(namespace: string): Promise<QueuedMutation[]> { return (await read(namespace)).rows; }
 
 /** Call under the namespace lock, before acknowledging a control or removing its queued row. */

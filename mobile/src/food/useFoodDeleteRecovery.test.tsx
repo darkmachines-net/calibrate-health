@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Food Delete Recovery: useFoodDeleteRecovery. */
+
 import { act, renderHook } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import type { FoodLogEntry } from '@calibrate/api-client';

@@ -1,3 +1,5 @@
+/** @file dev Auth: Attach the test user to the session for local development convenience. */
+
 import type { NextFunction, Request, Response } from 'express';
 import prisma from '../config/database';
 import { ensureDevTestData } from '../services/devTestData';

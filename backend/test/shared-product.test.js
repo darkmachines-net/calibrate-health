@@ -1,3 +1,5 @@
+/** @file Regression coverage for shared product: shared product contract exposes hosted identity and origin-aware trust destinations. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

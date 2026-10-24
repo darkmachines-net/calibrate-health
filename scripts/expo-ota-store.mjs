@@ -1,4 +1,4 @@
-/** Retain attested OTA exports so recovery reuses exact bundle bytes without executing application source. */
+/** @file Retain attested OTA exports so recovery reuses exact bundle bytes without executing application source. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for storage Scope: Health Connect storage scope. */
+
 import {
     canonicalHealthConnectServerIdentity,
     healthConnectAccountScope

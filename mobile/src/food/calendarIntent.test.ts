@@ -1,3 +1,5 @@
+/** @file Regression coverage for calendar Intent: projects absent dates and keeps the actual resume boundary open. */
+
 import type { FoodLogDay } from '@calibrate/api-client';
 import type { QueuedMutation } from '../offline/queuedMutation';
 import { calendarDayWithIntent } from './calendarIntent';

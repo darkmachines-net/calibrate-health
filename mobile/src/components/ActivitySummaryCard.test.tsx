@@ -1,3 +1,5 @@
+/** @file Regression coverage for Activity Summary Card: ActivitySummaryCard. */
+
 import { render } from '@testing-library/react-native';
 import type { ActivityDaySummary } from '@calibrate/api-client';
 import { ActivitySummaryCard, type ActivityDay } from './ActivitySummaryCard';

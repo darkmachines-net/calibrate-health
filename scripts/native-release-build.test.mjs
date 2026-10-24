@@ -1,3 +1,5 @@
+/** @file Regression coverage for native release build: native release environment enforces one complete signing identity and a production origin. */
+
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for state: barcode recovery state. */
+
 import {
     BARCODE_LOOKUP_STATES,
     BARCODE_PERMISSION_STATES,

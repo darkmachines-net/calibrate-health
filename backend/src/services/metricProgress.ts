@@ -1,3 +1,5 @@
+/** @file metric Progress: Build the authoritative post-save progress receipt from before/after metric history. The caller runs this inside the idempotent mutation transaction so a replay receives exactly the same milestone facts as the original save. */
+
 import {
     calculateCanonicalGoalProgress,
     type CanonicalGoal,

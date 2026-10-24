@@ -1,3 +1,5 @@
+/** @file Regression coverage for route Metadata: route metadata. */
+
 import { ROUTE_IDS, getRouteDefinition } from './routeRegistry';
 import {
     ROUTE_ROBOTS_POLICIES,

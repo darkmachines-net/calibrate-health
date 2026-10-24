@@ -1,3 +1,5 @@
+/** Durable authorization binding for the exact paired watch node and phone account. */
+
 package app.calibratehealth.wearpairing
 
 import android.content.Context

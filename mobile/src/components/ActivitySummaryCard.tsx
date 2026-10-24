@@ -1,3 +1,5 @@
+/** @file Activity Summary Card: Observed device activity. It is intentionally separate from Calibrate's calorie-target estimate. */
+
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

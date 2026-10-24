@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Exercises goal-pace persistence and idempotency against an isolated PostgreSQL smoke-test schema. */
+
 /** Exercise goal continuity and concurrent writes in a disposable PostgreSQL schema. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';

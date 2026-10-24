@@ -1,3 +1,5 @@
+/** @file Regression coverage for release acceptance: repository plan encodes the lean single-user pre-release policy. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';

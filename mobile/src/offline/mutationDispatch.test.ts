@@ -1,3 +1,5 @@
+/** @file Regression coverage for mutation Dispatch: consults durable state after another producer enqueues despite an empty React snapshot. */
+
 import { createOutboxDispatch } from './mutationDispatch';
 import { executeOrQueueMutation, OFFLINE_MUTATION_OPERATIONS } from './operations';
 import type { QueuedMutation } from './queuedMutation';

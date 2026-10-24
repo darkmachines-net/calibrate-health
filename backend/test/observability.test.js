@@ -1,3 +1,5 @@
+/** @file Regression coverage for observability: request observability emits bounded metadata without URL, query, headers, identity, or health payloads. */
+
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const test = require('node:test');

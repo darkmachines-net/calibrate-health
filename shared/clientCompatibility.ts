@@ -1,3 +1,5 @@
+/** @file Native client identity parsing and minimum-version compatibility checks. */
+
 import type { MobileDevicePlatform } from './domain';
 export type { MobileDevicePlatform } from './domain';
 
@@ -37,10 +39,12 @@ export function compareClientVersions(left: string, right: string): number | nul
     return 0;
 }
 
+/** Narrow untrusted platform metadata to Android phone, iOS or Wear OS. */
 export function isMobileDevicePlatform(value: unknown): value is MobileDevicePlatform {
     return value === 'android_phone' || value === 'ios' || value === 'wear_os';
 }
 
+/** Validate the complete structured upgrade response before clients act on untrusted version metadata. */
 export function isClientUpgradeRequirement(value: unknown): value is ClientUpgradeRequirement {
     if (!value || typeof value !== 'object') return false;
     const record = value as Partial<ClientUpgradeRequirement>;

@@ -1,3 +1,5 @@
+/** @file Regression coverage for native play receipt: native Play receipt has deterministic epoch-marked canonical bytes. */
+
 /** Verify canonical Play receipt identity, binary hashes, and historical signer authorization. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';

@@ -1,3 +1,5 @@
+/** @file resolve Async State: Resolve one query into exactly one presentation state. Cached empty data is never treated as a verified empty result after a failure or while offline. */
+
 export const ASYNC_RESOURCE_STATES = {
     LOADING: 'loading',
     CONTENT: 'content',
@@ -78,5 +80,7 @@ export function resolveAsyncResourceState<T>(
     return { kind: ASYNC_RESOURCE_STATES.LOADING, error: null };
 }
 
+/** Uses null as the empty-resource predicate for asynchronous query presentation. */
 export const isNullResource = <T>(value: T | null): boolean => value === null;
+/** Keeps resources with valid data out of the empty-state branch regardless of their value. */
 export const isNeverEmpty = (): false => false;

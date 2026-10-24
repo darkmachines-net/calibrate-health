@@ -1,3 +1,5 @@
+/** @file provider: Binds a durable IndexedDB queue to the current browser server and authenticated user. */
+
 import type { FoodLogDay, FoodLogDayRange, FoodTrackingPause } from '@calibrate/api-client';
 import { readFoodDayReceipts, readAndRecordFoodDay, readAndRecordFoodDays, readAndRecordFoodPause } from './foodDayReceipts';
 import { createOutboxDispatch, type OutboxDispatch } from './mutationDispatch';
@@ -316,6 +318,7 @@ export function OfflineOutboxProvider({
     return <OfflineOutboxContext.Provider value={value}>{children}</OfflineOutboxContext.Provider>;
 }
 
+/** Reads the browser outbox context and throws outside its provider. */
 export function useOfflineOutbox(): OfflineOutboxContextValue {
     const context = useContext(OfflineOutboxContext);
     if (!context) throw new Error('useOfflineOutbox must be used within OfflineOutboxProvider.');

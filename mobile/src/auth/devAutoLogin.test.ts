@@ -1,3 +1,5 @@
+/** @file Regression coverage for dev Auto Login: development auto-login. */
+
 import { ApiError } from '@calibrate/api-client';
 import {
     DEV_TEST_EMAIL,

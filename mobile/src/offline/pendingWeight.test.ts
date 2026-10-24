@@ -1,3 +1,5 @@
+/** @file Regression coverage for pending Weight: pending weight mutation safety. */
+
 import { hasPendingWeightMutation } from './pendingWeight';
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'pending-weight-operation') }));

@@ -1,3 +1,5 @@
+/** @file presentation: Keep Activity and Settings aligned on permission, connection, and sync state copy. */
+
 import {
     DEFAULT_HEALTH_CONNECT_SELECTION,
     type HealthConnectAvailability,
@@ -150,6 +152,7 @@ export function getHealthConnectPresentation(
     return result('ready', 'Health Connect is connected and activity is up to date.', 'positive');
 }
 
+/** Formats a synchronization timestamp into freshness copy, distinguishing missing and invalid timestamps. */
 export function formatHealthConnectFreshness(value: string | null, now = new Date()): string {
     if (!value) return 'Not synced yet';
     const parsed = new Date(value);

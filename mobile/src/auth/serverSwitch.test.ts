@@ -1,3 +1,5 @@
+/** @file Regression coverage for server Switch: confirmServerSwitch. */
+
 import { authenticateAgainstConfirmedServer, confirmServerSwitch } from './serverSwitch';
 import type { ServerConnectionResult } from '../config/server';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for app config: static Expo config supports iPhone, iPad, and iOS Simulator builds. */
+
 /** Regression coverage for app.config and its failure boundaries. */
 const assert = require('node:assert/strict');
 const test = require('node:test');

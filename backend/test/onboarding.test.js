@@ -1,3 +1,5 @@
+/** @file Regression coverage for onboarding: completion parser accepts one complete payload and rejects incomplete or underage input. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

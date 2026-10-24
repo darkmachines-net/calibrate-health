@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 12 food log productivity: Food Log supports fast add, edit, recoverable delete, and meal/day copy. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, FROZEN_LOCAL_DATE, hideTransientPwaNotices, test, type AuthenticatedApiOptions } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-12');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-12');
 const PREVIOUS_LOCAL_DATE = '2026-07-20';
 const TRANSIENT_PWA_TITLES = new Set([
   'Back online',

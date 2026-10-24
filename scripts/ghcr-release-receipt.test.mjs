@@ -1,3 +1,5 @@
+/** @file Regression coverage for ghcr release receipt: protected-master trust set accepts only unique exact allow and revoke directives. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

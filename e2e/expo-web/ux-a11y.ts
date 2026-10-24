@@ -1,3 +1,5 @@
+/** @file ux a11y: Runs only WCAG A/AA axe rules and adds the keyboard-order invariant axe classifies as best practice. */
+
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
 import { expect, type Page, type TestInfo } from '@playwright/test';
@@ -61,6 +63,7 @@ export async function collectBlockingAccessibilityViolations(
   return violations.sort((first, second) => first.rule.localeCompare(second.rule));
 }
 
+/** Attaches a sanitized accessibility report with surface and viewport identity to the Playwright result. */
 export async function attachAccessibilitySummary(
   page: Page,
   testInfo: TestInfo,
@@ -84,6 +87,7 @@ export async function attachAccessibilitySummary(
   });
 }
 
+/** Waits for fonts, records the accessibility scan, and fails on blocking violations. */
 export async function expectNoBlockingAccessibilityViolations(
   page: Page,
   testInfo: TestInfo,

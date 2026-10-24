@@ -1,3 +1,5 @@
+/** @file Native push registration eligibility, permission recovery, and server capability negotiation. */
+
 const INTERNAL_ROUTE_ORIGIN = 'https://calibrate.invalid';
 
 export const NATIVE_PUSH_STATES = {
@@ -37,11 +39,13 @@ export function isNativePushEnvironmentSupported(appOwnership: string | null | u
     return appOwnership !== 'expo' && (platform === 'android' || platform === 'ios');
 }
 
+/** Maps the runtime platform to the push transport status target. */
 export function getPushStatusTarget(platform: string): PushStatusTarget {
     if (platform === 'web') return 'web';
     return platform === 'ios' ? 'ios' : 'android';
 }
 
+/** Maps granted and retryable permission outcomes to the next native push state. */
 export function getNotificationPermissionState(permission: {
     granted: boolean;
     canAskAgain: boolean;

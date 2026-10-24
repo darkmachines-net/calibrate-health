@@ -1,3 +1,5 @@
+/** @file Regression coverage for accessibility Foundation: shared accessibility foundation. */
+
 import { render } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import Svg from 'react-native-svg';

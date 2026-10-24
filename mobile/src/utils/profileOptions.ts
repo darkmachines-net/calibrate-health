@@ -1,3 +1,5 @@
+/** @file Shared profile form options for sex, activity, and measurement units. */
+
 import {
     ACTIVITY_LEVELS,
     HEIGHT_UNITS,

@@ -1,3 +1,5 @@
+/** @file weight Trend: Selected persistence/API model version. Changing it invalidates materialized rows. */
+
 import {
     classifyWeightTrendEvidence,
     computeWeightTrend as computeWeightTrendV2,

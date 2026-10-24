@@ -1,3 +1,5 @@
+/** @file Local-day completion, saved calorie comparisons, tracking pauses, and resume endpoints. */
+
 import express from 'express';
 import prisma from '../config/database';
 import { MS_PER_DAY, getSafeUtcTodayDateOnlyInTimeZone, parseLocalDateOnly } from '../utils/date';

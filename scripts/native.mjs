@@ -1,3 +1,5 @@
+/** @file Public native command dispatcher for setup, configuration, build, installation, submission, and OTA. */
+
 /** Expose concise local native build, install, submit, and fingerprint OTA commands. */
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -44,7 +46,7 @@ function help(action) {
       'Requires installed tools/dependencies, external signing credentials, and a clean committed checkout.',
       'Uses native:configure settings; --credentials-file FILE overrides signing for this run.',
       'Run npm run native:setup for machine/worktree setup.',
-      'For a new Play release, commit unused native version codes first; see docs/mobile-release.md.',
+      'For a new Play release, commit unused native version codes first; see scripts/README.md#local-native-workflow.',
       'Prebuild, signing, phone/Wear APK/AAB builds, and verification are included.'
     );
     if (action === 'submit') lines.push(
@@ -83,7 +85,7 @@ function help(action) {
     'Build once, then choose manual AAB upload, install, or submit.',
     'Local builds use calibratehealth.darkmachines.net and Expo channel internal.',
     'Production store releases use the protected GitHub workflow.',
-    'Run npm run <script> -- --help for options. See docs/mobile-release.md.'
+    'Run npm run <script> -- --help for options. See scripts/README.md#local-native-workflow.'
   ].join('\n');
 }
 

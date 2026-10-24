@@ -1,3 +1,5 @@
+/** @file Deterministic SVG geometry for trend paths, uncertainty bands, ticks, and selected observations. */
+
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import { isVisibleWeightTrendPoint } from './presentation';
 
@@ -49,12 +51,14 @@ export type WeightTrendChartGeometry = {
     }>;
 };
 
+/** Builds the SVG trend polyline path from ordered chart points with stable coordinate precision. */
 export function buildWeightTrendLinePath(points: WeightTrendChartPoint[]): string {
     return points
         .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.trendY.toFixed(2)}`)
         .join(' ');
 }
 
+/** Builds a closed confidence-band polygon by joining upper points with reversed lower points. */
 export function buildWeightTrendBandPoints(points: WeightTrendChartPoint[]): string {
     const upper = points.map((point) => `${point.x.toFixed(2)},${point.upperY.toFixed(2)}`);
     const lower = points.slice().reverse().map((point) => `${point.x.toFixed(2)},${point.lowerY.toFixed(2)}`);
@@ -142,6 +146,7 @@ function dateKeyFromMs(value: number): string {
     return new Date(value).toISOString().slice(0, 10);
 }
 
+/** Filters invalid observations and normalizes dates while distinguishing modeled trend from raw context. */
 export function normalizeWeightTrendMetrics(metrics: TrendMetricEntry[]): Array<{
     metric: TrendMetricEntry;
     dateKey: string;
@@ -183,6 +188,7 @@ function getXAxisTickFractions(count: 2 | 3): number[] {
     return count === 2 ? [0, 1] : [0, 0.5, 1];
 }
 
+/** Computes bounded chart dimensions, axes, observed points, trend segments, and model-boundary geometry. */
 export function buildWeightTrendChartGeometry(
     metrics: TrendMetricEntry[],
     options: WeightTrendChartGeometryOptions

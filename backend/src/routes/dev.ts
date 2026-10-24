@@ -1,3 +1,5 @@
+/** @file Development-only helpers for the explicitly enabled seeded-account workflow. */
+
 import express from 'express';
 import { InAppNotificationType } from '@prisma/client';
 import prisma from '../config/database';

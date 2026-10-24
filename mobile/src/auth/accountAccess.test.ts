@@ -1,3 +1,5 @@
+/** @file Regression coverage for account Access: account access policy. */
+
 import {
     ACCOUNT_ACCESS_STATES,
     getAccountAccessState,

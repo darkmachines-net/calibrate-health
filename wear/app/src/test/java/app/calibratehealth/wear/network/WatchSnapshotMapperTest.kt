@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Watch Snapshot Mapper. */
+
 package app.calibratehealth.wear.network
 
 import org.junit.Assert.assertEquals
@@ -6,6 +8,7 @@ import org.junit.Test
 import app.calibratehealth.wear.notifications.WearReminderType
 
 class WatchSnapshotMapperTest {
+    /** Verifies that maps bounded snapshot and preserves quick-add draft as mutation payload. */
     @Test
     fun `maps bounded snapshot and preserves quick-add draft as mutation payload`() {
         val result = WatchSnapshotMapper.map(validSnapshot(), fetchedAtEpochMs = 42L)
@@ -43,6 +46,7 @@ class WatchSnapshotMapperTest {
         )
     }
 
+    /** Verifies that rejects duplicate quick-add ids and malformed revisions. */
     @Test
     fun `rejects duplicate quick-add ids and malformed revisions`() {
         val snapshot = validSnapshot()
@@ -61,6 +65,7 @@ class WatchSnapshotMapperTest {
         }.isFailure)
     }
 
+    /** Verifies that maps optional goal progress and remains compatible with snapshots that omit it. */
     @Test
     fun `maps optional goal progress and remains compatible with snapshots that omit it`() {
         val withoutGoal = WatchSnapshotMapper.map(validSnapshot(), 42L).dailySnapshot
@@ -86,6 +91,7 @@ class WatchSnapshotMapperTest {
         assertEquals("2026-10-10", mapped.goalProjectedEndDate)
     }
 
+    /** Verifies that maps maintenance as ongoing neutral progress. */
     @Test
     fun `maps maintenance as ongoing neutral progress`() {
         val maintenanceGoal =
@@ -104,6 +110,7 @@ class WatchSnapshotMapperTest {
         assertEquals("maintenance", mapped.goalProjectionStatus)
     }
 
+    /** Verifies that rejects incomplete directional or out-of-range goal progress. */
     @Test
     fun `rejects incomplete directional or out-of-range goal progress`() {
         val incompleteGoal =
@@ -123,12 +130,14 @@ class WatchSnapshotMapperTest {
         }.isFailure)
     }
 
+    /** Verifies that strict parser rejects duplicate keys and trailing input. */
     @Test
     fun `strict parser rejects duplicate keys and trailing input`() {
         assertTrue(runCatching { StrictJson.parse("{\"a\":1,\"a\":2}") }.isFailure)
         assertTrue(runCatching { StrictJson.parse("{}[]") }.isFailure)
     }
 
+    /** Verifies that fails closed when server plan ownership is absent or unsafe. */
     @Test
     fun `fails closed when server plan ownership is absent or unsafe`() {
         val oldServer = validSnapshot().replace(
@@ -151,6 +160,7 @@ class WatchSnapshotMapperTest {
         assertEquals(null, unsafeMapped.caloriesRemaining)
     }
 
+    /** Verifies that accepts review-only snapshot with sanitized null weights and preserves other state. */
     @Test
     fun `accepts review-only snapshot with sanitized null weights and preserves other state`() {
         val reviewOnly = validSnapshot()
@@ -172,6 +182,7 @@ class WatchSnapshotMapperTest {
         assertEquals(2, mapped.reminders.size)
     }
 
+    /** Verifies that accepts a server-owned target above one hundred thousand for the room cache. */
     @Test
     fun `accepts a server-owned target above one hundred thousand for the Room cache`() {
         val mapped = WatchSnapshotMapper.map(
@@ -187,6 +198,7 @@ class WatchSnapshotMapperTest {
         assertEquals("available", mapped.planStatus)
     }
 
+    /** Verifies that maps paused status and requires food actions and reminders to be absent. */
     @Test
     fun `maps paused status and requires food actions and reminders to be absent`() {
         val paused = validSnapshot()

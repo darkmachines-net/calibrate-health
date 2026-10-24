@@ -1,3 +1,5 @@
+/** @file route matrix: Browser expectations generated from the same registry used by the app shell. */
+
 import {
   ROUTE_IDS,
   ROUTE_REGISTRY,

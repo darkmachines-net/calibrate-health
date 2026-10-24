@@ -1,3 +1,5 @@
+/** @file Bounded client diagnostics, provider-independent startup failures, and configured server transport. */
+
 import { Platform } from 'react-native';
 import { ApiError } from '@calibrate/api-client';
 import {

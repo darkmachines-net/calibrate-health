@@ -1,3 +1,5 @@
+/** @file Regression coverage for resolve Async State: resolveAsyncResourceState. */
+
 import { ASYNC_RESOURCE_STATES, resolveAsyncResourceState } from './resolveAsyncState';
 
 const collectionQuery = (

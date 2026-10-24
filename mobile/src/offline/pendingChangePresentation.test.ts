@@ -1,3 +1,5 @@
+/** @file Regression coverage for pending Change Presentation: durable pending tracking presentation. */
+
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
 import { describePendingChange } from './pendingChangePresentation';
 

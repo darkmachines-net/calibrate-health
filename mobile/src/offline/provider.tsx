@@ -1,3 +1,5 @@
+/** @file provider: Binds SQLite queue access to the currently authenticated server and user. */
+
 import type { FoodLogDay, FoodLogDayRange, FoodTrackingPause } from '@calibrate/api-client';
 import { readFoodDayReceipts, readAndRecordFoodDay, readAndRecordFoodDays, readAndRecordFoodPause } from './foodDayReceipts';
 import { createOutboxDispatch, type OutboxDispatch } from './mutationDispatch';
@@ -267,6 +269,7 @@ export function OfflineOutboxProvider({ children, executeMutation, onReplayCompl
     return <OfflineOutboxContext.Provider value={value}>{children}</OfflineOutboxContext.Provider>;
 }
 
+/** Reads the native outbox context and throws outside its provider. */
 export function useOfflineOutbox(): OfflineOutboxContextValue {
     const context = useContext(OfflineOutboxContext);
     if (!context) throw new Error('useOfflineOutbox must be used within OfflineOutboxProvider.');

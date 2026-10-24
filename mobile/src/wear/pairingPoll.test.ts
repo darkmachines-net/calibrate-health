@@ -1,3 +1,5 @@
+/** @file Regression coverage for pairing Poll: Wear pairing inbox polling. */
+
 import { pollWearPairingInbox, type WearPairingInboxCheck } from './pairingPoll';
 
 const paired = {

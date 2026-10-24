@@ -1,3 +1,5 @@
+/** @file Regression coverage for Segmented Control: SegmentedControl. */
+
 import { useState } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
 import { fireEvent, render } from '@testing-library/react-native';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for completed calendar: calendar refresh, uncached month failure, retry, and completion reopening stay honest. */
+
 import { expect, test, expectApiFailure, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 import { calibrateDesignTokens } from '../../shared/designTokens';
 import { applyTwoHundredPercentText } from './text-scaling';

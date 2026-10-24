@@ -1,3 +1,5 @@
+/** @file Regression coverage for Goal Progress Card: GoalProgressCard. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import type { GoalEntry } from '@calibrate/api-client';
 import { GoalProgressCard } from './GoalProgressCard';

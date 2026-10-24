@@ -1,3 +1,5 @@
+/** @file mutation Dispatch: Read durable state under the same lock used by all direct attempts and enqueue producers. */
+
 import { readFoodDayReceipts, recordFoodDayReceipt } from './foodDayReceipts';
 import { withMutationLock } from './mutationLock';
 import type { QueuedMutation } from './queuedMutation';

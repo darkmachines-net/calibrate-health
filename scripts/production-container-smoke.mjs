@@ -1,3 +1,5 @@
+/** @file Builds and checks the production container against owned disposable runtime dependencies. */
+
 import assert from 'node:assert/strict';
 import process from 'node:process';
 

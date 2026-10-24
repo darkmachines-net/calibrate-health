@@ -1,3 +1,5 @@
+/** @file Regression coverage for mcp progress: MCP food snapshot groups local days and averages only COMPLETE days. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

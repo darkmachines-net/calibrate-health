@@ -1,3 +1,5 @@
+/** @file Regression coverage for Client Upgrade Required Screen: ClientUpgradeRequiredScreen. */
+
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ClientUpgradeRequiredScreen } from './ClientUpgradeRequiredScreen';
 

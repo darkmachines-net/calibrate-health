@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Pairing Http Client. */
+
 package app.calibratehealth.wear.pairing
 
 import app.calibratehealth.wear.network.WatchHttpResponse
@@ -9,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearPairingHttpClientTest {
+    /** Verifies that pairing exchange uses the injected phone-first http transport. */
     @Test
     fun `pairing exchange uses the injected phone-first HTTP transport`() = runBlocking {
         var requestPath = ""

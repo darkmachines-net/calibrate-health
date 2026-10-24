@@ -1,3 +1,5 @@
+/** Bounded watch HTTP transport, access-token refresh, account-scoped rotation, and one-time authorization replay. */
+
 package app.calibratehealth.wear.network
 
 import app.calibratehealth.wear.data.security.AccountSessionCoordinator
@@ -26,12 +28,14 @@ data class WatchHttpResponse(
     val headers: Map<String, String>,
     val body: String
 ) {
+    /** Finds a response header using case-insensitive HTTP header-name matching. */
     fun header(name: String): String? = headers.entries
         .firstOrNull { it.key.equals(name, ignoreCase = true) }
         ?.value
 }
 
 fun interface WatchHttpTransport {
+    /** Executes one bounded HTTP request and returns status, headers, and body. */
     suspend fun execute(request: WatchHttpRequest): WatchHttpResponse
 }
 
@@ -97,10 +101,12 @@ sealed interface AuthenticatedApiResult {
 }
 
 fun interface WatchSnapshotApi {
+    /** Fetches the authenticated watch snapshot with optional conditional ETag semantics. */
     suspend fun getSnapshot(session: SecureSession, etag: String?): AuthenticatedApiResult
 }
 
 fun interface WatchMutationApi {
+    /** Submits an authenticated mutation under its stable operation identifier. */
     suspend fun postMutation(
         session: SecureSession,
         operationId: String,
@@ -307,6 +313,7 @@ class AuthenticatedWatchApi(
         private val OPERATION_ID_PATTERN = Regex("^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$")
         private val MUTATION_TYPE_PATTERN = Regex("^[a-z_]+\\.[a-z_]+$")
 
+        /** Joins a validated server origin with a fixed absolute API path, rejecting authority and query injection. */
         fun endpointUrl(serverOrigin: String, path: String): String {
             require(path.startsWith('/') && !path.startsWith("//") && '?' !in path && '#' !in path) {
                 "Watch API path must be an absolute fixed path."

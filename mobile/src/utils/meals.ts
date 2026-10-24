@@ -1,3 +1,5 @@
+/** @file meals: Stable display order for every native meal selector and meal summary. */
+
 import { MEAL_PERIODS, type MealPeriod } from '@calibrate/shared';
 import { formatMealPeriod } from './format';
 

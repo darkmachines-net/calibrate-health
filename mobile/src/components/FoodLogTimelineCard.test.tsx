@@ -1,3 +1,5 @@
+/** @file Regression coverage for Food Log Timeline Card: FoodLogTimelineCard. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { FoodLogEntry } from '@calibrate/api-client';

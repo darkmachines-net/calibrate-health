@@ -1,3 +1,5 @@
+/** @file Regression coverage for page refinements: full-width rows include the page gutters in their hover and tap targets. */
+
 import { expect, test, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 
 test('full-width rows include the page gutters in their hover and tap targets', async ({ page, ux }, testInfo) => {

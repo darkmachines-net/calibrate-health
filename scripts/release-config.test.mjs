@@ -1,7 +1,8 @@
-/** Regression coverage for release config and its failure boundaries. */
+/** @file Regression coverage for release config: release checks reject a missing or stale iOS build number. */
+
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -66,7 +67,7 @@ const releaseFixturePaths = [
   'wear/app/build.gradle.kts',
   'shared/release.json',
   'shared/client-diagnostic-versions.json',
-  'docs/openapi/v1.yaml',
+  'backend/openapi/v1.yaml',
   'packages/api-client/src/generated/v1.ts'
 ];
 
@@ -291,7 +292,7 @@ const preparedReleaseSourcePaths = {
   rootLock: 'package-lock.json',
   backendPackage: 'backend/package.json',
   backendLock: 'backend/package-lock.json',
-  openApi: 'docs/openapi/v1.yaml',
+  openApi: 'backend/openapi/v1.yaml',
   generatedApi: 'packages/api-client/src/generated/v1.ts'
 };
 
@@ -595,14 +596,14 @@ test('the recorded v0.35.0 commit is the byte-exact canonical transform of its s
   };
   const parentCommit = git(['rev-parse', `${HISTORICAL_PREPARED_RELEASE_COMMIT}^`]).trim();
   const parentSources = Object.fromEntries(
-    Object.entries(preparedReleaseSourcePaths).map(([key, relativePath]) => [
+    Object.entries({ ...preparedReleaseSourcePaths, openApi: 'docs/openapi/v1.yaml' }).map(([key, relativePath]) => [
       key,
       git(['show', `${parentCommit}:${relativePath}`])
     ])
   );
   const expectedSources = createServerReleaseReplacements(parentSources, '0.35.0');
 
-  for (const [key, relativePath] of Object.entries(preparedReleaseSourcePaths)) {
+  for (const [key, relativePath] of Object.entries({ ...preparedReleaseSourcePaths, openApi: 'docs/openapi/v1.yaml' })) {
     assert.equal(
       git(['show', `${HISTORICAL_PREPARED_RELEASE_COMMIT}:${relativePath}`]),
       expectedSources[key],
@@ -633,7 +634,7 @@ test('modern tooling checks, tags, and verifies the exact pre-iOS canonical imag
     return result.stdout;
   };
   git(['update-ref', '--no-deref', 'HEAD', HISTORICAL_PREPARED_RELEASE_COMMIT]);
-  for (const relativePath of releaseFixturePaths) {
+  for (const relativePath of releaseFixturePaths.map(file => file === 'backend/openapi/v1.yaml' ? 'docs/openapi/v1.yaml' : file)) {
     const destination = path.join(root, relativePath);
     await mkdir(path.dirname(destination), { recursive: true });
     await writeFile(destination, git(['show', `${HISTORICAL_PREPARED_RELEASE_COMMIT}:${relativePath}`]));
@@ -649,6 +650,7 @@ test('modern tooling checks, tags, and verifies the exact pre-iOS canonical imag
   }
   const fixture = createPreparedReleaseGit({
     releaseTag: 'v0.35.0',
+    changedPaths: PREPARED_RELEASE_MIRROR_PATHS.map(file => file === 'backend/openapi/v1.yaml' ? 'docs/openapi/v1.yaml' : file).sort(),
     tagCommit: HISTORICAL_PREPARED_RELEASE_COMMIT,
     parentCommit: git(['rev-parse', 'HEAD^']).trim(),
     parentVersion: JSON.parse(git(['show', 'HEAD^:shared/release.json'])).server.version,
@@ -1035,7 +1037,7 @@ test('prepared release verifier rejects synchronized but noncanonical payloads i
       }
     },
     {
-      path: 'docs/openapi/v1.yaml',
+      path: 'backend/openapi/v1.yaml',
       /** Introduce one deliberate fixture violation for fail-closed validation. */
       mutate(sources) {
         sources.openApi += 'x-unreviewed-release-change: true\n';
@@ -1207,7 +1209,7 @@ for (const bump of ['patch', 'minor', 'major']) {
     const rootLock = await readFixtureJson(root, 'package-lock.json');
     const backendPackage = await readFixtureJson(root, 'backend/package.json');
     const backendLock = await readFixtureJson(root, 'backend/package-lock.json');
-    const openApi = await readFile(path.join(root, 'docs/openapi/v1.yaml'), 'utf8');
+    const openApi = await readFile(path.join(root, 'backend/openapi/v1.yaml'), 'utf8');
     const generatedApi = await readFile(path.join(root, 'packages/api-client/src/generated/v1.ts'), 'utf8');
 
     assert.equal(manifest.server.version, expectedVersion);
@@ -1239,7 +1241,8 @@ test('native version-code allocation advances into permanent odd phone and even 
   assert.throws(() => getNextNativeVersionCodes(validManifest, -1), /minimum|floor|nonnegative/i);
 });
 
-test('combined native/server candidates reconstruct exactly and preserve burned code floors', async (t) => {
+for (const openApiPath of ['backend/openapi/v1.yaml', 'docs/openapi/v1.yaml']) {
+test(`combined native/server candidates preserve exact bytes and code floors with ${openApiPath}`, async (t) => {
   const root = await createReleaseFixture(t);
   const originals = Object.fromEntries(await Promise.all(releaseFixturePaths.map(async (file) => [file, await readFile(path.join(root, file), 'utf8')])));
   const source = 'a'.repeat(40), candidate = 'b'.repeat(40);
@@ -1247,7 +1250,13 @@ test('combined native/server candidates reconstruct exactly and preserve burned 
   await prepareNativeRelease({ root, bump: 'patch', minimumCode: 30 });
   await prepareServerRelease({ root, bump: 'patch', latestTag: `v${before.server.version}` });
   const prepared = await readFixtureJson(root, 'shared/release.json');
-  const paths = [...new Set([...PREPARED_RELEASE_MIRROR_PATHS, ...Object.values(NATIVE_RELEASE_FILE_PATHS)])].sort();
+  if (openApiPath !== 'backend/openapi/v1.yaml') {
+    originals[openApiPath] = originals['backend/openapi/v1.yaml'];
+    await mkdir(path.join(root, 'docs/openapi'), { recursive: true });
+    await rename(path.join(root, 'backend/openapi/v1.yaml'), path.join(root, openApiPath));
+  }
+  const paths = [...new Set([...PREPARED_RELEASE_MIRROR_PATHS, ...Object.values(NATIVE_RELEASE_FILE_PATHS)])]
+    .map(file => file === 'backend/openapi/v1.yaml' ? openApiPath : file).sort();
   const candidateBytes = Object.fromEntries(await Promise.all(paths.map(async (file) => [file, await readFile(path.join(root, file), 'utf8')])));
   /** Model protected ancestry while retaining exact real fixture file bytes. */
   const git = (_root, args) => {
@@ -1264,6 +1273,7 @@ test('combined native/server candidates reconstruct exactly and preserve burned 
   candidateBytes['wear/app/build.gradle.kts'] += '\n// unreviewed source change\n';
   await assert.rejects(verifyPreparedReleaseCandidate(options), /canonical transformation/);
 });
+}
 
 test('published native tag verification fetches an exact remote tag missing locally', () => {
   const expectedTag = 'native-v0.2.6';
@@ -1592,7 +1602,7 @@ test('native release preparation synchronizes paired identities and every checke
   );
   const wearGradle = await readFile(path.join(root, 'wear/app/build.gradle.kts'), 'utf8');
   const generatedGradle = await readFile(generatedGradlePath, 'utf8');
-  const openApi = await readFile(path.join(root, 'docs/openapi/v1.yaml'), 'utf8');
+  const openApi = await readFile(path.join(root, 'backend/openapi/v1.yaml'), 'utf8');
   const generatedApi = await readFile(path.join(root, 'packages/api-client/src/generated/v1.ts'), 'utf8');
 
   assert.equal(manifest.android.mobile.version_name, expectedVersion);

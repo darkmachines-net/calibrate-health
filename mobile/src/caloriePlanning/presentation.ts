@@ -1,3 +1,5 @@
+/** @file presentation: Maps calorie-policy reasons to actionable presentation, retaining a safe default for unknown reasons. */
+
 import type { CaloriePlanReasonCode, CaloriePlanStatus } from '@calibrate/shared';
 
 export type CaloriePlanPresentation = {
@@ -126,6 +128,7 @@ const PRESENTATIONS: Record<CaloriePlanReasonCode, CaloriePlanPresentation> = {
     SERVER_POLICY_UNAVAILABLE: DEFAULT_PRESENTATION
 };
 
+/** Maps calorie-policy reasons to actionable presentation, retaining a safe default for unknown reasons. */
 export function getCaloriePlanPresentation(
     reasonCode: CaloriePlanReasonCode | null | undefined,
     status?: CaloriePlanStatus | 'unknown'
@@ -142,6 +145,7 @@ export function getCaloriePlanPresentation(
     return DEFAULT_PRESENTATION;
 }
 
+/** Returns the unavailable-plan explanation associated with the policy reason. */
 export function getPlanOptionUnavailableCopy(reasonCode: CaloriePlanReasonCode | null | undefined): string {
     return getCaloriePlanPresentation(reasonCode).message;
 }

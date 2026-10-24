@@ -1,3 +1,5 @@
+/** @file security: Build narrow abuse controls without throttling normal food, weight, or sync traffic. */
+
 import type { RequestHandler } from 'express';
 import { rateLimit, type RateLimitRequestHandler } from 'express-rate-limit';
 import { isOriginTrustedByPolicy } from '../config/cors';

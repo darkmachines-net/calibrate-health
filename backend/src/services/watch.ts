@@ -1,3 +1,5 @@
+/** @file Restricted watch snapshots and idempotent calorie/weight actions bound to account-local dates. */
+
 import crypto from 'node:crypto';
 import { Prisma, type FoodLog } from '@prisma/client';
 import prisma from '../config/database';
@@ -21,6 +23,7 @@ import { calculateCanonicalGoalProgress } from '../../../shared/goalProgress';
 import { isPolicyWeight, localDateInTimeZone } from '../../../shared/caloriePolicy';
 
 export class WatchTimezoneInvalidError extends Error {
+  /** Reject Watch data calculations when no valid account timezone can establish local-day boundaries. */
   constructor() {
     super('A valid account timezone is required for Watch data.');
     this.name = 'WatchTimezoneInvalidError';
@@ -104,6 +107,7 @@ const foodDayRevision = (day: {
   });
 };
 
+/** Validate the restricted Watch action payload against account-local dates and return structured parse failures. */
 export function parseWatchMutation(body: unknown, options: {
   timezone: string;
   now?: Date;
@@ -323,6 +327,7 @@ async function createFoodLog(options: {
   return { status: 200, body: { type: 'food.create', food_log: serializeWatchFoodLog(log) } };
 }
 
+/** Apply a session-attributed Watch action through the account idempotency transaction and revision checks. */
 export async function executeWatchMutation(options: {
   userId: number;
   mobileAuthSessionId: number;
@@ -568,6 +573,7 @@ type WatchSnapshotOptions = {
   now?: Date;
 };
 
+/** Read a consistent authoritative Watch snapshot, retrying the whole transaction on bounded serialization conflicts. */
 export async function buildWatchSnapshot(options: WatchSnapshotOptions) {
   // Concurrent authoritative reads also update the account guard; retry the whole consistent read.
   const maxAttempts = 3;
@@ -735,4 +741,5 @@ async function readWatchSnapshot(options: WatchSnapshotOptions) {
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
+/** Encode a snapshot revision as the weak ETag used for conditional Watch refreshes. */
 export const watchSnapshotEtag = (revision: string): string => `W/"watch-${revision}"`;

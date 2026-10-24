@@ -1,3 +1,5 @@
+/** @file Regression coverage for Goal Pace Sheet: cancel never writes and a failed save retains draft and identical operation for retry. */
+
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

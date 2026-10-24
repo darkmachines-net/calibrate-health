@@ -1,3 +1,5 @@
+/** @file api Error Response: Add the current request's stable error envelope without mutating route/idempotency bodies. */
+
 import type { ErrorRequestHandler, RequestHandler, Response } from 'express';
 import { safeErrorType, safeRequestId } from '../observability';
 

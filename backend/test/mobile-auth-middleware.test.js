@@ -1,3 +1,5 @@
+/** @file Regression coverage for mobile auth middleware: mobile auth middleware lets expired-bearer logout revoke by refresh token. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

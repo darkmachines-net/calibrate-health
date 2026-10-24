@@ -1,3 +1,5 @@
+/** @file Shared About you, Activity, and Your plan step forms with canonical measurement preservation. */
+
 import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { HEIGHT_UNITS, WEIGHT_UNITS } from '@calibrate/shared';
@@ -32,6 +34,7 @@ const KCAL_PER_POUND = 3500;
 const KCAL_PER_KILOGRAM = 7700;
 const DAYS_PER_WEEK = 7;
 
+/** Collects profile measurements, birth date, sex, and timezone with canonical quantity preservation. */
 export function AboutYouStep({ controller, controls }: StepProps) {
     const { form, setForm, errors, clearFieldError } = controller;
     const { fontScale } = useWindowDimensions();
@@ -117,6 +120,7 @@ export function AboutYouStep({ controller, controls }: StepProps) {
     );
 }
 
+/** Renders activity-level selection and clears its field error when the choice changes. */
 export function ActivityStep({ controller, controls }: StepProps) {
     return <ActivityLevelSelector value={controller.form.activityLevel}
         errorText={controller.errors.activityLevel} controlRef={controls.activityLevel}
@@ -126,6 +130,7 @@ export function ActivityStep({ controller, controls }: StepProps) {
         }} />;
 }
 
+/** Collects goal direction, target weight, and an available pace with live calorie-preview state. */
 export function YourPlanStep({ controller, controls }: StepProps) {
     const { form, setForm, errors, planQuery, clearFieldError } = controller;
     const previewState = useAsyncResourceState(planQuery, isNeverEmpty);
@@ -202,6 +207,7 @@ export function YourPlanStep({ controller, controls }: StepProps) {
     );
 }
 
+/** Displays the current onboarding target preview and explains pending or unavailable calculations. */
 export function OnboardingTargetSummary({ controller, compact }: { controller: OnboardingController; compact: boolean }) {
     const { colors } = useAppTheme();
     let explanation = 'Choose your goal and an available pace to see your target.';

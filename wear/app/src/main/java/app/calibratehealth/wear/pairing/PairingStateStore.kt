@@ -1,3 +1,5 @@
+/** Durable watch pairing transitions, recovery state, and observable pairing status. */
+
 package app.calibratehealth.wear.pairing
 
 import android.content.Context
@@ -327,10 +329,12 @@ internal class PairingStateStore(context: Context) {
 object PairingStateEvents {
     private val listeners = CopyOnWriteArraySet<() -> Unit>()
 
+    /** Subscribes a listener to pairing-state changes. */
     fun addListener(listener: () -> Unit) {
         listeners += listener
     }
 
+    /** Removes a previously registered pairing-state listener. */
     fun removeListener(listener: () -> Unit) {
         listeners -= listener
     }

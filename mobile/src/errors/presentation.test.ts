@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: privacy-safe error presentation. */
+
 import { ApiError } from '@calibrate/api-client';
 import { getErrorPresentation, getSafeActionErrorMessage } from './presentation';
 

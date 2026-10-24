@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes food days: food-days route: rejects unauthenticated requests via router.use middleware. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

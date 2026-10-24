@@ -1,3 +1,5 @@
+/** @file Date Navigation Header: Anchors compact day navigation between the app navbar and scrolling route content. */
+
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

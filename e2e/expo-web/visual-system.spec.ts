@@ -1,3 +1,5 @@
+/** @file Regression coverage for visual system: public server-rendered pages adopt the selected appearance after hydration. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
@@ -122,7 +124,7 @@ async function enlargeLeafText(page: Page) {
   });
 }
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-05');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-05');
 
 function shouldCaptureEvidence(testInfo: TestInfo): boolean {
   return process.env.CALIBRATE_CAPTURE_EVIDENCE === '1'

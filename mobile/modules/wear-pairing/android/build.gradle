@@ -1,3 +1,4 @@
+/** Android library build for the Expo Wear pairing and authenticated phone relay module. */
 plugins {
   id 'com.android.library'
   id 'expo-module-gradle-plugin'

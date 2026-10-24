@@ -1,3 +1,5 @@
+/** @file Regression coverage for replay Calibration Evidence: calibration evidence replay invalidation. */
+
 import { OFFLINE_MUTATION_OPERATIONS } from './operations';
 import { invalidateQueriesAfterOfflineReplay } from './replayInvalidation';
 
