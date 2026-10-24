@@ -1,3 +1,5 @@
+/** @file height: Resolve a height update into a millimeter value for storage. */
+
 export type HeightResolution = {
   provided: boolean;
   value: number | null;

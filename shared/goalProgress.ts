@@ -1,3 +1,5 @@
+/** @file Signed goal direction, steady-rate projection, and weight-progress calculations. */
+
 export type GoalProgressMode = 'lose' | 'gain' | 'maintain';
 
 export type CanonicalGoal = {

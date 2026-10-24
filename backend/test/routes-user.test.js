@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes user: user route: rejects unauthenticated requests via router.use middleware. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

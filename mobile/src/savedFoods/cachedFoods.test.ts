@@ -1,3 +1,5 @@
+/** @file Regression coverage for cached Foods: uses every cached page and the latest duplicate without overwriting the complete query. */
+
 import { QueryClient } from '@tanstack/react-query';
 import type { MyFoodSummary } from '@calibrate/api-client';
 import { getCachedSavedFoods } from './cachedFoods';

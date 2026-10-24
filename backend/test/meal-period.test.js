@@ -1,3 +1,5 @@
+/** @file Regression coverage for meal period: mealPeriod: parseMealPeriod accepts canonical enum identifiers. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

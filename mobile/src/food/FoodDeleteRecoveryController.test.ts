@@ -1,3 +1,5 @@
+/** @file Regression coverage for Food Delete Recovery Controller: FoodDeleteRecoveryController. */
+
 import { FoodDeleteRecoveryController } from './FoodDeleteRecoveryController';
 import { getFoodDeleteHiddenIds, type FoodDeleteTicket } from './foodDeleteRecovery';
 

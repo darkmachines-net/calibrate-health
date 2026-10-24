@@ -1,3 +1,5 @@
+/** @file Browser and native authentication routes, credential recovery, account sessions, and watch pairing exchange. */
+
 import { verifyLocalPassword } from '../services/credentialVerification';
 import express from 'express';
 import { BrowserLoginRejected } from '../utils/browserLoginCredentials';

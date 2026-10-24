@@ -1,3 +1,5 @@
+/** @file Regression coverage for Settings Home: SettingsHome. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { HEIGHT_UNITS, WEIGHT_UNITS } from '@calibrate/shared';
 import { ASYNC_RESOURCE_STATES } from '../asyncState/resolveAsyncState';

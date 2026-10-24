@@ -1,3 +1,5 @@
+/** @file Regression coverage for pending Pause: reconstructs a queued start over an inactive or unavailable server response. */
+
 import type { FoodTrackingPause } from '@calibrate/api-client';
 import type { QueuedMutation } from '../offline/queuedMutation';
 import { applyQueuedPauseIntent } from './pendingPause';

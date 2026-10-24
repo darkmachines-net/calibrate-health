@@ -1,3 +1,5 @@
+/** @file Regression coverage for Account Sessions Panel: AccountSessionsPanel. */
+
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import type { AccountSessionSummary } from '@calibrate/api-client';

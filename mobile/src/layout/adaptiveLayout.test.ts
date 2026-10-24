@@ -1,3 +1,5 @@
+/** @file Regression coverage for adaptive Layout: adaptive layout. */
+
 import {
     LARGE_TEXT_COMPACT_LAYOUT_SCALE,
     NAVIGATION_RAIL_BREAKPOINT,

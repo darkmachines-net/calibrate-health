@@ -1,3 +1,5 @@
+/** @file Authenticated food logging, provider search, snapshot edits, and copy operations. */
+
 import express from 'express';
 import { observeFoodActivityPlan } from '../services/dailyCaloriePlans';
 import { lockCaloriePlanningInputs } from '../services/caloriePlanningLock';

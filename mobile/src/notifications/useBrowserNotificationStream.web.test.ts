@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Browser Notification Stream web: browser notification stream. */
+
 import { NOTIFICATION_REALTIME_EVENT_NAME, NOTIFICATION_REALTIME_REASONS } from '../../../shared/notificationRealtime';
 import {
     connectBrowserNotificationStream,

@@ -1,3 +1,5 @@
+/** Requests system Tile and complication updates after relevant cache transitions. */
+
 package app.calibratehealth.wear.tile
 
 import android.content.ComponentName
@@ -8,6 +10,7 @@ import app.calibratehealth.wear.complication.CalorieComplicationDataSourceServic
 
 /** Invalidates cache-only glance surfaces after a local cache or outbox state transition. */
 object CalibrateTileUpdate {
+    /** Requests both Tile and complication refreshes and reports whether their system requests succeeded. */
     fun request(context: Context): Boolean {
         val appContext = context.applicationContext
         val tileRequested = runCatching {

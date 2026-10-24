@@ -1,3 +1,5 @@
+/** @file Expo prebuild plugin restoring the reviewed Gradle wrapper and dependency verification inputs. */
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { withFinalizedMod } = require('@expo/config-plugins');
@@ -7,6 +9,7 @@ const {
   restorePhoneGradleDependencyState
 } = require('./nativeReleaseGradleWrapper');
 
+/** Pins the generated Android wrapper and restores reviewed dependency verification state after prebuild. */
 const withPinnedGradleWrapper = (config) => withFinalizedMod(config, ['android', async (modConfig) => {
   const repositoryRoot = path.dirname(modConfig.modRequest.projectRoot);
   const wrapperProperties = path.join(

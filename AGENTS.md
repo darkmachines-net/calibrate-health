@@ -213,7 +213,7 @@ Food provider behavior:
   login/register shell work.
 - Use `mobile/src/components/AppCard.tsx` and existing screen/card primitives
   only for intentional containment. Ordinary content uses `AppSection`, navigation uses
-  `AppActionRow`, and consequential notices use `AppNotice`. Follow `docs/visual-design.md`
+  `AppActionRow`, and consequential notices use `AppNotice`. Follow `mobile/src/components/README.md`
   for page widths, section rhythm, action hierarchy, and visual acceptance.
 - Keep generic primitives under `mobile/src/components/`; put feature-specific
   behavior in the corresponding `mobile/src/` feature folder.
@@ -337,8 +337,8 @@ UI code style:
   After tool/credential/Play onboarding and committing unused version codes, build followed by submit is sufficient
   for the local internal-track release. Build owns prebuild/signing/verification; submit owns upload and readback.
   Install and OTA publication are optional separate operations, not prerequisites to submit.
-  Follow `docs/mobile-release.md` for local commands, `docs/android-internal-testing.md` for onboarding, and
-  `docs/native-store-release.md` for protected releases; the server/web version stays unchanged. A later protected
+  Follow `scripts/README.md#local-native-workflow` for local commands, `scripts/README.md#play-onboarding` for onboarding, and
+  `.github/workflows/README.md#native-store-releases` for protected releases; the server/web version stays unchanged. A later protected
   release requires a fresh higher pair and the existing GitHub attestation path.
 - Expo uses fingerprint runtimes consistently for managed native builds and source exports, including repository-specific
   inputs outside Expo discovery. Verify the runtime embedded in the phone APK/AAB and bind OTA artifact provenance to the
@@ -381,7 +381,7 @@ UI code style:
 - Use **Publish prepared release** with the durable release ID to resume or explicitly abandon an integrated release.
   Before merge, retry failed original candidate jobs while refs remain unchanged. Historical server recovery still accepts
   the recorded release commit and branch. **Publish Expo OTA Update** takes an exact protected source without native_build_ref.
-  **Build Release Image** remains image-only. Follow docs/native-store-release.md for configuration and rollout.
+  **Build Release Image** remains image-only. Follow .github/workflows/README.md#native-store-releases for configuration and rollout.
 
 ## Git And PR Workflow
 
@@ -403,9 +403,35 @@ UI code style:
 
 ## Documentation Style
 
+- Do not create or check in a central `docs/` tree, generated prose, change reports,
+  point-in-time audits, release worksheets, or screenshot evidence archives. Put
+  historical results and review evidence in the PR/issue or ignored local artifacts.
+- Document current behavior at its owner: implementation rationale in comments and
+  module architecture, invariants and supported commands in a module-scope `README.md`.
+  Keep each fact in one owning module; link to it elsewhere instead of duplicating it.
+  Group related implementation into a cohesive subdirectory when that clarifies ownership.
+- When adding or updating an authored code file, add or update its file-level
+  documentation comment to explain its responsibility and important boundaries.
+- When adding or updating a public/exported function or method, add or update its
+  documentation comment with the behavioral contract, meaningful inputs/results,
+  side effects, failure semantics and constraints as applicable. Do not merely
+  restate the name or repeat TypeScript types. Document non-obvious private helpers too.
+- Authored JavaScript/TypeScript uses JSDoc `@file` overviews and JSDoc on exported
+  functions/public methods; Kotlin uses KDoc. Keep generated/vendor output excluded
+  and update its generator or owning module documentation instead.
+- Run `npm run lint:eslint`, `npm run lint:kotlin`, and `npm run test:lint` for
+  documentation enforcement. Kotlin lint requires Java 17 or newer; its isolated
+  [tool project](tools/kotlin-lint/README.md) does not require an Android SDK.
+  Use the existing JSDoc ESLint and Detekt rules; never add bespoke documentation scanners,
+  disable the rules to avoid writing comments, or use empty boilerplate comments.
+- Executable contracts/fixtures (OpenAPI, schemas, reviewed test snapshots) belong
+  with their consumers and are distinct from generated documentation.
+  Do not change already-applied SQL migration bytes to add comments; document their
+  current constraints beside the schema or in the Prisma module README instead.
+
 - Keep comments concise and useful: explain intent, behavior, or rationale that
   is not obvious from the code.
 - Do not add broad narrative comments or duplicate what a function name already
   says.
-- Keep agent guidance and README/docs in sync when workflow commands change.
+- Keep agent guidance, comments and module READMEs in sync when workflow commands change.
 - Prefer concrete commands and exact files over abstract cleanup advice.

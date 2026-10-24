@@ -1,9 +1,8 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "profile": "single-user-pre-release",
-  "protocolPath": "docs/release-acceptance.md",
+  "protocolPath": "quality/README.md",
   "releaseManifestPath": "shared/release.json",
-  "releaseNotesPath": "docs/releases/0.33.5-native-0.2.6-wear-0.2.6.md",
   "releaseScopes": [
     "server-web",
     "ota",

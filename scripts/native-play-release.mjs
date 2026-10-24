@@ -1,3 +1,5 @@
+/** @file Paired Android Play upload, recovery, and promotion with exact artifact provenance and track readback. */
+
 /** Verify paired Android artifacts and manage exact Play uploads, promotions, and historical receipts. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

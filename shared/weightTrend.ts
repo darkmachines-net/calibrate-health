@@ -1,3 +1,5 @@
+/** @file Deterministic weight-trend filtering, uncertainty propagation, freshness, and display evidence policy. */
+
 import { WEIGHT_TREND_PARAMETER_MANIFEST } from './weightTrendParameters';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -283,6 +285,7 @@ export function summarizeWeightTrendEvidence(points: WeightTrendPoint[]): Weight
     };
 }
 
+/** Grade the latest uninterrupted segment by observation count and elapsed days, not observation index spacing. */
 export function classifyWeightTrendEvidence(
     pointCount: number,
     spanDays: number,
@@ -295,10 +298,12 @@ export function classifyWeightTrendEvidence(
     return 'sufficient';
 }
 
+/** Expose the shared sufficient-evidence decision without reimplementing its thresholds in callers. */
 export function hasSufficientWeightTrendEvidence(evidence: WeightTrendEvidence): boolean {
     return evidence.status === 'sufficient';
 }
 
+/** Classify pace only after sufficient evidence, using the full weekly interval for direction or steady/uncertain status. */
 export function classifyWeightTrendRate(
     lower95KgPerWeek: number,
     upper95KgPerWeek: number,

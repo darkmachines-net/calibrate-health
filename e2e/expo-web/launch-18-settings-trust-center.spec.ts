@@ -1,9 +1,11 @@
+/** @file Regression coverage for launch 18 settings trust center: settings trust center preserves hierarchy, session control, reminder truth, and safe navigation. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, Route, TestInfo } from '@playwright/test';
 import { expect, expectApiFailure, hideTransientPwaNotices as suppressTransientPwaNotices, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-18');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-18');
 const CURRENT_SESSION_ID = 'browser_11111111-1111-4111-8111-111111111111';
 const REMOTE_SESSION_ID = 'mobile_22222222-2222-4222-8222-222222222222';
 const TRANSIENT_PWA_TITLES = new Set([

@@ -1,3 +1,5 @@
+/** @file use Browser Route Focus: Direct entries preserve browser focus so the skip link remains the first Tab target. Client-side route changes move focus to the new route heading. */
+
 import { useEffect, useRef } from 'react';
 
 const ROUTE_FOCUS_TITLE_ID = 'route-focus-title';

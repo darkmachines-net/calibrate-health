@@ -1,3 +1,5 @@
+/** @file Regression coverage for steps: onboarding sequence. */
+
 import { ONBOARDING_STEPS } from './steps';
 
 describe('onboarding sequence', () => {

@@ -1,3 +1,5 @@
+/** Room entity shapes, mutation states, and bounded retention policy for watch persistence. */
+
 package app.calibratehealth.wear.data.local
 
 import androidx.room.ColumnInfo

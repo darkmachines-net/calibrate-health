@@ -1,3 +1,5 @@
+/** @file Regression coverage for food copy: food copy parser accepts a full-day request and builds a canonical operation payload. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

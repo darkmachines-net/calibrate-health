@@ -1,3 +1,5 @@
+/** @file Regression coverage for mcp oauth migration: MCP OAuth migration separates clients, grants, and short-lived credentials. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

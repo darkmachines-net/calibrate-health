@@ -1,9 +1,11 @@
+/** @file Regression coverage for nutrition label scan: rejects invalid, oversized, vector, and excessive-pixel images. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const sharp = require('sharp');
 const { readFile } = require('node:fs/promises');
 const path = require('node:path');
-const { scanNutritionLabel, MAX_LABEL_IMAGE_BYTES } = require('../src/services/nutritionLabelScan');
+const { scanNutritionLabel, MAX_LABEL_IMAGE_BYTES } = require('../src/services/nutritionLabels/scan');
 
 test('rejects invalid, oversized, vector, and excessive-pixel images', async () => {
   await assert.rejects(scanNutritionLabel(Buffer.from('not an image')), { statusCode: 400 });

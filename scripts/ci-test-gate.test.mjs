@@ -1,3 +1,5 @@
+/** @file Guards required-test aggregation against failed classification, skipped required jobs, and workflow drift. */
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';

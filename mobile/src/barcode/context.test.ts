@@ -1,3 +1,5 @@
+/** @file Regression coverage for context: barcode return context. */
+
 import { MEAL_PERIODS } from '@calibrate/shared';
 import {
     BARCODE_RESUME_STEPS,

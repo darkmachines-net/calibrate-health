@@ -1,3 +1,5 @@
+/** @file Responsive browser navigation rail dimensions and shared component props. */
+
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 
 // Fits a full Progress label beneath the icon, with compact side gutters.

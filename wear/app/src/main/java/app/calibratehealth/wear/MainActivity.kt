@@ -1,3 +1,5 @@
+/** Watch activity lifecycle, pairing observation, cached home state, and user action wiring. */
+
 package app.calibratehealth.wear
 
 import android.Manifest

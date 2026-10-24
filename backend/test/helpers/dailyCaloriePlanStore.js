@@ -1,4 +1,7 @@
+/** @file Regression coverage for daily Calorie Plan Store. */
+
 // Small stateful delegate for tests that use in-memory transaction doubles.
+/** Create an isolated mutable daily-plan delegate for transaction doubles, including account/date uniqueness behavior. */
 module.exports = function dailyCaloriePlanStore() {
   const rows = [];
   const find = where => rows.find(row => where.id !== undefined ? row.id === where.id :

@@ -1,3 +1,5 @@
+/** @file Regression coverage for notification delivery: native push delivery does not read or send stored tokens while operator mode is disabled. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

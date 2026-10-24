@@ -1,3 +1,5 @@
+/** Reads a consistent account-scoped Tile snapshot from Room under the account transition lock. */
+
 package app.calibratehealth.wear.tile
 
 import app.calibratehealth.wear.data.local.CalibrateWearDatabase
@@ -11,6 +13,7 @@ class CalibrateTileCacheReader(
     private val tokenStore: SecureTokenStore,
     private val accountState: AccountStateCriticalSection = AccountStateCriticalSection.Shared
 ) {
+    /** Reads an account-consistent cached Tile snapshot under the shared critical section without network access. */
     suspend fun latest(): CalibrateTileSnapshot? = accountState.withLock {
         // Keep snapshot and sync metadata from straddling an account replacement/clear.
         val session = runCatching { tokenStore.read() }.getOrNull() ?: return@withLock null

@@ -1,3 +1,5 @@
+/** @file Regression coverage for my Food Form Validation: saved-food form error association. */
+
 import {
     getRecipeNameError,
     getSavedFoodNameError,

@@ -1,3 +1,5 @@
+/** @file Account settings composition and resource states with accessible navigation and recovery. */
+
 import { Image, StyleSheet, View } from 'react-native';
 import { HEIGHT_UNITS, WEIGHT_UNITS, type HeightUnit, type WeightUnit } from '@calibrate/shared';
 import { AppText } from '../components/AppText';
@@ -67,6 +69,7 @@ function getAvatarLabel(email?: string | null): string {
     return email?.trim().charAt(0).toUpperCase() || 'C';
 }
 
+/** Shows meaningful settings resource failures while suppressing browser stale-cache notices. */
 export function shouldShowSettingsResourceStatus(state: AsyncResourceState, isWeb: boolean): boolean {
     if (isWeb && state.kind === ASYNC_RESOURCE_STATES.STALE) return false;
     return state.kind !== ASYNC_RESOURCE_STATES.CONTENT && state.kind !== ASYNC_RESOURCE_STATES.EMPTY;
@@ -106,6 +109,7 @@ function SettingsAccountSummary({
     );
 }
 
+/** Renders the settings overview with profile, units, security, connections, and offline summaries. */
 export function SettingsHome({
     email,
     profileImageUrl,

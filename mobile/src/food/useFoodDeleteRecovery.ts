@@ -1,3 +1,5 @@
+/** @file use Food Delete Recovery: Route-bound food deletion with a six-second Undo window and durable offline fallback. */
+
 import type { OutboxDispatch } from '../offline/mutationDispatch';
 import { findFailedFood } from '../offline/failedCreation';
 import { localTarget } from '../offline/trackingProjection';

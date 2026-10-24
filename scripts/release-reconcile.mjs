@@ -1,4 +1,4 @@
-/** Reconcile interrupted remote calls using explicit operator evidence and exact provider identities. */
+/** @file Reconcile interrupted remote calls using explicit operator evidence and exact provider identities. */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ReleaseRecordStore, latestCheckpoint } from './release-record.mjs';

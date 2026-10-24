@@ -1,3 +1,5 @@
+/** @file Regression coverage for firebase migration: inventory accounts for every row, holds both sides of collisions and exposes no credentials. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');

@@ -1,3 +1,5 @@
+/** Wear project membership and centralized plugin/dependency repositories. */
+
 pluginManagement {
     repositories {
         google()

@@ -1,3 +1,5 @@
+/** @file account Cleanup: Explicit deletion cleanup opens the account namespace without replaying it. */
+
 import { IndexedDbOutbox, openBrowserOutboxDatabase } from './indexedDbOutbox.web';
 import { createOutboxNamespace } from './queuedMutation';
 

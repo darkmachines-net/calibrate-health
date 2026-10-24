@@ -1,3 +1,5 @@
+/** @file Explicit non-sensitive Prisma selection and serialization for public user responses. */
+
 import type { ActivityLevel, HeightUnit, Prisma, Sex, WeightUnit } from '@prisma/client';
 import { isSupportedLanguage, SUPPORTED_LANGUAGES, type SupportedLanguage } from './language';
 import { buildBase64DataUrl } from './profileImage';

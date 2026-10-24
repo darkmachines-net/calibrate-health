@@ -1,3 +1,5 @@
+/** @file Account/security-version binding for guarded browser session persistence. */
+
 import type { Request } from 'express';
 import { isAuthenticatedUser } from '../middleware/authenticatedUser';
 
@@ -11,9 +13,11 @@ const verifiedPrincipals = new WeakMap<object, VerifiedCredential>();
 const loginSessions = new WeakMap<object, BrowserLoginSave>();
 
 export class BrowserLoginRejected extends Error {
+  /** Represent a rejected browser credential check with a generic non-enumerating message. */
   constructor() { super('Invalid email or password'); }
 }
 
+/** Bind a verified principal object to its account/security version for the guarded session-save path. */
 export function markVerifiedBrowserLogin(principal: object, userId: number, version: number): void {
   if (!Number.isSafeInteger(userId) || userId <= 0 || !Number.isSafeInteger(version) || version < 0) {
     throw new BrowserLoginRejected();
@@ -29,6 +33,7 @@ function bindVerifiedBrowserSession(principal: object, session: object): void {
   loginSessions.set(session, { ...credential, state: 'new', queue: Promise.resolve() });
 }
 
+/** Retrieve the in-memory save guard for this exact session object, never a caller-supplied account claim. */
 export const browserLoginSave = (session: object): BrowserLoginSave | undefined => loginSessions.get(session);
 /** Preserve Passport's integer principal while binding only freshly verified logins. */
 export function serializeBrowserLoginUser(req: Request, user: Express.User, done: (error: Error | null, id?: number) => void): void {

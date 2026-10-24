@@ -1,3 +1,5 @@
+/** @file Typed Expo native-module boundary for Wear discovery, pairing messages, and phone/watch coordination. */
+
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
 export type WearNode = {

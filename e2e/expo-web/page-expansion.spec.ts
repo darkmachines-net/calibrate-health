@@ -1,3 +1,5 @@
+/** @file Regression coverage for page expansion: Food log expands below the date and restores its source, scroll and focus. */
+
 import { expect, FROZEN_NOW, hideTransientPwaNotices, test } from './fixtures';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';
 import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';

@@ -1,8 +1,11 @@
+/** @file Loading State: Displays a themed activity indicator with a readable loading label. */
+
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { spacing, useAppTheme } from '../theme';
 import { AppText } from './AppText';
 
+/** Displays a themed activity indicator with a readable loading label. */
 export const LoadingState: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => {
     const { colors } = useAppTheme();
 

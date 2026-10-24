@@ -1,3 +1,5 @@
+/** @file Cursor-paginated account synchronization changes for offline clients. */
+
 import express from 'express';
 import prisma from '../config/database';
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';
@@ -6,6 +8,7 @@ const router = express.Router();
 const DEFAULT_PAGE_SIZE = 200;
 const MAX_PAGE_SIZE = 500;
 
+/** Return an ordered, resumable change page with JSON-safe string cursors. */
 router.use(requireAuthenticatedUser);
 
 function parseCursor(value: unknown): bigint | null {

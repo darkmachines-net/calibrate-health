@@ -1,3 +1,5 @@
+/** Cached reminder state and duplicate-suppressing local delivery when the trusted phone is unreachable. */
+
 package app.calibratehealth.wear.notifications
 
 import android.Manifest
@@ -24,6 +26,7 @@ enum class WearReminderType(val wireValue: String) {
     WEIGHT("weight");
 
     companion object {
+        /** Maps an allowlisted wire reminder type, returning null for unknown values. */
         fun fromWire(value: String): WearReminderType? = entries.firstOrNull { it.wireValue == value }
     }
 }
@@ -56,6 +59,7 @@ sealed interface WearReminderDecision {
 
 /** Pure policy prevents a local watch alert from competing with a reachable phone reminder. */
 object WearReminderPolicy {
+    /** Decides whether to cancel, suppress, or post current reminders based on phone reachability, permission, and prior delivery. */
     fun decide(
         reminders: List<WearReminder>,
         phoneReachable: Boolean,
@@ -80,6 +84,7 @@ object WearReminderPolicy {
 class WearReminderStateStore(context: Context) {
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
+    /** Synchronously replaces the cached allowlisted reminder rows and fails when persistence fails. */
     fun replace(reminders: List<WearReminder>) {
         val encoded = JSONArray().apply {
             reminders.forEach { reminder ->
@@ -96,6 +101,7 @@ class WearReminderStateStore(context: Context) {
         }
     }
 
+    /** Reads valid cached reminders, discarding malformed entries or an unreadable payload. */
     fun read(): List<WearReminder> {
         val array = runCatching { JSONArray(preferences.getString(REMINDERS, "[]")) }.getOrElse { return emptyList() }
         return buildList {
@@ -112,14 +118,17 @@ class WearReminderStateStore(context: Context) {
         }
     }
 
+    /** Reads the last delivered reminder fingerprint for duplicate suppression. */
     fun lastNotifiedFingerprint(): String? = preferences.getString(LAST_NOTIFIED, null)
 
+    /** Synchronously records successful reminder delivery and fails when persistence fails. */
     fun markNotified(fingerprint: String) {
         check(preferences.edit().putString(LAST_NOTIFIED, fingerprint).commit()) {
             "Unable to persist Wear reminder delivery state."
         }
     }
 
+    /** Removes retained reminder delivery identity so future valid reminders can be evaluated afresh. */
     fun clearDeliveryState() {
         check(preferences.edit().remove(LAST_NOTIFIED).commit()) {
             "Unable to clear Wear reminder delivery state."
@@ -140,6 +149,7 @@ class WearReminderNotifier(private val context: Context) {
     private val state = WearReminderStateStore(appContext)
     private val notificationManager = appContext.getSystemService(NotificationManager::class.java)
 
+    /** Evaluates cached reminders against permission and trusted-phone reachability, suppressing delivery on uncertainty. */
     fun evaluate() {
         val permissionGranted = Build.VERSION.SDK_INT < 33 ||
             appContext.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
@@ -167,6 +177,7 @@ class WearReminderNotifier(private val context: Context) {
         }
     }
 
+    /** Cancels the local reminder and clears cached reminder and delivery state. */
     fun clear() {
         notificationManager.cancel(NOTIFICATION_ID)
         state.replace(emptyList())

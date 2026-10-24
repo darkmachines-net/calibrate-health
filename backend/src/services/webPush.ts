@@ -1,3 +1,5 @@
+/** @file VAPID configuration, browser push subscription lifecycle, and bounded delivery handling. */
+
 import webpush, { type PushSubscription } from 'web-push';
 
 type WebPushConfig = {

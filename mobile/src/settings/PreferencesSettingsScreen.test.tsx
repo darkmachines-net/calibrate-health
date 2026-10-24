@@ -1,3 +1,5 @@
+/** @file Regression coverage for Preferences Settings Screen: PreferencesSettingsScreen draft refresh. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

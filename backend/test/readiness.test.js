@@ -1,3 +1,5 @@
+/** @file Regression coverage for readiness: database readiness reports success without exposing probe results. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { checkDatabaseReadiness } = require('../src/services/readiness');

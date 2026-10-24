@@ -1,3 +1,5 @@
+/** Phone-side storage and dispatch of bounded watch coordination messages. */
+
 package app.calibratehealth.wearpairing
 
 import android.content.Context

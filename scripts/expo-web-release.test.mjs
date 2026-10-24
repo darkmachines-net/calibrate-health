@@ -1,3 +1,5 @@
+/** @file Regression coverage for expo web release: accepts a clean Expo web static artifact. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

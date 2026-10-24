@@ -1,3 +1,5 @@
+/** @file use Native Push Registration: Configure foreground behavior consistently before registering or listening for native pushes. */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -148,6 +150,7 @@ export function NativePushRegistrationProvider({ children }: { children: React.R
     return React.createElement(NativePushRegistrationContext.Provider, { value }, children);
 }
 
+/** Reads native push registration state and throws outside its provider. */
 export function useNativePushRegistration(): NativePushRegistrationContextValue {
     const context = useContext(NativePushRegistrationContext);
     if (!context) {

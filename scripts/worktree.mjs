@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Creates an unused Greek-named Git worktree with relative Git metadata paths. */
+
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";

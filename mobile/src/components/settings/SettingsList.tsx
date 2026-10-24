@@ -1,3 +1,5 @@
+/** @file Settings List: Groups related settings under a level-two heading without adding card containment. */
+
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -25,6 +27,7 @@ type SettingsRowProps = {
     onPress: () => void;
 };
 
+/** Groups related settings under a level-two heading without adding card containment. */
 export const SettingsSection: React.FC<SettingsSectionProps> = ({
     title,
     description,
@@ -47,6 +50,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
     );
 };
 
+/** Renders one accessible settings action with optional supporting value and danger treatment. */
 export const SettingsRow: React.FC<SettingsRowProps> = ({
     icon,
     label,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for async state: a failed Today resource never becomes an empty state and Retry is resource-scoped. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
@@ -28,7 +30,7 @@ async function captureLaunchEvidence(page: Page, testInfo: TestInfo, state: stri
       : null;
   if (!viewport) return;
 
-  const evidenceDir = path.resolve('docs/screenshots/launch-02');
+  const evidenceDir = path.resolve('.codex-screenshots/launch-02');
   await mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
     path: path.join(evidenceDir, `${state}-${viewport}.png`),

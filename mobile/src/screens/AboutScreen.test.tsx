@@ -1,3 +1,5 @@
+/** @file Regression coverage for About Screen: AboutScreen. */
+
 import type { ReactNode } from 'react';
 import { render } from '@testing-library/react-native';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';

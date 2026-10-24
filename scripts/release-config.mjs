@@ -1,4 +1,5 @@
-/** Canonical release metadata, deterministic version transformations, and protected-source verification. */
+/** @file Canonical server/native release metadata, synchronized mirror updates, and exact candidate validation. */
+
 import { createHash } from 'node:crypto';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -33,12 +34,24 @@ const SERVER_RELEASE_FILE_PATHS = Object.freeze({
   rootLock: 'package-lock.json',
   backendPackage: 'backend/package.json',
   backendLock: 'backend/package-lock.json',
-  openApi: 'docs/openapi/v1.yaml',
+  openApi: 'backend/openapi/v1.yaml',
   generatedApi: 'packages/api-client/src/generated/v1.ts'
 });
 export const PREPARED_RELEASE_MIRROR_PATHS = Object.freeze(
   Object.values(SERVER_RELEASE_FILE_PATHS).sort()
 );
+// Immutable releases from before the module migration retain their original tree paths.
+const HISTORICAL_SERVER_RELEASE_FILE_PATHS = Object.freeze({
+  ...SERVER_RELEASE_FILE_PATHS,
+  openApi: 'docs/openapi/v1.yaml'
+});
+
+/** Reads the module-owned contract, with a read-only fallback for immutable historical release checkouts. */
+async function readReleaseOpenApi(root) {
+  const current = await readOptionalFile(path.join(root, SERVER_RELEASE_FILE_PATHS.openApi));
+  if (current !== null) return current;
+  return readFile(path.join(root, HISTORICAL_SERVER_RELEASE_FILE_PATHS.openApi), 'utf8');
+}
 const HISTORICAL_PREPARED_RELEASE_MANIFEST = {
   schema_version: 1,
   server: {
@@ -515,7 +528,7 @@ export async function checkRepository(
     readFile(path.join(root, 'wear', 'app', 'build.gradle.kts'), 'utf8'),
     readFile(path.join(root, 'mobile', 'modules', 'wear-pairing', 'android', 'build.gradle'), 'utf8'),
     readJson(path.join(root, 'shared', 'client-diagnostic-versions.json')),
-    readFile(path.join(root, 'docs', 'openapi', 'v1.yaml'), 'utf8'),
+    readReleaseOpenApi(root),
     readFile(path.join(root, 'packages', 'api-client', 'src', 'generated', 'v1.ts'), 'utf8')
   ]);
   errors.push(...validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource, validationOptions));
@@ -793,12 +806,17 @@ const validatePreparedReleaseCandidate = async ({
     changedPaths.push(match[1]);
   }
   changedPaths.sort();
+  const releasePaths = changedPaths.includes(HISTORICAL_SERVER_RELEASE_FILE_PATHS.openApi)
+    ? HISTORICAL_SERVER_RELEASE_FILE_PATHS
+    : SERVER_RELEASE_FILE_PATHS;
+  const serverMirrorPaths = Object.values(releasePaths).sort();
+  const nativeReleasePaths = { ...NATIVE_RELEASE_FILE_PATHS, openApi: releasePaths.openApi };
   const parentNative = readGitJson(root, parentCommit, 'shared/release.json', git).android.mobile.version_name;
   const candidateNative = readGitJson(root, checkoutCommit, 'shared/release.json', git).android.mobile.version_name;
   const nativeChanged = parentNative !== candidateNative;
   const mirrorPaths = nativeChanged
-    ? [...new Set([...PREPARED_RELEASE_MIRROR_PATHS, ...Object.values(NATIVE_RELEASE_FILE_PATHS)])].sort()
-    : PREPARED_RELEASE_MIRROR_PATHS;
+    ? [...new Set([...serverMirrorPaths, ...Object.values(nativeReleasePaths)])].sort()
+    : serverMirrorPaths;
   if (nativeChanged && candidateNative !== nextReleaseVersion(parentNative, 'patch')) {
     throw new Error('An automatic native candidate must advance exactly one patch version.');
   }
@@ -832,7 +850,7 @@ const validatePreparedReleaseCandidate = async ({
 
   const parentSources = {};
   const candidateSources = {};
-  const candidateFiles = nativeChanged ? { ...SERVER_RELEASE_FILE_PATHS, ...NATIVE_RELEASE_FILE_PATHS } : SERVER_RELEASE_FILE_PATHS;
+  const candidateFiles = nativeChanged ? { ...releasePaths, ...nativeReleasePaths } : releasePaths;
   for (const [key, relativePath] of Object.entries(candidateFiles)) {
     try {
       parentSources[key] = gitRaw(root, ['show', `${parentCommit}:${relativePath}`]);
@@ -1369,7 +1387,7 @@ async function prepareNativeVersion({ root, bump, minimumCode = 0, verifyNativeR
     pairingPackage: path.join(root, 'mobile', 'modules', 'wear-pairing', 'package.json'),
     pairingGradle: path.join(root, 'mobile', 'modules', 'wear-pairing', 'android', 'build.gradle'),
     wearGradle: path.join(root, 'wear', 'app', 'build.gradle.kts'),
-    openApi: path.join(root, 'docs', 'openapi', 'v1.yaml'),
+    openApi: path.join(root, 'backend', 'openapi', 'v1.yaml'),
     generatedApi: path.join(root, 'packages', 'api-client', 'src', 'generated', 'v1.ts')
   };
   if (optionalMobileGradle !== null) files.mobileGradle = optionalMobileGradlePath;
@@ -1411,7 +1429,7 @@ export const NATIVE_RELEASE_FILE_PATHS = Object.freeze({
   "pairingPackage": "mobile/modules/wear-pairing/package.json",
   "pairingGradle": "mobile/modules/wear-pairing/android/build.gradle",
   "wearGradle": "wear/app/build.gradle.kts",
-  "openApi": "docs/openapi/v1.yaml",
+  "openApi": "backend/openapi/v1.yaml",
   "generatedApi": "packages/api-client/src/generated/v1.ts"
 });
 
@@ -1509,11 +1527,11 @@ export function createNativeReleaseReplacements(originals, nextVersion, minimumC
         originals.openApi,
         openApiLine('android_phone', currentPhoneDiagnosticVersions),
         openApiLine('android_phone', nextPhoneDiagnosticVersions),
-        'docs/openapi/v1.yaml android_phone versions'
+        'backend/openapi/v1.yaml android_phone versions'
       ),
       openApiLine('wear_os', currentWearDiagnosticVersions),
       openApiLine('wear_os', nextWearDiagnosticVersions),
-      'docs/openapi/v1.yaml wear_os versions'
+      'backend/openapi/v1.yaml wear_os versions'
     ),
     generatedApi: replaceExactlyOnce(
       replaceExactlyOnce(
@@ -1531,7 +1549,7 @@ export function createNativeReleaseReplacements(originals, nextVersion, minimumC
     replacements.openApi,
     openApiLine('ios', currentIosDiagnosticVersions),
     openApiLine('ios', nextIosDiagnosticVersions),
-    'docs/openapi/v1.yaml ios versions'
+    'backend/openapi/v1.yaml ios versions'
   );
   replacements.generatedApi = replaceExactlyOnce(
     replacements.generatedApi,

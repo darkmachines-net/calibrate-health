@@ -1,3 +1,5 @@
+/** @file Regression coverage for calibration: uses the versioned calibration status, apply, and cancel routes. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

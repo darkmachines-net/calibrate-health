@@ -1,3 +1,5 @@
+/** @file Goal baseline synchronization under the caller-owned account planning transaction. */
+
 import type { Goal } from '@prisma/client';
 import { recordSyncChange, type MutationDatabase } from './clientOperations';
 import { getSafeUtcTodayDateOnlyInTimeZone } from '../utils/date';

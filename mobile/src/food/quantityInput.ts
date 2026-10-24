@@ -1,3 +1,5 @@
+/** @file quantity Input: Pick a practical button increment while keeping precise keyboard entry available. */
+
 import { SERVING_INPUT_INCREMENT } from '../config/inputPrecision';
 
 export const MINIMUM_FOOD_QUANTITY = 0.001;

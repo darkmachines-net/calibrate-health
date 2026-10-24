@@ -1,3 +1,5 @@
+/** @file Native session issuance, rotation, revocation, and public authenticated-account responses. */
+
 import { MobileDevicePlatform } from '@prisma/client';
 import prisma from '../config/database';
 import {
@@ -46,6 +48,7 @@ export type {
   WearPairingIssueResult
 } from './mobileAuthTypes';
 
+/** Issue device credentials and combine them with the current serialized user, omitting internal session IDs. */
 export async function issueMobileAuthPayload(opts: {
   userId: number;
   device: ParsedMobileDevice;
@@ -291,6 +294,7 @@ export async function authenticateMobileAccessToken(
   };
 }
 
+/** Convert native credentials and expiry timestamps to the stable snake-case auth response. */
 export function formatMobileAuthResponse(payload: MobileAuthSessionPayload) {
   return {
     user: payload.user,

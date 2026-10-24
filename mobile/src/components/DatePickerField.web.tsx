@@ -1,3 +1,5 @@
+/** @file Date Picker Field: Uses the browser's accessible, locale-aware date control on web. */
+
 import React from 'react';
 import { View } from 'react-native';
 import { FormField } from './FormField';

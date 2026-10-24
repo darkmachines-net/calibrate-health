@@ -1,3 +1,5 @@
+/** @file profile details: Render the route-owned editor for calorie-model profile details. */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';

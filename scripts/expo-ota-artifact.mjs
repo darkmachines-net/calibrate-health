@@ -1,3 +1,5 @@
+/** @file Canonical Expo OTA artifact construction and verification against exact source, runtime, and channel identities. */
+
 /** Verify exported OTA bytes and construct isolated publishers with an explicit fingerprint runtime. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

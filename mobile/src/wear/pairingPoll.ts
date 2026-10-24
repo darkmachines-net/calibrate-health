@@ -1,3 +1,5 @@
+/** @file pairing Poll: Drain delayed watch handshake messages until pairing reaches a terminal state. */
+
 import type { StoredWearPairing } from './pairing';
 
 export type WearPairingInboxCheck = {

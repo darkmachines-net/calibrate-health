@@ -1,3 +1,5 @@
+/** Versioned pairing message validation, identity binding, and bounded serialization. */
+
 package app.calibratehealth.wear.pairing
 
 import app.calibratehealth.wear.data.security.ServerOriginPolicy

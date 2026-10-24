@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend migration: weight trend v2 migration adds pace state and invalidates only pending older recommendations. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

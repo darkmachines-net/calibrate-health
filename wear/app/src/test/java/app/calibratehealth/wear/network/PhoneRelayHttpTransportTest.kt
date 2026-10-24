@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Phone Relay Http Transport. */
+
 package app.calibratehealth.wear.network
 
 import java.io.IOException
@@ -10,6 +12,7 @@ import org.junit.Test
 class PhoneRelayHttpTransportTest {
     private val target = PhoneRelayTarget("phone-node", "https://health.example.com")
 
+    /** Verifies that relays a fixed watch request to the exact paired phone and parses its response. */
     @Test
     fun `relays a fixed Watch request to the exact paired phone and parses its response`() = runBlocking {
         var capturedPayload = ""
@@ -55,6 +58,7 @@ class PhoneRelayHttpTransportTest {
         assertTrue(request.required("body") is JsonValue.Null)
     }
 
+    /** Verifies that rejects arbitrary paths before sending anything to the phone. */
     @Test
     fun `rejects arbitrary paths before sending anything to the phone`() = runBlocking {
         var sent = false
@@ -72,6 +76,7 @@ class PhoneRelayHttpTransportTest {
         assertTrue(!sent)
     }
 
+    /** Verifies that falls back to direct transport only when the phone relay is unavailable. */
     @Test
     fun `falls back to direct transport only when the phone relay is unavailable`() = runBlocking {
         var directRequests = 0
@@ -89,6 +94,7 @@ class PhoneRelayHttpTransportTest {
         assertEquals(1, directRequests)
     }
 
+    /** Verifies that refresh retries keep a stable correlation id for rotated response recovery. */
     @Test
     fun `refresh retries keep a stable correlation id for rotated response recovery`() = runBlocking {
         val requestIds = mutableListOf<String>()
@@ -109,6 +115,7 @@ class PhoneRelayHttpTransportTest {
         assertNotEquals(requestIds[1], requestIds[2])
     }
 
+    /** Verifies that does not replay refresh directly when phone execution outcome is unknown. */
     @Test
     fun `does not replay refresh directly when phone execution outcome is unknown`() = runBlocking {
         var phoneAttempts = 0
@@ -135,6 +142,7 @@ class PhoneRelayHttpTransportTest {
         assertEquals(0, directRequests)
     }
 
+    /** Verifies that surfaces a correlated phone relay failure as retryable io. */
     @Test
     fun `surfaces a correlated phone relay failure as retryable IO`() = runBlocking {
         val transport = PhoneRelayWatchHttpTransport(
@@ -161,6 +169,7 @@ class PhoneRelayHttpTransportTest {
         assertTrue(error?.message?.contains("paired phone") == true)
     }
 
+    /** Verifies that preserves the phone outcome unknown signal. */
     @Test
     fun `preserves the phone outcome unknown signal`() = runBlocking {
         listOf(

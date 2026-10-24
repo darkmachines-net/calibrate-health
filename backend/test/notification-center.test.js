@@ -1,3 +1,5 @@
+/** @file Regression coverage for notification center: notification pages use an owner-scoped stable tuple cursor and bind it to the view. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

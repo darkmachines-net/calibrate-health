@@ -1,3 +1,5 @@
+/** @file Durable in-app notification creation, deduplication, account ownership, and read/dismiss lifecycle. */
+
 import { InAppNotificationType, Prisma } from '@prisma/client';
 import prisma from '../config/database';
 import { getSafeUtcTodayDateOnlyInTimeZone } from '../utils/date';

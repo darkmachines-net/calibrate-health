@@ -1,4 +1,4 @@
-/** Durable release checkpoints on GitHub Releases; incomplete runs must be reconciled before another cut. */
+/** @file Durable release checkpoints on GitHub Releases; incomplete runs must be reconciled before another cut. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';

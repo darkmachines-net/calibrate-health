@@ -1,3 +1,5 @@
+/** @file Launches the supported Expo browser test workflow with host-safe process arguments. */
+
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

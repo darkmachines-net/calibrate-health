@@ -1,3 +1,5 @@
+/** @file Stable loading, empty, stale, offline, and error presentation with accessible retry behavior. */
+
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
@@ -30,6 +32,7 @@ type AsyncRetryLiveStatusProps = {
     resourceLabel: string;
 };
 
+/** Announces active retries through a polite live region without adding visible layout. */
 export function AsyncRetryLiveStatus({ retrying, resourceLabel }: AsyncRetryLiveStatusProps) {
     return (
         <AppText accessibilityLiveRegion="polite" style={hiddenStyles.liveStatus}>
@@ -38,6 +41,7 @@ export function AsyncRetryLiveStatus({ retrying, resourceLabel }: AsyncRetryLive
     );
 }
 
+/** Subscribes to React Query connectivity through a React-safe external store. */
 export function useOnlineStatus(): boolean {
     return React.useSyncExternalStore(
         (listener) => onlineManager?.subscribe?.(listener) ?? (() => undefined),
@@ -46,6 +50,7 @@ export function useOnlineStatus(): boolean {
     );
 }
 
+/** Combines query state, connectivity, and the caller's empty predicate into one presentation state. */
 export function useAsyncResourceState<T>(
     query: AsyncQuerySnapshot<T>,
     isEmpty: (data: T) => boolean
@@ -54,6 +59,7 @@ export function useAsyncResourceState<T>(
     return resolveAsyncResourceState(query, { isEmpty, isOnline });
 }
 
+/** Keeps cached content visible where possible and supplies consistent loading, empty, failure, and retry states. */
 export function AsyncStateBoundary({
     state,
     resourceLabel,

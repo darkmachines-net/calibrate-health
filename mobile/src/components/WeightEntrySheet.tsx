@@ -1,3 +1,5 @@
+/** @file Weight Entry Sheet: Focused two-stage weigh-in sheet shared by Today and deep-linked weight routes. */
+
 import { findFailedMetric } from '../offline/failedMutationRecovery';
 import { FailedMutationRecovery } from '../offline/FailedChangeRecoveryPanel';
 import { useTrackingMetrics } from '../offline/useTrackingQueries';

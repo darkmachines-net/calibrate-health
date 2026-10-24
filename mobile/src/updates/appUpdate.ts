@@ -1,3 +1,5 @@
+/** @file Running native bundle identity and server compatibility checks coordinated with Expo-owned updates. */
+
 import * as Application from 'expo-application';
 import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
@@ -58,15 +60,18 @@ export const appUpdateRuntime: AppUpdateRuntime = {
     reloadAsync: Updates.reloadAsync
 };
 
+/** Reads the configured native build identifier from the platform-specific Expo configuration. */
 export function getConfiguredNativeBuild(platform: string): string {
     return platform === 'ios'
         ? appConfig.expo.ios.buildNumber
         : String(appConfig.expo.android.versionCode);
 }
+/** Returns the short update identifier used in version diagnostics. */
 export function shortenUpdateId(updateId: string): string {
     return updateId.slice(0, 8);
 }
 
+/** Builds version diagnostics from the running bundle and native build, with explicit development and browser labels. */
 export function createAppVersionInfo(input: AppVersionInfoInput): AppVersionInfo {
     const isWeb = input.platform === 'web';
     const updateId = input.runningUpdate.updateId?.trim() || null;
@@ -102,6 +107,7 @@ export function createAppVersionInfo(input: AppVersionInfoInput): AppVersionInfo
     };
 }
 
+/** Collects installed native metadata and the running update into the shared version presentation. */
 export function getAppVersionInfo(runningUpdate: RunningUpdateInfo): AppVersionInfo {
     return createAppVersionInfo({
         platform: Platform.OS,
@@ -115,10 +121,12 @@ export function getAppVersionInfo(runningUpdate: RunningUpdateInfo): AppVersionI
     });
 }
 
+/** Enables manual OTA management only in an updates-enabled native release runtime. */
 export function canManageOtaUpdates(platform: string, isDevelopment: boolean, isEnabled: boolean): boolean {
     return platform !== 'web' && !isDevelopment && isEnabled;
 }
 
+/** Checks Expo update availability and distinguishes a new update, embedded rollback, and current state. */
 export async function checkForAppUpdate(
     runtime: Pick<AppUpdateRuntime, 'checkForUpdateAsync'> = appUpdateRuntime
 ): Promise<AppUpdateCheckOutcome> {
@@ -128,6 +136,7 @@ export async function checkForAppUpdate(
     return 'current';
 }
 
+/** Downloads the offered Expo update and reports whether a new bundle or embedded rollback is ready. */
 export async function downloadAppUpdate(
     runtime: Pick<AppUpdateRuntime, 'fetchUpdateAsync'> = appUpdateRuntime
 ): Promise<boolean> {

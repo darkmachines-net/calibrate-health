@@ -1,3 +1,5 @@
+/** @file Notifications Drawer: Bounds the notification drawer to a viewport fraction and its desktop maximum width. */
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { InAppNotification } from '@calibrate/api-client';
@@ -21,6 +23,7 @@ const DRAWER_MAX_WIDTH = 440;
 const DRAWER_ENTER_DURATION_MS = 240;
 const DRAWER_EXIT_DURATION_MS = 180;
 
+/** Bounds the notification drawer to a viewport fraction and its desktop maximum width. */
 export function notificationDrawerWidth(windowWidth: number): number {
     return Math.min(windowWidth * DRAWER_WIDTH_FRACTION, DRAWER_MAX_WIDTH);
 }

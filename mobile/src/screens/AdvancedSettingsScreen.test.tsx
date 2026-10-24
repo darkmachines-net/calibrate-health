@@ -1,11 +1,28 @@
+/** @file Regression coverage for Advanced Settings Screen: AdvancedSettingsScreen. */
+
 /**
  * Exercises the consolidated Advanced settings route and interaction boundaries.
  */
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+/**
+ * Exercises the consolidated Advanced settings route and interaction boundaries.
+ */
 import { Platform } from 'react-native';
+/**
+ * Exercises the consolidated Advanced settings route and interaction boundaries.
+ */
 import { HOSTED_SERVER_URL } from '../config/server';
+/**
+ * Exercises the consolidated Advanced settings route and interaction boundaries.
+ */
 import { useAuth } from '../auth/AuthContext';
+/**
+ * Exercises the consolidated Advanced settings route and interaction boundaries.
+ */
 import { useAppUpdateController } from '../updates/useAppUpdateController';
+/**
+ * Exercises the consolidated Advanced settings route and interaction boundaries.
+ */
 import AdvancedSettingsScreen from '../../app/(tabs)/(settings)/advanced';
 
 jest.mock('@expo/vector-icons/Ionicons', () => ({

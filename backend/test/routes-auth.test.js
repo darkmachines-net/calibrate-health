@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes auth: auth route: POST /register returns 400 when the email already exists. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

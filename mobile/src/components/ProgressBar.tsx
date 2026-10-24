@@ -1,3 +1,5 @@
+/** @file Progress Bar: Stable-width progress indicator for calorie and goal summaries. */
+
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { radius, useAppTheme } from '../theme';

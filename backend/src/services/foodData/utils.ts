@@ -1,3 +1,5 @@
+/** @file utils: Numeric helpers shared by food data providers. */
+
 import { Nutrients } from './types';
 
 /**

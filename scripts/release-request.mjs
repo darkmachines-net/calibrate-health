@@ -1,3 +1,5 @@
+/** @file Canonical release request parsing, identity binding, and trusted workflow dispatch inputs. */
+
 /** Validate source-bound, read-only release requests before privileged default-branch handlers execute. */
 import fs from 'node:fs';
 import path from 'node:path';

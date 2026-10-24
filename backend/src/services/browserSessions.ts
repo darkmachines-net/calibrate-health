@@ -1,3 +1,5 @@
+/** @file Persisted browser-session revocation, including push-subscription cleanup and current-session preservation. */
+
 import prisma from '../config/database';
 
 /**

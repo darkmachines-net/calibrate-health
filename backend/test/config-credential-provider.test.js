@@ -1,3 +1,5 @@
+/** @file Regression coverage for config credential provider: existing local installations remain local even when unrelated Firebase environment values exist. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { validateCredentialProviderConfiguration } = require('../src/config/credentialProvider');

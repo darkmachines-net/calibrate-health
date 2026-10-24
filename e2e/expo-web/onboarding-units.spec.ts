@@ -1,3 +1,5 @@
+/** @file Regression coverage for onboarding units: uses regional units with a compact accessible switch beside each measurement. */
+
 import type { Locator } from '@playwright/test';
 import { expect, hideTransientPwaNotices, test } from './fixtures';
 import { fillOnboardingDetails, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';

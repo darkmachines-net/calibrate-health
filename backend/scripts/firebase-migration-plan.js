@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Reads a PostgreSQL export and produces the offline Firebase migration plan without contacting production services. */
+
 'use strict';
 
 // Offline inventory only. Deliberately no --apply, database connection, ADC, or Firebase client.

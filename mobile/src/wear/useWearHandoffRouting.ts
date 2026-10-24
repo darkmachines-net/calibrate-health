@@ -1,3 +1,5 @@
+/** @file use Wear Handoff Routing: Drain durable watch handoffs on startup and whenever the authenticated app resumes. */
+
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, Linking } from 'react-native';
 import { router } from 'expo-router';

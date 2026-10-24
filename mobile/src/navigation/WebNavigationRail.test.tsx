@@ -1,3 +1,5 @@
+/** @file Regression coverage for Web Navigation Rail: exposes only canonical primary links and the actual selected tab. */
+
 import React from 'react';
 import { Platform } from 'react-native';
 import { registerNavigationGuard } from './guardedNavigation';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Page Header: PageHeader. */
+
 import { render } from '@testing-library/react-native';
 import { PageHeader } from './PageHeader';
 

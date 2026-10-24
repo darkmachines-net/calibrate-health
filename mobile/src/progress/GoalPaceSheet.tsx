@@ -1,3 +1,5 @@
+/** @file Goal Pace Sheet: Mounted per editor session so cancellation never carries a draft into another goal. */
+
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import * as Crypto from 'expo-crypto';

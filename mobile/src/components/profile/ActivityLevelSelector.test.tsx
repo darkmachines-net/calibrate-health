@@ -1,3 +1,5 @@
+/** @file Regression coverage for Activity Level Selector: ActivityLevelSelector. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { ACTIVITY_LEVELS } from '@calibrate/shared';
 import { ActivityLevelSelector } from './ActivityLevelSelector';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for manifest Contract: web app manifest. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 

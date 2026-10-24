@@ -1,3 +1,5 @@
+/** @file use Browser Discard Navigation: Registers the focused page's browser discard guard and removes it when focus or dirty state changes. */
+
 import { useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 
@@ -64,6 +66,7 @@ if (typeof window !== 'undefined') {
     }, true);
 }
 
+/** Registers the focused page's browser discard guard and removes it when focus or dirty state changes. */
 export function useBrowserDiscardNavigation(
     shouldPreventRemoval: boolean,
     request: RequestNavigation

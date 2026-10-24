@@ -1,3 +1,5 @@
+/** @file Regression coverage for permissions: Health Connect permission mapping. */
+
 import type { Permission } from 'react-native-health-connect';
 import { grantedFeaturesForPermissions, permissionsForSelection } from './permissions';
 import { DEFAULT_HEALTH_CONNECT_SELECTION } from './types';

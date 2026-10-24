@@ -1,4 +1,4 @@
-/** Read a bounded named ZIP member without extracting archive-controlled filesystem paths. */
+/** @file Read a bounded named ZIP member without extracting archive-controlled filesystem paths. */
 import fs from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 

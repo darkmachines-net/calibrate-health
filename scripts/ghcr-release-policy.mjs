@@ -1,3 +1,5 @@
+/** @file GHCR release alias, manifest, config, and attestation policy for exact immutable image publication. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -24,6 +26,7 @@ function requireObject(value, label) {
   return value;
 }
 
+/** Requires a single linux/amd64 image manifest and matching image configuration rather than a platform index. */
 export function validateSingleAmd64Manifest(manifestValue, imageConfigValue) {
   const manifest = requireObject(manifestValue, 'Registry manifest');
   const imageConfig = requireObject(imageConfigValue, 'Registry image configuration');
@@ -64,6 +67,7 @@ function requireImageRef(imageRef) {
   return imageRef;
 }
 
+/** Recognizes only an exact requested-image absence response; authorization and other registry failures remain errors. */
 export function isExplicitRegistryAbsence(stderr, imageRef) {
   if (typeof stderr !== 'string') throw new Error('Registry inspection stderr must be text.');
   const requestedRef = requireImageRef(imageRef);
@@ -105,6 +109,7 @@ function readRegularFile(file, maximumBytes, label) {
   return fs.readFileSync(resolved, 'utf8');
 }
 
+/** Dispatches registry shape or absence validation and fails closed on unrecognized registry evidence. */
 export function runGhcrReleasePolicyCli(args = process.argv.slice(2)) {
   const { command, values } = parseArguments(args);
   if (command === 'classify-absence') {

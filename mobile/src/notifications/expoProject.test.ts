@@ -1,3 +1,5 @@
+/** @file Regression coverage for expo Project: resolveExpoProjectId. */
+
 import { resolveExpoProjectId } from './expoProject';
 
 describe('resolveExpoProjectId', () => {

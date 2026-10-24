@@ -1,3 +1,5 @@
+/** @file Regression coverage for nutrition label: photo upload is reviewed, titled, and saved with the printed serving size. */
+
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { expect, hideTransientPwaNotices, test } from './fixtures';
@@ -47,7 +49,7 @@ test('photo upload is reviewed, titled, and saved with the printed serving size'
     await page.screenshot({ path: testInfo.outputPath('label-review.png'), fullPage: true });
     if (process.env.CALIBRATE_CAPTURE_EVIDENCE === '1' &&
         ['desktop-chrome', 'compact-phone-chrome'].includes(testInfo.project.name)) {
-        const directory = path.resolve('docs/screenshots/nutrition-label-scanning');
+        const directory = path.resolve('.codex-screenshots/nutrition-label-scanning');
         await mkdir(directory, { recursive: true });
         const device = testInfo.project.name === 'desktop-chrome' ? 'desktop' : 'phone';
         await page.screenshot({ path: path.join(directory, `review-${device}.png`), fullPage: true });

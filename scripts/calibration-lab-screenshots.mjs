@@ -1,10 +1,12 @@
+/** @file Captures synthetic calibration-lab UI evidence into disposable local screenshot output. */
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 
 const CAPTURE_ENABLED = process.env.CALIBRATE_CAPTURE_SCREENSHOTS === '1';
 const LAB_URL = process.env.CALIBRATE_CALIBRATION_LAB_URL?.trim() || 'http://127.0.0.1:5173';
-const OUTPUT_DIRECTORY = path.resolve('docs/screenshots/plan-check');
+const OUTPUT_DIRECTORY = path.resolve('.codex-screenshots/plan-check');
 const VIEWPORT = { width: 1440, height: 1100 };
 const COMPACT_VIEWPORT = { width: 390, height: 844 };
 const ACTION_SCENARIO_ID = 'target-too-high';

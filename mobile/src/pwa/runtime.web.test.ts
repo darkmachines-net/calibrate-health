@@ -1,3 +1,5 @@
+/** @file Regression coverage for runtime web: browser PWA runtime. */
+
 import {
     BACK_ONLINE_NOTICE_MS,
     createPwaRuntime,

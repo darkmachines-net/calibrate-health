@@ -1,3 +1,5 @@
+/** @file presentation: Map failures to bounded, user-facing copy without relaying backend or provider text. */
+
 import { OfflineMutationConflict } from '../offline/mutationConflict';
 import { ApiError } from '@calibrate/api-client';
 
@@ -67,6 +69,7 @@ export function getErrorPresentation(error: unknown, resourceLabel: string): Err
     };
 }
 
+/** Maps action failures to safe recovery copy without displaying arbitrary server error details. */
 export function getSafeActionErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof OfflineMutationConflict) return error.message;
     if (looksLikeConnectivityFailure(error)) return 'Check your connection and try again.';
@@ -80,6 +83,7 @@ export function getSafeActionErrorMessage(error: unknown, fallback: string): str
     return fallback;
 }
 
+/** Maps sign-in and registration failures to safe, action-specific user guidance. */
 export function getAuthActionErrorMessage(error: unknown, action: 'sign in' | 'create account'): string {
     if (looksLikeConnectivityFailure(error)) return 'Check your connection and try again.';
     if (error instanceof ApiError) {

@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Watch Snapshot Synchronizer. */
+
 package app.calibratehealth.wear.sync
 
 import app.calibratehealth.wear.data.DailySnapshotRepository
@@ -19,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WatchSnapshotSynchronizerTest {
+    /** Verifies that clears old etag before cache writes and stores replacement etag last. */
     @Test
     fun `clears old etag before cache writes and stores replacement etag last`() = runBlocking {
         val events = mutableListOf<String>()
@@ -54,6 +57,7 @@ class WatchSnapshotSynchronizerTest {
         assertEquals("W/\"watch-new\"", metadata.value?.syncCursor)
     }
 
+    /** Verifies that account switch during fetch cannot commit snapshot rows. */
     @Test
     fun `account switch during fetch cannot commit snapshot rows`() = runBlocking {
         val events = mutableListOf<String>()
@@ -79,6 +83,7 @@ class WatchSnapshotSynchronizerTest {
         assertTrue(events.isEmpty())
     }
 
+    /** Verifies that upgrade requirement blocks cache replacement and reaches the compatibility ui callback. */
     @Test
     fun `upgrade requirement blocks cache replacement and reaches the compatibility UI callback`() = runBlocking {
         val events = mutableListOf<String>()
@@ -110,6 +115,7 @@ class WatchSnapshotSynchronizerTest {
         assertEquals(listOf("upgrade:Update this watch."), events)
     }
 
+    /** Verifies that upgrade response from a replaced account cannot transfer the compatibility marker. */
     @Test
     fun `upgrade response from a replaced account cannot transfer the compatibility marker`() = runBlocking {
         val events = mutableListOf<String>()
@@ -140,6 +146,7 @@ class WatchSnapshotSynchronizerTest {
         assertTrue(events.isEmpty())
     }
 
+    /** Verifies that compatible retry after 426 restores ui and unlocks retained work. */
     @Test
     fun `compatible retry after 426 restores UI and unlocks retained work`() = runBlocking {
         val events = mutableListOf<String>()
@@ -200,6 +207,7 @@ class WatchSnapshotSynchronizerTest {
         assertEquals("access", tokenStore.value?.accessToken)
     }
 
+    /** Verifies that not-modified retry after 426 preserves cache then clears compatibility state. */
     @Test
     fun `not-modified retry after 426 preserves cache then clears compatibility state`() = runBlocking {
         val events = mutableListOf<String>()

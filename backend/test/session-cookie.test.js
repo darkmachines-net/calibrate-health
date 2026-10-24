@@ -1,3 +1,5 @@
+/** @file Regression coverage for session cookie: clearing a session cookie preserves its configured domain. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

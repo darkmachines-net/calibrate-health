@@ -1,3 +1,5 @@
+/** @file Regression coverage for native release devices: release device CLI supports repeat installs and explicit non-interactive targets. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

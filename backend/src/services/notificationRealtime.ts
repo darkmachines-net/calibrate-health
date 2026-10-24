@@ -1,3 +1,5 @@
+/** @file notification Realtime: Owns in-process notification fanout for connected SSE clients. */
+
 import {
     NOTIFICATION_REALTIME_EVENT_NAME,
     buildNotificationRealtimePayload,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for release ci gate: complete exact-candidate CI permits finalization, with canonical skips only. */
+
 /** Validate exact-candidate CI identities and protected merge sequencing. */
 import assert from 'node:assert/strict';
 import test from 'node:test';

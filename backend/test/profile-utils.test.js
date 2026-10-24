@@ -1,3 +1,5 @@
+/** @file Regression coverage for profile utils: profile utils: isSex validates allowed enum values. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

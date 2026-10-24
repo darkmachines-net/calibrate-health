@@ -1,3 +1,5 @@
+/** Trusted-phone Data Layer handoff for opening richer phone logging surfaces. */
+
 package app.calibratehealth.wear.actions
 
 import android.content.Context
@@ -16,6 +18,7 @@ sealed interface ContinueOnPhoneRequest {
 }
 
 fun interface ContinueOnPhoneMessenger {
+    /** Requests a bounded handoff to the trusted paired phone and reports transport success or failure. */
     fun send(request: ContinueOnPhoneRequest, onResult: (Result<Unit>) -> Unit)
 }
 

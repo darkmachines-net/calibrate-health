@@ -1,3 +1,5 @@
+/** @file auth Errors: A missing local seed account is an expected miss for debug auto-login. */
+
 import { ApiError } from '@calibrate/api-client';
 
 /** A missing local seed account is an expected miss for debug auto-login. */

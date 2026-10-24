@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Server Origin Policy. */
+
 package app.calibratehealth.wear.data.security
 
 import org.junit.Assert.assertEquals
@@ -5,6 +7,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ServerOriginPolicyTest {
+    /** Verifies that accepts https and private development origins. */
     @Test
     fun `accepts https and private development origins`() {
         assertEquals(
@@ -21,6 +24,7 @@ class ServerOriginPolicyTest {
         )
     }
 
+    /** Verifies that rejects public cleartext and non-origin urls. */
     @Test
     fun `rejects public cleartext and non-origin urls`() {
         assertThrows(IllegalArgumentException::class.java) {

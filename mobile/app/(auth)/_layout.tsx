@@ -1,3 +1,5 @@
+/** @file layout: Guards authentication routes and resumes the requested barcode or Today destination after sign-in. */
+
 import { Redirect, Stack, useLocalSearchParams, useSegments } from 'expo-router';
 import { LoadingState } from '../../src/components/LoadingState';
 import { useAuth } from '../../src/auth/AuthContext';
@@ -6,6 +8,7 @@ import {
     type BarcodeAuthReturnParams
 } from '../../src/barcode/authReturn';
 
+/** Guards authentication routes and resumes the requested barcode or Today destination after sign-in. */
 export default function AuthLayout() {
     const { user, isLoading, accountDeletionCleanupNotice } = useAuth();
     const segments = useSegments();

@@ -1,3 +1,5 @@
+/** @file onboarding: Layer onboarding lifecycle responses over the normal app fixture, including post-save refresh. */
+
 import type { Page } from '@playwright/test';
 import type { OnboardingCompleteData, UserClientPayload } from '../../packages/api-client/src/types';
 import { expect, FROZEN_NOW, hideTransientPwaNotices } from './fixtures';
@@ -60,6 +62,7 @@ export async function installOnboardingAccount(
   return { completions, replaceUser(next: Partial<UserClientPayload>) { user = { ...user, ...next }; } };
 }
 
+/** Fills the About you step with the shared synthetic profile after its heading is visible. */
 export async function fillOnboardingDetails(page: Page) {
   await expect(page.getByRole('heading', { name: 'About you', exact: true })).toBeVisible();
   await hideTransientPwaNotices(page);
@@ -70,12 +73,14 @@ export async function fillOnboardingDetails(page: Page) {
     .getByRole('radio', { name: 'Male', exact: true }).click();
 }
 
+/** Completes the profile fixture and advances to the activity step. */
 export async function advanceOnboardingToActivity(page: Page) {
   await fillOnboardingDetails(page);
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
 }
 
+/** Selects the fixture activity level and advances to the calorie-plan step. */
 export async function advanceOnboardingToPlan(page: Page) {
   await advanceOnboardingToActivity(page);
   await page.getByRole('radiogroup', { name: 'Activity level', exact: true })
@@ -84,6 +89,7 @@ export async function advanceOnboardingToPlan(page: Page) {
   await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
 }
 
+/** Locates a goal-pace radio by its displayed daily calorie magnitude. */
 export function goalPaceOption(page: Page, magnitude: number) {
   return page.getByRole('radiogroup', { name: 'Goal pace', exact: true })
     .getByRole('radio').filter({ hasText: `${magnitude} kcal/day` });

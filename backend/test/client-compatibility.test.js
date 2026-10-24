@@ -1,3 +1,5 @@
+/** @file Regression coverage for client compatibility: browser requests without native identity remain compatible. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {

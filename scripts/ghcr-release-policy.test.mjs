@@ -1,3 +1,5 @@
+/** @file Regression coverage for ghcr release policy: accepts only single OCI or Docker linux/amd64 image manifests. */
+
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

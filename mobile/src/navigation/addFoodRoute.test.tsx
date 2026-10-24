@@ -1,3 +1,5 @@
+/** @file Regression coverage for add Food Route: legacy add-food route. */
+
 import { render, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import LogScreen from '../../app/(tabs)/(today)/log';

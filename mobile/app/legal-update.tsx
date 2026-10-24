@@ -1,3 +1,5 @@
+/** @file legal update: Collects explicit acceptance of updated legal documents before restoring full account access. */
+
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Link, Redirect, router } from 'expo-router';
@@ -11,6 +13,7 @@ import { useAuth } from '../src/auth/AuthContext';
 import { getAccountTrustErrorMessage } from '../src/errors/presentation';
 import { useAppTheme } from '../src/theme';
 
+/** Collects explicit acceptance of updated legal documents before restoring full account access. */
 export default function LegalUpdateRoute() {
     const { api, user, isLoading, logout, updateCurrentUser } = useAuth();
     const { colors } = useAppTheme();

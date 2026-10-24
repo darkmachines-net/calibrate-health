@@ -1,3 +1,5 @@
+/** @file Regression coverage for import calorie safety: Lose It weight import and sticky plan review roll back together when review marking fails. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

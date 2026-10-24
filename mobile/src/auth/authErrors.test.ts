@@ -1,3 +1,5 @@
+/** @file Regression coverage for auth Errors: debug auto-login errors. */
+
 import { ApiError } from '@calibrate/api-client';
 import { getSessionRestoreErrorMessage, isExpectedDevAutoLoginMiss } from './authErrors';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for onboarding: atomic completion sends one complete payload and a stable operation ID. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

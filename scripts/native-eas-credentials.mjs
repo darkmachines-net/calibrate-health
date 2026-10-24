@@ -1,3 +1,5 @@
+/** @file native eas credentials: Downloads exact-app signing and assigned Play credentials into a validated external EAS staging workspace. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -40,6 +42,7 @@ function authenticatedQuery(root) {
   return (query, variables) => client.query(query, variables, { noRetry: true }).toPromise();
 }
 
+/** Downloads exact-app signing and assigned Play credentials into a validated external EAS staging workspace. */
 export async function downloadEasCredentials({ root, directory, downloadPlay = true, query }) {
   const staging = fs.realpathSync(directory);
   if (!path.basename(staging).startsWith('eas-android-')) throw new Error('Invalid EAS credential staging directory.');

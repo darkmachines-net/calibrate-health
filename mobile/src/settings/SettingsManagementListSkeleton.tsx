@@ -1,3 +1,5 @@
+/** @file Settings Management List Skeleton: Preserve management-list shape while account access data loads. */
+
 import { StyleSheet, View } from 'react-native';
 import { SkeletonBlock } from '../components/SkeletonBlock';
 import { spacing, useAppTheme } from '../theme';

@@ -1,3 +1,5 @@
+/** @file Expo export postprocessing, service-worker manifest generation, and production web release validation. */
+
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';

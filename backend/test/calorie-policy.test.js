@@ -1,3 +1,5 @@
+/** @file Regression coverage for calorie policy: calorie policy uses exact date-only ages and rejects invalid inputs. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

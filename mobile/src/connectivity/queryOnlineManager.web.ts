@@ -1,3 +1,5 @@
+/** @file query Online Manager: Keep web Query state aligned with browser online/offline events. */
+
 import React from 'react';
 import { onlineManager } from '@tanstack/react-query';
 
@@ -45,6 +47,7 @@ export function configureQueryOnlineManager(
     };
 }
 
+/** Installs browser connectivity listeners for React Query and cleans them up on unmount. */
 export function useQueryOnlineManager(): void {
     React.useEffect(() => configureQueryOnlineManager(), []);
 }

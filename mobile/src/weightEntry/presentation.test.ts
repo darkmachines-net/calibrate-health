@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: weight save recognition presentation. */
+
 import type { MetricProgressUpdate } from '@calibrate/api-client';
 import { getWeightRecognitionPresentation } from './presentation';
 

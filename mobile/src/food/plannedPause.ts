@@ -1,3 +1,5 @@
+/** @file Tracking-pause intent and acknowledgement handling without treating planned state as server confirmation. */
+
 import type { FoodTrackingPause } from '@calibrate/api-client';
 import { dateOnlyToLocalDate, formatDateOnlyForDisplay, localDateToDateOnly } from '../utils/dates';
 
@@ -17,16 +19,19 @@ export function getActivePausePlan(pause: FoodTrackingPause | undefined, today: 
 
 export type ActivePausePlan = ReturnType<typeof getActivePausePlan>;
 
+/** Identifies future dates inside the planned pause, excluding its expected resume date. */
 export function isPlannedPauseDate(date: string, today: string, plan: ActivePausePlan): boolean {
     return Boolean(plan && date > today && date >= plan.startsOn
         && (plan.expectedResumeOn === null || date < plan.expectedResumeOn));
 }
 
+/** Chooses the resume month for pause browsing when it is in the future, otherwise today's month. */
 export function getPauseBrowseMonth(today: string, plan: ActivePausePlan): string {
     const target = plan?.expectedResumeOn;
     return (target && target > today ? target : today).slice(0, 7);
 }
 
+/** Explains expected resumption without treating an elapsed expected date as an automatic resume. */
 export function getPauseExpectationCopy(plan: ActivePausePlan, today: string): string | null {
     if (!plan) return null;
     if (plan.expectedResumeOn === null) return 'Until you resume';

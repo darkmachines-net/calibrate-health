@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Resets onboarding only for the configured local seeded test account. */
+
 /**
  * Dev helper: reset the deterministic local test account back to a pre-onboarding state.
  *

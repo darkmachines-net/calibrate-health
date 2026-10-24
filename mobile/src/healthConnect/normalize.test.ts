@@ -1,3 +1,5 @@
+/** @file Regression coverage for normalize: Health Connect normalization. */
+
 import {
     buildDaySummary,
     buildLocalDayRanges,

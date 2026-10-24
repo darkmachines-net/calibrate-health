@@ -1,3 +1,5 @@
+/** @file Regression coverage for account sessions: unified account-session methods use the locked list and revocation wire. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

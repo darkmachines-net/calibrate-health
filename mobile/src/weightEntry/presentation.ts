@@ -1,3 +1,5 @@
+/** @file presentation: Select one clear recognition headline even when the server reports several crossed thresholds. */
+
 import type {
     MetricProgressRecognition,
     MetricProgressUpdate,
@@ -133,6 +135,7 @@ export function getWeightRecognitionPresentation(
     return getDefaultPresentation(progressUpdate.save_kind);
 }
 
+/** Formats remaining goal grams in display units after clamping negative remainder to zero. */
 export function formatRemainingGoalWeight(grams: number, unit: WeightUnit | undefined): string {
     return formatGrams(Math.max(0, grams), unit);
 }

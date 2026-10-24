@@ -1,3 +1,5 @@
+/** @file Barcode Recovery Actions: Shared escape hatches for every camera, connectivity, and lookup failure. */
+
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppButton } from '../components/AppButton';

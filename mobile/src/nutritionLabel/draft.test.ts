@@ -1,3 +1,5 @@
+/** @file Regression coverage for draft: preserves the printed serving basis when saving, without multiplying calories. */
+
 import { labelFoodPayload, validateLabelFood } from './draft';
 
 const fields = { title: ' Peanut butter ', quantity: '2', unit: ' tbsp (32 g) ', calories: '190' };

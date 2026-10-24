@@ -1,3 +1,5 @@
+/** @file calibration lab: Bundles the calibration lab in memory using the shared React Native Web presentation. */
+
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -13,6 +15,7 @@ const responseAssets = new Map([
   ['/styles.css', { path: resolve(assetDirectory, 'styles.css'), contentType: 'text/css; charset=utf-8' }]
 ]);
 
+/** Bundles the calibration lab in memory using the shared React Native Web presentation. */
 export async function buildCalibrationLabBundle() {
   const result = await build({
     absWorkingDir: repositoryRoot,
@@ -114,6 +117,7 @@ function requireUniqueDates(values, label) {
   });
 }
 
+/** Validates uploaded calibration history records and dates before running the lab evaluator. */
 export function parseCalibrationInput(value) {
   const parsed = requireRecord(value, 'History input');
   if (!Array.isArray(parsed.foodDays)) throw new Error('foodDays must be an array.');
@@ -187,6 +191,7 @@ function sendJson(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
+/** Creates the lab HTTP server with injected evaluation, scenarios, and browser bundle. */
 export function createCalibrationLabServer({ evaluateCalibration, scenarios, browserBundle = new Uint8Array() }) {
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');

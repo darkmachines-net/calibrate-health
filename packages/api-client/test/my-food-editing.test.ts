@@ -1,3 +1,5 @@
+/** @file Regression coverage for my food editing: updateMyFood patches the owned resource with a typed snapshot definition. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

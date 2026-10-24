@@ -1,3 +1,5 @@
+/** @file Overlay Select: Legacy controlled-select adapter. Existing callers keep ownership of closing after selection while receiving the shared accessible combobox. */
+
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Combobox, type ComboboxOption } from './Combobox';
 

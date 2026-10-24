@@ -1,3 +1,5 @@
+/** @file Persistent review state for stored calorie plans that become unsafe after relevant input changes. */
+
 import { lockCaloriePlanningInputs } from './caloriePlanningLock';
 import type { MutationDatabase } from './clientOperations';
 import { buildStoredCaloriePlanningSnapshot, type StoredCaloriePlanningSnapshot } from './caloriePlanning';

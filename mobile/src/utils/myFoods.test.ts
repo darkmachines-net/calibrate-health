@@ -1,3 +1,5 @@
+/** @file Regression coverage for my Foods: sortMyFoodsPinnedFirst is deterministic with pinned items first. */
+
 import type { MyFoodSummary, RecentFoodSummary } from '@calibrate/api-client';
 import { selectQuickRecentFoods, sortMyFoodsPinnedFirst } from './myFoods';
 

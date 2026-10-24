@@ -1,3 +1,5 @@
+/** Tile text and freshness presentation derived solely from cached calorie state. */
+
 package app.calibratehealth.wear.tile
 
 import kotlin.math.abs
@@ -36,6 +38,7 @@ object CalibrateTileFormatter {
     private const val DAY_MS = 24 * HOUR_MS
     private const val STALE_AFTER_MS = 6 * HOUR_MS
 
+    /** Formats cached Tile content with explicit unavailable, paused, and stale presentation. */
     fun format(snapshot: CalibrateTileSnapshot?, nowEpochMs: Long): CalibrateTileContent {
         if (snapshot == null) {
             return CalibrateTileContent(

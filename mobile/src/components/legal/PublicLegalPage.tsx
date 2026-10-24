@@ -1,3 +1,5 @@
+/** @file Public Legal Page: Use public trust navigation when signed out and the app-bar contract when signed in. */
+
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Link, router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

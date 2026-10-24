@@ -1,3 +1,5 @@
+/** @file Calorie Balance Card: Empty and populated days share one summary so changing dates does not move the food section below it. */
+
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';

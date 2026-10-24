@@ -1,3 +1,5 @@
+/** @file Regression coverage for Card Header: CardHeader. */
+
 import { render } from '@testing-library/react-native';
 import { StyleSheet, View } from 'react-native';
 import { AppButton } from './AppButton';

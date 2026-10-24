@@ -1,3 +1,5 @@
+/** @file privacy: Renders the canonical public privacy policy and related legal navigation. */
+
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { PublicLegalPage } from '../src/components/legal/PublicLegalPage';
 import {
@@ -6,6 +8,7 @@ import {
     PRIVACY_SECTIONS
 } from '../src/legal/publicLegalContent';
 
+/** Renders the canonical public privacy policy and related legal navigation. */
 export default function PrivacyRoute() {
     return (
         <PublicLegalPage

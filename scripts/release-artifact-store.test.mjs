@@ -1,4 +1,4 @@
-/** Verify retained OTA bytes and archive boundaries plus exact paired Play promotions. */
+/** @file Verify retained OTA bytes and archive boundaries plus exact paired Play promotions. */
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';

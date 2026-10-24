@@ -1,3 +1,5 @@
+/** @file Regression coverage for Legal Consent Fields: LegalConsentFields. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { LegalConsentFields } from './LegalConsentFields';
 

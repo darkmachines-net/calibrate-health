@@ -1,3 +1,5 @@
+/** @file Date Navigation: In-content local-day navigation for log-focused screens. */
+
 import React, { useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

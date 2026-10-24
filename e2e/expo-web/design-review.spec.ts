@@ -1,3 +1,5 @@
+/** @file Regression coverage for design review. */
+
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';

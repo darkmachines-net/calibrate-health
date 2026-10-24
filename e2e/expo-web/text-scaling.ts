@@ -1,3 +1,5 @@
+/** @file text scaling: Keeps text enlargement active when responsive layouts mount new content. */
+
 import type { Page } from '@playwright/test';
 
 /** Keeps text enlargement active when responsive layouts mount new content. */

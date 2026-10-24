@@ -1,3 +1,5 @@
+/** @file Regression coverage for Pwa Status Banner web: PwaStatusBanner placement. */
+
 import {
     BROWSER_OFFLINE_MESSAGE,
     isDocumentModalOpen,

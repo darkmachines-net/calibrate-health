@@ -1,12 +1,16 @@
+/** @file use Server Settings: Builds an account-and-server-specific cache key for feature settings. */
+
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { useOnlineStatus } from '../components/AsyncStateBoundary';
 
+/** Builds an account-and-server-specific cache key for feature settings. */
 export const serverSettingsQueryKey = (serverUrl: string, userId?: number) =>
     ['server-settings', serverUrl, userId] as const;
 
+/** Fetches current feature availability only for an authenticated online account and disables stale assumptions. */
 export function useServerSettings() {
     const { api, user, serverUrl } = useAuth();
     const isOnline = useOnlineStatus();

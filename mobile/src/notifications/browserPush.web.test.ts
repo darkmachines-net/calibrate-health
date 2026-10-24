@@ -1,3 +1,5 @@
+/** @file Regression coverage for browser Push web: browser push session cleanup logging. */
+
 import {
     cleanupBrowserPushBeforeSessionChange,
     registerBrowserPushSessionCleanup

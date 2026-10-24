@@ -1,3 +1,5 @@
+/** @file notification reminders: Installs deterministic notification routes with controllable fetch/action failures and synthetic history. */
+
 import type { Page, Route } from '@playwright/test';
 import { FROZEN_LOCAL_DATE } from './fixtures';
 
@@ -73,6 +75,7 @@ function activeNotifications(history: NotificationItem[]) {
   return history.filter((item) => !item.read_at && !item.dismissed_at && !item.resolved_at);
 }
 
+/** Installs deterministic notification routes with controllable fetch/action failures and synthetic history. */
 export async function installNotificationApi(page: Page, empty = false): Promise<NotificationFixture> {
   const fixture: NotificationFixture = {
     failFetchRequests: 0,
@@ -158,6 +161,7 @@ export async function installNotificationApi(page: Page, empty = false): Promise
   return fixture;
 }
 
+/** Installs an in-page EventSource substitute so tests can drive notification events without a live server. */
 export async function installRealtimeHarness(page: Page) {
   await page.addInitScript((eventName) => {
     type Listener = (event: { data: string }) => void;
@@ -199,6 +203,7 @@ export async function installRealtimeHarness(page: Page) {
   }, REALTIME_EVENT_NAME);
 }
 
+/** Emits the fixture's notification-created event through the installed realtime harness. */
 export async function emitNotificationUpdate(page: Page) {
   await page.evaluate(() => {
     const harness = (window as unknown as {
@@ -208,6 +213,7 @@ export async function emitNotificationUpdate(page: Page) {
   });
 }
 
+/** Installs a browser permission stub that transitions to denied when the user requests notifications. */
 export async function installDeniedBrowserPermission(page: Page) {
   await page.addInitScript(() => {
     let permission: NotificationPermission = 'default';

@@ -1,3 +1,5 @@
+/** @file server Switch: Confirm the candidate before mutating server-scoped credentials or persisted settings. */
+
 import type { ServerConnectionResult } from '../config/server';
 
 type ConfirmServerSwitchOptions = {

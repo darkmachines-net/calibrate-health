@@ -1,3 +1,5 @@
+/** @file Regression coverage for confirm Action: confirmAction. */
+
 import { Alert, Platform } from 'react-native';
 import { confirmAction } from './confirmAction';
 

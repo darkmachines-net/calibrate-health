@@ -1,3 +1,5 @@
+/** @file Regression coverage for Copy Food Sheet: CopyFoodSheet. */
+
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import { CopyFoodSheet, getDefaultCopyTargetDate } from './CopyFoodSheet';

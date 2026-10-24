@@ -1,3 +1,5 @@
+/** @file Express server startup, route mounting, session middleware, and process lifecycle. */
+
 import 'dotenv/config';
 import { markVerifiedBrowserLogin, serializeBrowserLoginUser } from './utils/browserLoginCredentials';
 import { verifyLocalPassword } from './services/credentialVerification';

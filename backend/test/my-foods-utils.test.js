@@ -1,3 +1,5 @@
+/** @file Regression coverage for my foods utils: myFoodsUtils: normalizeServingUnitLabel trims and collapses whitespace. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

@@ -1,3 +1,5 @@
+/** @file Plan Check Summary: A stable diagnosis slot; expanded details own review, apply, and undo actions. */
+
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -109,6 +111,7 @@ export function PlanCheckSummary({ onPress, planAvailable }: PlanCheckSummaryPro
     />;
 }
 
+/** Presents a compact plan-check state with focus feedback and stale-refresh handling. */
 export function PlanCheckSummaryView(props: PlanCheckSummaryViewProps) {
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);

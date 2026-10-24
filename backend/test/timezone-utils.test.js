@@ -1,3 +1,5 @@
+/** @file Regression coverage for timezone utils: addUtcYearsClamped preserves calendar dates and clamps leap day. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

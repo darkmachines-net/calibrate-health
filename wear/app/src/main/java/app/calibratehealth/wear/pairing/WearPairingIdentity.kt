@@ -1,3 +1,5 @@
+/** Stable watch device identity used by the pairing protocol. */
+
 package app.calibratehealth.wear.pairing
 
 import android.content.Context

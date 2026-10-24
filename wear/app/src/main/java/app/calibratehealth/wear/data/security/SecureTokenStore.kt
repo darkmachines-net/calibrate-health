@@ -1,3 +1,5 @@
+/** Keystore-encrypted session persistence bound to the configured server origin. */
+
 package app.calibratehealth.wear.data.security
 
 import android.content.Context
@@ -37,8 +39,11 @@ internal fun SecureSession.requireValid() {
 }
 
 interface SecureTokenStore {
+    /** Reads the encrypted session, returning null when absent and failing on corrupted credentials. */
     fun read(): SecureSession?
+    /** Validates and persists the session in the secure token store. */
     fun write(session: SecureSession)
+    /** Removes the persisted credential envelope. */
     fun clear()
 }
 

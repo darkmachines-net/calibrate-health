@@ -1,3 +1,5 @@
+/** @file Health Connect availability, permission, connection, and synchronization contracts. */
+
 export const HEALTH_CONNECT_FEATURES = {
     STEPS: 'steps',
     ACTIVE_CALORIES: 'active_calories',

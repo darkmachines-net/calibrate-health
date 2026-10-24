@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 22 accessibility: Launch 22 accessibility coverage contracts. */
+
 import type { Page, TestInfo } from '@playwright/test';
 import { ROUTE_IDS, ROUTE_REGISTRY } from '../../mobile/src/navigation/routeRegistry';
 import { expect, hideTransientPwaNotices, test } from './fixtures';

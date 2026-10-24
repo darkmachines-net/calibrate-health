@@ -1,3 +1,5 @@
+/** @file Regression coverage for day Presentation: day calorie presentation. */
+
 import {
     getFoodDayStatusLabel,
     getFoodDayCaloriePresentation,

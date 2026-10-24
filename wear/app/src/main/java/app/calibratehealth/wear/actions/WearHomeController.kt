@@ -1,3 +1,5 @@
+/** Watch action planning, durable mutation enqueueing, and user-facing queue/recovery state. */
+
 package app.calibratehealth.wear.actions
 
 import app.calibratehealth.wear.WearSummary
@@ -32,9 +34,11 @@ data class PlannedMutation(val type: String, val payloadJson: String)
 
 /** Pure mutation planner centralizes the exact, optimistic Watch API wire contract. */
 object WearActionPlanner {
+    /** Plans a food creation from the immutable quick-add snapshot payload. */
     fun quickAdd(item: QuickAddItemEntity): PlannedMutation =
         PlannedMutation("food.create", item.mutationPayloadJson)
 
+    /** Plans a day-completion toggle with the snapshot revision required for conflict detection. */
     fun setFoodDayComplete(summary: WearSummary): PlannedMutation = PlannedMutation(
         "food_day.set_complete",
         jsonObject(
@@ -44,10 +48,12 @@ object WearActionPlanner {
         )
     )
 
+    /** Plans deletion of the currently eligible undo candidate, otherwise returns null. */
     fun undo(summary: WearSummary): PlannedMutation? = summary.undoFoodLogId?.takeIf { summary.hasUndoCandidate }?.let {
         PlannedMutation("food.delete", jsonObject("food_log_id" to it.toString()))
     }
 
+    /** Validates canonical weight grams and plans an upsert with the current local-day revision. */
     fun saveWeight(summary: WearSummary, grams: Long): PlannedMutation {
         require(grams in 25_000L..400_000L) { "Weight must be between 25 and 400 kg." }
         return PlannedMutation(
@@ -118,10 +124,13 @@ class WearHomeController(
         refreshQueueStatus()
     }
 
+    /** Enqueues the selected quick-add snapshot for durable idempotent synchronization. */
     fun quickAdd(item: QuickAddItemEntity) = enqueue(WearActionPlanner.quickAdd(item))
 
+    /** Enqueues a revision-bound completion toggle for the displayed food day. */
     fun toggleFoodDay(summary: WearSummary) = enqueue(WearActionPlanner.setFoodDayComplete(summary))
 
+    /** Enqueues deletion of the eligible undo candidate or presents an unavailable-action error. */
     fun undo(summary: WearSummary) {
         val planned = WearActionPlanner.undo(summary)
         if (planned == null) {
@@ -131,6 +140,7 @@ class WearHomeController(
         }
     }
 
+    /** Validates a weight action before enqueueing it, presenting validation failures to the user. */
     fun saveWeight(summary: WearSummary, grams: Long) {
         val planned = runCatching { WearActionPlanner.saveWeight(summary, grams) }
             .getOrElse { error ->
@@ -140,6 +150,7 @@ class WearHomeController(
         enqueue(planned)
     }
 
+    /** Requests the dated food-log handoff while preventing overlapping actions and reporting unreachable phone state. */
     fun continueOnPhone(summary: WearSummary) {
         if (actionState.value.inProgress) return
         actionState.value = actionState.value.copy(inProgress = true)
@@ -155,12 +166,14 @@ class WearHomeController(
         }
     }
 
+    /** Updates visible sync status when background work requires attention. */
     fun reportWorkerFailure(message: String = "Health sync needs attention.") {
         actionState.update { current ->
             current.copy(status = WearSyncStatus.Error(message))
         }
     }
 
+    /** Reloads active and terminal outbox state to reconcile the action status shown on the watch. */
     fun refreshQueueStatus() {
         scope.launch {
             val queueState = runCatching {

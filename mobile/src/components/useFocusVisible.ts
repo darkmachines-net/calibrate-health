@@ -1,3 +1,5 @@
+/** @file use Focus Visible: Mirrors :focus-visible for shared React Native/Web pressables. */
+
 import React from 'react';
 import { Platform, type PressableProps } from 'react-native';
 

@@ -1,9 +1,20 @@
+/** @file Regression coverage for Public Legal Page: PublicLegalPage. */
+
 /**
  * Exercises public legal page behavior and regression boundaries.
  */
 import { fireEvent, render, within } from '@testing-library/react-native';
+/**
+ * Exercises public legal page behavior and regression boundaries.
+ */
 import { StyleSheet } from 'react-native';
+/**
+ * Exercises public legal page behavior and regression boundaries.
+ */
 import { PublicLegalPage } from './PublicLegalPage';
+/**
+ * Exercises public legal page behavior and regression boundaries.
+ */
 import { spacing } from '../../theme';
 
 let mockUser: { id: number } | null = null;

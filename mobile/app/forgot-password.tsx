@@ -1,3 +1,5 @@
+/** @file forgot password: Requests password recovery with field validation and privacy-preserving result messaging. */
+
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { Link } from 'expo-router';
@@ -11,6 +13,7 @@ import { useAppTheme } from '../src/theme';
 
 const GENERIC_RESET_MESSAGE = 'If an eligible account matches that email, reset instructions will arrive shortly.';
 
+/** Requests password recovery with field validation and privacy-preserving result messaging. */
 export default function ForgotPasswordRoute() {
     const { api } = useAuth();
     const { colors } = useAppTheme();

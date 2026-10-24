@@ -1,3 +1,5 @@
+/** @file Validated notification channel selection and shared delivery result contracts. */
+
 export const NOTIFICATION_DELIVERY_CHANNELS = {
     PUSH: 'push',
     IN_APP: 'in_app'

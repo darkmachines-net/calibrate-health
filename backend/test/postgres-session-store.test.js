@@ -1,3 +1,5 @@
+/** @file Regression coverage for postgres session store: PostgresSessionStore.initialize verifies the session schema exists. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

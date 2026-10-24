@@ -1,3 +1,5 @@
+/** Ordered watch credential, account-cache, scheduled-work, and pairing cleanup. */
+
 package app.calibratehealth.wear.actions
 
 import android.content.Context
@@ -23,6 +25,7 @@ class WearLocalDisconnect(context: Context) {
         RoomAccountDataStore(database)
     )
 
+    /** Removes credentials before account data, then cancels owned work, notifications, and pairing coordination state. */
     suspend fun disconnect(): Result<Unit> {
         val clearResult = runCatching { coordinator.clear() }
         // Credential removal happens before Room clearing, so cancellation cannot revive old access.

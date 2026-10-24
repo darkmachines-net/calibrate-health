@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Pairing Protocol. */
+
 package app.calibratehealth.wear.pairing
 
 import org.junit.Assert.assertArrayEquals
@@ -12,6 +14,7 @@ class WearPairingProtocolTest {
     private val now = Instant.parse("2026-07-11T20:00:00Z").toEpochMilli()
     private val origin = "https://health.example.com"
 
+    /** Verifies that invite parser binds request to exact build origin and short lifetime. */
     @Test
     fun `invite parser binds request to exact build origin and short lifetime`() {
         val fields = PairingFields(
@@ -29,6 +32,7 @@ class WearPairingProtocolTest {
         assertNull(parsePhonePairingInvite(fields, origin, now + MAX_PAIRING_WINDOW_MS))
     }
 
+    /** Verifies that credential parser requires request node origin and device correlation. */
     @Test
     fun `credential parser requires request node origin and device correlation`() {
         val pending = pendingInvite()
@@ -49,6 +53,7 @@ class WearPairingProtocolTest {
         assertTrue(isCorrelated(pending, pending.requestId, "phone-node", origin))
     }
 
+    /** Verifies that account disconnect requires the retained phone account and a fresh command. */
     @Test
     fun `account disconnect requires the retained phone account and a fresh command`() {
         val fields = PairingFields(
@@ -72,6 +77,7 @@ class WearPairingProtocolTest {
         assertNull(parse(at = now + MAX_PAIRING_WINDOW_MS + 1))
     }
 
+    /** Verifies that account disconnect result is a positive correlated cleanup acknowledgement. */
     @Test
     fun `account disconnect result is a positive correlated cleanup acknowledgement`() {
         assertEquals(
@@ -90,6 +96,7 @@ class WearPairingProtocolTest {
         )
     }
 
+    /** Verifies that pairing results report both success and bounded failure to the phone. */
     @Test
     fun `pairing results report both success and bounded failure to the phone`() {
         val pending = pendingInvite()
@@ -108,6 +115,7 @@ class WearPairingProtocolTest {
         )
     }
 
+    /** Verifies that signing payload exactly matches backend protocol bytes. */
     @Test
     fun `signing payload exactly matches backend protocol bytes`() {
         val payload = buildPairingSigningPayload(
@@ -125,6 +133,7 @@ class WearPairingProtocolTest {
         )
     }
 
+    /** Verifies that exchange url accepts only an origin and appends fixed api route. */
     @Test
     fun `exchange URL accepts only an origin and appends fixed API route`() {
         assertEquals(

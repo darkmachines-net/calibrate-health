@@ -1,3 +1,5 @@
+/** @file Regression coverage for hosted native evidence: started hosted native evidence is exact, source-bound, and lane-specific. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

@@ -1,3 +1,5 @@
+/** @file Phone-side Wear discovery, account/server-bound pairing, and retained connection lifecycle. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WearPairingCredentialResponse } from '@calibrate/api-client';
 import * as Crypto from 'expo-crypto';
@@ -191,6 +193,7 @@ function isStoredWearPairing(value: unknown, serverOrigin: string): value is Sto
         && Number.isFinite(new Date(pairing.pairedAt).getTime());
 }
 
+/** Loads valid account-scoped pairing state and restores native relay authorization for older pairings. */
 export async function readStoredWearPairing(
     serverOrigin: string,
     userId: number
@@ -549,6 +552,7 @@ export async function processWearPairingInbox(options: {
     return { processed, paired, errors };
 }
 
+/** Lists reachable watch pairing nodes or returns an empty list when native transport is unavailable. */
 export async function getReachableWearNodes(
     transport: WearPairingTransport | null = getNativeTransport()
 ): Promise<WearNode[]> {

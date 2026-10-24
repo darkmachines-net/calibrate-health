@@ -1,3 +1,5 @@
+/** @file profile Completion: Shared by onboarding and protected tabs so reviewed historical plans stay recoverable in-app. */
+
 import type { UserProfileResponse } from '@calibrate/api-client';
 
 /**

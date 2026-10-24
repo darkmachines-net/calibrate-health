@@ -1,3 +1,5 @@
+/** @file Windows native-tool prerequisite inspection and verified tool installation for repository-owned commands. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -28,6 +30,7 @@ const HELP = [
   'SDK license: https://developer.android.com/studio/terms'
 ].join('\n');
 
+/** Accepts only supported native setup flags and rejects duplicate options. */
 export function parseNativeSetupArguments(argv) {
   const options = { check: false, skipDeps: false, acceptLicenses: false, help: false };
   const flags = { '--check': 'check', '--skip-deps': 'skipDeps', '--accept-licenses': 'acceptLicenses', '--help': 'help', '-h': 'help' };
@@ -40,6 +43,7 @@ export function parseNativeSetupArguments(argv) {
   return options;
 }
 
+/** Removes signing, Play, and Expo credentials from prerequisite installation environments. */
 export function nativeSetupEnvironment(environment) {
   return Object.fromEntries(Object.entries(environment).filter(([name]) => {
     const key = name.toUpperCase();
@@ -60,6 +64,7 @@ function powershell(script, environment, input) {
   return result.stdout.trim();
 }
 
+/** Reads only the allowlisted Windows user-level Java and Android tool variables. */
 export function readNativeUserEnvironment(environment) {
   const script = [
     '$ErrorActionPreference = "Stop"',
@@ -93,6 +98,7 @@ function saveNativeUserEnvironment(values, environment) {
   powershell(script, environment, JSON.stringify(selected));
 }
 
+/** Downloads a pinned native tool through a temporary file and validates it before publishing the destination. */
 export async function downloadNativeTool(artifact, destination, fetchImpl = fetch) {
   if (fs.existsSync(destination)) throw new Error('Download destination already exists: ' + destination);
   const temporary = destination + '.partial-' + randomUUID();
@@ -121,6 +127,7 @@ function removeStagingDirectory(parent, directory) {
   fs.rmSync(directory, { recursive: true, force: true });
 }
 
+/** Extracts an archive into a new directory using environment-supplied paths rather than interpolated shell code. */
 export function extractNativeArchive(archive, destination, environment) {
   if (fs.existsSync(destination)) throw new Error('Archive extraction destination already exists.');
   // Paths arrive through the child environment, never by interpolating them into PowerShell code.
@@ -152,6 +159,7 @@ export function extractNativeArchive(archive, destination, environment) {
   });
 }
 
+/** Installs a verified archive through a staging directory and refuses to overwrite an existing tool installation. */
 export async function installNativeArchive(artifact, destination, environment, dependencies = {}) {
   if (fs.existsSync(destination)) {
     throw new Error('Existing tool directory is incomplete or unsupported: ' + destination + '. Move it aside and rerun setup.');
@@ -215,6 +223,7 @@ function easInstallState(root) {
   };
 }
 
+/** Reports whether the EAS installation and lock/runtime cache stamp match the reviewed tool inputs. */
 export function inspectNativeEasDependency(root) {
   try {
     const state = easInstallState(root);
@@ -225,6 +234,7 @@ export function inspectNativeEasDependency(root) {
   return { name: 'EAS CLI', ok: false, detail: 'Missing entry or changed lockfile/runtime. Run npm run native:setup.' };
 }
 
+/** Reuses a matching EAS dependency cache or installs the reviewed lockfile without application credentials. */
 export function ensureNativeEasDependency(root, npmCli, environment, run = runSetupCommand, log = console.log) {
   if (inspectNativeEasDependency(root).ok) {
     log('[native-setup] EAS CLI dependency cache hit.');
@@ -238,6 +248,7 @@ export function ensureNativeEasDependency(root, npmCli, environment, run = runSe
   fs.writeFileSync(state.stamp, state.digest);
 }
 
+/** Reports missing host prerequisites needed by native setup without modifying them. */
 export function inspectNativeHostDependencies(root) {
   const missing = ['node_modules/expo/package.json', 'shared/dist/cjs/releaseCompatibility.js']
     .filter((file) => !fs.existsSync(path.join(root, file)));
@@ -245,12 +256,13 @@ export function inspectNativeHostDependencies(root) {
     detail: missing.length ? 'Run npm run native:setup. Missing: ' + missing.join(', ') : 'Installed' };
 }
 
+/** Checks or installs supported Windows native prerequisites using credential-free dependency setup. */
 export async function setupNative(argv = [], options = {}) {
   const args = parseNativeSetupArguments(argv);
   const log = options.log ?? console.log;
   if (args.help) { log(HELP); return { ok: true }; }
   if ((options.platform ?? process.platform) !== 'win32' || (options.arch ?? process.arch) !== 'x64') {
-    throw new Error('Automatic native setup currently supports Windows x64. See docs/android-internal-testing.md.');
+    throw new Error('Automatic native setup currently supports Windows x64. See scripts/README.md#play-onboarding.');
   }
   assertNativeNodeVersion(options.nodeVersion);
   const root = options.root ?? ROOT;

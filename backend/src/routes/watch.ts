@@ -1,3 +1,5 @@
+/** @file Restricted watch snapshot and idempotent mutation endpoints with watch-scoped authentication. */
+
 import express from 'express';
 import {
   diagnosticOperationOutcomeForStatus,

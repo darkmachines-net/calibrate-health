@@ -1,3 +1,5 @@
+/** @file Regression coverage for calibration lab: calibration lab accepts a complete editable history shape. */
+
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';

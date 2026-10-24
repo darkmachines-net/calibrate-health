@@ -1,3 +1,5 @@
+/** @file Regression coverage for Form Field: FormField. */
+
 import { render, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo, TextInput } from 'react-native';
 import { FormField, type FocusableFormControl } from './FormField';

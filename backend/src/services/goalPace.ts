@@ -1,8 +1,11 @@
+/** @file Goal pace validation and updates with current planning availability and canonical weight conversion. */
+
 import crypto from 'node:crypto';
 import { evaluateCaloriePlan } from '../../../shared/caloriePolicy';
 import type { StoredCaloriePlanningSnapshot } from './caloriePlanning';
 import { projectionWire } from './caloriePlanning';
 import { gramsToWeight } from '../utils/units';
+/** Convert canonical goal weights to the user's unit and include current planning/projection availability. */
 export function goalWire(snapshot: StoredCaloriePlanningSnapshot) {
     if (!snapshot.goal)
         return null;
@@ -23,6 +26,7 @@ export function goalPaceVersion(snapshot: StoredCaloriePlanningSnapshot): string
         day: snapshot.localToday, current: snapshot.effectiveRevision, future: snapshot.futureRevisions
     })).digest('hex');
 }
+/** Evaluate each supported deficit against the same stored planning inputs and safety policy. */
 export function goalPaceOptions(snapshot: StoredCaloriePlanningSnapshot, now: Date = new Date()) {
     const { user, goal, evaluation } = snapshot;
     const planOptions = evaluation.planOptions.map(option => {

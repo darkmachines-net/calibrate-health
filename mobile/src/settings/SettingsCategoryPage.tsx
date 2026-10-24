@@ -1,3 +1,5 @@
+/** @file Settings Category Page: Renders one settings category with platform-appropriate navigation and offline-state summaries. */
+
 import { StyleSheet, View } from 'react-native';
 import { SettingsRow, SettingsSection } from '../components/settings/SettingsList';
 import { MOBILE_CLIENT_IDENTITY } from '../config/nativeClient';
@@ -25,6 +27,7 @@ type SettingsCategoryPageProps = {
     onLogout: () => void;
 };
 
+/** Renders one settings category with platform-appropriate navigation and offline-state summaries. */
 export function SettingsCategoryPage({
     category,
     sessionCount,

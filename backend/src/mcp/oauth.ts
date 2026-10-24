@@ -1,3 +1,5 @@
+/** @file oauth: Mount resource-bound discovery, registration, consent and token routes on the supplied Express app. */
+
 import express, { type Express, type Request, type RequestHandler, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import type { OAuthRegisteredClientsStore } from '@modelcontextprotocol/sdk/server/auth/clients.js';
@@ -46,6 +48,7 @@ export type CalibrateOAuthSetup = {
   approvalRateLimiter: RequestHandler;
 };
 
+/** Mount resource-bound discovery, registration, consent and token routes on the supplied Express app. */
 export function installCalibrateOAuth(app: Express, setup: CalibrateOAuthSetup) {
   const resourceUrl = new URL(setup.resourceUrl.href);
   resourceUrl.hash = '';

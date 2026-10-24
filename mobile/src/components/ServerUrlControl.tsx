@@ -1,3 +1,5 @@
+/** @file Server Url Control: Hosted-first server selector for auth and Settings screens. */
+
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, type ViewProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

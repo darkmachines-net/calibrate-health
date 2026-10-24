@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Open a selected repository worktree in the local editor after resolving its Git identity. */
+
 import { execFileSync } from "node:child_process";
 
 /**

@@ -1,3 +1,5 @@
+/** @file failed Creation: Caller supplies only the active account/server queue; synthetic IDs alone never identify a creation. */
+
 import type { QueuedMutation } from './queuedMutation';
 
 type FoodTarget = { id?: number; date?: string; localCreation?: { operationId?: string; payload?: { date?: unknown } } };

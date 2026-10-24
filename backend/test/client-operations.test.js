@@ -1,3 +1,5 @@
+/** @file Regression coverage for client operations: executeIdempotentMutation replays the committed response without repeating the mutation. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

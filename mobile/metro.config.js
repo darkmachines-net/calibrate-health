@@ -1,3 +1,5 @@
+/** @file Metro bundler configuration for shared workspace sources and Expo platform resolution. */
+
 const path = require('node:path');
 const fs = require('node:fs');
 const { getDefaultConfig } = require('expo/metro-config');

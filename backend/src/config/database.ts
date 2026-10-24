@@ -1,3 +1,5 @@
+/** @file Shared Prisma client and PostgreSQL adapter pool, including coordinated shutdown ownership. */
+
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';

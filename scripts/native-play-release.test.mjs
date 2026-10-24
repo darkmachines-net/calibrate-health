@@ -1,3 +1,5 @@
+/** @file Regression coverage for native play release: Play plan binds one package to distinct phone and Wear tracks and code lanes. */
+
 /** Exercise paired Play artifact verification, exact track routing, and atomic upload/promotion behavior. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';

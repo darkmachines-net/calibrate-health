@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Queue Status. */
+
 package app.calibratehealth.wear.actions
 
 import app.calibratehealth.wear.WearSyncStatus
@@ -8,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WearQueueStatusTest {
+    /** Verifies that pending work takes precedence over older terminal failure. */
     @Test
     fun `pending work takes precedence over older terminal failure`() {
         val status = queueStatus(
@@ -18,6 +21,7 @@ class WearQueueStatusTest {
         assertEquals(WearSyncStatus.Pending(1), status)
     }
 
+    /** Verifies that latest failed mutation exposes its actionable error. */
     @Test
     fun `latest failed mutation exposes its actionable error`() {
         val status = queueStatus(
@@ -28,6 +32,7 @@ class WearQueueStatusTest {
         assertEquals(WearSyncStatus.Error("Refresh and try again."), status)
     }
 
+    /** Verifies that latest success clears an older in-memory error. */
     @Test
     fun `latest success clears an older in-memory error`() {
         val status = queueStatus(

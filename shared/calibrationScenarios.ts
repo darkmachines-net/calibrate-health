@@ -1,3 +1,5 @@
+/** @file Deterministic synthetic weight/intake histories for calibration lab presets and model validation. */
+
 import type { CalibrationFoodDay, CalibrationInput, CalibrationWeightPoint } from './calibration';
 
 export type CalibrationScenario = {
@@ -284,6 +286,7 @@ export const CALIBRATION_SCENARIOS: CalibrationScenario[] = [
     }
 ];
 
+/** Find a deterministic lab preset by its stable ID, returning undefined for an unknown scenario. */
 export function getCalibrationScenario(id: string): CalibrationScenario | undefined {
     return CALIBRATION_SCENARIOS.find((scenario) => scenario.id === id);
 }

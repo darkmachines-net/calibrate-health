@@ -1,3 +1,5 @@
+/** @file device Locale: Older installed binaries can receive this bundle before they include Expo Localization. */
+
 import { readRuntimeLocale, type DeviceLocale } from './deviceLocale.shared';
 
 export type { DeviceLocale } from './deviceLocale.shared';

@@ -1,3 +1,5 @@
+/** @file goal Validation: Ensure goal start/target weights are coherent with the chosen deficit/surplus direction. */
+
 /**
  * Ensure goal start/target weights are coherent with the chosen deficit/surplus direction.
  *

@@ -1,3 +1,5 @@
+/** @file Account/server-isolated onboarding draft persistence, recovery, and cleanup. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isOnboardingFormState, type OnboardingFormState } from './completionState';
 
@@ -9,6 +11,7 @@ type StorageQueue = { generation: number; tail: Promise<void> };
 const queues = new Map<string, StorageQueue>();
 const STORAGE_PREFIX = '@calibrate/onboarding-draft/v1';
 
+/** Builds an onboarding draft key isolated by normalized server origin and account. */
 export function onboardingDraftStorageKey(serverUrl: string, userId: number): string {
     return `${STORAGE_PREFIX}/${encodeURIComponent(new URL(serverUrl).origin.toLowerCase())}/${userId}`;
 }
@@ -29,11 +32,13 @@ function enqueue<T>(key: string, operation: () => Promise<T>): Promise<T> {
     return result;
 }
 
+/** Captures the current draft generation so stale asynchronous work cannot write into a reset draft. */
 export function bindOnboardingDraft(serverUrl: string, userId: number): OnboardingDraftBinding {
     const key = onboardingDraftStorageKey(serverUrl, userId);
     return { key, generation: queueFor(key).generation };
 }
 
+/** Reports whether a draft binding still owns the current storage generation. */
 export function isOnboardingDraftBindingCurrent(binding: OnboardingDraftBinding): boolean {
     return queueFor(binding.key).generation === binding.generation;
 }
@@ -51,6 +56,7 @@ function parseDraft(encoded: string): OnboardingDraft | null {
     }
 }
 
+/** Serializes draft reads, rejects stale bindings, and removes malformed stored drafts. */
 export function readOnboardingDraft(binding: OnboardingDraftBinding): Promise<OnboardingDraft | null> {
     return enqueue(binding.key, async () => {
         if (!isOnboardingDraftBindingCurrent(binding)) return null;
@@ -62,6 +68,7 @@ export function readOnboardingDraft(binding: OnboardingDraftBinding): Promise<On
     });
 }
 
+/** Serializes draft writes and ignores work whose account binding generation has been invalidated. */
 export function writeOnboardingDraft(binding: OnboardingDraftBinding, draft: OnboardingDraft): Promise<void> {
     const encoded = JSON.stringify(draft);
     return enqueue(binding.key, async () => {

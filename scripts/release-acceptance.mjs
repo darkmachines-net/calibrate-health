@@ -1,9 +1,11 @@
+/** @file Release-scope classification and validation of the repository-owned acceptance plan. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION = 3;
+export const RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION = 4;
 export const RELEASE_ACCEPTANCE_PLAN_PATH = 'quality/release-acceptance-plan.json';
 export const RELEASE_ACCEPTANCE_SCOPES = Object.freeze(['server-web', 'ota', 'native']);
 
@@ -13,7 +15,6 @@ const PLAN_FIELDS = Object.freeze([
   'profile',
   'protocolPath',
   'releaseManifestPath',
-  'releaseNotesPath',
   'releaseScopes',
   'policy',
   'automaticRequirements',
@@ -82,6 +83,7 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+/** Validates and orders a nonempty unique set of supported release scopes, otherwise null. */
 export function normalizeReleaseAcceptanceScopes(value) {
   if (!Array.isArray(value) || value.length === 0) return null;
   if (value.some((scope) => typeof scope !== 'string' || !RELEASE_ACCEPTANCE_SCOPES.includes(scope))) {
@@ -186,12 +188,14 @@ function validateWorkflowJobs(workflowPaths, jobIds, label, context, manualOnly 
   }
 }
 
+/** Selects automatic and manual requirements intersecting the requested release scopes. */
 export function requirementsForReleaseScopes(plan, releaseScopes) {
   const normalized = normalizeReleaseAcceptanceScopes(releaseScopes) ?? [...RELEASE_ACCEPTANCE_SCOPES];
   return [...(plan?.automaticRequirements ?? []), ...(plan?.manualCapabilities ?? [])]
     .filter((item) => item.releaseScopes?.some((scope) => normalized.includes(scope)));
 }
 
+/** Validates the current acceptance schema, referenced inputs, requirements, and retained evidence. */
 export function validateReleaseAcceptancePlan(plan, options = {}) {
   const context = {
     root: options.repositoryRoot ?? repositoryRoot,
@@ -215,7 +219,6 @@ export function validateReleaseAcceptancePlan(plan, options = {}) {
     context.readFile,
   );
   readRepositoryFile(plan?.releaseManifestPath, 'Release manifest', context.root, errors, context.readFile);
-  readRepositoryFile(plan?.releaseNotesPath, 'Release notes', context.root, errors, context.readFile);
   if (protocol && !/single-user pre-release/i.test(protocol)) {
     errors.push('Release acceptance protocol must explain the single-user pre-release policy.');
   }
@@ -282,6 +285,7 @@ export function validateReleaseAcceptancePlan(plan, options = {}) {
   return { errors, automatic, manual };
 }
 
+/** Parses acceptance verification arguments and rejects unsupported options. */
 export function parseReleaseAcceptanceArgs(argv) {
   const values = {
     command: argv[0] && !argv[0].startsWith('--') ? argv[0] : 'verify',
@@ -296,6 +300,7 @@ export function parseReleaseAcceptanceArgs(argv) {
   return values;
 }
 
+/** Loads and validates the repository acceptance plan, failing when any current contract requirement is invalid. */
 export function runReleaseAcceptanceCli(argv = process.argv.slice(2), options = {}) {
   const root = options.repositoryRoot ?? repositoryRoot;
   const args = parseReleaseAcceptanceArgs(argv);

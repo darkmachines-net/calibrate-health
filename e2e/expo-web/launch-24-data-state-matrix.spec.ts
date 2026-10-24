@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 24 data state matrix: Launch 24 exported-web data-state coverage. */
+
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import {
   API_RESOURCE_FIXTURE_STATES,

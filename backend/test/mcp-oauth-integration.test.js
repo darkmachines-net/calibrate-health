@@ -1,3 +1,5 @@
+/** @file Regression coverage for mcp oauth integration: remote MCP completes DCR, PKCE approval, tool use, refresh rotation, replay rejection, and revocation. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');

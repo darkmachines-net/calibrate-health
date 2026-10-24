@@ -1,3 +1,5 @@
+/** @file account Data: Download a browser Blob directly; Expo Sharing and cache-file APIs are native-only. */
+
 import type { AccountExport } from '@calibrate/api-client';
 import {
     ACCOUNT_EXPORT_MIME_TYPE,

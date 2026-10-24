@@ -1,3 +1,5 @@
+/** @file Regression coverage for Weight Entry Sheet: WeightEntrySheet. */
+
 import type { QueuedMutation } from '../offline/queuedMutation';
 import React from 'react';
 import { AccessibilityInfo } from 'react-native';

@@ -1,3 +1,5 @@
+/** @file Open Food Facts text/barcode lookup and normalization into the shared food-provider contract. */
+
 import { FoodDataProvider, FoodMeasure, FoodSearchRequest, FoodSearchResult, NormalizedFoodItem, Nutrients } from './types';
 import { parseNumber, round, scaleNutrients } from './utils';
 import {
@@ -76,6 +78,7 @@ class OpenFoodFactsProvider implements FoodDataProvider {
         }
     }
 
+    /** Try exact barcode lookup before bounded text search and normalize products under the requested completeness policy. */
     async searchFoods(request: FoodSearchRequest): Promise<FoodSearchResult> {
         if (request.barcode) {
             const product = await this.fetchProductByBarcode(request.barcode, request.languageCode);

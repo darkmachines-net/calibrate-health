@@ -1,3 +1,5 @@
+/** @file Add Food Sheet: Selects the compact add-food composition below the shared tablet breakpoint. */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, Linking, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -87,6 +89,7 @@ const DEFAULT_RECENT_LIMIT = 8;
 const DEFAULT_PINNED_LIMIT = 8;
 const ADD_FOOD_SHEET_HEIGHT = '92%';
 
+/** Selects the compact add-food composition below the shared tablet breakpoint. */
 export function usesCompactAddFoodLayout(viewportWidth: number): boolean {
     return viewportWidth < TABLET_LAYOUT_BREAKPOINT;
 }
@@ -137,6 +140,7 @@ function appendSection(rows: FoodBrowseRow[], title: string, items: FoodBrowseRo
     rows.push({ kind: 'header', key: `header:${title}`, title }, ...items);
 }
 
+/** Coordinates food search, serving selection, and idempotent logging within the adaptive add-food sheet. */
 export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     visible,
     date,

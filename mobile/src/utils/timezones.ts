@@ -1,3 +1,5 @@
+/** @file IANA timezone validation, option discovery, and user-facing timezone labels. */
+
 import type { ComboboxOption } from '../components/Combobox';
 
 type TimeZoneDefinition = {
@@ -70,6 +72,7 @@ export function resolveOnboardingTimeZone(
     return 'UTC';
 }
 
+/** Uses curated timezone labels or derives a readable location from the IANA identifier. */
 export function formatTimeZoneLabel(value: string): string {
     const curated = CURATED_TIME_ZONES.find((option) => option.value === value);
     if (curated) return curated.label;
@@ -80,6 +83,7 @@ export function formatTimeZoneLabel(value: string): string {
     return `${city} (${parts.slice(0, -1).join(' / ')})`;
 }
 
+/** Formats the current clock and UTC offset for a valid IANA timezone, otherwise null. */
 export function formatTimeZoneClock(value: string, now = new Date()): string | null {
     if (!isValidIanaTimeZone(value)) return null;
     try {
@@ -100,6 +104,7 @@ export function formatTimeZoneClock(value: string, now = new Date()): string | n
     }
 }
 
+/** Builds distinct valid timezone options with device/selected context and current clock labels. */
 export function getTimeZoneOptions(
     selectedTimeZone: string,
     deviceTimeZone: string | null,

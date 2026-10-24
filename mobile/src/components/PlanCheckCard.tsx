@@ -1,3 +1,5 @@
+/** @file Plan Check Card: Loads calibration status and coordinates recommendation mutations while guarding pending evidence changes. */
+
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,6 +51,7 @@ const PlanCheckHeading: React.FC<{ metadata?: string; hideTitle?: boolean }> = (
     </View>
 );
 
+/** Loads calibration status and coordinates recommendation mutations while guarding pending evidence changes. */
 export const PlanCheckCard: React.FC<PlanCheckCardProps> = ({
     suppressStaleNotice,
     hideTitle,
@@ -280,6 +283,7 @@ const PaceComparison: React.FC<{
     );
 };
 
+/** Presents plan-check evidence and requires review before applying an available recommendation. */
 export const PlanCheckCardView: React.FC<PlanCheckCardViewProps> = ({
     status,
     hideTitle,

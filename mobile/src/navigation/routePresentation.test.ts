@@ -1,3 +1,5 @@
+/** @file Regression coverage for route Presentation: route presentation. */
+
 import {
     getRouteBackLabel,
     getRouteDocumentTitle,

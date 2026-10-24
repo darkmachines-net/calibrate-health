@@ -1,3 +1,5 @@
+/** @file replay Invalidation: Refresh every surface whose server-owned state may change after a queued weigh-in replays. */
+
 import type { QueryClient } from '@tanstack/react-query';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';
 import { OFFLINE_MUTATION_OPERATIONS } from './operations';

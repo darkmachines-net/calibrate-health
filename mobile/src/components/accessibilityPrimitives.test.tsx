@@ -1,3 +1,5 @@
+/** @file Regression coverage for accessibility Primitives: mobile accessibility primitives. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import { AppButton } from './AppButton';

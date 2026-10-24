@@ -1,3 +1,5 @@
+/** @file Authenticated Health Connect source-record ingestion, synchronization, and account-scoped activity reads. */
+
 import express from 'express';
 import type { ActivityRecordType as PrismaActivityRecordType } from '@prisma/client';
 import prisma from '../config/database';
@@ -18,6 +20,7 @@ import { diagnosticOperationOutcomeForStatus, diagnosticsRegistry } from '../obs
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';
 
 const router = express.Router();
+/** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
 router.use(requireAuthenticatedUser);
 
 type StoredActivityRecord = {
@@ -179,6 +182,7 @@ router.get('/days', async (req, res) => {
   const timeZone = typeof user.timezone === 'string' ? user.timezone : 'UTC';
   let range;
   try {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     range = parseActivityRange(req.query as Record<string, unknown>, timeZone);
   } catch (error) {
     return res.status(400).json({ message: error instanceof Error ? error.message : 'Invalid date range' });
@@ -200,7 +204,9 @@ router.get('/days', async (req, res) => {
     for (const record of records) {
       const key = toDateKey(record.local_date);
       const existing = recordsByDate.get(key) ?? [];
+      /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
       existing.push(record);
+      /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
       recordsByDate.set(key, existing);
     }
 
@@ -233,6 +239,7 @@ router.post('/health-connect/sync', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const sourceDeviceId = res.locals.mobileDeviceId as string | undefined;
   if (!sourceDeviceId) {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(403);
     return res.status(403).json({ message: 'Health Connect sync requires an authenticated mobile device' });
   }
@@ -241,21 +248,25 @@ router.post('/health-connect/sync', async (req, res) => {
     req.get?.('x-client-operation-id') ?? req.headers?.['x-client-operation-id']
   );
   if (operationId === null) {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(400);
     return res.status(400).json({ message: 'Invalid x-client-operation-id' });
   }
   if (operationId === undefined) {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(400);
     return res.status(400).json({ message: 'x-client-operation-id is required' });
   }
 
   let parsed;
   try {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     parsed = parseHealthConnectSyncBody(
       req.body,
       typeof user.timezone === 'string' ? user.timezone : 'UTC'
     );
   } catch (error) {
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(400);
     const message = error instanceof Error ? error.message : 'Invalid sync request';
     return res.status(400).json({
@@ -447,10 +458,12 @@ router.post('/health-connect/sync', async (req, res) => {
         };
       }
     });
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(result.status);
     return res.status(result.status).json(result.body);
   } catch (error) {
     if (error instanceof ClientOperationConflictError) {
+      /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
       recordOutcome(409);
       return res.status(409).json({
         message: error.message,
@@ -458,6 +471,7 @@ router.post('/health-connect/sync', async (req, res) => {
         retryable: error.code === 'OPERATION_IN_PROGRESS'
       });
     }
+    /** Reconcile one Health Connect change-token page and advance its device checkpoint atomically. */
     recordOutcome(500);
     return res.status(500).json({ message: 'Server error' });
   }

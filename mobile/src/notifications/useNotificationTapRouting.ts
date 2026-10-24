@@ -1,3 +1,5 @@
+/** @file use Notification Tap Routing: Route push taps safely and reconcile foreground/native updates with the in-app notification cache. */
+
 import { useEffect, useRef } from 'react';
 import { router, type Href } from 'expo-router';
 import { getNotificationAction, getNotificationResponseActionUrl } from './workflow';

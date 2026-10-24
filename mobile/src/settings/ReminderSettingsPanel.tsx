@@ -1,3 +1,5 @@
+/** @file Reminder Settings Panel: Separates account reminder intent and wall-clock scheduling from device permission and delivery controls. */
+
 import { StyleSheet, View } from 'react-native';
 import type { PushStatusPresentation } from '../notifications/workflow';
 import { AppButton } from '../components/AppButton';
@@ -35,6 +37,7 @@ type ReminderSettingsPanelProps = {
 // Keeps paired time inputs readable before they wrap on compact or enlarged-text layouts.
 const TIME_FIELD_MIN_WIDTH = 180;
 
+/** Separates account reminder intent and wall-clock scheduling from device permission and delivery controls. */
 export function ReminderSettingsPanel({
     timezone,
     logFoodEnabled,

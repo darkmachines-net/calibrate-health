@@ -1,3 +1,5 @@
+/** @file Regression coverage for Add Food Sheet: AddFoodSheet adaptive layout. */
+
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import { recordFoodDayReceipt } from '../offline/foodDayReceipts';
 import { createOutboxDispatch, type OutboxDispatch } from '../offline/mutationDispatch';

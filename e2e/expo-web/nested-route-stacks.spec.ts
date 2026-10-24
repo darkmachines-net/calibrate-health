@@ -1,9 +1,11 @@
+/** @file Regression coverage for nested route stacks: signed-in legal pages retain Settings navigation without the history shortcut. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, expectApiFailure, hideTransientPwaNotices, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-07');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-07');
 
 for (const missing of ['/notifications', '/notifications?cursor=old#history', '/notifications/obsolete', '/missing/deep/page?stale=true#section']) {
   test(`unknown address ${missing} replaces itself with Today without a history loop`, async ({ page, ux }) => {

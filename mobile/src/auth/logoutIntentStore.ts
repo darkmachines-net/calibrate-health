@@ -1,3 +1,5 @@
+/** @file logout Intent Store: Serialize invalidation and account switching; completed logout still suppresses automatic sign-in. */
+
 type Intent = { signedOut: boolean; pending: boolean; refreshTokens?: string[] };
 type Storage = { get: (key: string) => Promise<string | null>; set: (key: string, value: string) => Promise<void>; remove: (key: string) => Promise<void> };
 

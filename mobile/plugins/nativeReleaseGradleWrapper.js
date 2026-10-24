@@ -1,3 +1,5 @@
+/** @file native Release Gradle Wrapper: Returns the reviewed phone or Wear Gradle distribution contract and rejects unknown roles. */
+
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -70,11 +72,13 @@ function pinNativeReleaseGradleWrapperProperties(source) {
   return `${lines.join(newline)}${hasTrailingNewline ? newline : ''}`;
 }
 
+/** Adds the dependency-locking block once to generated Gradle source. */
 function injectNativeDependencyLocking(source) {
   if (source.includes(DEPENDENCY_LOCKING_MARKER)) return source;
   return `${source.trimEnd()}\n\n${DEPENDENCY_LOCKING_BLOCK}`;
 }
 
+/** Restores reviewed phone dependency locks and verification metadata after generated Android prebuild. */
 function restorePhoneGradleDependencyState(projectRoot, platformProjectRoot) {
   const dependencyStateTemplate = path.join(projectRoot, PHONE_DEPENDENCY_STATE_DIRECTORY);
   let templateStat;

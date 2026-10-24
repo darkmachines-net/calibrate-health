@@ -1,3 +1,5 @@
+/** @file Regression coverage for contextual Fab: contextual tab FAB. */
+
 import { getActiveTabRoute, resolveContextualFab } from './contextualFab';
 
 describe('contextual tab FAB', () => {

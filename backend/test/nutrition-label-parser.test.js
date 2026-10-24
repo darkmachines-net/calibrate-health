@@ -1,6 +1,8 @@
+/** @file Regression coverage for nutrition label parser: extracts calories and preserves the printed household unit and metric equivalent. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseNutritionLabel } = require('../src/services/nutritionLabelParser');
+const { parseNutritionLabel } = require('../src/services/nutritionLabels/parser');
 
 test('extracts calories and preserves the printed household unit and metric equivalent', () => {
   assert.deepEqual(parseNutritionLabel('Nutrition Facts\n8 servings per container\nServing size 2 tbsp (32 g)\nAmount per serving\nCalories 190\nTotal Fat 16g 21%'), {

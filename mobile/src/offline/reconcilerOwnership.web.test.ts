@@ -1,3 +1,5 @@
+/** @file Regression coverage for reconciler Ownership web: preserves queued work without attempting recovery or replay when exclusive ownership is unavailable. */
+
 jest.mock('./mutationLock', () => ({ withMutationLock: async (_namespace: string, work: (exclusive: boolean) => Promise<unknown>) => work(false) }));
 import { OutboxReconciler } from './reconciler';
 import type { OutboxStore } from './outbox';

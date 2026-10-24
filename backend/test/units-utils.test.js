@@ -1,3 +1,5 @@
+/** @file Regression coverage for units utils: isWeightUnit identifies supported weight units. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

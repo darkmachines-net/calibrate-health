@@ -1,3 +1,5 @@
+/** @file Regression coverage for reminder Wall Clock: reminderWallClock. */
+
 import {
     getReminderScheduleErrors,
     hasReminderScheduleErrors,

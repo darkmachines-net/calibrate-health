@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Pairing Ui State. */
+
 package app.calibratehealth.wear.pairing
 
 import org.junit.Assert.assertEquals
@@ -11,6 +13,7 @@ class PairingUiStateTest {
         refreshExpiresAtEpochMs = 2_000
     )
 
+    /** Verifies that refresh-expired session requires re-pair without representing it as unpaired. */
     @Test
     fun `refresh-expired session requires re-pair without representing it as unpaired`() {
         val state = resolvePairingUiState(
@@ -25,6 +28,7 @@ class PairingUiStateTest {
         assertTrue((state as PairingUiState.Error).message.contains("queued changes will be preserved"))
     }
 
+    /** Verifies that valid refresh session remains paired and preserves confirmation status. */
     @Test
     fun `valid refresh session remains paired and preserves confirmation status`() {
         assertEquals(
@@ -39,6 +43,7 @@ class PairingUiStateTest {
         )
     }
 
+    /** Verifies that server-rejected session is not a usable fallback for failed replacement pairing. */
     @Test
     fun `server-rejected session is not a usable fallback for failed replacement pairing`() {
         assertEquals(
@@ -59,6 +64,7 @@ class PairingUiStateTest {
         )
     }
 
+    /** Verifies that new pending pairing takes precedence over an expired session. */
     @Test
     fun `new pending pairing takes precedence over an expired session`() {
         assertEquals(
@@ -73,6 +79,7 @@ class PairingUiStateTest {
         )
     }
 
+    /** Verifies that paired and upgrade-required states can probe for compatibility recovery. */
     @Test
     fun `paired and upgrade-required states can probe for compatibility recovery`() {
         assertTrue(PairingUiState.Paired(42, "https://health.example.com", false).shouldAttemptForegroundSync())

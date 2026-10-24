@@ -1,3 +1,5 @@
+/** @file Native logout-intent platform contract; browser cross-tab coordination is supplied by the web module. */
+
 import * as SecureStore from 'expo-secure-store';
 import { CalibrateApiClient } from '@calibrate/api-client';
 import { MOBILE_CLIENT_IDENTITY } from '../config/nativeClient';

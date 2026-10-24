@@ -1,3 +1,5 @@
+/** @file Regression coverage for Bottom Sheet Modal: BottomSheetModal. */
+
 import { Modal, StyleSheet, Text } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import {

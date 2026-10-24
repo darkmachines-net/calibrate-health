@@ -1,3 +1,5 @@
+/** @file use Onboarding Draft: Hydrate once per account, keeping transient form state separate from completed server data. */
+
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { UserClientPayload } from '@calibrate/api-client';
 import { createInitialOnboardingForm, type OnboardingFormState } from './completionState';

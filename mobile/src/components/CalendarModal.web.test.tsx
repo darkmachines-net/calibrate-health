@@ -1,3 +1,5 @@
+/** @file Regression coverage for Calendar Modal web: CalendarModal web. */
+
 import React from 'react';
 import { CalendarModal } from './CalendarModal.web';
 

@@ -1,3 +1,5 @@
+/** @file with Optional Camera Hardware: Keep manual food entry available on tablets and other devices without camera hardware. */
+
 const { withAndroidManifest } = require('@expo/config-plugins');
 
 const OPTIONAL_CAMERA_FEATURES = [
@@ -34,6 +36,7 @@ function applyOptionalCameraHardware(androidManifest) {
   return androidManifest;
 }
 
+/** Marks camera hardware optional in the generated Android manifest. */
 const withOptionalCameraHardware = (config) => withAndroidManifest(config, (manifestConfig) => {
   manifestConfig.modResults = applyOptionalCameraHardware(manifestConfig.modResults);
   return manifestConfig;

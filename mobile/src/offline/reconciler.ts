@@ -1,3 +1,5 @@
+/** @file Ordered offline replay, bounded retry scheduling, and account-scoped acknowledgement reconciliation. */
+
 import type { FoodLogDay, FoodTrackingPause } from '@calibrate/api-client';
 import { recordFoodDayReceipt, recordCurrentPauseReceipt } from './foodDayReceipts';
 import { withMutationLock } from './mutationLock';
@@ -45,12 +47,14 @@ function describeReplayError(error: unknown): string {
 export class OutboxReconciler {
     private activeReconciliation: Promise<ReconcileResult> | null = null;
 
+    /** Binds ordered storage and the mutation executor, optionally coordinating a shared namespace lock. */
     constructor(
         private readonly outbox: OutboxStore,
         private readonly executeMutation: QueuedMutationExecutor,
         private readonly namespace?: string
     ) {}
 
+    /** Coalesces concurrent reconciliation calls and requires safe namespace ownership before replay. */
     reconcile(): Promise<ReconcileResult> {
         if (this.activeReconciliation) return this.activeReconciliation;
 
@@ -67,6 +71,7 @@ export class OutboxReconciler {
         return reconciliation;
     }
 
+    /** Requeues selected failures before starting the same serialized reconciliation process. */
     async retryFailed(id?: string): Promise<ReconcileResult> {
         await this.outbox.retryFailed(id);
         return this.reconcile();

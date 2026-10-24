@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: calorie plan presentation. */
+
 import { getCaloriePlanPresentation } from './presentation';
 
 describe('calorie plan presentation', () => {

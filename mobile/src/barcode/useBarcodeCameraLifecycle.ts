@@ -1,3 +1,5 @@
+/** @file use Barcode Camera Lifecycle: Stops camera capture whenever another surface covers the preview or the route leaves the foreground. */
+
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useFocusEffect } from 'expo-router';

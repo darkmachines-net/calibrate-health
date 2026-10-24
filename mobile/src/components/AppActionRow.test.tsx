@@ -1,3 +1,5 @@
+/** @file Regression coverage for App Action Row: AppActionRow. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import { AppActionRow } from './AppActionRow';
 import { AppButton } from './AppButton';

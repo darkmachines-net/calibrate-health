@@ -1,3 +1,5 @@
+/** @file Offline account migration planning, credential mapping, and resumable import execution with explicit source/target adapters. */
+
 import { createHash } from 'node:crypto';
 import { normalizeEmailCredential } from '../../src/utils/authCredentials';
 
@@ -63,6 +65,7 @@ function checkedScope(scope: MigrationScope): MigrationScope {
   return { installationId: scope.installationId, sourceId: scope.sourceId, projectId: scope.projectId };
 }
 
+/** Derive a stable destination UID from installation, source, project and positive SQL user ID; reject invalid scope. */
 export function migrationUid(scope: MigrationScope, userId: number): string {
   checkedScope(scope);
   if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error('Invalid application identity');
@@ -144,7 +147,9 @@ export interface BcryptImportRecord {
 /** A failed/ambiguous call must never be retried as a blind upsert. */
 export interface MigrationDestination {
   projectId: string;
+  /** Check every proposed UID/email against the frozen destination; any collision must hold the batch. */
   findCollisions(records: Array<{ uid: string; email: string }>): Promise<boolean>;
+  /** Import encoded bcrypt credentials and return indexed outcomes; callers must persist in-flight state before invoking. */
   importUsers(records: BcryptImportRecord[], options: { hash: { algorithm: 'BCRYPT' } }): Promise<{
     successCount: number;
     failureCount: number;
@@ -152,6 +157,7 @@ export interface MigrationDestination {
   }>;
 }
 
+/** Bind a pending checkpoint to this exact plan digest and source-record order. */
 export function initialMigrationCheckpoint(plan: MigrationPlan): MigrationCheckpoint {
   return { version: 1, planDigest: plan.digest, states: plan.records.map(() => 'pending') };
 }

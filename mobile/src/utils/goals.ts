@@ -1,3 +1,5 @@
+/** @file Client goal-direction, weight, and pace presentation derived from canonical shared policy. */
+
 import type { GoalEntry, MetricEntry } from '@calibrate/api-client';
 import { ALLOWED_DAILY_DEFICIT_ABS_VALUES, type WeightUnit } from '@calibrate/shared';
 import { getLocalDateForTimestamp, getTodayDate } from './dates';
@@ -14,11 +16,13 @@ export const GOAL_MODE_OPTIONS: Array<{ value: GoalMode; label: string }> = [
 
 export const DAILY_GOAL_CHANGE_OPTIONS = ALLOWED_DAILY_DEFICIT_ABS_VALUES.filter((value) => value !== 0);
 
+/** Maps positive deficit to loss, negative deficit to gain, and missing or zero deficit to maintenance. */
 export function getGoalModeFromDailyDeficit(dailyDeficit: number | null | undefined): GoalMode {
     if (typeof dailyDeficit !== 'number' || dailyDeficit === 0) return 'maintain';
     return dailyDeficit > 0 ? 'lose' : 'gain';
 }
 
+/** Applies goal direction to the requested calorie-change magnitude, using zero for maintenance. */
 export function getSignedDailyDeficit(goalMode: GoalMode, dailyChangeAbs: string): number {
     if (goalMode === 'maintain') return 0;
     const magnitude = Math.abs(Number(dailyChangeAbs));
@@ -34,6 +38,7 @@ export function getTargetWeightAfterGoalModeChange(
     return goalMode === 'maintain' ? startWeight : currentTargetWeight;
 }
 
+/** Explains the chosen calorie-change magnitude as a deficit or surplus relative to estimated burn. */
 export function getDailyGoalChangeCopy(
     goalMode: Exclude<GoalMode, 'maintain'>,
     value: string
@@ -52,12 +57,14 @@ export function getDailyGoalChangeCopy(
     };
 }
 
+/** Formats the signed daily deficit as maintenance or a daily deficit/surplus label. */
 export function formatDailyGoalChange(signedDailyDeficit: number): string {
     if (signedDailyDeficit === 0) return 'Maintenance';
     const direction = signedDailyDeficit > 0 ? 'deficit' : 'surplus';
     return `${formatCalories(Math.abs(signedDailyDeficit))}/day ${direction}`;
 }
 
+/** Summarizes the active goal's direction, target weight, and configured daily calorie change. */
 export function formatGoalSummary(goal: GoalEntry | null | undefined, weightUnit: WeightUnit | undefined): string {
     if (!goal) return 'No active goal set';
 
@@ -68,6 +75,7 @@ export function formatGoalSummary(goal: GoalEntry | null | undefined, weightUnit
     return `Maintain around ${target}`;
 }
 
+/** Calculates bounded progress along the start-to-target interval, returning null for unavailable or maintenance weights. */
 export function computeGoalProgress(args: {
     startWeight: number;
     targetWeight: number;

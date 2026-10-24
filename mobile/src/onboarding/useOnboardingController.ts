@@ -1,3 +1,5 @@
+/** @file use Onboarding Controller: Coordinates saved onboarding drafts, step validation, calorie preview, and atomic completion. */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
@@ -22,6 +24,7 @@ const SERVER_FIELDS: Record<string, OnboardingField> = {
     target_weight_grams: 'targetWeight', daily_deficit: 'dailyChangeAbs'
 };
 
+/** Coordinates saved onboarding drafts, step validation, calorie preview, and atomic completion. */
 export function useOnboardingController(user: UserClientPayload) {
     const { api, serverUrl, updateCurrentUser } = useAuth();
     const draft = useOnboardingDraft({ user, serverUrl });

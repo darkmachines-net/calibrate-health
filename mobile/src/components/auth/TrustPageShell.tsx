@@ -1,3 +1,5 @@
+/** @file Trust Page Shell: Compact public/account-trust shell shared by recovery and consent flows. */
+
 import { StyleSheet, View } from 'react-native';
 import { AppSection } from '../AppSection';
 import { AppText } from '../AppText';

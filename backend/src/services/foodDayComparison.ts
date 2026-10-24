@@ -1,3 +1,5 @@
+/** @file Completed-day calorie comparisons from saved historical plans rather than current profile estimates. */
+
 import type { DailyCaloriePlan, FoodLogDay } from '@prisma/client';
 import type { MutationDatabase } from './clientOperations';
 import { observeCurrentCaloriePlan } from './dailyCaloriePlans';
@@ -78,6 +80,7 @@ export async function captureFoodDayComparison(db: MutationDatabase, day: FoodLo
   } });
 }
 
+/** Build a saved comparison only from valid captured plan values and nonnegative intake; otherwise return null. */
 export function foodDayCalorieComparison(day: {
   comparison_target_kcal?: number | null;
   comparison_maintenance_kcal?: number | null;

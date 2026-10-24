@@ -1,3 +1,5 @@
+/** @file Food Log Content: Coordinates dated meal sections, offline log mutations, selection, and recoverable deletion. */
+
 import { OfflineMutationConflict } from '../offline/mutationConflict';
 import { copyFoodWhenSynchronized } from './copyFoodWhenSynchronized';
 import { findFailedFood } from '../offline/failedCreation';
@@ -50,6 +52,7 @@ import { parseDecimalInput } from '../utils/numericInput';
 import { useBarcodeSearchHandoff } from '../barcode/useBarcodeSearchHandoff';
 import { reportClientOperationFailure } from '../diagnostics/operationDiagnostics';
 
+/** Coordinates dated meal sections, offline log mutations, selection, and recoverable deletion. */
 export default function FoodLogContent({ embedded = false }: { embedded?: boolean }) {
     const routeParams = useLocalSearchParams<{ date?: string; meal?: string; openAddFood?: string }>();
     const pathname = usePathname();

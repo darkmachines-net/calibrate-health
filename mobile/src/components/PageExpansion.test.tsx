@@ -1,3 +1,5 @@
+/** @file Regression coverage for Page Expansion: native expansion Back handling. */
+
 import React from 'react';
 import { Animated, BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Preview: Today meal summaries. */
+
 import type { FoodLogEntry } from '@calibrate/api-client';
 import { getTodayFoodMeals } from './foodPreview';
 

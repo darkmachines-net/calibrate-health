@@ -1,3 +1,5 @@
+/** @file Structured barcode continuation across authentication without accepting arbitrary return paths. */
+
 import { MEAL_PERIODS } from '@calibrate/shared';
 import {
     BARCODE_RESUME_STEPS,

@@ -1,3 +1,5 @@
+/** @file Barcode Screen: Coordinates camera permission, deduplicated barcode lookup, food selection, and offline-aware logging. */
+
 import { queuedFoodDayStatus } from '../offline/foodDayIntent';
 import type { QueuedMutation } from '../offline/queuedMutation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -81,6 +83,7 @@ function getInitialMode(resume: BarcodeResumeContext): BarcodeMode {
     return 'scan';
 }
 
+/** Coordinates camera permission, deduplicated barcode lookup, food selection, and offline-aware logging. */
 export default function BarcodeScreen() {
     const { nutritionLabelScanning } = useServerSettings();
     const theme = useAppTheme();

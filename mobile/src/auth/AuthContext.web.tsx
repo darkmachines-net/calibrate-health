@@ -1,3 +1,5 @@
+/** @file Auth Context: Browser auth intentionally relies only on the server's HttpOnly cookie session. */
+
 import { hasExplicitLogout, beginExplicitLogout, flushExplicitLogout, finishExplicitLogin } from './logoutIntent.web';
 import { usePendingLogoutRetry } from './usePendingLogoutRetry';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -314,6 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+/** Reads browser authentication state and throws outside its provider. */
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within AuthProvider');

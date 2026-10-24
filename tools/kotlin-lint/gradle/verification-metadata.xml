@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">
+   <configuration>
+      <verify-metadata>true</verify-metadata>
+      <verify-signatures>false</verify-signatures>
+   </configuration>
+   <components>
+      <component group="io.gitlab.arturbosch.detekt" name="detekt-cli" version="1.23.8">
+         <artifact name="detekt-cli-1.23.8-all.jar">
+            <sha256 value="3afe89a11120303c73c9bdda3d8fe558dd9070a6937d27819ddc04b275381245" origin="Verified against Maven Central artifact checksum"/>
+         </artifact>
+         <artifact name="detekt-cli-1.23.8.module">
+            <sha256 value="7d7577d1c92a32bac8b853a47c5e41bcd6636bf32687b576e33f4881052e0284" origin="Verified against Maven Central artifact checksum"/>
+         </artifact>
+      </component>
+   </components>
+</verification-metadata>

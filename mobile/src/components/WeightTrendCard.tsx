@@ -1,3 +1,5 @@
+/** @file Weight Trend Card: React Native reports locationX, while React Native Web forwards the browser click's offsetX. */
+
 import React, { useMemo, useState } from 'react';
 import {
     Platform,
@@ -98,6 +100,7 @@ function describeSelectedTrendPoint(
     return `Selected ${formatDateOnlyForDisplay(point.dateKey)}. Underlying weight estimate ${formatWeight(snapshot.weight, unit)}. 95% trend range ${formatEstimatedTrendRange(snapshot, unit)}. Scale reading ${formatWeight(point.metric.weight, unit)}.`;
 }
 
+/** Loads range-selected trend history and exposes chart selection alongside the weight summary. */
 export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
     title = 'Weight trend',
     description,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for auth Server Draft: readAuthServerDraft. */
+
 import { readAuthServerDraft } from './authServerDraft';
 
 describe('readAuthServerDraft', () => {

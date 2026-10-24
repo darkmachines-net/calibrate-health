@@ -1,3 +1,5 @@
+/** @file Add Food Request Context: Keeps add-food intent outside the tab routes so the sheet opens on the already-mounted Today screen instead of during a navigation transition. */
+
 import React, { createContext, useContext } from 'react';
 import type { MealPeriod } from '@calibrate/shared';
 
@@ -28,6 +30,7 @@ export const AddFoodRequestProvider: React.FC<{
     <AddFoodRequestContext.Provider value={value}>{children}</AddFoodRequestContext.Provider>
 );
 
+/** Reads shared add-food requests and throws when used outside the request provider. */
 export function useAddFoodRequest(): AddFoodRequestContextValue {
     const value = useContext(AddFoodRequestContext);
     if (!value) {

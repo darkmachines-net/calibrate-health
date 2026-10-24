@@ -1,3 +1,5 @@
+/** @file Regression coverage for Tab Screen: TabScreen. */
+
 import { StyleSheet } from 'react-native';
 import { render } from '@testing-library/react-native';
 import { AppText } from './AppText';

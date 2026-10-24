@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend governance: weight trend governance: model constants come from the versioned parameter manifest. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

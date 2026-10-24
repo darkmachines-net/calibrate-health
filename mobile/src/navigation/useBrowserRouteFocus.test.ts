@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Browser Route Focus: useBrowserRouteFocus. */
+
 import { renderHook } from '@testing-library/react-native';
 import { useBrowserRouteFocus } from './useBrowserRouteFocus';
 

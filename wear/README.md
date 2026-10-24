@@ -83,13 +83,14 @@ quick add, undo, rotary weight entry, continue-on-phone, and connection controls
 The cache-only Tile and calorie-balance complication expose calorie progress and cache freshness without initiating
 network work from their system-rendered services.
 
-`WearDataLayerContract` defines versioned coordination paths for pairing, sync invalidation, and continue-on-phone
-handoffs. Health summaries do not travel over Data Layer: the paired watch calls the selected server directly and
-caches its own data with Room. Sync invalidations contain only bounded server/account/device metadata, are accepted
+`WearDataLayerContract` defines versioned paths for pairing, sync invalidation, continue-on-phone
+handoffs, and bounded authenticated HTTP relay through the paired phone. The transport tries that relay first,
+then falls back to a direct server connection when the phone transport is unavailable. The watch caches its own
+data with Room. Sync invalidations contain only bounded server/account/device metadata, are accepted
 only from the exact phone node stored during pairing, and schedule the same constrained WorkManager refresh chain.
 
 The watch publishes the `calibrate_wear_pairing_v1` capability through `android_wear_capabilities`. This capability is
-only for phone-side discovery and short-lived coordination; server health data never travels through it.
+only for phone-side discovery; the separate relay paths carry allowlisted Watch API requests and responses.
 
 After server-confirmed account deletion, the phone sends a short-lived, account-bound disconnect command to the exact
 paired node before erasing its own pairing metadata. The watch accepts it only from the retained phone node with an
@@ -163,6 +164,5 @@ Fast JVM contract tests cover cache bounds, FIFO ordering, stable IDs, retry beh
 On-device instrumentation tests close and reopen the real Room database and Keystore token store to verify durable
 state across object/process recreation.
 
-The generated Room schema baseline is a release gate. `exportSchema` is enabled, but the schema JSON cannot be
-committed until the Room annotation processor dependencies are available locally and a real Gradle build generates
-and verifies it; do not hand-author its identity hash.
+Room schema snapshots live in `app/schemas/`. When changing the database, generate the next schema through a real
+Gradle build and verify its migration against the existing snapshots; do not hand-author its identity hash.

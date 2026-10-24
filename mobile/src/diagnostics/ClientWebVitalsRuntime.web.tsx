@@ -1,3 +1,5 @@
+/** @file Client Web Vitals Runtime: Observe at most once, and only when the document itself opened on an authenticated route. */
+
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'expo-router';
 import type { ClientDiagnosticRoute } from '@calibrate/shared';

@@ -1,3 +1,5 @@
+/** @file Food Selection Editor: Shared confirmation editor used after choosing any reusable food source. */
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

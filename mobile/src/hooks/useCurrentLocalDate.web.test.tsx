@@ -1,3 +1,5 @@
+/** @file Browser lifecycle tests for date refresh on visibility, focus, and page restoration. */
+
 import { act, cleanupAsync, renderHook } from '@testing-library/react-native';
 import { useCurrentLocalDate } from './useCurrentLocalDate';
 

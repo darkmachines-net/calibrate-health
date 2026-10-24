@@ -1,3 +1,5 @@
+/** @file today: Composes today's calorie comparison, food summary, day status, and contextual logging actions. */
+
 import { useTrackingFood, useTrackingMetrics } from '../../../src/offline/useTrackingQueries';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -36,6 +38,7 @@ import { spacing, useAppTheme } from '../../../src/theme';
 
 const FoodLogContent = React.lazy(() => import('../../../src/food/FoodLogContent'));
 
+/** Composes today's calorie comparison, food summary, day status, and contextual logging actions. */
 export default function TodayScreen() {
     const theme = useAppTheme();
     const routeParams = useLocalSearchParams<{ openAddFood?: string; date?: string; meal?: string }>();

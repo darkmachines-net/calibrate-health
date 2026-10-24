@@ -1,3 +1,5 @@
+/** @file use Wear Sync Invalidation: Notify only the exact paired node after committed Android mutations and retry durable sends on foreground. */
+
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';

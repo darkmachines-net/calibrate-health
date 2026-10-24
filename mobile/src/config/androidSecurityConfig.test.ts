@@ -1,3 +1,5 @@
+/** @file Regression coverage for android Security Config: Android privacy configuration. */
+
 const appConfig = require('../../app.json') as {
     expo: {
         android: { allowBackup?: boolean; blockedPermissions?: string[] };

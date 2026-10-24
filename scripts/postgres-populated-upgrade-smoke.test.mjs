@@ -1,3 +1,5 @@
+/** @file Regression coverage for postgres populated upgrade smoke: migrationOrdinal accepts tracked ordinal names and rejects malformed names. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

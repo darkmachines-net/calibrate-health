@@ -1,3 +1,5 @@
+/** @file Regression coverage for offline Workspace: restores allowlisted tracking data across restart without persisting credentials or other-account state. */
+
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'unused') }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import AsyncStorage from '@react-native-async-storage/async-storage';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for web Vitals lifecycle web: client Web Vitals page lifecycle. */
+
 import { reportClientDiagnostic } from './clientDiagnostics';
 import { observeClientWebVitals } from './webVitals.web';
 

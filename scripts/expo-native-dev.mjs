@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Native Expo development bundler startup with validated platform and worktree backend configuration. */
+
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +12,7 @@ const NATIVE_PLATFORMS = new Set(["android", "ios"]);
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultRepoRoot = path.resolve(path.dirname(scriptPath), "..");
 
+/** Parses the native Expo platform option and rejects unsupported or unknown arguments. */
 export function parseExpoNativeDevArgs(argv) {
   let platform = "android";
   for (let index = 0; index < argv.length; index += 1) {
@@ -74,6 +77,7 @@ function resolveNpmCommand() {
   return { command: process.execPath, args: [npmCli] };
 }
 
+/** Resolves the worktree backend and starts the platform-specific Expo development client workflow. */
 export async function main() {
   const { platform } = parseExpoNativeDevArgs(process.argv.slice(2));
   const repoRoot = path.resolve(process.env.CODEX_WORKTREE_PATH || defaultRepoRoot);

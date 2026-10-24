@@ -1,3 +1,5 @@
+/** @file Regression coverage for notification realtime: notification realtime publisher fans out only to the subscribed user and cleans up. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

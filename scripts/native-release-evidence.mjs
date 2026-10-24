@@ -1,3 +1,5 @@
+/** @file Native artifact metadata, signing identity, and optional device evidence verification. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,7 +11,7 @@ export const NATIVE_RELEASE_EVIDENCE_SCHEMA_VERSION = 3;
 export const NATIVE_RELEASE_OBSERVATION_SCHEMA_VERSION = 2;
 const NATIVE_RELEASE_BUILD_PROVENANCE_SCHEMA_VERSION = 1;
 export const NATIVE_RELEASE_APPLICATION_ID = 'net.darkmachines.healthtracker';
-export const NATIVE_RELEASE_PROTOCOL = 'docs/physical-galaxy-validation.md';
+export const NATIVE_RELEASE_PROTOCOL = 'quality/README.md';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..');
@@ -232,6 +234,7 @@ function releaseVersion(manifest, role) {
   };
 }
 
+/** Requires one distinct valid SHA-256 signing certificate fingerprint from keytool output. */
 export function parseKeytoolSignerFingerprint(output) {
   const fingerprints = [...output.matchAll(/\bSHA256:\s*([0-9a-f:]{64,})/gi)]
     .map((match) => match[1].replaceAll(':', '').toLowerCase())
@@ -243,6 +246,7 @@ export function parseKeytoolSignerFingerprint(output) {
   return unique[0];
 }
 
+/** Derives validated capabilities only when every checkpoint in the capability group passed. */
 export function deriveNativeReleaseCapabilities(checkpoints) {
   return Object.entries(NATIVE_RELEASE_CHECKPOINT_GROUPS)
     .filter(([, required]) => required.every((checkpoint) => checkpoints?.[checkpoint]?.outcome === true))
@@ -583,6 +587,7 @@ export function validateNativeReleaseObservation(observation, options = {}) {
   return result;
 }
 
+/** Combines validated observations and operator checkpoints into a complete physical release evidence record. */
 export function finalizeNativeReleaseEvidence(observation, details, options = {}) {
   const observationResult = validateNativeReleaseObservation(observation, options);
   if (observationResult.errors.length) {
@@ -611,6 +616,7 @@ export function finalizeNativeReleaseEvidence(observation, details, options = {}
   return result;
 }
 
+/** Restricts retained evidence destinations to canonical JSON filenames under quality/physical-results. */
 export function nativeReleaseEvidenceResultPath(value) {
   const normalized = normalizedRepositoryPath(value);
   if (!normalized || !/^quality\/physical-results\/[a-z0-9][a-z0-9._-]*\.json$/.test(normalized)) {
@@ -625,6 +631,7 @@ function requiredOption(argv, index, option) {
   return value;
 }
 
+/** Parses evidence observation/finalization options without accepting implicit source or device identity. */
 export function parseNativeReleaseEvidenceArgs(argv) {
   const result = {
     command: argv[0] ?? null,

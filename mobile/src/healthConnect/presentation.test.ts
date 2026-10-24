@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: Health Connect presentation. */
+
 import { DEFAULT_HEALTH_CONNECT_SELECTION } from './types';
 import {
     formatHealthConnectFreshness,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for one Time Token: consumeOneTimeToken. */
+
 import { consumeOneTimeToken } from './oneTimeToken';
 
 describe('consumeOneTimeToken', () => {

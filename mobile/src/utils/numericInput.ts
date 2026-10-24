@@ -1,3 +1,5 @@
+/** @file Localized numeric input parsing and canonical decimal validation for client forms. */
+
 const MAX_INPUT_DECIMAL_PLACES = 6; // Matches the precision used by food serving snapshots.
 
 /** Accept the decimal separator emitted by localized mobile number keyboards. */
@@ -6,6 +8,7 @@ export function normalizeDecimalInput(value: string): string {
     return value.replace(',', '.');
 }
 
+/** Parses normalized decimal input and returns NaN for blank text. */
 export function parseDecimalInput(value: string): number {
     const normalized = normalizeDecimalInput(value).trim();
     if (!normalized) return Number.NaN;
@@ -22,12 +25,14 @@ function getDecimalPlaces(value: string | number): number {
     return Math.max(0, coefficientPlaces - exponent);
 }
 
+/** Formats decimal input at bounded precision and removes unnecessary trailing fractional zeros. */
 export function formatDecimalInput(value: number, decimalPlaces = MAX_INPUT_DECIMAL_PLACES): string {
     const boundedDecimalPlaces = Math.max(0, Math.min(MAX_INPUT_DECIMAL_PLACES, decimalPlaces));
     const fixedValue = value.toFixed(boundedDecimalPlaces);
     return boundedDecimalPlaces === 0 ? fixedValue : fixedValue.replace(/\.?0+$/, '');
 }
 
+/** Applies a numeric step to input, treating invalid text as zero and respecting optional bounds. */
 export function adjustDecimalInput(options: {
     value: string;
     delta: number;

@@ -1,3 +1,5 @@
+/** @file Regression coverage for unit Defaults: onboarding measurement defaults. */
+
 import type { UserClientPayload } from '@calibrate/api-client';
 import type { DeviceLocale } from '../platform/deviceLocale';
 import { resolveOnboardingUnits, unitsForDeviceLocale } from './unitDefaults';

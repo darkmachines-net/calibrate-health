@@ -1,3 +1,5 @@
+/** @file Regression coverage for operation Diagnostics: fixed client operation diagnostics. */
+
 import { renderHook, waitFor } from '@testing-library/react-native';
 import {
     reportClientDiagnostic,

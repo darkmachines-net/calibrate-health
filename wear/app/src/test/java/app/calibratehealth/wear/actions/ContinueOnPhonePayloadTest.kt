@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Continue On Phone Payload. */
+
 package app.calibratehealth.wear.actions
 
 import app.calibratehealth.wear.data.security.SecureSession
@@ -6,6 +8,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ContinueOnPhonePayloadTest {
+    /** Verifies that payload is bound to protocol server user and local date. */
     @Test
     fun `payload is bound to protocol server user and local date`() {
         assertEquals(
@@ -15,6 +18,7 @@ class ContinueOnPhonePayloadTest {
         )
     }
 
+    /** Verifies that public resource payloads contain only account scope and an allowlisted destination. */
     @Test
     fun `public resource payloads contain only account scope and an allowlisted destination`() {
         assertEquals(
@@ -29,6 +33,7 @@ class ContinueOnPhonePayloadTest {
         )
     }
 
+    /** Verifies that payload rejects noncanonical dates. */
     @Test
     fun `payload rejects noncanonical dates`() {
         assertThrows(IllegalArgumentException::class.java) {

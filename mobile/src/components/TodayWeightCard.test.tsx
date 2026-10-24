@@ -1,3 +1,5 @@
+/** @file Regression coverage for Today Weight Card: TodayWeightCard. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { MetricEntry } from '@calibrate/api-client';

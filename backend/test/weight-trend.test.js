@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend: computeWeightTrend: keeps a stable trend for mostly flat weight series. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

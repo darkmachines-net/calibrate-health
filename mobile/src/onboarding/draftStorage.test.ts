@@ -1,3 +1,5 @@
+/** @file Regression coverage for draft Storage: onboarding draft storage. */
+
 const mockValues = new Map<string, string>();
 jest.mock('@react-native-async-storage/async-storage', () => ({
     __esModule: true,

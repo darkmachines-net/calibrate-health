@@ -1,3 +1,5 @@
+/** @file Canonical onboarding state initialization, unit conversion, validation, and completion payloads. */
+
 import {
     ACTIVITY_LEVELS, HEIGHT_UNITS, WEIGHT_UNITS, SEX_VALUES,
     calculateCalendarAge, normalizeDateOfBirth, isPolicyHeight, isPolicyWeight,
@@ -53,6 +55,7 @@ function displayHeight(mm: number | null) {
     };
 }
 
+/** Initializes onboarding fields from saved profile data with locale-aware units and timezone defaults. */
 export function createInitialOnboardingForm(user: UserClientPayload, deviceLocale: DeviceLocale = getDeviceLocale()): OnboardingFormState {
     const hasProfile = Boolean(user.date_of_birth || user.sex || user.height_mm || user.activity_level);
     return {
@@ -74,6 +77,7 @@ export function editWeight(form: OnboardingFormState, field: 'currentWeight' | '
     return { ...form, [field]: text, [field === 'currentWeight' ? 'currentWeightGrams' : 'targetWeightGrams']: grams };
 }
 
+/** Changes display units using canonical grams so repeated conversions do not accumulate rounding drift. */
 export function changeWeightUnit(form: OnboardingFormState, unit: WeightUnit): OnboardingFormState {
     if (unit === form.weightUnit) return form;
     const divisor = unit === WEIGHT_UNITS.LB ? GRAMS_PER_LB : GRAMS_PER_KG;
@@ -84,6 +88,7 @@ export function changeWeightUnit(form: OnboardingFormState, unit: WeightUnit): O
     };
 }
 
+/** Updates a height field and recomputes canonical millimeters when the input is valid. */
 export function editHeight(form: OnboardingFormState, field: 'heightCm' | 'heightFeet' | 'heightInches', text: string): OnboardingFormState {
     const next = { ...form, [field]: text };
     const mm = heightInputToCanonicalMillimeters({
@@ -95,6 +100,7 @@ export function editHeight(form: OnboardingFormState, field: 'heightCm' | 'heigh
     return { ...next, heightMillimeters: mm };
 }
 
+/** Converts complete height input between unit systems while preserving incomplete text for correction. */
 export function changeHeightUnit(form: OnboardingFormState, unit: HeightUnit): OnboardingFormState {
     if (unit === form.heightUnit) return form;
     // Incomplete input has no physical quantity to convert; let the user finish it first.
@@ -105,6 +111,7 @@ export function changeHeightUnit(form: OnboardingFormState, unit: HeightUnit): O
     return { ...form, heightUnit: unit, ...displayHeight(form.heightMillimeters) };
 }
 
+/** Returns field-specific validation errors for the requested onboarding step. */
 export function validateOnboardingStep(form: OnboardingFormState, step: OnboardingStepKey): OnboardingErrors {
     const errors: OnboardingErrors = {};
     if (step === 'about') {
@@ -139,6 +146,7 @@ export function validateOnboardingStep(form: OnboardingFormState, step: Onboardi
     return errors;
 }
 
+/** Builds a calorie-preview request only after required profile fields and activity level are valid. */
 export function buildCaloriePlanDraft(form: OnboardingFormState): CaloriePlanOptionsRequest | null {
     if (Object.keys(validateOnboardingStep(form, 'about')).length || !form.activityLevel) return null;
     return {
@@ -150,6 +158,7 @@ export function buildCaloriePlanDraft(form: OnboardingFormState): CaloriePlanOpt
     };
 }
 
+/** Validates every onboarding step and builds completion data from canonical measurements, throwing on incomplete input. */
 export function buildOnboardingCompleteData(form: OnboardingFormState): OnboardingCompleteData {
     if (['about', 'activity', 'plan'].some((step) => Object.keys(validateOnboardingStep(form, step as OnboardingStepKey)).length)) {
         throw new Error('Complete the required onboarding details.');

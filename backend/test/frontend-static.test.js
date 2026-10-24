@@ -1,3 +1,5 @@
+/** @file Regression coverage for frontend static: frontend cache policy revalidates documents and permanently caches hashed assets. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

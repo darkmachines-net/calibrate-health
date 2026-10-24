@@ -1,3 +1,5 @@
+/** @file Deterministic accessibility and visual-regression projects for the shared Expo browser surfaces. */
+
 import { defineConfig } from '@playwright/test';
 import process from 'node:process';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for performance regression: balances reference work from the reviewed per-operation ratio. */
+
 const assert = require('node:assert/strict');
 const test = require('node:test');
 

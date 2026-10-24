@@ -1,4 +1,4 @@
-/** Select application publications from recorded component sources, never from a mutable latest build. */
+/** @file Select application publications from recorded component sources, never from a mutable latest build. */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -45,7 +45,7 @@ export function applicationContent(file, text) {
     }
     return JSON.stringify(value);
   }
-  if (file === 'docs/openapi/v1.yaml' || file === 'packages/api-client/src/generated/v1.ts') {
+  if (file === 'backend/openapi/v1.yaml' || file === 'packages/api-client/src/generated/v1.ts') {
     return text.replace(/(version: ?)["']?\d+\.\d+\.\d+["']?/g, '$1<version>');
   }
   return text;

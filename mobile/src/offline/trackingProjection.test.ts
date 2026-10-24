@@ -1,3 +1,5 @@
+/** @file Regression coverage for tracking Projection: durable tracking overlays. */
+
 import { projectFood, projectMetrics, localTarget, foodWirePayload } from './trackingProjection';
 import type { QueuedMutation } from './queuedMutation';
 const mutation = (sequence: number, operation: string, payload: unknown): QueuedMutation => ({ sequence, id: 'operation-' + sequence, namespace: 'https://one.invalid::user:1', operation, payload: payload as QueuedMutation['payload'], state: 'pending', attemptCount: 0, lastError: null, createdAt: sequence, updatedAt: sequence });

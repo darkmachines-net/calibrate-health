@@ -1,3 +1,5 @@
+/** @file Regression coverage for Server Settings Screen: admin can enable and disable the server setting and sees the persisted result. */
+
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppText } from '../components/AppText';

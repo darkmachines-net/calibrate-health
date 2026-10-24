@@ -1,3 +1,5 @@
+/** @file Tab Screen: Screen layout for routes whose tab bar already owns the device bottom inset. */
+
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { spacing } from '../theme';

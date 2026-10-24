@@ -1,3 +1,5 @@
+/** @file Browser cross-tab logout intent persistence and subscription for account-session teardown. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalibrateApiClient } from '@calibrate/api-client';
 import { createLogoutIntentStore } from './logoutIntentStore';

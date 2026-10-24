@@ -1,3 +1,5 @@
+/** @file Regression coverage for release smoke: production export boots to the signed-out shell at each release viewport. */
+
 import type { Page, Route } from '@playwright/test';
 import {
   activateFixtureOffline,

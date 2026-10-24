@@ -1,3 +1,5 @@
+/** @file activity Utils: Validate and normalize one atomic Health Connect change-token page. */
+
 import {
   ACTIVITY_RECORD_TYPES,
   type ActivityRecordType

@@ -1,3 +1,5 @@
+/** @file Regression coverage for calorie safety: server-unavailable options expose disabled semantics and safe reason copy. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
@@ -30,7 +32,7 @@ async function captureEvidence(
   if (process.env.CALIBRATE_CAPTURE_EVIDENCE !== '1') return;
   const name = names[testInfo.project.name as keyof typeof names];
   if (!name) return;
-  const evidenceDir = path.resolve('docs/screenshots/launch-04');
+  const evidenceDir = path.resolve('.codex-screenshots/launch-04');
   await mkdir(evidenceDir, { recursive: true });
   const screenshotPath = path.join(evidenceDir, name);
   if (testInfo.project.name === 'desktop-chrome') {

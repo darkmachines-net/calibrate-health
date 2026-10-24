@@ -1,3 +1,5 @@
+/** @file Regression coverage for image Picker: native capture requests camera access and uploads the opaque file URI. */
+
 import { chooseLabelImage, LabelImageError } from './imagePicker';
 
 const mockPermission = jest.fn();

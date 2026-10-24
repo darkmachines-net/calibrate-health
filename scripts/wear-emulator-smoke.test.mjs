@@ -1,3 +1,5 @@
+/** @file Regression coverage for wear emulator smoke: Wear connection actions expose one explicitly named semantic click target. */
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';

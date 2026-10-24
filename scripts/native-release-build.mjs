@@ -1,3 +1,5 @@
+/** @file Clean-source native release builds with credential isolation and verified phone/watch artifacts. */
+
 /** Repository release tooling for native release build. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

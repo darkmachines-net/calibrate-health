@@ -1,3 +1,5 @@
+/** @file Wear emulator launch, UI checkpoint validation, and bounded screenshot/log evidence capture. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -34,6 +36,7 @@ const REVIEWED_WEAR_PERMISSIONS = Object.freeze([
   'net.darkmachines.healthtracker.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
 ]);
 
+/** Parses Android bounds and rejects rectangles with invalid syntax or nonpositive area. */
 export function parseBoundsRectangle(value) {
   const match = value.match(/^\[(\d+),(\d+)]\[(\d+),(\d+)]$/);
   if (!match) throw new Error(`Invalid Android bounds: ${value}`);
@@ -42,6 +45,7 @@ export function parseBoundsRectangle(value) {
   return { left, top, right, bottom };
 }
 
+/** Returns the center point of a validated Android bounds rectangle. */
 export function parseBounds(value) {
   const { left, top, right, bottom } = parseBoundsRectangle(value);
   return { x: Math.round((left + right) / 2), y: Math.round((top + bottom) / 2) };
@@ -61,6 +65,7 @@ function attribute(node, name) {
   return match ? decodeXml(match[1]) : '';
 }
 
+/** Reads effective screen dimensions, preferring the last override reported by wm. */
 export function parseWmSize(output) {
   const matches = [...output.matchAll(/(?:Physical|Override)?\s*size:\s*(\d+)x(\d+)/gi)];
   const match = matches.at(-1) ?? output.match(/^(\d+)x(\d+)$/m);
@@ -72,6 +77,7 @@ export function parseWmSize(output) {
   return { width, height };
 }
 
+/** Reads effective screen density, preferring the last override and rejecting nonpositive values. */
 export function parseWmDensity(output) {
   const matches = [...output.matchAll(/(?:Physical|Override)?\s*density:\s*(\d+)/gi)];
   const match = matches.at(-1) ?? output.match(/^(\d+)$/m);
@@ -82,6 +88,7 @@ export function parseWmDensity(output) {
   return densityDpi;
 }
 
+/** Extracts actionable UI node attributes from the Wear hierarchy dump. */
 export function parseWearUiNodes(xml) {
   return (xml.match(/<node\b[^>]*>/g) ?? []).map((node) => ({
     text: attribute(node, 'text'),
@@ -93,6 +100,7 @@ export function parseWearUiNodes(xml) {
   }));
 }
 
+/** Audits enabled action bounds against the screen and density, optionally restricted to the exact app package. */
 export function auditWearActionTargets(xml, screen, densityDpi, options = {}) {
   const packageName = options.packageName ?? null;
   if (packageName !== null && (typeof packageName !== 'string' || !/^[a-zA-Z0-9._-]+$/.test(packageName))) {
@@ -129,6 +137,7 @@ export function auditWearActionTargets(xml, screen, densityDpi, options = {}) {
   };
 }
 
+/** Summarizes minimum action dimensions for one text scale and rejects evidence with no measured controls. */
 export function summarizeWearScale(fontScale, screen, densityDpi, audits) {
   const actionCount = audits.reduce((total, audit) => total + audit.actionCount, 0);
   const widths = audits.map((audit) => audit.minimumWidthDp).filter(Number.isFinite);
@@ -147,6 +156,7 @@ export function summarizeWearScale(fontScale, screen, densityDpi, audits) {
   };
 }
 
+/** Finds a node by exact visible text or content description and returns its bounds. */
 export function findTextNode(xml, text) {
   const node = (xml.match(/<node\b[^>]*>/g) ?? [])
     .find((candidate) => (
@@ -155,6 +165,7 @@ export function findTextNode(xml, text) {
     ));
   return node ? { text, bounds: attribute(node, 'bounds') } : null;
 }
+/** Lists distinct valid package identifiers present in the Wear UI hierarchy. */
 export function listWearUiPackages(xml) {
   return [...new Set(
     (xml.match(/<node\b[^>]*>/g) ?? [])
@@ -175,6 +186,7 @@ export function createRecoveringWearUiReader(expectedPackage, readUi, relaunch) 
   };
 }
 
+/** Extracts a valid installed Wear version name and positive version code. */
 export function parseWearPackageVersion(output) {
   const versionCode = Number(output.match(/\bversionCode=(\d+)/)?.[1]);
   const versionName = output.match(/\bversionName=([^\r\n]+)/)?.[1]?.trim();
@@ -184,6 +196,7 @@ export function parseWearPackageVersion(output) {
   return { versionName, versionCode };
 }
 
+/** Reads only the requested-permissions section of the installed package dump. */
 export function parseWearRequestedPermissions(output) {
   const lines = String(output).split(/\r?\n/);
   const headerIndex = lines.findIndex((line) => line.trim() === 'requested permissions:');
@@ -203,6 +216,7 @@ export function parseWearRequestedPermissions(output) {
   return [...new Set(permissions)].sort();
 }
 
+/** Requires installed Wear permissions to equal the reviewed allowlist exactly. */
 export function assertWearRequestedPermissions(output) {
   const actual = parseWearRequestedPermissions(output);
   if (actual.length !== REVIEWED_WEAR_PERMISSIONS.length
@@ -214,6 +228,7 @@ export function assertWearRequestedPermissions(output) {
   return actual;
 }
 
+/** Detects crash or ANR records belonging to the Calibrate Wear process. */
 export function crashBufferContainsWearProcess(crashBuffer) {
   return [
     /Process:\s*net\.darkmachines\.healthtracker(?:[:,\s]|$)/i,
@@ -222,6 +237,7 @@ export function crashBufferContainsWearProcess(crashBuffer) {
     />>>\s*net\.darkmachines\.healthtracker\s*<<</i
   ].some((pattern) => pattern.test(crashBuffer));
 }
+/** Parses a positive finite Android font-scale value and rejects malformed output. */
 export function parseWearFontScale(output) {
   const normalized = String(output).trim();
   if (!/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalized)) {
@@ -234,6 +250,7 @@ export function parseWearFontScale(output) {
   return fontScale;
 }
 
+/** Sets emulator font scale and requires exact settings readback before collecting evidence. */
 export function setAndVerifyWearFontScale(fontScale, setFontScale, readFontScale) {
   const expected = parseWearFontScale(fontScale);
   setFontScale(String(fontScale));
@@ -244,6 +261,7 @@ export function setAndVerifyWearFontScale(fontScale, setFontScale, readFontScale
   return actual;
 }
 
+/** Restores and verifies the original font scale when an initial value was captured. */
 export function restoreWearFontScale(originalFontScale, setFontScale, readFontScale) {
   if (originalFontScale === null) return false;
   setAndVerifyWearFontScale(originalFontScale, setFontScale, readFontScale);
@@ -294,6 +312,7 @@ export function waitForScrollableWearUi(expectedText, readUi, scrollForward, max
   throw new Error(`Scrollable Wear UI did not expose expected text: ${[...missing].join(' | ')}`);
 }
 
+/** Resolves adb from an override, configured SDK, conventional Windows SDK, or executable path. */
 export function resolveWearAdb(environment = process.env, platform = process.platform) {
   if (environment.ADB?.trim()) return environment.ADB.trim();
   const pathApi = platform === 'win32' ? path.win32 : path.posix;
@@ -304,6 +323,7 @@ export function resolveWearAdb(environment = process.env, platform = process.pla
   return pathApi.join(sdkRoot, 'platform-tools', platform === 'win32' ? 'adb.exe' : 'adb');
 }
 
+/** Prepares emulator setup flags and verifies readback before running Wear UI automation. */
 export function prepareWearUi(run) {
   for (const args of [
     ['shell', 'settings', 'put', 'global', 'device_provisioned', '1'],

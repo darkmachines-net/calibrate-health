@@ -1,3 +1,5 @@
+/** @file Regression coverage for dev config: worktree identifiers are stable and Docker-safe. */
+
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";

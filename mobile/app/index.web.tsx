@@ -1,3 +1,5 @@
+/** @file index: Public browser entry point; native keeps its direct authentication redirect. */
+
 import { StyleSheet, View } from 'react-native';
 import { Link, Redirect, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';

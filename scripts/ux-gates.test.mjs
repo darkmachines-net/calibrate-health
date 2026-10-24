@@ -1,3 +1,5 @@
+/** @file Regression coverage for ux gates: selects the UX config and the bounded accessibility project. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,3 +1,5 @@
+/** @file retryability: Honor explicit retryability before falling back to legacy HTTP and transport rules. */
+
 /**
  * Classifies direct and replayed mutation failures using the server's retry envelope.
  */

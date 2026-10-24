@@ -1,3 +1,5 @@
+/** @file Deterministic browser fixtures for calorie-plan review and calibration recommendation states. */
+
 export const PLAN_CHECK_RECOMMENDATION_STATUS = {
   generatedAt: '2026-07-31T20:00:00.000Z',
   inputFingerprint: 'current-input',

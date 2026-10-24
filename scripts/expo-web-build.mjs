@@ -1,3 +1,5 @@
+/** @file Builds and postprocesses the deployable Expo web export with the repository release contract. */
+
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

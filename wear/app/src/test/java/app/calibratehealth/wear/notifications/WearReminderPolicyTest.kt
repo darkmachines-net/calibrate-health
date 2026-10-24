@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Reminder Policy. */
+
 package app.calibratehealth.wear.notifications
 
 import org.junit.Assert.assertEquals
@@ -10,6 +12,7 @@ class WearReminderPolicyTest {
         WearReminder(12, WearReminderType.WEIGHT, "2026-07-12", 101)
     )
 
+    /** Verifies that reachable phone cancels local reminder to avoid mirrored duplicates. */
     @Test
     fun `reachable phone cancels local reminder to avoid mirrored duplicates`() {
         assertEquals(
@@ -18,6 +21,7 @@ class WearReminderPolicyTest {
         )
     }
 
+    /** Verifies that disconnected watch combines current reminders into one deep link. */
     @Test
     fun `disconnected watch combines current reminders into one deep link`() {
         val decision = WearReminderPolicy.decide(reminders, false, true, null)
@@ -28,6 +32,7 @@ class WearReminderPolicyTest {
         assertEquals("2026-07-12", notification.localDate)
     }
 
+    /** Verifies that permission and persisted fingerprint suppress conflicting repeats. */
     @Test
     fun `permission and persisted fingerprint suppress conflicting repeats`() {
         assertEquals(

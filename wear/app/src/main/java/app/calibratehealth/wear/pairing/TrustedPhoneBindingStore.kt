@@ -1,3 +1,5 @@
+/** Retains the exact phone node and account identity authorized during watch pairing. */
+
 package app.calibratehealth.wear.pairing
 
 import android.content.Context

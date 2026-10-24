@@ -1,3 +1,5 @@
+/** @file Regression coverage for native config: configure accepts an optional Play file and rejects manual signing-file options. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

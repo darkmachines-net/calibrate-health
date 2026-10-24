@@ -1,3 +1,5 @@
+/** @file use Confirm Discard Navigation: Preserves a routed editor's unsaved-change confirmation for shell, browser, gesture, and in-page navigation. */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { useNavigation } from 'expo-router';

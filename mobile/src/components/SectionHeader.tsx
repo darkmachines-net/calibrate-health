@@ -1,3 +1,5 @@
+/** @file Section Header: Shared page and section headings with an independent action slot. */
+
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { spacing } from '../theme';

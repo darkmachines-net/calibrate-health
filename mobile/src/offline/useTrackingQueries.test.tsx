@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Tracking Queries: rehydrates intent without polluting server snapshots and filters another account or server synchronously. */
+
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

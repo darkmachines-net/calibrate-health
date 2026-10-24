@@ -1,3 +1,5 @@
+/** @file Notification Card: Presents an active reminder and its logging and dismissal actions. */
+
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

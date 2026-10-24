@@ -1,3 +1,5 @@
+/** @file camera Runtime: Checks browser camera availability and treats unsupported or failed preflight checks as unavailable. */
+
 import { CameraView } from 'expo-camera';
 
 export const cameraPermissionCopy = {
@@ -10,6 +12,7 @@ export const cameraPermissionCopy = {
     openSettingsError: ''
 } as const;
 
+/** Checks browser camera availability and treats unsupported or failed preflight checks as unavailable. */
 export async function isBarcodeCameraAvailable(): Promise<boolean> {
     try {
         return await CameraView.isAvailableAsync();

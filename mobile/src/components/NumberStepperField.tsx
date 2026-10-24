@@ -1,3 +1,5 @@
+/** @file Number Stepper Field: Numeric input with native-sized increment buttons for weights, calories, servings, and recipe yields. */
+
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { AppIconButton } from './AppIconButton';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for onboarding: editing details returns directly to the plan and preserves canonical measurements. */
+
 import { expect, expectApiFailure, FROZEN_LOCAL_DATE, hideTransientPwaNotices, test } from './fixtures';
 import {
   advanceOnboardingToActivity,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for dashboard State: resolveTodayDashboardState. */
+
 import { ASYNC_RESOURCE_STATES } from '../asyncState/resolveAsyncState';
 import {
     hasTodayDashboardFailure,

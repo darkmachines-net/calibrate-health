@@ -1,3 +1,5 @@
+/** @file Regression coverage for metric progress: canonical goal progress mirrors loss and gain and bounds overshoot. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

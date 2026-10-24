@@ -1,3 +1,5 @@
+/** @file cached Foods: Reuse paginated library snapshots offline without treating a partial page as a complete food list. */
+
 import type { MyFoodSummary, MyFoodsLibraryResponse } from '@calibrate/api-client';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import { SAVED_FOODS_LIBRARY_QUERY_KEY } from './queryKeys';

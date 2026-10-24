@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: notification presentation. */
+
 import type { InAppNotification } from '@calibrate/api-client';
 import { IN_APP_NOTIFICATION_TYPES } from '@calibrate/shared/inAppNotifications';
 import {

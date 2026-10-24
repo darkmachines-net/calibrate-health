@@ -1,3 +1,5 @@
+/** @file Regression coverage for failed Mutation Recovery: scopes metric recovery by day and namespace, preserving food and other dates. */
+
 import { assertRecoverableEnqueue, failedMutationDiscardIds, findFailedMetric } from './failedMutationRecovery';
 import { OFFLINE_MUTATION_OPERATIONS } from './mutationKinds';
 import type { QueuedMutation } from './queuedMutation';

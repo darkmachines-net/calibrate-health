@@ -1,3 +1,5 @@
+/** @file Regression coverage for recent foods: getRecentFoods includes selected meal context in the query string. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

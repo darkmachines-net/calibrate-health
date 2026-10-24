@@ -1,3 +1,5 @@
+/** @file Deterministic local tracking views from cached server state plus ordered durable mutation intent. */
+
 import { findFailedMetric, metricMutationDate } from './failedMutationRecovery';
 import { findFailedFood } from './failedCreation';
 import type { FoodLogEntry, MetricEntry, FoodLogCreatePayload } from '@calibrate/api-client';
@@ -12,6 +14,7 @@ export function localTarget(entry: { id: number } & LocalEntry): Record<string, 
     return JSON.parse(JSON.stringify({ id: entry.id, ...(entry.localCreation ? { localCreation: entry.localCreation, localBase: entry } : {}) })) as Record<string, unknown>;
 }
 
+/** Removes the client-only local snapshot before sending a food creation payload to the server. */
 export function foodWirePayload(payload: Record<string, unknown>): FoodLogCreatePayload {
     const { localSnapshot: _snapshot, ...wire } = payload;
     return wire as FoodLogCreatePayload;
@@ -69,6 +72,7 @@ export function projectFood(entries: readonly FoodLogEntry[] | undefined, mutati
     return result;
 }
 
+/** Projects queued weight additions and deletions onto copied server entries without mutating the cache. */
 export function projectMetrics(entries: readonly MetricEntry[] | undefined, mutations: readonly QueuedMutation[]): (MetricEntry & LocalEntry)[] | undefined {
     let result: (MetricEntry & LocalEntry)[] | undefined = entries ? entries.map(entry => ({ ...entry })) : undefined;
     for (const mutation of mutations) {
@@ -86,6 +90,7 @@ export function projectMetrics(entries: readonly MetricEntry[] | undefined, muta
     return result;
 }
 
+/** Detects nonfailed food changes affecting a date, consulting cached entries when a payload lacks a date. */
 export function hasActiveFoodMutation(mutations: readonly QueuedMutation[], date: string, cached?: readonly FoodLogEntry[]): boolean {
     return mutations.some(mutation => {
         if (!mutation.operation.startsWith('food.') || mutation.state === 'failed') return false;

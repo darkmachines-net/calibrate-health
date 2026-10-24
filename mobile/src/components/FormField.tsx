@@ -1,3 +1,5 @@
+/** @file Form Field: Gives every form control one label, description, and error relationship on web while preserving useful VoiceOver and TalkBack announcements. */
+
 import React, { useEffect, useId, useMemo, useRef } from 'react';
 import {
     AccessibilityInfo,

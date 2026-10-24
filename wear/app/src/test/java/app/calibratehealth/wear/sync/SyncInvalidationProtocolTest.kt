@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Sync Invalidation Protocol. */
+
 package app.calibratehealth.wear.sync
 
 import org.junit.Assert.assertEquals
@@ -5,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SyncInvalidationProtocolTest {
+    /** Verifies that accepts only the exact paired node account origin and device. */
     @Test
     fun `accepts only the exact paired node account origin and device`() {
         val parsed = parseSyncInvalidation(payload(), "phone-node", scope(), NOW)
@@ -15,6 +18,7 @@ class SyncInvalidationProtocolTest {
         assertNull(parseSyncInvalidation(payload(watchDeviceId = "watch-2"), "phone-node", scope(), NOW))
     }
 
+    /** Verifies that rejects expired oversized lifetime and extended payloads. */
     @Test
     fun `rejects expired oversized lifetime and extended payloads`() {
         assertNull(parseSyncInvalidation(payload(expiresAt = NOW), "phone-node", scope(), NOW))
@@ -26,6 +30,7 @@ class SyncInvalidationProtocolTest {
         ))
     }
 
+    /** Verifies that dedupe history is bounded and moves replayed id to newest. */
     @Test
     fun `dedupe history is bounded and moves replayed id to newest`() {
         val existing = (1..20).map { "invalidate-${it.toString().padStart(4, '0')}" }
@@ -39,6 +44,7 @@ class SyncInvalidationProtocolTest {
         assertEquals("invalidate-0010", replayed.last())
     }
 
+    /** Verifies that authoritative refresh completes only the invalidation captured by its worker. */
     @Test
     fun `authoritative refresh completes only the invalidation captured by its worker`() {
         val accepted = listOf("invalidate-0001")

@@ -1,3 +1,5 @@
+/** @file Regression coverage for expo web static server: resolves files and extensionless routes through the SPA shell. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

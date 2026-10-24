@@ -1,3 +1,5 @@
+/** @file Regression coverage for App Card: AppCard. */
+
 import { render } from '@testing-library/react-native';
 import { AppCard } from './AppCard';
 import { spacing } from '../theme';

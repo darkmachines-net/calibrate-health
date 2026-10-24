@@ -1,3 +1,5 @@
+/** @file Health Connect record, deletion, and aggregate normalization using account-timezone date boundaries. */
+
 import type { ActivityDaySummaryPayload, HealthConnectRecordUpsert } from '@calibrate/api-client';
 import { formatDateOnlyInTimeZone } from '@calibrate/shared';
 
@@ -168,10 +170,12 @@ export function normalizeHealthConnectRecord(
     throw new Error(`Unsupported Health Connect record type: ${recordType}`);
 }
 
+/** Groups a health record by its start instant in the account's IANA timezone. */
 export function localDateForRecord(record: HealthConnectRecordUpsert, timeZone: string): string {
     return formatDateOnlyInTimeZone(new Date(record.start_time), timeZone);
 }
 
+/** Extracts finite steps, energy, or exercise values from native aggregate payloads. */
 export function normalizeAggregateValue(recordType: NativeSyncRecordType, value: unknown): number {
     if (!isObject(value)) return 0;
     if (recordType === 'Steps') return finiteNumber(value.COUNT_TOTAL ?? 0, 'steps aggregate');
@@ -190,6 +194,7 @@ export function normalizeAggregateValue(recordType: NativeSyncRecordType, value:
     return 0;
 }
 
+/** Builds a dated activity summary when at least one aggregate exists, retaining nulls for missing metrics. */
 export function buildDaySummary(
     localDate: string,
     observedAt: string,

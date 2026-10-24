@@ -1,16 +1,48 @@
+/** @file about: Render the about screen interface. */
+
 /**
  * Defines the about Expo Router screen.
  */
 import { useState } from 'react';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { Pressable, StyleSheet, View } from 'react-native';
+/**
+ * Defines the about Expo Router screen.
+ */
 import Ionicons from '@expo/vector-icons/Ionicons';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { Link, type Href } from 'expo-router';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { AppSection } from '../../../src/components/AppSection';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { AppText } from '../../../src/components/AppText';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { CalibrateLogo } from '../../../src/components/CalibrateLogo';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { TabScreen } from '../../../src/components/TabScreen';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { useFocusVisible } from '../../../src/components/useFocusVisible';
+/**
+ * Defines the about Expo Router screen.
+ */
 import { interaction, radius, spacing, useAppTheme } from '../../../src/theme';
 
 const PRODUCT_LINKS = [

@@ -1,3 +1,5 @@
+/** @file Browser push capability, subscription registration/removal, and authenticated account-switch cleanup. */
+
 import type { BrowserPushSubscriptionPayload, CalibrateApiClient } from '@calibrate/api-client';
 
 const SERVICE_WORKER_READY_TIMEOUT_MS = 5_000;
@@ -15,11 +17,17 @@ export type BrowserPushApi = Pick<
 >;
 
 export type BrowserPushEnvironment = {
+    /** Reports whether this browser can provide notification and push registration APIs. */
     isSupported(): boolean;
+    /** Returns the browser's current notification permission without prompting. */
     getPermission(): NotificationPermission;
+    /** Requests notification permission through the browser's user-facing permission flow. */
     requestPermission(): Promise<NotificationPermission>;
+    /** Returns the active service-worker registration or null when none is available. */
     getRegistration(): Promise<ServiceWorkerRegistration | null>;
+    /** Decodes the URL-safe public VAPID key into bytes for PushManager. */
     decodeApplicationServerKey(value: string): Uint8Array<ArrayBuffer>;
+    /** Subscribes to service-worker messages and returns the listener cleanup function. */
     addMessageListener(listener: (message: unknown) => void): () => void;
 };
 
@@ -34,6 +42,7 @@ export function registerBrowserPushSessionCleanup(handler: BrowserPushCleanupHan
     };
 }
 
+/** Attempts to remove the prior session's push endpoint while allowing sign-out to finish on failure. */
 export async function cleanupBrowserPushBeforeSessionChange(): Promise<void> {
     try {
         await sessionCleanupHandler?.();
@@ -122,6 +131,7 @@ export const browserPushEnvironment: BrowserPushEnvironment = {
     }
 };
 
+/** Validates subscription-change messages and extracts a normalized previous endpoint when supplied. */
 export function parseSubscriptionChangedMessage(message: unknown): { oldEndpoint: string | null } | null {
     if (
         !message

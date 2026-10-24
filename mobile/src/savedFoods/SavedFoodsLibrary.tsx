@@ -1,3 +1,5 @@
+/** @file Saved Foods Library: Renders searchable, paginated saved foods with create, edit, pin, and scan entry points. */
+
 import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -40,6 +42,7 @@ const FILTER_OPTIONS: Array<{ value: SavedFoodsFilter; label: string }> = [
     { value: 'RECIPE', label: 'Recipes' }
 ];
 
+/** Renders searchable, paginated saved foods with create, edit, pin, and scan entry points. */
 export function SavedFoodsLibrary({
     onCreateFood,
     onCreateRecipe,

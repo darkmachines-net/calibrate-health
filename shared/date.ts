@@ -1,3 +1,5 @@
+/** @file Canonical IANA-timezone local-day arithmetic and date-only parsing shared by server and clients. */
+
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**

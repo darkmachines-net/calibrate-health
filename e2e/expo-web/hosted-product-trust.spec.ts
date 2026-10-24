@@ -1,10 +1,12 @@
+/** @file Regression coverage for hosted product trust: hosted web entry and sign-in share canonical public trust destinations. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 import { CALIBRATE_PRODUCT_LINKS } from '../../shared/product';
 import { expect, expectApiFailure, test } from './fixtures';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-10');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-10');
 const TRANSIENT_PWA_TITLES = new Set([
   'Back online',
   'Update ready',

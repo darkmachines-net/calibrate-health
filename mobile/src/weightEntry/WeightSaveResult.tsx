@@ -1,3 +1,5 @@
+/** @file Weight Save Result: Presents saved, queued, or deleted weight outcomes with progress recognition and optional trend context. */
+
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -24,6 +26,7 @@ type WeightSaveResultProps = {
     headingRef?: React.RefObject<View | null>;
 };
 
+/** Presents saved, queued, or deleted weight outcomes with progress recognition and optional trend context. */
 export const WeightSaveResult: React.FC<WeightSaveResultProps> = ({
     action,
     queued,

@@ -1,3 +1,5 @@
+/** @file Auth Context: Owns native session restoration, token rotation, server selection, and account-scoped cache cleanup. */
+
 import { hasExplicitLogout, beginExplicitLogout, flushExplicitLogout, finishExplicitLogin, queueNativeRevocation } from './logoutIntent';
 import { usePendingLogoutRetry } from './usePendingLogoutRetry';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -76,6 +78,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Owns native session restoration, token rotation, server selection, and account-scoped cache cleanup. */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const queryClient = useQueryClient();
     const [serverUrl, setServerUrlState] = useState('');
@@ -594,6 +597,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+/** Reads the current authentication context and throws outside its provider. */
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {

@@ -1,3 +1,5 @@
+/** @file Append-only, single-host migration journal with exclusive locks and fail-closed torn-record recovery. */
+
 import fs from 'node:fs';
 import { initialMigrationCheckpoint, MigrationCheckpoint, MigrationPlan } from './firebaseMigration';
 

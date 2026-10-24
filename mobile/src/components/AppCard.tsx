@@ -1,3 +1,5 @@
+/** @file App Card: Provides intentional card containment with the requested theme density and caller styles. */
+
 import React from 'react';
 import { View, StyleSheet, type ViewProps, type ViewStyle } from 'react-native';
 import { spacing, type AppTheme, useAppTheme } from '../theme';
@@ -15,6 +17,7 @@ type AppCardProps = ViewProps & {
     density?: CardDensity;
 };
 
+/** Provides intentional card containment with the requested theme density and caller styles. */
 export const AppCard: React.FC<AppCardProps> = ({ density = 'comfortable', style, ...props }) => {
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);

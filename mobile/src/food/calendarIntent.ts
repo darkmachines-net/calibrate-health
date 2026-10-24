@@ -1,3 +1,5 @@
+/** @file calendar Intent: Fold acknowledged receipts before pending intent, including dates absent from the range. */
+
 import type { FoodLogDay } from '@calibrate/api-client';
 import { queuedFoodDayStatus } from '../offline/foodDayIntent';
 import type { QueuedMutation } from '../offline/queuedMutation';

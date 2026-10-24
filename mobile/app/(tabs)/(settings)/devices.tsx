@@ -1,19 +1,48 @@
+/** @file devices: Render account sessions and their revocation controls as a navigable settings page. */
+
 /**
  * Defines the signed-in device management Expo Router screen.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { AppSection } from '../../../src/components/AppSection';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { AppText } from '../../../src/components/AppText';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import {
     AsyncStateBoundary,
     useAsyncResourceState,
     useOnlineStatus
 } from '../../../src/components/AsyncStateBoundary';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { SectionHeader } from '../../../src/components/SectionHeader';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { TabScreen } from '../../../src/components/TabScreen';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { useAuth } from '../../../src/auth/AuthContext';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { getSafeActionErrorMessage } from '../../../src/errors/presentation';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { AccountSessionsPanel } from '../../../src/settings/AccountSessionsPanel';
+/**
+ * Defines the signed-in device management Expo Router screen.
+ */
 import { SettingsManagementListSkeleton } from '../../../src/settings/SettingsManagementListSkeleton';
 
 /** Render account sessions and their revocation controls as a navigable settings page. */

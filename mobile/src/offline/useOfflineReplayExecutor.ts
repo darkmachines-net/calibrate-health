@@ -1,3 +1,5 @@
+/** @file use Offline Replay Executor: Creates a replay executor that checks current account ownership and reconciles successful query results. */
+
 import { useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
@@ -6,6 +8,7 @@ import { createQueuedMutationExecutor } from './operations';
 import { createOutboxNamespace } from './queuedMutation';
 import { applyTrackingReceipt } from './trackingReceipts';
 
+/** Creates a replay executor that checks current account ownership and reconciles successful query results. */
 export function useOfflineReplayExecutor() {
     const { api, serverUrl, user } = useAuth();
     const client = useQueryClient();

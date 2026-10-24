@@ -1,3 +1,5 @@
+/** @file Regression coverage for goals: goal summary. */
+
 import type { GoalEntry } from '@calibrate/api-client';
 import {
     computeGoalProgress,

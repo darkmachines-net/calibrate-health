@@ -1,3 +1,5 @@
+/** @file Account Sessions Panel: Lists account sessions and collects confirmation before revoking one or all other sessions. */
+
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { AccountSessionSummary } from '@calibrate/api-client';
@@ -36,6 +38,7 @@ function formatAccountSessionTimestamp(value: string | null): string {
     return parsed.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** Lists account sessions and collects confirmation before revoking one or all other sessions. */
 export function AccountSessionsPanel({
     sessions,
     pendingSessionId,

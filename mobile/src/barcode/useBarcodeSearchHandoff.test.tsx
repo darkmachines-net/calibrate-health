@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Barcode Search Handoff: useBarcodeSearchHandoff. */
+
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { MEAL_PERIODS } from '@calibrate/shared';
 import { useBarcodeSearchHandoff, type BarcodeSearchHandoffParams } from './useBarcodeSearchHandoff';

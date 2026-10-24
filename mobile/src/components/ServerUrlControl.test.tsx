@@ -1,3 +1,5 @@
+/** @file Regression coverage for Server Url Control: ServerUrlControl. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { ServerUrlControl } from './ServerUrlControl';
 import { HOSTED_SERVER_URL, type ServerConnectionState } from '../config/server';

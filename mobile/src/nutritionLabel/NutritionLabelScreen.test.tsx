@@ -1,3 +1,5 @@
+/** @file Regression coverage for Nutrition Label Screen: disabled scanning cannot open a picker through a direct link and keeps manual entry available. */
+
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NutritionLabelScreen from './NutritionLabelScreen';

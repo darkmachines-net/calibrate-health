@@ -1,3 +1,5 @@
+/** @file Current server capability reads and administrator-only feature updates. */
+
 import express from 'express';
 import { z } from 'zod';
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';

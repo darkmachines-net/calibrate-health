@@ -1,3 +1,5 @@
+/** @file server: Compose a stateless MCP resource with host checks, OAuth and account-derived read-only progress tools. */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -45,6 +47,7 @@ export type CalibrateMcpHttpOptions = Pick<McpConfiguration, 'publicUrl' | 'allo
   };
 };
 
+/** Compose a stateless MCP resource with host checks, OAuth and account-derived read-only progress tools. */
 export function createCalibrateMcpHttpApp(options: CalibrateMcpHttpOptions) {
   const app = createMcpExpressApp({ allowedHosts: options.allowedHosts });
   if (options.trustedProxyHops > 0) {
@@ -143,6 +146,7 @@ export function createCalibrateMcpHttpApp(options: CalibrateMcpHttpOptions) {
   return app;
 }
 
+/** Identify MCP/OAuth-owned paths so the main server preserves their authentication and routing boundaries. */
 export function isCalibrateMcpPath(path: string): boolean {
   return path === '/mcp' ||
     path === '/authorize' ||

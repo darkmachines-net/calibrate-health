@@ -1,8 +1,11 @@
+/** Origin-only server validation with explicit trusted-development cleartext restrictions. */
+
 package app.calibratehealth.wear.data.security
 
 import java.net.URI
 
 object ServerOriginPolicy {
+    /** Validates an origin-only server URL and rejects unsafe schemes, credentials, paths, and ports. */
     fun requireSafeOrigin(value: String): String {
         val uri = runCatching { URI(value) }.getOrElse {
             throw IllegalArgumentException("Server origin is invalid.", it)

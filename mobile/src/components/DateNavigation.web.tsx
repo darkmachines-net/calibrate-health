@@ -1,3 +1,5 @@
+/** @file Date Navigation: Browser day navigation shares the decorated history calendar with native clients. */
+
 import React from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

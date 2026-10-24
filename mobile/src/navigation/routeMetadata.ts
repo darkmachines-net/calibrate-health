@@ -1,3 +1,5 @@
+/** @file Canonical route metadata resolution, authenticated-root behavior, and privacy-aware browser metadata. */
+
 import { ROUTE_IDS, getRouteByPath, getRouteDefinition, type RouteId } from './routeRegistry';
 import webRouteMetadata from '../../../shared/webRouteMetadata.json';
 
@@ -39,6 +41,7 @@ function descriptionForRoute(routeId: RouteId): string {
     return `${definition.title} in Calibrate, your private food, weight, activity, and goal tracker.`;
 }
 
+/** Resolves canonical metadata and privacy policy, including authenticated-root and unknown-route handling. */
 export function resolveRouteMetadata(
     pathname: string,
     options: { authenticated: boolean }
@@ -75,6 +78,7 @@ export function resolveRouteMetadata(
     };
 }
 
+/** Lists metadata for canonical routes using their public, unauthenticated presentation. */
 export function getCanonicalRouteMetadata(): RouteMetadata[] {
     return ROUTE_IDS.map((routeId) => resolveRouteMetadata(
         getRouteDefinition(routeId).path,

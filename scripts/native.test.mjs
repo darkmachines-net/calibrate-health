@@ -1,3 +1,5 @@
+/** @file Regression coverage for native: root exposes native package commands and a separate OTA publication command without implementation stages. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';

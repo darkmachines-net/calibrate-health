@@ -1,3 +1,5 @@
+/** Allowlisted notification destinations for food summary and weight entry. */
+
 package app.calibratehealth.wear.notifications
 
 import android.content.Intent

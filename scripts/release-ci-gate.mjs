@@ -1,3 +1,5 @@
+/** @file Exact candidate/source CI proof verification before protected release finalization. */
+
 import { appendFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -22,6 +24,7 @@ const ALLOWED_SKIPS = {
   'database-upgrade.yml': ['v0.14.0 Upgrade and Encrypted Rollback'],
 };
 
+/** Requires exact candidate/source/workflow identity and the expected version-only parent relationship. */
 export function assertCandidateInputs(env, ancestry) {
   const { RELEASE_SHA: head, SOURCE_SHA: source, WORKFLOW_SHA: workflow } = env;
   if (!/^[0-9a-f]{40}$/.test(head ?? '') || !/^[0-9a-f]{40}$/.test(source ?? '') ||
@@ -48,6 +51,7 @@ function assertTrustedRun(run, identity) {
   }
 }
 
+/** Selects required jobs from the trusted release run and rejects duplicate or incompatible job evidence. */
 export function evaluateTrustedJobs(jobs, identity) {
   if (new Set(jobs.map(job => job.id)).size !== jobs.length) throw new Error('Duplicate job identities in CI inventory.');
   const selected = [];
@@ -86,6 +90,7 @@ export function evaluateTrustedJobs(jobs, identity) {
   return { selected, pending: [] };
 }
 
+/** Reads the exact PR, protected branch, and trusted workflow jobs before evaluating candidate CI. */
 export async function inspectTrustedCi(api, identity) {
   const root = `/repos/${identity.repository}`;
   assertIdentity({ pull: await api(`${root}/pulls/${identity.number}`), master: await api(`${root}/git/ref/heads/master`) }, identity);
@@ -100,6 +105,7 @@ export async function inspectTrustedCi(api, identity) {
 
 // Bot-created release PRs do not trigger pull_request workflows. Publish only
 // results already verified against this protected run and exact candidate.
+/** Revalidates the trusted run and exact candidate before publishing successful required checks for a bot-created release PR. */
 export async function publishRequiredChecks(api, createCheck, identity) {
   if (!identity.runId || !identity.runAttempt) throw new Error('Required checks need a trusted release run.');
   await inspectTrustedCi(api, identity);
@@ -119,6 +125,7 @@ export async function publishRequiredChecks(api, createCheck, identity) {
   }
 }
 
+/** Creates an authenticated check writer that rejects failed requests or response identities differing from the validated candidate. */
 export function githubCheckWriter({ token, apiUrl = 'https://api.github.com', fetchImpl = fetch }) {
   return async (repository, check) => {
     const response = await fetchImpl(`${apiUrl}/repos/${repository}/check-runs`, {
@@ -137,6 +144,7 @@ export function githubCheckWriter({ token, apiUrl = 'https://api.github.com', fe
   };
 }
 
+/** Requires an open non-draft same-repository PR whose head, base, branch, and current master match the validated identity. */
 export function assertIdentity({ pull, master }, identity) {
   const { repository, head, base, branch } = identity;
   if (pull.state !== 'open' || pull.merged || pull.draft ||
@@ -163,6 +171,7 @@ function assertRunIdentity(run, identity) {
   }
 }
 
+/** Selects exact-head pull-request workflow runs and separates incomplete jobs from passing evidence. */
 export function evaluateRuns(runs, identity) {
   const selected = [];
   const pending = [];
@@ -196,6 +205,7 @@ export function evaluateRuns(runs, identity) {
   return { selected, pending };
 }
 
+/** Reads current PR and workflow observations before evaluating ordinary pull-request CI. */
 export async function inspectCi(api, identity) {
   const root = `/repos/${identity.repository}`;
   const pull = await api(`${root}/pulls/${identity.number}`);
@@ -227,6 +237,7 @@ export async function inspectCi(api, identity) {
   return result;
 }
 
+/** Polls exact candidate CI until all required jobs pass or the deadline expires, rechecking identity each time. */
 export async function waitForCi(api, identity, {
   timeoutMs = 40 * 60_000, now = Date.now,
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), report = console.log,
@@ -247,6 +258,7 @@ export async function waitForCi(api, identity, {
   }
 }
 
+/** Creates a bounded, authenticated GitHub reader with explicit collection pagination and request timeouts. */
 export function githubApi({ token, apiUrl = 'https://api.github.com', fetchImpl = fetch }) {
   return async (path, collection) => {
     const items = [];

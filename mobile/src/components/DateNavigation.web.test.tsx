@@ -1,3 +1,5 @@
+/** @file Regression coverage for Date Navigation web: DateNavigation web. */
+
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { DateNavigation } from './DateNavigation.web';

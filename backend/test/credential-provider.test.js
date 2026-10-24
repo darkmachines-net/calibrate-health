@@ -1,3 +1,5 @@
+/** @file Regression coverage for credential provider: local compatibility works without Firebase configuration. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');

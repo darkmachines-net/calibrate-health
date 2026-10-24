@@ -1,3 +1,5 @@
+/** @file Regression coverage for performance budgets: measures exact reachable gzip graphs for every representative route. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

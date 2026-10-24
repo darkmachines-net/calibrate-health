@@ -1,3 +1,5 @@
+/** @file Lazy native camera/library label capture with cancellation, permission, and upload asset normalization. */
+
 import type { ImagePickerAsset } from 'expo-image-picker';
 
 export type LabelImageSource = 'camera' | 'library';
@@ -22,6 +24,7 @@ function fromAsset(asset: ImagePickerAsset): LabelImage {
     };
 }
 
+/** Lazily opens native camera or library selection, returning null on cancellation and actionable permission errors. */
 export async function chooseLabelImage(source: LabelImageSource): Promise<LabelImage | null> {
     // Load the native picker only when capture or selection is requested.
     const picker: typeof import('expo-image-picker') = require('expo-image-picker');
@@ -38,6 +41,7 @@ export async function chooseLabelImage(source: LabelImageSource): Promise<LabelI
     return result.canceled ? null : fromAsset(result.assets[0]);
 }
 
+/** Leaves native image URI lifetime to the operating system. */
 export function releaseLabelImage(_image: LabelImage): void {
     // Native picker URIs are managed by the operating system.
 }

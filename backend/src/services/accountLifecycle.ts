@@ -1,3 +1,5 @@
+/** @file Account data export and deletion with credential/session cleanup and explicit transactional boundaries. */
+
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
 
@@ -307,6 +309,7 @@ export async function exportAccountData(userId: number, now = new Date()): Promi
   return serializeAccountExport(user, now);
 }
 
+/** Serialize the versioned user-owned data export, excluding credentials and internal session/reconciliation metadata. */
 export function serializeAccountExport(user: AccountExportRow, now = new Date()): AccountExport {
   const profileImage = user.profile_image && user.profile_image_mime_type
     ? {

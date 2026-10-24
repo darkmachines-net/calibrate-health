@@ -1,3 +1,5 @@
+/** @file Failed Change Recovery Panel: Explicit recovery is available for every failed mutation kind, including legacy/unknown requests. */
+
 import { useAuth } from '../auth/AuthContext';
 import { formatWeightUnit } from '../utils/format';
 import { useState } from 'react';

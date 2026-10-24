@@ -1,3 +1,5 @@
+/** @file credential Verification: Local runtime verification; account lookup, authorization and session issuance remain caller-owned. */
+
 import bcrypt from 'bcryptjs';
 import { DUMMY_AUTH_PASSWORD_HASH, validateBcryptPasswordByteLength } from '../utils/authCredentials';
 
@@ -6,6 +8,7 @@ export type CredentialIdentity =
   | { provider: 'firebase'; userId: number; projectId: string; uid: string; email: string };
 
 export class CredentialProviderUnavailable extends Error {
+  /** Represent provider infrastructure failure without exposing provider details or treating it as invalid credentials. */
   constructor() { super('Credential provider unavailable'); }
 }
 
@@ -24,6 +27,7 @@ export async function verifyLocalPassword(password: string, passwordHash: string
 
 /** Firebase remains an injected preparation adapter, not an enabled runtime authority. */
 export class CredentialProvider {
+  /** Bind optional injected Firebase verification dependencies; this preparation adapter does not activate runtime authority. */
   constructor(private readonly firebase?: {
     apiKey: string;
     verifier: FirebaseCredentialVerifier;
@@ -31,6 +35,7 @@ export class CredentialProvider {
     timeoutMs?: number;
   }) {}
 
+  /** Check the selected credential authority without local fallback; sanitize unavailable-provider failures separately from rejection. */
   async verify(identity: CredentialIdentity, password: string): Promise<boolean> {
     if (identity.provider === 'local') {
       if (validateBcryptPasswordByteLength(password)) return false;

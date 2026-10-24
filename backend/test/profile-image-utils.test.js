@@ -1,3 +1,5 @@
+/** @file Regression coverage for profile image utils: profileImage: allowed MIME types include the expected image formats. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

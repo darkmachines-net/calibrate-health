@@ -1,3 +1,5 @@
+/** @file App Section: Groups related page content without implying a separate surface or action. */
+
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { useAppTheme } from '../theme';
 

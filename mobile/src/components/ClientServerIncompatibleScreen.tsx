@@ -1,3 +1,5 @@
+/** @file Client Server Incompatible Screen: Block normal authenticated runtime without discarding the retained session or offline outbox. */
+
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import {

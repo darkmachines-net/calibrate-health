@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Repository Contracts. */
+
 package app.calibratehealth.wear.data
 
 import app.calibratehealth.wear.data.local.DailySnapshotEntity
@@ -11,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RepositoryContractsTest {
+    /** Verifies that snapshot and quick-add caches keep their configured bounds. */
     @Test
     fun `snapshot and quick-add caches keep their configured bounds`() = runBlocking {
         val storage = FakeWearStorage()
@@ -27,6 +30,7 @@ class RepositoryContractsTest {
         assertTrue(quickAdds.all().isEmpty())
     }
 
+    /** Verifies that outbox ordering and stable operation ids survive repository recreation. */
     @Test
     fun `outbox ordering and stable operation ids survive repository recreation`() = runBlocking {
         val storage = FakeWearStorage()
@@ -49,6 +53,7 @@ class RepositoryContractsTest {
         assertEquals(listOf("a", "c"), afterRestart.activeInFifoOrder().map { it.operationId })
     }
 
+    /** Verifies that secure session fake persists across store recreation. */
     @Test
     fun `secure session fake persists across store recreation`() {
         val storage = FakeWearStorage()

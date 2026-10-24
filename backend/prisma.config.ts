@@ -1,3 +1,5 @@
+/** @file Configures Prisma schema, migration location, and environment-based datasource resolution. */
+
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 import { resolvePrismaCliUrl } from './src/config/databaseUtils';

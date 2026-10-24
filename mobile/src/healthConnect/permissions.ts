@@ -1,3 +1,5 @@
+/** @file permissions: Convert visible product settings into the least-privilege Health Connect request. */
+
 import type { Permission } from 'react-native-health-connect';
 import {
     DEFAULT_HEALTH_CONNECT_SELECTION,
@@ -27,6 +29,7 @@ export function permissionsForSelection(
             recordType: HEALTH_CONNECT_RECORD_TYPES[feature]
         }));
 }
+/** Maps granted read permissions to supported feature choices. */
 export function grantedFeaturesForPermissions(permissions: Permission[]): HealthConnectFeature[] {
     const grantedRecordTypes = new Set(
         permissions

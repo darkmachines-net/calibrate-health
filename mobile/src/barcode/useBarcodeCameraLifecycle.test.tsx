@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Barcode Camera Lifecycle: useBarcodeCameraLifecycle. */
+
 import { act, renderHook } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import { useBarcodeCameraLifecycle } from './useBarcodeCameraLifecycle';

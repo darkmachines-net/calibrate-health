@@ -1,3 +1,5 @@
+/** @file Regression coverage for browser Boundaries: browser-native feature boundaries. */
+
 import React from 'react';
 import { render, renderHook, waitFor } from '@testing-library/react-native';
 import { NATIVE_PUSH_STATES } from '../notifications/workflow';

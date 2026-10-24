@@ -1,3 +1,5 @@
+/** @file unit Defaults: Infers initial measurement units from the device measurement system or region. */
+
 import { HEIGHT_UNITS, WEIGHT_UNITS, type HeightUnit, type WeightUnit } from '@calibrate/shared';
 import type { UserClientPayload } from '@calibrate/api-client';
 import type { DeviceLocale } from '../platform/deviceLocale';
@@ -23,6 +25,7 @@ function localeRegion(languageTag: string | null): string | null {
     }
 }
 
+/** Infers initial measurement units from the device measurement system or region. */
 export function unitsForDeviceLocale(locale: DeviceLocale): OnboardingUnits {
     if (locale.measurementSystem === 'metric') return METRIC_UNITS;
     if (locale.measurementSystem === 'us' || locale.measurementSystem === 'uk') return IMPERIAL_UNITS;
@@ -30,6 +33,7 @@ export function unitsForDeviceLocale(locale: DeviceLocale): OnboardingUnits {
     return region && IMPERIAL_REGIONS.has(region) ? IMPERIAL_UNITS : METRIC_UNITS;
 }
 
+/** Preserves established profile units while using locale defaults for pristine accounts. */
 export function resolveOnboardingUnits(user: UserClientPayload, locale: DeviceLocale): OnboardingUnits {
     const inferred = unitsForDeviceLocale(locale);
     const hasSavedProfile = Boolean(user.onboarding_completed_at || user.date_of_birth || user.sex || user.height_mm || user.activity_level);

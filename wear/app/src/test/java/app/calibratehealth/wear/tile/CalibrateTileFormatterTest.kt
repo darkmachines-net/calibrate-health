@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Calibrate Tile Formatter. */
+
 package app.calibratehealth.wear.tile
 
 import org.junit.Assert.assertEquals
@@ -6,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CalibrateTileFormatterTest {
+    /** Verifies that formats remaining consumed target and freshness. */
     @Test
     fun `formats remaining consumed target and freshness`() {
         val result = CalibrateTileFormatter.format(
@@ -25,6 +28,7 @@ class CalibrateTileFormatterTest {
         assertFalse(result.isStale)
     }
 
+    /** Verifies that formats calories over and marks old cache stale. */
     @Test
     fun `formats calories over and marks old cache stale`() {
         val result = CalibrateTileFormatter.format(
@@ -44,6 +48,7 @@ class CalibrateTileFormatterTest {
         assertTrue(result.isStale)
     }
 
+    /** Verifies that handles partial cache without inventing values. */
     @Test
     fun `handles partial cache without inventing values`() {
         val result = CalibrateTileFormatter.format(
@@ -63,6 +68,7 @@ class CalibrateTileFormatterTest {
         assertFalse(result.isStale)
     }
 
+    /** Verifies that keeps a recent calorie cache fresh. */
     @Test
     fun `keeps a recent calorie cache fresh`() {
         val result = CalibrateTileFormatter.format(
@@ -80,6 +86,7 @@ class CalibrateTileFormatterTest {
         assertFalse(result.isStale)
     }
 
+    /** Verifies that shows an explicit empty cache state. */
     @Test
     fun `shows an explicit empty cache state`() {
         val result = CalibrateTileFormatter.format(null, NOW)
@@ -89,6 +96,7 @@ class CalibrateTileFormatterTest {
         assertTrue(result.isStale)
     }
 
+    /** Verifies that shows paused instead of calorie progress. */
     @Test
     fun `shows paused instead of calorie progress`() {
         val result = CalibrateTileFormatter.format(
@@ -107,6 +115,7 @@ class CalibrateTileFormatterTest {
         assertEquals("Open app to review", result.statusLine)
     }
 
+    /** Verifies that shows logged calories without target math when plan needs review. */
     @Test
     fun `shows logged calories without target math when plan needs review`() {
         val result = CalibrateTileFormatter.format(
@@ -125,6 +134,7 @@ class CalibrateTileFormatterTest {
         assertEquals("Open app to review", result.statusLine)
     }
 
+    /** Verifies that pending weight mutation shows syncing without cached target math. */
     @Test
     fun `pending weight mutation shows syncing without cached target math`() {
         val cached = CalibrateTileSnapshot(500, 2_000, 1_500, NOW, planStatus = "available")

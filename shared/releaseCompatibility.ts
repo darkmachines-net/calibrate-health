@@ -1,3 +1,5 @@
+/** @file Runtime client/server compatibility policy using independent native and server release identities. */
+
 const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
 export const CLIENT_SERVER_COMPATIBILITY_STATUSES = {
@@ -58,6 +60,7 @@ export function compareClientServerCompatibility(
     return CLIENT_SERVER_COMPATIBILITY_STATUSES.COMPATIBLE;
 }
 
+/** Return an actionable mismatch description, or null when the running bundle and server contract are compatible. */
 export function getClientServerCompatibilityMismatch(
     clientVersion: unknown,
     serverVersion: unknown
@@ -71,11 +74,13 @@ export function getClientServerCompatibilityMismatch(
     };
 }
 
+/** Format a parseable version's major compatibility line, returning null for invalid metadata. */
 export function formatMajorVersion(version: unknown): string | null {
     const parsedVersion = parseCompatibilityVersion(version);
     return parsedVersion ? `${parsedVersion[0]}.x` : null;
 }
 
+/** Format a parseable version's major/minor compatibility line without patch precision. */
 export function formatMinorVersion(version: unknown): string | null {
     const parsedVersion = parseCompatibilityVersion(version);
     return parsedVersion ? `${parsedVersion[0]}.${parsedVersion[1]}.x` : null;

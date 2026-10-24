@@ -1,3 +1,5 @@
+/** @file Regression coverage for release compatibility: servers support clients from the same or an older minor version. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

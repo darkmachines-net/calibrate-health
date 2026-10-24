@@ -1,3 +1,5 @@
+/** @file Regression coverage for food tracking: background pause materialization excludes accounts without current access. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';

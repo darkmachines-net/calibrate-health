@@ -1,3 +1,5 @@
+/** @file weight Trend Parameters: Versioned Weight Trend v2 parameter manifest. */
+
 /**
  * Versioned Weight Trend v2 parameter manifest.
  *

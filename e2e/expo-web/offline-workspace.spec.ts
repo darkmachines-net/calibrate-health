@@ -1,3 +1,5 @@
+/** @file Regression coverage for offline workspace: auth outage retains a local weigh-in across reload and replays after reconnection. */
+
 import { expect, test, expectApiFailure, activateFixtureOffline } from './fixtures';
 
 test('auth outage retains a local weigh-in across reload and replays after reconnection', async ({ page, ux }) => {

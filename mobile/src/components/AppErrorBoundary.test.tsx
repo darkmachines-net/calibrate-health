@@ -1,3 +1,5 @@
+/** @file Regression coverage for App Error Boundary: AppErrorBoundary. */
+
 import { useMemo } from 'react';
 import { Platform, Text } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';

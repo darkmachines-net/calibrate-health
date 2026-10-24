@@ -1,3 +1,5 @@
+/** @file Regression coverage for android e2e: Android E2E uses the same localhost Metro origin as the hosted readiness probe. */
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';

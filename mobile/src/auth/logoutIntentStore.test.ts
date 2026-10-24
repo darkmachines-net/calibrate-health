@@ -1,3 +1,5 @@
+/** @file Regression coverage for logout Intent Store: retains native revocation through outage/restart, then erases token material while keeping explicit sign-out. */
+
 import { createLogoutIntentStore } from './logoutIntentStore';
 
 function setup(browser = false, values = new Map<string, string>(), revoke = jest.fn<Promise<unknown>, [string, string?]>(async () => undefined)) {

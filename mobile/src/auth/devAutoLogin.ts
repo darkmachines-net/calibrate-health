@@ -1,3 +1,5 @@
+/** @file Deterministic development-session eligibility restricted to trusted local backend origins. */
+
 import {
     ApiError,
     type BrowserAuthResponse,

@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 11 today control center: Today is legible, keyboard-operable, and unclipped at every configured viewport. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
@@ -5,7 +7,7 @@ import { calibrateDesignTokens } from '../../shared/designTokens';
 import { expect, test, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';
 
-const EVIDENCE_DIR = path.resolve('docs/screenshots/launch-11');
+const EVIDENCE_DIR = path.resolve('.codex-screenshots/launch-11');
 const TRANSIENT_PWA_TITLES = new Set([
   'Back online',
   'Update ready',

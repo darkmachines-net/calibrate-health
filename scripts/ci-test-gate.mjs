@@ -1,3 +1,5 @@
+/** @file Enforces successful test results for every surface selected by the trusted CI classifier. */
+
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 

@@ -1,3 +1,5 @@
+/** @file App Icon Button: Consistent icon-only control with an accessible 48dp interaction target. */
+
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

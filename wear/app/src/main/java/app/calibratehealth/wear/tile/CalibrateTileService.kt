@@ -1,3 +1,5 @@
+/** Cache-only Wear Tile rendering and application navigation. */
+
 package app.calibratehealth.wear.tile
 
 import androidx.wear.protolayout.ActionBuilders

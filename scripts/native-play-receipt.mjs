@@ -1,3 +1,5 @@
+/** @file Canonical phone/watch Play publication receipts and exact protected workflow attestation verification. */
+
 /** Canonical historical Play receipts and protected-workflow trust checks for retained releases. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

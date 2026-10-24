@@ -1,3 +1,5 @@
+/** @file Save Meal As Recipe Sheet: Create a reusable immutable recipe from selected entries in one logged meal. */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

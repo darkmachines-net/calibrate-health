@@ -1,3 +1,5 @@
+/** @file Regression coverage for api error response: JSON errors receive the additive standard envelope while successful responses remain unchanged. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');

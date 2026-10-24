@@ -1,3 +1,5 @@
+/** @file Regression coverage for Auth Brand: AuthBrand. */
+
 import { render } from '@testing-library/react-native';
 import { AuthBrand } from './AuthBrand';
 

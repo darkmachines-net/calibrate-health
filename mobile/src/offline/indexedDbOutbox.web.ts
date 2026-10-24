@@ -1,3 +1,5 @@
+/** @file indexed Db Outbox: Open the browser-owned durable queue without loading a runtime IndexedDB polyfill. */
+
 import { assertRecoverableEnqueue, failedMutationDiscardIds } from './failedMutationRecovery';
 import * as Crypto from 'expo-crypto';
 import type { OutboxStore } from './outbox';
@@ -124,6 +126,7 @@ export function openBrowserOutboxDatabase(): Promise<IDBDatabase> {
 
 /** IndexedDB-backed queue for one normalized server-origin and authenticated user. */
 export class IndexedDbOutbox implements OutboxStore {
+    /** Binds an IndexedDB outbox to one namespace with injectable identity and time sources. */
     constructor(
         private readonly database: IDBDatabase,
         private readonly namespace: string,
@@ -131,6 +134,7 @@ export class IndexedDbOutbox implements OutboxStore {
         private readonly now: () => number = Date.now
     ) {}
 
+    /** Persists a validated mutation with a namespace-local sequence and serialized payload. */
     async enqueue(mutation: NewQueuedMutation): Promise<QueuedMutation> {
         const operation = mutation.operation.trim();
         if (!operation) throw new Error('Queued mutations require an operation name.');
@@ -158,6 +162,7 @@ export class IndexedDbOutbox implements OutboxStore {
         return mapStoredMutation(row);
     }
 
+    /** Lists namespace mutations in durable sequence order. */
     async list(): Promise<QueuedMutation[]> {
         const transaction = this.database.transaction(MUTATION_STORE, 'readonly');
         const done = transactionDone(transaction);
@@ -168,6 +173,7 @@ export class IndexedDbOutbox implements OutboxStore {
         return rows.sort((left, right) => requireSequence(left) - requireSequence(right)).map(mapStoredMutation);
     }
 
+    /** Atomically claims the next eligible namespace mutation for replay, returning null when blocked or empty. */
     claimNext(): Promise<QueuedMutation | null> {
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(MUTATION_STORE, 'readwrite');
@@ -195,6 +201,7 @@ export class IndexedDbOutbox implements OutboxStore {
         });
     }
 
+    /** Removes a claimed mutation after successful replay within its namespace transaction. */
     async complete(id: string): Promise<void> {
         const transaction = this.database.transaction(MUTATION_STORE, 'readwrite');
         const done = transactionDone(transaction);
@@ -208,6 +215,7 @@ export class IndexedDbOutbox implements OutboxStore {
         await done;
     }
 
+    /** Transitions a claimed mutation to failed state with its recovery message. */
     async fail(id: string, error: string): Promise<QueuedMutation> {
         const transaction = this.database.transaction(MUTATION_STORE, 'readwrite');
         const done = transactionDone(transaction);
@@ -248,6 +256,7 @@ export class IndexedDbOutbox implements OutboxStore {
         await done;
         return mapStoredMutation(deferred);
     }
+    /** Returns interrupted replay rows to pending state before a new replay owner starts. */
     recoverInterrupted(): Promise<void> {
         return this.updateNamespaceRows(
             (row) => row.state === OUTBOX_MUTATION_STATES.REPLAYING,
@@ -255,6 +264,7 @@ export class IndexedDbOutbox implements OutboxStore {
         );
     }
 
+    /** Makes one or all failed namespace mutations eligible for retry. */
     async retryFailed(id?: string): Promise<void> {
         if (id) {
             const transaction = this.database.transaction(MUTATION_STORE, 'readwrite');
@@ -283,6 +293,7 @@ export class IndexedDbOutbox implements OutboxStore {
         );
     }
 
+    /** Atomically discards a reviewed failure and related dependent work when no affected row is replaying. */
     discardFailedMutation(id: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const transaction = this.database.transaction(MUTATION_STORE, 'readwrite');
@@ -302,8 +313,10 @@ export class IndexedDbOutbox implements OutboxStore {
         });
     }
 
+    /** Delegates food-failure discard to the same transactional dependency checks as other mutations. */
     discardFailedFood(id: string): Promise<void> { return this.discardFailedMutation(id); }
 
+    /** Deletes every mutation belonging to this outbox namespace. */
     clear(): Promise<void> {
         return this.updateNamespaceRows(() => true, () => null);
     }

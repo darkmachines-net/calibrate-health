@@ -1,3 +1,5 @@
+/** @file Skeleton Block: Small pulsing placeholder used to keep native screen structure stable during data fetches. */
+
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, type DimensionValue, type ViewStyle } from 'react-native';
 import { radius, useAppTheme } from '../theme';

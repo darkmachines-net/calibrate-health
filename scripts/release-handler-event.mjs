@@ -1,3 +1,5 @@
+/** @file Trusted workflow_run event validation for read-only release requests and protected handlers. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -31,6 +33,7 @@ function requireString(value, pattern, label) {
   return value;
 }
 
+/** Validates workflow_run identity against the expected repository, request workflow, and protected handler source. */
 export function verifyReleaseHandlerEvent(event, expected) {
   requireObject(event, 'workflow_run event');
   requireString(expected.repository, REPOSITORY_PATTERN, 'expected repository');
@@ -91,6 +94,7 @@ function parseArguments(args) {
   return values;
 }
 
+/** Reads a bounded regular workflow event file and verifies its exact handler/request identity. */
 export function runReleaseHandlerEventCli(args = process.argv.slice(2)) {
   const values = parseArguments(args);
   const eventFile = path.resolve(values['--event-file']);

@@ -1,3 +1,5 @@
+/** @file Regression coverage for database utils: resolveDatabaseUrl prefers DATABASE_URL when present. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

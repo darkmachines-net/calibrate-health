@@ -1,3 +1,5 @@
+/** @file Regression coverage for local date: parseLocalDateOnly accepts YYYY-MM-DD and returns a UTC-normalized Date. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

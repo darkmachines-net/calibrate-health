@@ -1,3 +1,5 @@
+/** @file dashboard State: Reports whether any Today dashboard query has failed, including a retained error on cached data. */
+
 import {
     resolveAsyncResourceState,
     type AsyncQuerySnapshot,
@@ -6,6 +8,7 @@ import {
 
 export type TodayDashboardQuerySnapshot = AsyncQuerySnapshot<unknown>;
 
+/** Reports whether any Today dashboard query has failed, including a retained error on cached data. */
 export function hasTodayDashboardFailure(
     queries: readonly TodayDashboardQuerySnapshot[]
 ): boolean {

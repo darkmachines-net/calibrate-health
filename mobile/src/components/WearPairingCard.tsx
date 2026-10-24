@@ -1,3 +1,5 @@
+/** @file Wear Pairing Card: Phone-owned discovery and one-time credential relay for the signed Calibrate watch app. */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { WearNode } from '@calibrate/wear-pairing';

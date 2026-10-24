@@ -1,3 +1,5 @@
+/** @file Local internal-track build, retained-artifact verification, install, and Play submission orchestration. */
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,6 +32,7 @@ const COMMAND_OPTIONS = {
   submit: ['--service-account-file', '--confirm-play-console-clean'], status: ['--service-account-file']
 };
 
+/** Parses local internal-release commands and enforces each command's supported options and required credentials. */
 export function parseLocalInternalArgs(argv, { requireCredentials = true } = {}) {
   const [command, ...args] = argv;
   if (!command || command === '--help' || command === '-h') return { command: 'help' };
@@ -54,6 +57,7 @@ export function parseLocalInternalArgs(argv, { requireCredentials = true } = {})
   return { command, values };
 }
 
+/** Builds the private internal-release environment while stripping inherited Play authentication. */
 export function localInternalEnvironment(environment = process.env) {
   const publicEnvironment = Object.fromEntries(Object.entries(environment).filter(([name]) => {
     const key = name.toUpperCase();
@@ -73,6 +77,7 @@ function isWithin(root, file) {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
+/** Requires an existing regular file whose resolved path lies outside the repository. */
 export function requireExternalFile(root, file, label) {
   let resolved;
   try { resolved = fs.realpathSync(path.resolve(file)); } catch { throw new Error(`${label} must name an existing external file.`); }
@@ -82,6 +87,7 @@ export function requireExternalFile(root, file, label) {
   return resolved;
 }
 
+/** Loads validated external Expo signing credentials into the build environment after credential-free preparation. */
 export function loadLocalSigningEnvironment(root, file, environment) {
   const resolved = requireExternalFile(root, file, 'credentials.json');
   let signing;
@@ -103,6 +109,7 @@ export function loadLocalSigningEnvironment(root, file, environment) {
   };
 }
 
+/** Creates a paired internal release plan with local provenance names for phone and watch. */
 export function createLocalInternalPlan(root, sourceCommit) {
   const plan = createNativePlayReleasePlan({ root, sourceCommit });
   for (const [role, candidate] of Object.entries(plan.candidates)) {
@@ -134,6 +141,7 @@ function inspectCommand(command, args, environment, options = {}) {
   } catch { throw new Error(`Android inspection failed (${path.basename(command)}). Check the installed toolchain and bundle.`); }
 }
 
+/** Checks the required Windows CMake and Ninja installations before selecting their toolchain directory. */
 export function inspectWindowsCmake(tooling, environment, execute = inspectCommand) {
   const directory = path.join(tooling.sdkRoot, 'cmake', WINDOWS_CMAKE_VERSION);
   const cmake = execute(path.join(directory, 'bin/cmake.exe'), ['--version'], environment);
@@ -146,6 +154,7 @@ export function inspectWindowsCmake(tooling, environment, execute = inspectComma
   return { directory, ninja };
 }
 
+/** Writes the validated Windows toolchain location into generated Android local properties. */
 export function configureLocalInternalToolchain(root, environment, options = {}) {
   if ((options.platform ?? process.platform) !== 'win32') return;
   const tooling = options.tooling ?? resolveNativeReleaseDeviceTooling(environment);
@@ -166,6 +175,7 @@ function metadataValue(xml, name) {
   return value?.replaceAll('&quot;', '"').replaceAll('&amp;', '&');
 }
 
+/** Rejects debuggable or cleartext-enabled bundles and verifies the role-specific release manifest contract. */
 export function validateInternalBundleManifest(xml, role, versionName, resolveResource = () => null) {
   if (!/android:usesCleartextTraffic="false"/.test(xml) || /android:debuggable="true"/.test(xml)) {
     throw new Error(`${role} bundle must be a non-debuggable HTTPS-only release.`);
@@ -189,6 +199,7 @@ export function validateInternalBundleManifest(xml, role, versionName, resolveRe
   }
 }
 
+/** Extracts one consistent string resource from bundletool output and rejects absent or conflicting values. */
 export function parseBundleResourceValue(dump) {
   const values = [...dump.matchAll(/ - \[STR\] "([^"\r\n]*)"/g)].map((match) => match[1]);
   if (!values.length || values.some((value) => value !== values[0])) {
@@ -228,6 +239,7 @@ function inspectInternalBundleConfiguration({ root, plan, tooling, environment }
   return observations;
 }
 
+/** Requires the local baseline to match the planned source, Android runtime, private server, channel, and project. */
 export function validateLocalInternalBaseline(baseline, plan) {
   if (baseline.commit !== plan.sourceCommit || baseline.platform !== 'android' ||
       baseline.server_url !== INTERNAL_SERVER_URL || baseline.channel !== INTERNAL_CHANNEL ||
@@ -253,6 +265,7 @@ function writeLocalRecord(root, record) {
   fs.writeFileSync(file, `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 });
 }
 
+/** Requires retained local provenance to equal the freshly verified artifact/configuration record. */
 export function verifyLocalRecord(root, current) {
   let recorded;
   try { recorded = JSON.parse(fs.readFileSync(path.join(root, LOCAL_RECORD_PATH), 'utf8')); }
@@ -262,6 +275,7 @@ export function verifyLocalRecord(root, current) {
   }
 }
 
+/** Revalidates configuration, source identity, and retained local build artifacts before reuse. */
 export async function verifyLocalInternalArtifacts({ root = ROOT, environment = process.env }, dependencies = {}) {
   await (dependencies.checkConfiguration ?? assertReleaseConfiguration)(root);
   const sourceCommit = (dependencies.readSource ?? readNativeReleaseBuildSource)(root);
@@ -272,6 +286,7 @@ export async function verifyLocalInternalArtifacts({ root = ROOT, environment = 
   return record;
 }
 
+/** Builds the local signed phone/watch artifact set through credential-free preparation and records verified provenance. */
 export async function buildLocalInternalRelease({ root = ROOT, credentialsFile, environment = process.env }, dependencies = {}) {
   const sourceCommit = (dependencies.readSource ?? readNativeReleaseBuildSource)(root);
   const env = nativeReleaseCredentialFreeEnvironment(localInternalEnvironment(environment));
@@ -330,6 +345,7 @@ Maintainer helpers (not additional build/submit stages):
 Backend: ${INTERNAL_SERVER_URL}; Expo channel: ${INTERNAL_CHANNEL}.
 Commit all source/version changes before build. Keep credentials outside the repository.`;
 
+/** Dispatches local internal build, install, submit, preparation, and diagnostics with command-specific validation. */
 export async function runLocalInternalCli(argv, options = {}) {
   const { command, values } = parseLocalInternalArgs(argv);
   const root = options.root ?? ROOT;

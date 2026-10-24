@@ -1,3 +1,5 @@
+/** @file outbox: SQLite-backed queue for one server-origin and user namespace. */
+
 import { assertRecoverableEnqueue, failedMutationDiscardIds } from './failedMutationRecovery';
 import * as Crypto from 'expo-crypto';
 import type { OutboxDatabase } from './database';
@@ -26,14 +28,23 @@ type QueuedMutationRow = {
 };
 
 export interface OutboxStore {
+    /** Durably appends a mutation and returns its assigned identity and sequence. */
     enqueue(mutation: NewQueuedMutation): Promise<QueuedMutation>;
+    /** Lists the namespace's durable mutations in replay order. */
     list(): Promise<QueuedMutation[]>;
+    /** Atomically claims the next replayable mutation, respecting earlier blocking work. */
     claimNext(): Promise<QueuedMutation | null>;
+    /** Removes a successfully replayed mutation from durable storage. */
     complete(id: string): Promise<void>;
+    /** Marks claimed work failed with a persisted recovery message and returns the updated mutation. */
     fail(id: string, error: string): Promise<QueuedMutation>;
+    /** Returns claimed work to pending state after a transient failure while retaining its identity. */
     defer(id: string, error: string): Promise<QueuedMutation>;
+    /** Requeues interrupted replay work before a new synchronization owner begins. */
     recoverInterrupted(): Promise<void>;
+    /** Requeues one failed mutation or all failures when no identifier is supplied. */
     retryFailed(id?: string): Promise<void>;
+    /** Removes all mutations in this store's account and server namespace. */
     clear(): Promise<void>;
 }
 
@@ -54,6 +65,7 @@ function mapRow(row: QueuedMutationRow): QueuedMutation {
 
 /** SQLite-backed queue for one server-origin and user namespace. */
 export class SqliteOutbox implements OutboxStore {
+    /** Binds a SQLite outbox to one account namespace with injectable identity and time sources. */
     constructor(
         private readonly database: OutboxDatabase,
         private readonly namespace: string,
@@ -61,6 +73,7 @@ export class SqliteOutbox implements OutboxStore {
         private readonly now: () => number = Date.now
     ) {}
 
+    /** Validates and inserts a mutation with a durable sequence inside an exclusive SQLite transaction. */
     async enqueue(mutation: NewQueuedMutation): Promise<QueuedMutation> {
         const operation = mutation.operation.trim();
         if (!operation) throw new Error('Queued mutations require an operation name.');
@@ -84,6 +97,7 @@ export class SqliteOutbox implements OutboxStore {
         return created;
     }
 
+    /** Reads namespace mutations in sequence order and decodes their validated payloads. */
     async list(): Promise<QueuedMutation[]> {
         const rows = await this.database.getAllAsync<QueuedMutationRow>(
             'SELECT * FROM queued_mutations WHERE namespace = ? ORDER BY sequence ASC',
@@ -92,6 +106,7 @@ export class SqliteOutbox implements OutboxStore {
         return rows.map(mapRow);
     }
 
+    /** Claims the earliest pending row transactionally; an earlier failed or replaying row blocks later work. */
     async claimNext(): Promise<QueuedMutation | null> {
         let claimed: QueuedMutationRow | null = null;
         await this.database.withExclusiveTransactionAsync(async (transaction) => {
@@ -130,6 +145,7 @@ export class SqliteOutbox implements OutboxStore {
         return claimed ? mapRow(claimed) : null;
     }
 
+    /** Deletes only the matching replaying namespace row and rejects missing or changed claims. */
     async complete(id: string): Promise<void> {
         const result = await this.database.runAsync(
             'DELETE FROM queued_mutations WHERE id = ? AND namespace = ? AND state = ?',
@@ -138,6 +154,7 @@ export class SqliteOutbox implements OutboxStore {
         if (result.changes !== 1) throw new Error(`Unable to complete queued mutation ${id}.`);
     }
 
+    /** Persists a bounded failure message only for the currently claimed namespace row. */
     async fail(id: string, error: string): Promise<QueuedMutation> {
         const result = await this.database.runAsync(
             `UPDATE queued_mutations SET state = ?, last_error = ?, updated_at = ?
@@ -177,6 +194,7 @@ export class SqliteOutbox implements OutboxStore {
         return deferred;
     }
 
+    /** Requeues namespace rows left replaying by an interrupted owner. */
     async recoverInterrupted(): Promise<void> {
         await this.database.runAsync(
             `UPDATE queued_mutations SET state = ?, updated_at = ?
@@ -190,6 +208,7 @@ export class SqliteOutbox implements OutboxStore {
         );
     }
 
+    /** Clears failure details and requeues either the selected failed row or every namespace failure. */
     async retryFailed(id?: string): Promise<void> {
         const idClause = id ? ' AND id = ?' : '';
         const params: Array<string | number> = [
@@ -206,6 +225,7 @@ export class SqliteOutbox implements OutboxStore {
         );
     }
 
+    /** Checks dependencies and removes a reviewed failure atomically within the namespace transaction. */
     async discardFailedMutation(id: string): Promise<void> {
         await this.database.withExclusiveTransactionAsync(async transaction => {
             const rows = await transaction.getAllAsync<QueuedMutationRow>('SELECT * FROM queued_mutations WHERE namespace = ? ORDER BY sequence ASC', [this.namespace]);
@@ -216,8 +236,10 @@ export class SqliteOutbox implements OutboxStore {
         });
     }
 
+    /** Uses the common transactional discard path for food failures and their dependents. */
     discardFailedFood(id: string): Promise<void> { return this.discardFailedMutation(id); }
 
+    /** Deletes SQLite mutations only within the bound account and server namespace. */
     async clear(): Promise<void> {
         await this.database.runAsync('DELETE FROM queued_mutations WHERE namespace = ?', [this.namespace]);
     }

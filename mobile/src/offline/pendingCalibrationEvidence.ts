@@ -1,3 +1,5 @@
+/** @file pending Calibration Evidence: Identify queued writes that can change calibration evidence or its eligible window. */
+
 import { OFFLINE_MUTATION_OPERATIONS } from './operations';
 import type { QueuedMutation } from './queuedMutation';
 
@@ -19,6 +21,7 @@ export function isCalibrationEvidenceMutationOperation(operation: string): boole
     return CALIBRATION_EVIDENCE_MUTATION_OPERATIONS.has(operation);
 }
 
+/** Reports queued operations that could change calibration evidence before a recommendation is applied. */
 export function hasPendingCalibrationEvidenceMutation(
     mutations: ReadonlyArray<Pick<QueuedMutation, 'operation'>>
 ): boolean {

@@ -1,3 +1,5 @@
+/** @file Regression coverage for presentation: activity presentation. */
+
 import type { ActivityDaySummary, ActivityRecordEntry } from '@calibrate/api-client';
 import {
     formatActivitySource,

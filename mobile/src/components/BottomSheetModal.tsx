@@ -1,3 +1,5 @@
+/** @file Cross-platform modal sheet layout, focus isolation, stacked-dialog accessibility, and dismissal behavior. */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
@@ -91,6 +93,7 @@ function normalizeInactiveWebBottomSheetContainers(documentRoot: Pick<WebBottomS
     }
 }
 
+/** Normalizes inactive web modal containers and observes future role and tree changes. */
 export function createWebBottomSheetContainerObserver(
     documentRoot: WebBottomSheetDocument,
     observerFactory: WebModalAccessibilityObserverFactory
@@ -152,6 +155,7 @@ export function resolveFixedSheetHeight(
     return visualViewportHeight * (Number(percentageMatch[1]) / 100);
 }
 
+/** Chooses a desktop dialog width bounded by viewport insets, leaving phone sheets unconstrained. */
 export function resolveAdaptiveDialogWidth(
     viewportWidth: number,
     size: BottomSheetModalSize,

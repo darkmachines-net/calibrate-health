@@ -1,3 +1,5 @@
+/** @file Regression coverage for food day comparison: normalizes legacy completion without inventing comparison data and preserves additive range values. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

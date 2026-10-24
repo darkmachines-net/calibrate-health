@@ -1,3 +1,5 @@
+/** @file observability: Process-local, bounded counters deliberately avoid user, route-parameter, and health-data labels. */
+
 import crypto from 'node:crypto';
 import type { RequestHandler } from 'express';
 import {
@@ -164,6 +166,7 @@ export class DiagnosticsRegistry {
   private readonly operations = new Map<DiagnosticOperationName, OperationCounters>();
   private readonly clientDiagnostics = emptyClientDiagnosticCounters();
 
+  /** Accumulate bounded request duration/status totals globally and within a fixed diagnostic category. */
   recordRequest(category: DiagnosticCategory, statusCode: number, durationMs: number): void {
     this.updateRequestCounters(this.requests, statusCode, durationMs);
     const counters = this.requestCategories.get(category) ?? emptyRequestCounters();
@@ -171,6 +174,7 @@ export class DiagnosticsRegistry {
     this.requestCategories.set(category, counters);
   }
 
+  /** Record a scheduler outcome and finish time, advancing successful-run freshness only on success. */
   recordJob(name: DiagnosticJobName, outcome: DiagnosticJobOutcome, durationMs: number): void {
     const counters = this.jobs.get(name) ?? emptyJobCounters();
     counters.runs += 1;
@@ -186,6 +190,7 @@ export class DiagnosticsRegistry {
     this.jobs.set(name, counters);
   }
 
+  /** Count a fixed operation outcome; untimed attempts do not contribute latency samples. */
   recordOperation(name: DiagnosticOperationName, outcome: DiagnosticOperationOutcome, durationMs?: number): void {
     const counters = this.operations.get(name) ?? emptyOperationCounters();
     counters.attempts += 1;
@@ -205,6 +210,7 @@ export class DiagnosticsRegistry {
     this.operations.set(name, counters);
   }
 
+  /** Aggregate an already-validated diagnostic by its bounded joint dimensions without retaining raw client data. */
   recordClientDiagnostic(diagnostic: ClientDiagnosticInput): void {
     this.clientDiagnostics.total += 1;
     const tupleKey = [
@@ -236,6 +242,7 @@ export class DiagnosticsRegistry {
     incrementMap(this.clientDiagnostics.byDurationBucket, diagnostic.duration_bucket);
   }
 
+  /** Copy process-local counters into stable wire aggregates with restart identity and no mutable registry references. */
   snapshot(): object {
     return {
       schema_version: 1,
@@ -311,6 +318,7 @@ export function diagnosticOperationOutcomeForStatus(statusCode: number): Diagnos
   return 'failure';
 }
 
+/** Enable logs explicitly and metrics only when a sufficiently long server-only bearer token is configured. */
 export function resolveObservabilityConfig(env: NodeJS.ProcessEnv = process.env): ObservabilityConfig {
   const enabled = env.CALIBRATE_DIAGNOSTICS_ENABLED?.trim().toLowerCase() === 'true';
   const token = env.CALIBRATE_DIAGNOSTICS_METRICS_TOKEN?.trim() || null;
@@ -321,6 +329,7 @@ export function resolveObservabilityConfig(env: NodeJS.ProcessEnv = process.env)
   };
 }
 
+/** Reduce a request URL to a fixed low-cardinality category; never retain its path or query as a label. */
 export function classifyDiagnosticCategory(originalUrl: string): DiagnosticCategory {
   const path = originalUrl.split('?')[0]?.toLowerCase() ?? '';
   if (path.startsWith('/auth/')) return 'auth';
@@ -338,6 +347,7 @@ export function classifyDiagnosticCategory(originalUrl: string): DiagnosticCateg
   return 'frontend';
 }
 
+/** Accept only bounded opaque trace identifiers, otherwise generate a replacement without echoing caller prose. */
 export function safeRequestId(value: unknown, fallback: () => string = crypto.randomUUID): string {
   if (typeof value === 'string') {
     const normalized = value.trim();
@@ -430,6 +440,7 @@ export function sanitizeDiagnosticFields(fields: Record<string, DiagnosticValue>
   return sanitized;
 }
 
+/** Write one sanitized JSON event when enabled; discard fields outside the diagnostics allowlist. */
 export function emitDiagnosticEvent(
   config: ObservabilityConfig,
   event: string,
@@ -446,6 +457,7 @@ export function emitDiagnosticEvent(
   }));
 }
 
+/** Attach opaque correlation headers and record sanitized completion timing without logging request payloads. */
 export function createRequestObservabilityMiddleware(options: {
   config: ObservabilityConfig;
   registry?: DiagnosticsRegistry;
@@ -488,6 +500,7 @@ function metricsTokenMatches(header: string | undefined, configuredToken: string
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
+/** Expose uncached aggregate counters only behind configured bearer authentication; hide disabled metrics with 404. */
 export function createDiagnosticsMetricsHandler(options: {
   config: ObservabilityConfig;
   registry?: DiagnosticsRegistry;

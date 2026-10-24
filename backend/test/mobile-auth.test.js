@@ -1,3 +1,5 @@
+/** @file Regression coverage for mobile auth: mobile auth parses Android device metadata. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

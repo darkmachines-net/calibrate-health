@@ -1,3 +1,5 @@
+/** Bounded calorie complication text, progress, freshness, and accessibility presentation. */
+
 package app.calibratehealth.wear.complication
 
 import app.calibratehealth.wear.tile.CalibrateTileSnapshot
@@ -16,6 +18,7 @@ data class CalorieComplicationContent(
 object CalorieComplicationFormatter {
     private const val STALE_AFTER_MS = 6 * 60 * 60 * 1_000L
 
+    /** Formats cached calorie balance for a complication with explicit unavailable, paused, and stale states. */
     fun format(snapshot: CalibrateTileSnapshot?, nowEpochMs: Long): CalorieComplicationContent {
         if (snapshot == null) {
             return CalorieComplicationContent(

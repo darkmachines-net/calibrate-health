@@ -1,3 +1,5 @@
+/** @file Regression coverage for native tag attestation: parses raw OpenSSH keys and normalizes fixed-principal allowed signers. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

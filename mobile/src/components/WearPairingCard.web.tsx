@@ -1,3 +1,5 @@
+/** @file Wear Pairing Card: The phone-to-Wear bridge is native-only; keep shared Settings routes safe on web. */
+
 import { AppSection } from './AppSection';
 import { SectionHeader } from './SectionHeader';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for Food Tracking Status: food tracking day resolution. */
+
 import { createOutboxDispatch, type OutboxDispatch } from '../offline/mutationDispatch';
 import type { QueuedMutation } from '../offline/queuedMutation';
 import React from 'react';

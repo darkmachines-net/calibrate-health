@@ -1,3 +1,5 @@
+/** @file Barcode Camera: Mounts the native camera only while this route is visible, active, and unobscured. */
+
 import { StyleSheet, View } from 'react-native';
 import { CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { radius, useAppTheme } from '../theme';

@@ -1,3 +1,5 @@
+/** @file Provider barcode lookup normalization and immutable serving/attribution snapshots for food selection. */
+
 import { normalizeSearchedFoodItem, type SearchedFoodItem } from '../food/serving';
 import { getBarcodeLookupFailure } from './state';
 
@@ -233,11 +235,13 @@ export class BarcodeScanGate {
     private lastRawValue: string | null = null;
     private lastEventAt = Number.NEGATIVE_INFINITY;
 
+    /** Creates a scan gate with an injectable clock and duplicate-scan suppression interval. */
     constructor(
         private readonly now: () => number = Date.now,
         private readonly duplicateWindowMs = BARCODE_DUPLICATE_WINDOW_MS
     ) {}
 
+    /** Normalizes a scan, suppresses recent duplicates, and locks accepted work until reset. */
     accept(rawValue: unknown, formatHint?: BarcodeFormatHint): BarcodeScanDecision {
         const normalized = normalizeBarcodeInput(rawValue, formatHint);
         const comparableValue = normalized.ok
@@ -266,6 +270,7 @@ export class BarcodeScanGate {
         return { kind: 'accepted', barcode: normalized.barcode };
     }
 
+    /** Clears the scan lock and duplicate history so a new scan can be accepted. */
     reset(): void {
         this.locked = false;
         this.lastRawValue = null;
@@ -277,6 +282,7 @@ export class BarcodeScanGate {
 export class BarcodeRequestGate {
     private activeCanonicalKey: string | null = null;
 
+    /** Validates a barcode and claims the single active lookup, rejecting overlapping requests. */
     start(rawValue: unknown, formatHint?: BarcodeFormatHint): BarcodeRequestDecision {
         const normalized = normalizeBarcodeInput(rawValue, formatHint);
         if (!normalized.ok) return { kind: 'invalid', message: normalized.message };
@@ -290,10 +296,12 @@ export class BarcodeRequestGate {
         };
     }
 
+    /** Releases the active barcode lookup after its request finishes. */
     finish(): void {
         this.activeCanonicalKey = null;
     }
 
+    /** Clears active lookup state when restarting the barcode workflow. */
     reset(): void {
         this.activeCanonicalKey = null;
     }
@@ -303,25 +311,30 @@ export class BarcodeRequestGate {
 export class BarcodeSubmissionGate {
     private locked = false;
 
+    /** Claims the logging operation once and rejects repeated submissions while locked. */
     start(): BarcodeOperationDecision {
         if (this.locked) return 'duplicate';
         this.locked = true;
         return 'accepted';
     }
 
+    /** Unlocks a failed logging operation so the user can retry. */
     fail(): void {
         this.locked = false;
     }
 
+    /** Keeps a successful logging operation locked to prevent duplicate submission. */
     complete(): void {
         this.locked = true;
     }
 
+    /** Reopens the logging gate for a new workflow. */
     reset(): void {
         this.locked = false;
     }
 }
 
+/** Resolves lookup presentation with loaded results taking precedence over connectivity and request state. */
 export function getBarcodeLookupStatus(options: {
     hasBarcode: boolean;
     isPending: boolean;

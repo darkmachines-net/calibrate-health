@@ -1,3 +1,5 @@
+/** @file Regression coverage for goal pace: adjustment preserves identity, baseline, target intent and 33% progress; replay and unchanged save are harmless. */
+
 const test = require('node:test'), assert = require('node:assert/strict'), Module = require('node:module');
 const { Prisma } = require('@prisma/client');
 function fixture() {

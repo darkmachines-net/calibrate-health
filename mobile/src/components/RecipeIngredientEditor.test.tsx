@@ -1,3 +1,5 @@
+/** @file Regression coverage for Recipe Ingredient Editor: RecipeIngredientSelector. */
+
 import React, { useState } from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

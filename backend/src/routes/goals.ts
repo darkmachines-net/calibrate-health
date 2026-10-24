@@ -1,3 +1,5 @@
+/** @file Account-owned goal creation, current-goal lookup, and policy-checked pace changes. */
+
 import { lockCaloriePlanningInputs } from '../services/caloriePlanningLock';
 import { observeCurrentCaloriePlan, retainDailyCaloriePlan } from '../services/dailyCaloriePlans';
 import express from 'express';

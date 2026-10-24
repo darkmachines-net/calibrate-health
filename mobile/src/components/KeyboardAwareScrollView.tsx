@@ -1,3 +1,5 @@
+/** @file Keyboard Aware Scroll View: Shared form scroller that reveals focused inputs plus the content that explains or acts on their current value. */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Keyboard,

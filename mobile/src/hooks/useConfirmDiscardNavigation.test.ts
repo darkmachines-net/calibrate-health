@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Confirm Discard Navigation: useConfirmDiscardNavigation. */
+
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useConfirmDiscardNavigation } from './useConfirmDiscardNavigation';
 import { requestGuardedNavigation } from '../navigation/guardedNavigation';

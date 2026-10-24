@@ -1,3 +1,5 @@
+/** @file Shared client palettes, semantic typography, spacing, and theme selection from canonical design tokens. */
+
 import { Platform, type ColorSchemeName } from 'react-native';
 import { useSystemColorScheme } from './hooks/useSystemColorScheme';
 import {
@@ -145,6 +147,7 @@ export const themes = {
 
 export type AppTheme = typeof themes.light | typeof themes.dark;
 
+/** Selects the dark palette only for an explicit dark scheme, otherwise the light palette. */
 export function resolveAppTheme(colorScheme: ColorSchemeName | null | undefined): AppTheme {
     return colorScheme === 'dark' ? themes.dark : themes.light;
 }

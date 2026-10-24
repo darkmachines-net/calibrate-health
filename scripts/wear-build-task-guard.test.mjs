@@ -1,3 +1,5 @@
+/** @file Regression coverage for wear build task guard: Wear signing guards classify the build variant before incidental task suffixes. */
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';

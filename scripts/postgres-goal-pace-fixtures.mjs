@@ -1,4 +1,4 @@
-/** Calendar fixtures shared by the goal-pace PostgreSQL smoke scenarios. */
+/** @file Calendar fixtures shared by the goal-pace PostgreSQL smoke scenarios. */
 
 /** Keep timezone-overlap rows separate from today's and historical-create rows. */
 export function goalPaceFixtureDates(now) {

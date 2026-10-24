@@ -1,3 +1,5 @@
+/** Wear Android build variants, validated server origins, shared signing, and strict dependency configuration. */
+
 import java.io.File
 import java.net.URI
 
@@ -8,9 +10,11 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
 }
 
+/** Escapes a value as a quoted Java string literal for generated BuildConfig fields. */
 fun quoteBuildConfig(value: String): String =
     "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
+/** Accepts only local hostnames or literal private/loopback addresses for cleartext development origins. */
 fun privateOrLocalHost(rawHost: String): Boolean {
     val host = rawHost.lowercase().removePrefix("[").removeSuffix("]").substringBefore('%')
     if (host == "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return true
@@ -28,6 +32,7 @@ fun privateOrLocalHost(rawHost: String): Boolean {
     return firstIpv6Group in 0xfc00..0xfdff || firstIpv6Group in 0xfe80..0xfebf
 }
 
+/** Requires an origin-only HTTPS URL, allowing HTTP solely under explicit trusted-development policy. */
 fun validateServerOrigin(rawValue: String, allowCleartext: Boolean): String {
     val value = rawValue.trim()
     val uri = try {
@@ -61,6 +66,7 @@ fun validateServerOrigin(rawValue: String, allowCleartext: Boolean): String {
     return value
 }
 
+/** Reads a Gradle boolean property and rejects values other than true or false. */
 fun strictBooleanProperty(name: String, default: Boolean): Boolean {
     val value = providers.gradleProperty(name).orNull ?: return default
     return when (value.lowercase()) {
@@ -76,6 +82,7 @@ enum class WearTaskBuildType {
     RELEASE
 }
 
+/** Classifies a requested task by its target variant, checking Release before DebugSymbols substrings. */
 fun wearTaskBuildType(taskName: String): WearTaskBuildType? = when {
     // Release symbol-stripping tasks contain "DebugSymbols" but still target the release variant.
     taskName.contains("Release") -> WearTaskBuildType.RELEASE
@@ -84,6 +91,7 @@ fun wearTaskBuildType(taskName: String): WearTaskBuildType? = when {
     else -> null
 }
 
+/** Reads a nonblank signing value from a Gradle property or the corresponding environment variable. */
 fun sharedSigningValue(name: String): String? =
     providers.gradleProperty(name).orElse(providers.environmentVariable(name)).orNull?.takeIf { it.isNotBlank() }
 

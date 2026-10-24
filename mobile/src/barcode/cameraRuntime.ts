@@ -1,3 +1,5 @@
+/** @file camera Runtime: Allows native camera mounting so CameraView can report real initialization failures after permission. */
+
 import { Linking } from 'react-native';
 
 export const cameraPermissionCopy = {
@@ -10,12 +12,14 @@ export const cameraPermissionCopy = {
     openSettingsError: 'Unable to open device settings. Open the Calibrate app permissions manually.'
 } as const;
 
+/** Allows native camera mounting so CameraView can report real initialization failures after permission. */
 export async function isBarcodeCameraAvailable(): Promise<boolean> {
     // Expo's availability preflight is web-only. Native startup failures are reported by
     // CameraView.onMountError after permission is granted, so allow the real camera to mount.
     return true;
 }
 
+/** Opens native app settings for camera permission recovery, returning false when navigation fails. */
 export async function openBarcodeCameraSettings(): Promise<boolean> {
     try {
         await Linking.openSettings();

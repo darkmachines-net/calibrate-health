@@ -1,3 +1,5 @@
+/** @file Regression coverage for launch 21 performance budgets: Launch 21 route and Core Web Vitals budgets. */
+
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';

@@ -1,3 +1,5 @@
+/** Room database access and explicit migrations for account-scoped watch persistence. */
+
 package app.calibratehealth.wear.data.local
 
 import android.content.Context
@@ -18,9 +20,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     exportSchema = true
 )
 abstract class CalibrateWearDatabase : RoomDatabase() {
+    /** Returns the DAO for bounded daily summary snapshots. */
     abstract fun dailySnapshotDao(): DailySnapshotDao
+    /** Returns the DAO for ranked immutable quick-add snapshots. */
     abstract fun quickAddItemDao(): QuickAddItemDao
+    /** Returns the DAO for durable mutation ordering and terminal operation records. */
     abstract fun queuedMutationDao(): QueuedMutationDao
+    /** Returns the DAO for account-scoped synchronization metadata. */
     abstract fun syncMetadataDao(): SyncMetadataDao
 
     companion object {
@@ -29,10 +35,12 @@ abstract class CalibrateWearDatabase : RoomDatabase() {
         @Volatile
         private var instance: CalibrateWearDatabase? = null
 
+        /** Returns the process-shared Room database, opening it once under synchronization. */
         fun get(context: Context): CalibrateWearDatabase = instance ?: synchronized(this) {
             instance ?: open(context).also { instance = it }
         }
 
+        /** Opens the named Room database with every supported explicit migration. */
         fun open(context: Context, name: String = DATABASE_NAME): CalibrateWearDatabase =
             Room.databaseBuilder(
                 context.applicationContext,

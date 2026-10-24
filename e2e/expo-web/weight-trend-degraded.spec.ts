@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend degraded: Trend Details keeps raw measurements visible when the trend estimate is unavailable. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
@@ -21,7 +23,7 @@ async function captureLaunchEvidence(page: Page, testInfo: TestInfo) {
       : null;
   if (!viewport) return;
 
-  const evidenceDir = path.resolve('docs/screenshots/launch-03');
+  const evidenceDir = path.resolve('.codex-screenshots/launch-03');
   await mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
     path: path.join(evidenceDir, 'weight-trend-unavailable-' + viewport + '.png'),

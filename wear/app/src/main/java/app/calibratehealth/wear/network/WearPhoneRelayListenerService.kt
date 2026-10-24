@@ -1,3 +1,5 @@
+/** Receives versioned phone-relay responses and routes them to pending watch requests. */
+
 package app.calibratehealth.wear.network
 
 import app.calibratehealth.wear.WearDataLayerContract

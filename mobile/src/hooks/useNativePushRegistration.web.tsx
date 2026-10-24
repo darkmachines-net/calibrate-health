@@ -1,3 +1,5 @@
+/** @file use Native Push Registration: Own the current browser endpoint for the selected cookie session. Permission prompts and endpoint creation remain user initiated; existing endpoints are repaired automatically. */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { hasFullAccountAccess } from '../auth/accountAccess';
@@ -179,6 +181,7 @@ export function NativePushRegistrationProvider({
     return <NativePushRegistrationContext.Provider value={value}>{children}</NativePushRegistrationContext.Provider>;
 }
 
+/** Reads the browser push-registration context and throws outside its provider. */
 export function useNativePushRegistration(): NativePushRegistrationContextValue {
     const context = useContext(NativePushRegistrationContext);
     if (!context) throw new Error('useNativePushRegistration must be used within NativePushRegistrationProvider.');

@@ -1,8 +1,10 @@
+/** @file Feature-gated, authenticated nutrition-label image upload and review-draft response. */
+
 import express from 'express';
 import multer from 'multer';
 import { rateLimit } from 'express-rate-limit';
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';
-import { MAX_LABEL_IMAGE_BYTES, scanNutritionLabel } from '../services/nutritionLabelScan';
+import { MAX_LABEL_IMAGE_BYTES, scanNutritionLabel } from '../services/nutritionLabels/scan';
 import { isHttpError } from './myFoodsUtils';
 import { getServerFeatures } from '../services/serverSettings';
 

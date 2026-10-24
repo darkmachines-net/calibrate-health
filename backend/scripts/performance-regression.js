@@ -1,3 +1,5 @@
+/** @file Repeatable backend performance workloads and regression comparisons against bounded reference work. */
+
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -56,6 +58,7 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
+/** Scale reference work to comparable duration without allowing invalid counts or unsafe integer overflow. */
 function balancedReferenceIterations(targetIterations, baselineRatioPpm) {
   if (!Number.isSafeInteger(targetIterations) || targetIterations <= 0) {
     throw new Error('Target benchmark iterations must be a positive safe integer.');
@@ -71,6 +74,7 @@ function balancedReferenceIterations(targetIterations, baselineRatioPpm) {
   return referenceIterations;
 }
 
+/** Compare positive per-iteration durations as an integer parts-per-million ratio. */
 function normalizeRatioPpm(targetNs, referenceNs, targetIterations, referenceIterations) {
   if (
     !Number.isFinite(targetNs) || targetNs <= 0 ||
@@ -87,6 +91,7 @@ function normalizeRatioPpm(targetNs, referenceNs, targetIterations, referenceIte
   );
 }
 
+/** Return the allowed baseline-relative ceiling and whether the current measurement exceeds it. */
 function evaluateBenchmarkRatio(current, baseline, regressionPercent) {
   if (
     !Number.isSafeInteger(current) || current <= 0 ||
@@ -99,6 +104,7 @@ function evaluateBenchmarkRatio(current, baseline, regressionPercent) {
   return { allowed, exceeds: current > allowed };
 }
 
+/** Require both the initial and confirmation measurements to exceed the same regression ceiling. */
 function isConfirmedBenchmarkRegression(current, confirmation, baseline, regressionPercent) {
   return evaluateBenchmarkRatio(current, baseline, regressionPercent).exceeds &&
     evaluateBenchmarkRatio(confirmation, baseline, regressionPercent).exceeds;

@@ -1,3 +1,5 @@
+/** @file Screen: Provides the shared page width, safe-area spacing, scrolling, and main accessibility landmark. */
+
 import React from 'react';
 import { Platform, StyleSheet, View, type ViewProps, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +25,7 @@ const SCROLL_CONTENT_VIEWPORT_FLOOR = Platform.OS === 'web'
     ? { minHeight: '100%' as const }
     : { flexGrow: 1 };
 
+/** Provides the shared page width, safe-area spacing, scrolling, and main accessibility landmark. */
 export const Screen: React.FC<ScreenProps> = ({
     children,
     scroll = true,

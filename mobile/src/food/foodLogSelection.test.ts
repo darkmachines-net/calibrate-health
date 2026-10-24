@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Log Selection: food log selection. */
+
 import type { MyFoodSummary, RecentFoodSummary } from '@calibrate/api-client';
 import { MEAL_PERIODS } from '@calibrate/shared';
 import {

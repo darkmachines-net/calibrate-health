@@ -1,3 +1,5 @@
+/** @file web Accessibility Styles: Browser system-color overrides keep focus, selection, and progress visible when Windows High Contrast or another forced-colors mode replaces app colors. */
+
 /**
  * Browser system-color overrides keep focus, selection, and progress visible
  * when Windows High Contrast or another forced-colors mode replaces app colors.

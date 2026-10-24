@@ -1,3 +1,5 @@
+/** @file Regression coverage for calibration service: calibration status materializes a deterministic model-scoped recommendation. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');

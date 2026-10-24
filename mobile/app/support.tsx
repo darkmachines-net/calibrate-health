@@ -1,3 +1,5 @@
+/** @file support: Renders canonical support contacts and related public account information. */
+
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { PublicLegalPage } from '../src/components/legal/PublicLegalPage';
 import {
@@ -6,6 +8,7 @@ import {
     SUPPORT_SECTIONS
 } from '../src/legal/publicLegalContent';
 
+/** Renders canonical support contacts and related public account information. */
 export default function SupportRoute() {
     return (
         <PublicLegalPage

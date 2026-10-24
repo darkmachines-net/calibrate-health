@@ -1,3 +1,5 @@
+/** @file Regression coverage for haptics: preference-aware haptics. */
+
 import * as Haptics from 'expo-haptics';
 import { triggerHapticFeedback } from './haptics';
 

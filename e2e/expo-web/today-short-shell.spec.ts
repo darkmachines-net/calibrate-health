@@ -1,3 +1,5 @@
+/** @file Regression coverage for today short shell: Today restores page scrolling only when the fixed regions cannot fit. */
+
 import { expect, hideTransientPwaNotices, test } from './fixtures';
 
 test('Today restores page scrolling only when the fixed regions cannot fit', async ({ page, ux }, testInfo) => {

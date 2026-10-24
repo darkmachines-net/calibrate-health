@@ -1,3 +1,5 @@
+/** @file Browser Health Connect fallback with explicitly gated local test simulation. */
+
 import React, {
     createContext,
     useCallback,
@@ -113,6 +115,7 @@ function fixtureTarget(): FixtureTarget {
     return globalThis as unknown as FixtureTarget;
 }
 
+/** Restricts browser Health Connect simulation to explicitly allowed local fixture hosts. */
 export function isHealthConnectWebFixtureHost(hostname: string | null | undefined): boolean {
     return LOCAL_FIXTURE_HOSTS.has((hostname ?? '').toLowerCase());
 }
@@ -122,6 +125,7 @@ function isFixture(value: unknown): value is HealthConnectWebFixture {
     return FIXTURE_STATES.includes((value as { state?: HealthConnectWebFixtureState }).state as HealthConnectWebFixtureState);
 }
 
+/** Accepts a valid browser fixture only on an allowed local development host. */
 export function getHealthConnectWebFixtureForHost(
     hostname: string | null | undefined,
     value: unknown
@@ -155,6 +159,7 @@ function writeFixture(next: HealthConnectWebFixture): void {
     }
 }
 
+/** Builds deterministic browser simulation state or the unavailable snapshot when no fixture is allowed. */
 export function resolveHealthConnectWebFixture(
     fixture: HealthConnectWebFixture | null,
     now = new Date()
@@ -231,6 +236,7 @@ export function HealthConnectProvider({ children }: { children: React.ReactNode 
     return <HealthConnectContext.Provider value={value}>{children}</HealthConnectContext.Provider>;
 }
 
+/** Reads browser Health Connect presentation state and throws outside its provider. */
 export function useHealthConnect(): HealthConnectContextValue {
     const context = useContext(HealthConnectContext);
     if (!context) throw new Error('useHealthConnect must be used within HealthConnectProvider.');

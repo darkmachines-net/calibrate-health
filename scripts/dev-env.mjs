@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/** @file Host dependency caching, Prisma tasks, and local CI command orchestration for the current worktree. */
+
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -438,6 +440,7 @@ async function ci() {
     run("npm", ["run", "test:lint"]);
     run("node", ["--test", "scripts/ci-test-gate.test.mjs"]);
     run("npm", ["run", "lint:eslint"]);
+    run("npm", ["run", "lint:kotlin"]);
   });
   await timed("Validate release configuration", () => {
     run("npm", ["run", "release:check"]);

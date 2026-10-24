@@ -1,3 +1,5 @@
+/** @file Regression coverage for mobile session issuance postgres: PostgreSQL orders verified native issuance against credential changes and deletion. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');

@@ -1,3 +1,5 @@
+/** @file query Invalidation: Refresh every server-owned planning view after a profile or unit change. */
+
 import type { QueryClient } from '@tanstack/react-query';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';
 

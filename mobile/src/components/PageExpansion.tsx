@@ -1,3 +1,5 @@
+/** @file Measured in-page expansion with shared animation timing, focus restoration, and reduced-motion behavior. */
+
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, BackHandler, Easing, findNodeHandle, Platform, Pressable, StyleSheet, View, type ViewProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

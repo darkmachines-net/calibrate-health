@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes nutrition labels: scan endpoint authenticates, validates uploads, and aborts work on disconnect. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
@@ -5,7 +7,7 @@ const Module = require('node:module');
 const { once } = require('node:events');
 
 test('scan endpoint authenticates, validates uploads, and aborts work on disconnect', { timeout: 10_000 }, async () => {
-  const servicePath = require.resolve('../src/services/nutritionLabelScan');
+  const servicePath = require.resolve('../src/services/nutritionLabels/scan');
   const routePath = require.resolve('../src/routes/nutritionLabels');
   const previous = require.cache[servicePath];
   const settingsPath = require.resolve('../src/services/serverSettings');

@@ -1,3 +1,5 @@
+/** @file use Modal Focus Management: Contains web keyboard focus within an overlay and restores its trigger when the overlay closes. Native callers can provide explicit initial/return refs. */
+
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { Platform } from 'react-native';
 

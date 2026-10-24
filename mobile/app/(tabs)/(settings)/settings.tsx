@@ -1,3 +1,5 @@
+/** @file settings: Coordinates account preferences, sessions, integrations, offline recovery, export, and account deletion. */
+
 import React, { useState } from 'react';
 import { Image, Platform, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -73,6 +75,7 @@ const SETTINGS_CATEGORY_ROUTES = {
     help: 'settings-help'
 } as const;
 
+/** Coordinates account preferences, sessions, integrations, offline recovery, export, and account deletion. */
 export function SettingsScreen({ category }: { category?: SettingsCategoryId }) {
     const serverSettings = useServerSettings();
     const router = useRouter();

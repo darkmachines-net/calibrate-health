@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes auth mobile: auth route: POST /mobile/login returns mobile tokens for valid credentials. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

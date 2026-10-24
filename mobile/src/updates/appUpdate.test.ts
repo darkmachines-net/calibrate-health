@@ -1,3 +1,5 @@
+/** @file Regression coverage for app Update: app update presentation and actions. */
+
 jest.mock('expo-application', () => ({
     nativeApplicationVersion: '0.2.1',
     nativeBuildVersion: '3'

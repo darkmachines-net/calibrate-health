@@ -1,3 +1,5 @@
+/** @file Consumes each changed route date once so later date browsing stays under user control. */
+
 import { useEffect, useRef } from 'react';
 
 /** A route date is a navigation intent, not a constraint on subsequent date browsing. */

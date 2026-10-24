@@ -1,3 +1,5 @@
+/** @file Regression coverage for goal pace. */
+
 import { test, expect, expectApiFailure, hideTransientPwaNotices } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';

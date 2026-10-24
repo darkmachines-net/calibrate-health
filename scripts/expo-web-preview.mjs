@@ -1,3 +1,5 @@
+/** @file Starts the local preview server for the generated Expo web distribution. */
+
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';

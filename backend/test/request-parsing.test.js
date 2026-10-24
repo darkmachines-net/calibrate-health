@@ -1,3 +1,5 @@
+/** @file Regression coverage for request parsing: requestParsing: parsePositiveInteger accepts only finite integers >= 1. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

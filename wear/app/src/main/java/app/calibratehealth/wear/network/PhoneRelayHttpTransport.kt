@@ -1,3 +1,5 @@
+/** Bounded authenticated phone relay with direct-network fallback for watch API requests. */
+
 package app.calibratehealth.wear.network
 
 import android.content.Context

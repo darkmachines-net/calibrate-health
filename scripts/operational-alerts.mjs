@@ -1,3 +1,5 @@
+/** @file Deterministic operational alert evaluation from privacy-safe bounded aggregate evidence. */
+
 import crypto from 'node:crypto';
 
 const ALERT_OWNER = Object.freeze({
@@ -67,6 +69,7 @@ function safeDimensions(dimensions) {
   return safe;
 }
 
+/** Accepts only the bounded opaque identifier format used in operational evidence. */
 export function isOpaqueOperationalId(value) {
   return typeof value === 'string' && OPAQUE_ID_PATTERN.test(value);
 }
@@ -198,6 +201,7 @@ export function evaluateOperationalAlerts({
   return alerts;
 }
 
+/** Evaluates current operational alerts and sends each result through the supplied sink. */
 export async function dispatchOperationalAlerts(input, sink) {
   const alerts = evaluateOperationalAlerts(input);
   for (const alert of alerts) await sink.send(alert);

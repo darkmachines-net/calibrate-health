@@ -1,3 +1,5 @@
+/** @file FatSecret provider transport, OAuth token reuse, serving normalization, and attribution-preserving search results. */
+
 import { FoodDataProvider, FoodMeasure, FoodSearchRequest, FoodSearchResult, NormalizedFoodItem, Nutrients } from './types';
 import { parseNumber, round, scaleNutrients } from './utils';
 
@@ -107,6 +109,7 @@ class FatSecretFoodDataProvider implements FoodDataProvider {
         this.clientSecret = clientSecret;
     }
 
+    /** Resolve a supported barcode first, then normalize paginated FatSecret search results with serving snapshots. */
     async searchFoods(request: FoodSearchRequest): Promise<FoodSearchResult> {
         const trimmedBarcode = request.barcode?.trim();
         const normalizedBarcode = trimmedBarcode ? this.normalizeBarcodeForLookup(trimmedBarcode) : null;

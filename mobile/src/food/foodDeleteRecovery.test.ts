@@ -1,3 +1,5 @@
+/** @file Regression coverage for food Delete Recovery: food delete recovery state. */
+
 import {
     createEmptyFoodDeleteRecoveryState,
     filterVisibleFoodLogEntries,

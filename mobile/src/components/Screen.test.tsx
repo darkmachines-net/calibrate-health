@@ -1,3 +1,5 @@
+/** @file Regression coverage for Screen: Screen. */
+
 import { ScrollView, StyleSheet } from 'react-native';
 import { render } from '@testing-library/react-native';
 import { AppText } from './AppText';

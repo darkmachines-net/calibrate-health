@@ -1,3 +1,5 @@
+/** @file Page Header: Header for public and pre-shell routes that cannot use authenticated app navigation. */
+
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { spacing } from '../theme';

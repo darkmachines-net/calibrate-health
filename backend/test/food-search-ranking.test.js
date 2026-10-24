@@ -1,3 +1,5 @@
+/** @file Regression coverage for food search ranking: food search normalization keeps provider query behavior consistent. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

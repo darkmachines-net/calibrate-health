@@ -1,3 +1,5 @@
+/** @file Regression coverage for lose it import: parseLoseItExport parses Lose It exports with warnings for invalid rows. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const AdmZip = require('adm-zip');

@@ -1,3 +1,5 @@
+/** @file Browser service-worker cache lifecycle, offline navigation, update activation, and push delivery. */
+
 const SHELL_CACHE_PREFIX = 'calibrate-expo-web-shell-';
 const USER_CACHE_PREFIX = 'calibrate-expo-web-user-';
 const CACHE_NAME = `${SHELL_CACHE_PREFIX}v2`;

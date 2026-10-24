@@ -1,3 +1,5 @@
+/** @file Nutrition Label Screen: Coordinates image selection, cancellable OCR, user review, and saving a reusable food. */
+
 import { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
@@ -37,6 +39,7 @@ function scanErrorMessage(error: unknown): string {
     return getSafeActionErrorMessage(error, 'The label could not be read. Try another photo or enter the details below.');
 }
 
+/** Coordinates image selection, cancellable OCR, user review, and saving a reusable food. */
 export default function NutritionLabelScreen() {
     const { nutritionLabelScanning } = useServerSettings();
     const theme = useAppTheme();

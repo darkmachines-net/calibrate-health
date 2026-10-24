@@ -1,3 +1,5 @@
+/** @file App Error Boundary: Restart through the host that actually owns the current runtime. */
+
 import React from 'react';
 import * as Crypto from 'expo-crypto';
 import {
@@ -71,10 +73,12 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
         focusedAction: null
     };
 
+    /** Switches the root boundary to its recovery surface and allocates a diagnostic request identifier. */
     static getDerivedStateFromError(_error: unknown): Partial<AppErrorBoundaryState> {
         return { hasError: true, requestId: Crypto.randomUUID() };
     }
 
+    /** Reports a caught root-render failure once for the current recovery attempt. */
     componentDidCatch(_error: Error, _info: React.ErrorInfo): void {
         void this.reportRootFailure(this.state.resetVersion);
     }
@@ -102,6 +106,7 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
         (this.props.restartApp ?? defaultRestartApp)();
     };
 
+    /** Renders child content or the themed root-failure recovery surface after a render error. */
     render(): React.ReactNode {
         if (this.state.hasError) {
             const theme = Appearance.getColorScheme() === 'dark' ? themes.dark : themes.light;

@@ -1,3 +1,5 @@
+/** @file Card Header: Consistent card title, metadata, and action row across dashboard densities. */
+
 import React, { type ReactNode } from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 import { type AppTheme, useAppTheme } from '../theme';

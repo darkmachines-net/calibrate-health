@@ -1,3 +1,5 @@
+/** @file +html: Web-only document metadata shared by every statically rendered Expo route. */
+
 import { type PropsWithChildren } from 'react';
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { WEB_ACCESSIBILITY_STYLES } from '../src/accessibility/webAccessibilityStyles';

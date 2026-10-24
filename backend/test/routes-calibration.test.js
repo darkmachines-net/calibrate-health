@@ -1,3 +1,5 @@
+/** @file Regression coverage for routes calibration: calibration route requires authentication. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

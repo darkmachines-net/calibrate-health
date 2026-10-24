@@ -1,3 +1,5 @@
+/** @file Bounded background reminder scheduling, eligibility, deduplication, delivery, and resolution. */
+
 import prisma from '../config/database';
 import { InAppNotificationType } from '@prisma/client';
 import { getSafeUtcTodayDateOnlyInTimeZone } from '../utils/date';
@@ -68,6 +70,7 @@ const resolveInactiveInAppReminders = async (now: Date): Promise<void> => {
     }
 };
 
+/** Keep due food and weight reminders in independent groups so their delivery/resolution identities remain separate. */
 export const groupDueReminderTypes = ({
     dueWeight,
     dueFood

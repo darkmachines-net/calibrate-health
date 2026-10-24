@@ -1,3 +1,5 @@
+/** @file App Button: Renders the shared action control with theme variants, focus feedback, and disabled busy semantics. */
+
 import React from 'react';
 import {
     ActivityIndicator,
@@ -23,6 +25,7 @@ type AppButtonProps = Omit<PressableProps, 'android_ripple'> & {
     busyLabel?: string;
 };
 
+/** Renders the shared action control with theme variants, focus feedback, and disabled busy semantics. */
 export const AppButton: React.FC<AppButtonProps> = ({
     title,
     buttonRef,

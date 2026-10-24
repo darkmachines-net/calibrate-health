@@ -1,3 +1,5 @@
+/** @file Account-scoped reusable food suggestions ranked and deduplicated from immutable log history. */
+
 import type { FoodLog, MealPeriod, Prisma } from '@prisma/client';
 import prisma from '../config/database';
 

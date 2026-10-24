@@ -1,3 +1,5 @@
+/** @file Account profile, preferences, avatar, password, connected apps, export, and deletion endpoints. */
+
 import { verifyLocalPassword } from '../services/credentialVerification';
 import express from 'express';
 import prisma from '../config/database';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight Trend Route: WeightTrendScreen. */
+
 import { render } from '@testing-library/react-native';
 import WeightTrendScreen from '../../app/(tabs)/(progress)/weight-trend';
 

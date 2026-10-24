@@ -1,3 +1,5 @@
+/** @file Weight-trend display evidence, freshness, uncertainty, and unavailable-state presentation. */
+
 import type { TrendMetricEntry, TrendMetricsResponse, WeightTrendSummary } from '@calibrate/api-client';
 import type { WeightUnit } from '@calibrate/shared';
 import { formatWeight } from '../utils/format';
@@ -29,6 +31,7 @@ export type WeeklyPacePresentation = {
     freshnessNote: string | null;
 };
 
+/** Distinguishes materialized trend points from raw context, retaining compatibility with older server flags. */
 export function isVisibleWeightTrendPoint(metric: TrendMetricEntry): boolean {
     if (metric.trend_is_materialized === false || !Number.isFinite(metric.trend_weight)) return false;
     if (metric.trend_is_materialized === true) return true;
@@ -51,6 +54,7 @@ function isFiniteTrendSnapshot(snapshot: WeightTrendSnapshot | null | undefined)
     );
 }
 
+/** Prefers a valid summary snapshot, otherwise finds the latest visible finite trend interval. */
 export function getLatestWeightTrendSnapshot(
     metrics: TrendMetricEntry[],
     summary?: WeightTrendSummary
@@ -74,10 +78,12 @@ export function getLatestWeightTrendSnapshot(
     };
 }
 
+/** Formats the trend uncertainty interval in the selected weight units. */
 export function formatEstimatedTrendRange(snapshot: WeightTrendSnapshot, unit: WeightUnit | undefined): string {
     return `${formatWeight(snapshot.lower, unit)} - ${formatWeight(snapshot.upper, unit)}`;
 }
 
+/** Presents finite short-term variation evidence or returns null when the model has no usable estimate. */
 export function getShortTermVariationPresentation(
     response: TrendMetricsResponse | undefined,
     unit: WeightUnit | undefined
@@ -103,6 +109,7 @@ function formatSignedWeeklyRate(value: number, unit: WeightUnit | undefined): st
     return `${sign}${formatWeight(Math.abs(value), unit)}/week`;
 }
 
+/** Presents weekly pace and uncertainty only while the summary remains usable and sufficiently fresh. */
 export function getWeeklyPacePresentation(
     summary: WeightTrendSummary | undefined,
     unit: WeightUnit | undefined

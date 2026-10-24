@@ -1,3 +1,5 @@
+/** @file App Chip: Native chip used for meal periods and compact option sets. */
+
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { type AppTheme, useAppTheme } from '../theme';

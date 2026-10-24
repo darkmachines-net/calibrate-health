@@ -1,3 +1,5 @@
+/** @file Regression coverage for hosted android e2e: hosted Android command plan is Linux-only and scopes install to one emulator. */
+
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import path from 'node:path';

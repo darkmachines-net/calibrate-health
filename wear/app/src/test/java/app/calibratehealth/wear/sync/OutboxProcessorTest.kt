@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Outbox Processor. */
+
 package app.calibratehealth.wear.sync
 
 import app.calibratehealth.wear.data.FakeMutationOutboxRepository
@@ -12,6 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OutboxProcessorTest {
+    /** Verifies that retry blocks later mutations and preserves the operation id. */
     @Test
     fun `retry blocks later mutations and preserves the operation id`() = runBlocking {
         val repository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -36,6 +39,7 @@ class OutboxProcessorTest {
         assertEquals("b", repository.head()?.operationId)
     }
 
+    /** Verifies that healthy batch continuation is not reported as retry. */
     @Test
     fun `healthy batch continuation is not reported as retry`() = runBlocking {
         val repository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -52,6 +56,7 @@ class OutboxProcessorTest {
         assertEquals("b", repository.head()?.operationId)
     }
 
+    /** Verifies that permanent failure does not block later mutations. */
     @Test
     fun `permanent failure does not block later mutations`() = runBlocking {
         val repository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -70,6 +75,7 @@ class OutboxProcessorTest {
         assertEquals(null, repository.head())
     }
 
+    /** Verifies that conflict is terminal and does not block later mutations. */
     @Test
     fun `conflict is terminal and does not block later mutations`() = runBlocking {
         val repository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -88,6 +94,7 @@ class OutboxProcessorTest {
         assertEquals(null, repository.head())
     }
 
+    /** Verifies that server success stays action locked until a fresh snapshot is committed. */
     @Test
     fun `server success stays action locked until a fresh snapshot is committed`() = runBlocking {
         val repository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -106,6 +113,7 @@ class OutboxProcessorTest {
         assertEquals(MutationState.SUCCEEDED, repository.latestTerminal()?.state)
     }
 
+    /** Verifies that account switch during send leaves the captured mutation untouched. */
     @Test
     fun `account switch during send leaves the captured mutation untouched`() = runBlocking {
         val storage = FakeWearStorage()
@@ -125,6 +133,7 @@ class OutboxProcessorTest {
         assertEquals("a", repository.head()?.operationId)
     }
 
+    /** Verifies that upgrade marker is written only after the captured account is confirmed current. */
     @Test
     fun `upgrade marker is written only after the captured account is confirmed current`() = runBlocking {
         val currentRepository = FakeMutationOutboxRepository(FakeWearStorage())
@@ -160,6 +169,7 @@ class OutboxProcessorTest {
         assertEquals("changed", changedRepository.head()?.operationId)
     }
 
+    /** Verifies that operation id is assigned once when mutation is created. */
     @Test
     fun `operation id is assigned once when mutation is created`() {
         val factory = QueuedMutationFactory(

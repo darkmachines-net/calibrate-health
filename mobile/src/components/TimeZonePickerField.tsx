@@ -1,3 +1,5 @@
+/** @file Time Zone Picker Field: Offers known and device timezones with manual IANA entry when the desired zone is absent. */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,6 +15,7 @@ type TimeZonePickerFieldProps = {
     onChange: (value: string) => void;
 };
 
+/** Offers known and device timezones with manual IANA entry when the desired zone is absent. */
 export const TimeZonePickerField: React.FC<TimeZonePickerFieldProps> = ({ value, onChange }) => {
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);

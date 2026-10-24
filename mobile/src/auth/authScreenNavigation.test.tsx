@@ -1,3 +1,5 @@
+/** @file Regression coverage for auth Screen Navigation: auth screen server navigation. */
+
 import React from 'react';
 import { Platform } from 'react-native';
 import { fireEvent, render, waitFor, within } from '@testing-library/react-native';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for with Health Connect: withHealthConnect config plugin. */
+
 const healthConnectPlugin = require('./withHealthConnect') as {
     HEALTH_CONNECT_READ_PERMISSIONS: string[];
     applyHealthConnectManifest: (manifest: any) => any;

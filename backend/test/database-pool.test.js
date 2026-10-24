@@ -1,3 +1,5 @@
+/** @file Regression coverage for database pool: real pg pool bounds waiting, recovers after release, and removes idle clients. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter, once } = require('node:events');

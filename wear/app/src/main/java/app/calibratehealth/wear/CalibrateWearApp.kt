@@ -1,3 +1,5 @@
+/** Compose watch UI for pairing, calorie summary, actions, weight entry, and account recovery. */
+
 package app.calibratehealth.wear
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -73,6 +75,7 @@ private const val SUMMARY_ROUTE = "summary"
 private const val CONNECTION_ROUTE = "connection"
 private const val WEIGHT_ROUTE = "weight"
 
+/** Composes the watch pairing, summary, action, weight-entry, and recovery surfaces from caller-owned state. */
 @Composable
 fun CalibrateWearApp(
     appState: WearAppState,

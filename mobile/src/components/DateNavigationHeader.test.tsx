@@ -1,3 +1,5 @@
+/** @file Regression coverage for Date Navigation Header: DateNavigationHeader. */
+
 import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import type { LogDateNavigation } from '../hooks/useLogDateNavigation';

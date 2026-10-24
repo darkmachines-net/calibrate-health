@@ -1,3 +1,5 @@
+/** @file Regression coverage for handoff: Wear continue-on-phone handoff. */
+
 const mockStorage = new Map<string, string>();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({

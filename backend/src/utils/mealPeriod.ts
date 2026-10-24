@@ -1,3 +1,5 @@
+/** @file meal Period: Parse and validate a meal period identifier coming from API requests. */
+
 import { MealPeriod } from '@prisma/client';
 
 /**

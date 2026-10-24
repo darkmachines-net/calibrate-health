@@ -1,3 +1,5 @@
+/** @file Deterministic local test-account histories and scenario seeding for development and browser validation. */
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import prisma from '../config/database';

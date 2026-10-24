@@ -1,3 +1,5 @@
+/** @file React-safe external store for browser connectivity, service-worker updates, and explicit lifecycle disposal. */
+
 import * as React from 'react';
 
 export const PWA_NETWORK_STATES = {
@@ -26,42 +28,63 @@ type StoreListener = () => void;
 
 export type PwaWorker = {
     state?: string;
+    /** Sends a structured message to the selected service worker. */
     postMessage(message: unknown): void;
+    /** Subscribes to the requested service-worker lifecycle event. */
     addEventListener?(type: 'statechange' | 'error', listener: StoreListener): void;
+    /** Removes the matching service-worker lifecycle listener. */
     removeEventListener?(type: 'statechange' | 'error', listener: StoreListener): void;
 };
 
 export type PwaRegistration = {
     waiting: PwaWorker | null;
     installing: PwaWorker | null;
+    /** Requests a browser check for a newer service-worker script. */
     update(): Promise<void>;
+    /** Subscribes to the requested service-worker lifecycle event. */
     addEventListener(type: 'updatefound', listener: StoreListener): void;
+    /** Removes the matching service-worker lifecycle listener. */
     removeEventListener(type: 'updatefound', listener: StoreListener): void;
 };
 
 export type PwaServiceWorkerContainer = {
     controller: PwaWorker | null;
+    /** Registers a service worker at the supplied script URL and scope. */
     register(scriptUrl: string, options: { scope: string }): Promise<PwaRegistration>;
+    /** Subscribes to the requested service-worker lifecycle event. */
     addEventListener(type: 'controllerchange', listener: StoreListener): void;
+    /** Removes the matching service-worker lifecycle listener. */
     removeEventListener(type: 'controllerchange', listener: StoreListener): void;
 };
 
 export type PwaEnvironment = {
     production: boolean;
+    /** Reads current browser connectivity without changing runtime state. */
     isOnline(): boolean;
+    /** Subscribes to a browser connectivity event and returns its cleanup function. */
     addWindowListener(type: 'online' | 'offline', listener: StoreListener): () => void;
+    /** Returns the service-worker API when supported, otherwise null. */
     getServiceWorker(): PwaServiceWorkerContainer | null;
+    /** Schedules a runtime callback after the requested delay in milliseconds. */
     setTimer(listener: StoreListener, delayMs: number): unknown;
+    /** Cancels a previously scheduled runtime callback. */
     clearTimer(timer: unknown): void;
+    /** Reloads the document after the user accepts an available application update. */
     reload(): void;
 };
 
 export type PwaRuntime = {
+    /** Subscribes to PWA state changes and returns the unsubscribe function. */
     subscribe(listener: StoreListener): () => void;
+    /** Returns the current stable PWA snapshot for React external-store consumers. */
     getSnapshot(): PwaSnapshot;
+    /** Returns the deterministic server-render snapshot used during hydration. */
     getServerSnapshot(): PwaSnapshot;
+    /** Activates the waiting update after the user requests it. */
     applyUpdate(): void;
+    /** Retries update discovery after a failed service-worker update. */
     retryUpdate(): Promise<void>;
+    /** Releases listeners and timers owned by the PWA runtime. */
     dispose(): void;
 };
 
@@ -99,6 +122,7 @@ function createBrowserEnvironment(): PwaEnvironment {
     };
 }
 
+/** Creates an externally subscribable PWA lifecycle store with injected browser APIs and explicit disposal. */
 export function createPwaRuntime(environment: PwaEnvironment): PwaRuntime {
     const listeners = new Set<StoreListener>();
     const workerListeners = new Map<PwaWorker, { stateChange: StoreListener; error: StoreListener }>();
@@ -314,6 +338,7 @@ export function createPwaRuntime(environment: PwaEnvironment): PwaRuntime {
 
 export const browserPwaRuntime = createPwaRuntime(createBrowserEnvironment());
 
+/** Subscribes React to stable PWA snapshots and exposes user-requested update actions. */
 export function usePwaStatus(runtime: PwaRuntime = browserPwaRuntime) {
     const snapshot = React.useSyncExternalStore(
         runtime.subscribe,

@@ -1,3 +1,5 @@
+/** @file pending Change Presentation: Present durable intent without inventing server IDs, calculated totals, or successful synchronization. */
+
 import type { QueuedMutation } from './queuedMutation';
 import { OFFLINE_MUTATION_OPERATIONS as OP } from './operations';
 

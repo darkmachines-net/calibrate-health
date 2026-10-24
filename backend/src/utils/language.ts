@@ -1,3 +1,5 @@
+/** @file language: Supported language codes for UI preferences. */
+
 /**
  * Supported language codes for UI preferences.
  */

@@ -1,3 +1,5 @@
+/** @file Signed annotated native tag verification against exact origin, target, and reviewed signer identities. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -440,6 +442,7 @@ function readSigningKeyFile(keyFile, label, maxBytes) {
   return fs.readFileSync(resolved, 'utf8');
 }
 
+/** Verifies an annotated native release tag against exactly one supplied public trust source. */
 export function runNativeTagAttestationCli(options = {}) {
   const config = parseArguments(options.args ?? process.argv.slice(2));
   if (config.command !== 'verify') throw new Error('Expected command: verify.');

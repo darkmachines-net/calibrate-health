@@ -1,3 +1,5 @@
+/** @file Regression coverage for Time Zone Picker Field: TimeZonePickerField. */
+
 import { fireEvent, render } from '@testing-library/react-native';
 import { TimeZonePickerField } from './TimeZonePickerField';
 

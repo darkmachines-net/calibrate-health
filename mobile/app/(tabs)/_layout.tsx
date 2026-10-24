@@ -1,3 +1,5 @@
+/** @file layout: Guards authenticated tab access and composes responsive navigation, account actions, and global notices. */
+
 import React from 'react';
 import {
     Image,
@@ -156,6 +158,7 @@ const NavigationPressable: React.FC<NavigationPressableProps> = ({
     );
 };
 
+/** Guards authenticated tab access and composes responsive navigation, account actions, and global notices. */
 export default function TabsLayout() {
     const { api, user, isLoading } = useAuth();
     const hasFullAccess = hasFullAccountAccess(user);

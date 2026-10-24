@@ -1,3 +1,5 @@
+/** @file Regression coverage for height Input: display-unit height policy. */
+
 import { HEIGHT_UNITS } from '@calibrate/shared';
 import { heightInputToCanonicalMillimeters, isHeightWithinPolicy } from './heightInput';
 

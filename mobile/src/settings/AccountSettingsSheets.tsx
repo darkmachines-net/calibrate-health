@@ -1,3 +1,5 @@
+/** @file Account Settings Sheets: Shared profile form kept separate from the routed screen's data and navigation state. */
+
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ActivityLevel, HeightUnit, Sex } from '@calibrate/shared';
@@ -137,6 +139,7 @@ type DeleteAccountSheetProps = {
     onConfirm: () => void;
 };
 
+/** Collects password and exact deletion confirmation while protecting dirty input from accidental dismissal. */
 export function DeleteAccountSheet({
     visible,
     isOutboxReady,

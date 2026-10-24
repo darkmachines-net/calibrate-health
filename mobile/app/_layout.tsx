@@ -1,3 +1,5 @@
+/** @file Native Expo root: global providers, session restoration, connectivity, diagnostics, and error recovery. */
+
 import 'react-native-gesture-handler';
 import React from 'react';
 import { Slot } from 'expo-router';
@@ -114,6 +116,7 @@ const NativeRootRuntime: React.FC = () => {
     );
 };
 
+/** Mounts native providers and application runtime inside the root render-error boundary. */
 export default function RootLayout() {
     return (
         <AppErrorBoundary>

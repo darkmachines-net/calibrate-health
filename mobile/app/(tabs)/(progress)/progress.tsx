@@ -1,3 +1,5 @@
+/** @file progress: Coordinates goal management, weight-trend preview, and expandable plan-check content. */
+
 import { useTrackingMetrics } from '../../../src/offline/useTrackingQueries';
 import { GoalPaceSheet } from '../../../src/progress/GoalPaceSheet';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -80,6 +82,7 @@ function getGoalDraftKey(startWeight: string, targetWeight: string, goalMode: Go
     return JSON.stringify([startWeight, targetWeight, goalMode, dailyChangeAbs]);
 }
 
+/** Coordinates goal management, weight-trend preview, and expandable plan-check content. */
 export default function ProgressScreen() {
     const pathname = usePathname();
     const [expandedSection, setExpandedSection] = useState<'trend' | 'plan' | null>(null);

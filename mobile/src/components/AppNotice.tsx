@@ -1,3 +1,5 @@
+/** @file App Notice: A single, visible boundary for information requiring attention or a decision. */
+
 import { type ViewProps } from 'react-native';
 import { AppSection } from './AppSection';
 import { useAppTheme } from '../theme';

@@ -1,3 +1,5 @@
+/** @file Account session listing and revocation across browser, phone, and watch credentials. */
+
 import { MobileDevicePlatform, Prisma } from '@prisma/client';
 import prisma from '../config/database';
 
@@ -45,6 +47,7 @@ const SERIALIZABLE_TRANSACTION_MAX_ATTEMPTS = 2;
 const formatAccountSessionId = (kind: 'browser' | 'mobile', publicId: string): string =>
   `${kind}_${publicId}`;
 
+/** Parse the public browser/mobile session identifier without accepting an internal database session key. */
 export const parseAccountSessionId = (value: string): ParsedAccountSessionId | null => {
   const match = value.match(/^(browser|mobile)_([0-9a-f-]+)$/i);
   if (!match || !PUBLIC_SESSION_ID_PATTERN.test(match[2])) return null;

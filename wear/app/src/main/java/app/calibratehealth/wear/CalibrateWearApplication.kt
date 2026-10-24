@@ -1,3 +1,5 @@
+/** Watch application startup and process-wide initialization. */
+
 package app.calibratehealth.wear
 
 import android.app.Application

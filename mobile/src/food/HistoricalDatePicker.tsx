@@ -1,3 +1,5 @@
+/** @file Historical Date Picker: Renders bounded calendar navigation with saved completion markers and pending offline day intents. */
+
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -111,6 +113,7 @@ const LegendItem: React.FC<{
     </View>
 );
 
+/** Renders bounded calendar navigation with saved completion markers and pending offline day intents. */
 export const HistoricalDatePicker: React.FC<HistoricalDatePickerProps> = ({
     visible,
     selectedDate,

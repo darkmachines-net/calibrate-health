@@ -1,3 +1,5 @@
+/** @file Validation of optional source- and device-specific risk evidence without turning it into a release gate. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -537,12 +539,14 @@ export function validateRiskEvidence({
   return { errors, gaps, rows };
 }
 
+/** Loads the executable risk manifest and current package scripts from the selected repository root. */
 export function loadRepositoryRiskEvidence(repoRoot = repositoryRoot) {
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'quality/risk-evidence.json'), 'utf8'));
   const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   return { manifest, packageScripts: packageJson.scripts ?? {}, repoRoot };
 }
 
+/** Rejects command-line overrides so risk verification uses the canonical repository manifest. */
 export function parseRiskEvidenceArgs(argv) {
   if (argv.length > 0) throw new Error(`Unknown risk-evidence option: ${argv[0]}`);
   return {};

@@ -1,3 +1,5 @@
+/** @file Regression coverage for cors: development permits loopback web dev servers on arbitrary ports despite an explicit configured origin. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const cors = require('cors');

@@ -1,3 +1,5 @@
+/** @file Public exports for canonical domain policy and shared client/server wire contracts. */
+
 export * from './date';
 export * from './clientCompatibility';
 export * from './clientDiagnostics';

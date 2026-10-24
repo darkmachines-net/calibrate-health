@@ -1,3 +1,5 @@
+/** @file with Health Connect: Upgrade prior generated redirects and keep the ACTION_VIEW rewrite idempotent. */
+
 const {
   AndroidConfig,
   withAndroidManifest,
@@ -151,6 +153,7 @@ function injectPermissionDelegate(mainActivitySource) {
   return normalizePrivacyRedirectActions(source);
 }
 
+/** Adds Health Connect manifest and permission-delegate integration, requiring Kotlin MainActivity output. */
 const withHealthConnect = (config) => {
   config = withAndroidManifest(config, (manifestConfig) => {
     manifestConfig.modResults = applyHealthConnectManifest(manifestConfig.modResults);

@@ -1,3 +1,5 @@
+/** @file Notification kinds, stable destinations, and public reminder wire contracts. */
+
 export const IN_APP_NOTIFICATION_TYPES = {
     LOG_WEIGHT_REMINDER: 'LOG_WEIGHT_REMINDER',
     LOG_FOOD_REMINDER: 'LOG_FOOD_REMINDER',

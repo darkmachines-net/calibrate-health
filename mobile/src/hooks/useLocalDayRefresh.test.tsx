@@ -1,3 +1,5 @@
+/** @file Guards query invalidation when the active user-local date changes. */
+
 import { renderHook } from '@testing-library/react-native';
 import { useLocalDayRefresh } from './useLocalDayRefresh';
 import { foodDayRangeQueryRoot } from '../food/calendar';

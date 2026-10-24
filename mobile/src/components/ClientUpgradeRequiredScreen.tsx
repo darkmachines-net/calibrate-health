@@ -1,3 +1,5 @@
+/** @file Client Upgrade Required Screen: Blocks incompatible traffic while preserving the session and queued data for an in-place update. */
+
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import type { ClientUpgradeRequirement } from '@calibrate/shared';

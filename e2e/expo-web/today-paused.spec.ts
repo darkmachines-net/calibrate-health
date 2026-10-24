@@ -1,3 +1,5 @@
+/** @file Regression coverage for today paused: a past paused day replaces an expanded food log and can be backfilled. */
+
 import { expect, test, hideTransientPwaNotices, FROZEN_LOCAL_DATE, type AuthenticatedApiOptions } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';

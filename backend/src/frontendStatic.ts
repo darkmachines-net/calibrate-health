@@ -1,3 +1,5 @@
+/** @file Production Expo web serving, asset cache policy, SPA fallbacks, and service-worker freshness. */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';

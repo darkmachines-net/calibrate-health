@@ -1,3 +1,5 @@
+/** @file Regression coverage for Historical Date Picker: HistoricalDatePicker. */
+
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'id' }));
 jest.mock('../offline/provider', () => ({ useOfflineOutbox: () => mockOutbox }));
 import type { QueuedMutation } from '../offline/queuedMutation';

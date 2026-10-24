@@ -1,3 +1,5 @@
+/** @file Allowlisted reminder notification copy, destinations, and provider-neutral push payloads. */
+
 import { IN_APP_NOTIFICATION_ACTION_URLS, IN_APP_NOTIFICATION_TYPES } from '../../../shared/inAppNotifications';
 
 export type PushNotificationAction = {

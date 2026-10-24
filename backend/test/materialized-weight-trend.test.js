@@ -1,3 +1,5 @@
+/** @file Regression coverage for materialized weight trend: materializedWeightTrend: recompute atomically replaces all rows with the active horizon. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');

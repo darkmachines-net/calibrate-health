@@ -1,3 +1,5 @@
+/** @file Account-scoped idempotent client mutations and replayable response storage. */
+
 import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
@@ -14,6 +16,7 @@ export type MutationResult<T> = {
 export class ClientOperationConflictError extends Error {
   readonly code: 'OPERATION_ID_REUSED' | 'OPERATION_IN_PROGRESS';
 
+  /** Carry the stable replay-conflict code separately from the explanatory error message. */
   constructor(code: ClientOperationConflictError['code'], message: string) {
     super(message);
     this.name = 'ClientOperationConflictError';

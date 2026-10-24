@@ -1,3 +1,5 @@
+/** @file Regression coverage for date Bounds: date-of-birth picker bounds. */
+
 import { getMinimumDateOfBirth } from './dateBounds';
 
 describe('date-of-birth picker bounds', () => {

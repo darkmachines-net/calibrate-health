@@ -1,3 +1,5 @@
+/** @file Regression coverage for nutrition label: label scans send authenticated multipart data to the versioned API and leave null fields intact. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

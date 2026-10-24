@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Wear Persistence Instrumented. */
+
 package app.calibratehealth.wear.data
 
 import android.content.Context
@@ -35,6 +37,7 @@ class WearPersistenceInstrumentedTest {
     private val preferencesName = "wear-secure-session-test"
     private val keyAlias = "calibrate_wear_session_test"
 
+    /** Closes owned stores and removes test account state after each instrumentation scenario. */
     @After
     fun cleanUp() {
         context.deleteDatabase(databaseName)
@@ -46,6 +49,7 @@ class WearPersistenceInstrumentedTest {
         }
     }
 
+    /** Verifies that room state survives database reopen and keeps fifo order. */
     @Test
     fun roomStateSurvivesDatabaseReopenAndKeepsFifoOrder() = runBlocking {
         var database = CalibrateWearDatabase.open(context, databaseName)
@@ -99,6 +103,7 @@ class WearPersistenceInstrumentedTest {
         database.close()
     }
 
+    /** Verifies that keystore session survives store recreation. */
     @Test
     fun keystoreSessionSurvivesStoreRecreation() {
         val session = SecureSession(
@@ -125,6 +130,7 @@ class WearPersistenceInstrumentedTest {
         assertNull(reopened.read())
     }
 
+    /** Verifies that database can be created with all daos. */
     @Test
     fun databaseCanBeCreatedWithAllDaos() {
         val database = CalibrateWearDatabase.open(context, databaseName)
@@ -135,6 +141,7 @@ class WearPersistenceInstrumentedTest {
         database.close()
     }
 
+    /** Verifies that version two snapshot migration uses fail safe defaults. */
     @Test
     fun versionTwoSnapshotMigrationUsesFailSafeDefaults() {
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -180,6 +187,7 @@ class WearPersistenceInstrumentedTest {
         helper.close()
     }
 
+    /** Verifies that version three goal migration preserves snapshots with no invented progress. */
     @Test
     fun versionThreeGoalMigrationPreservesSnapshotsWithNoInventedProgress() {
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -211,6 +219,7 @@ class WearPersistenceInstrumentedTest {
         helper.close()
     }
 
+    /** Verifies that version four migration drops activity cache and preserves summary data. */
     @Test
     fun versionFourMigrationDropsActivityCacheAndPreservesSummaryData() {
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -275,6 +284,7 @@ class WearPersistenceInstrumentedTest {
         helper.close()
     }
 
+    /** Verifies that version five migration backfills day resolution from legacy completion. */
     @Test
     fun versionFiveMigrationBackfillsDayResolutionFromLegacyCompletion() {
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -325,6 +335,7 @@ class WearPersistenceInstrumentedTest {
         helper.close()
     }
 
+    /** Verifies that version six migration fails closed for cached calorie targets. */
     @Test
     fun versionSixMigrationFailsClosedForCachedCalorieTargets() {
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -371,6 +382,7 @@ class WearPersistenceInstrumentedTest {
         helper.close()
     }
 
+    /** Verifies that room account data store clears every account scoped table. */
     @Test
     fun roomAccountDataStoreClearsEveryAccountScopedTable() = runBlocking {
         val database = CalibrateWearDatabase.open(context, databaseName)
@@ -398,6 +410,7 @@ class WearPersistenceInstrumentedTest {
         database.close()
     }
 
+    /** Verifies that published pairing capability matches contract. */
     @Test
     fun publishedPairingCapabilityMatchesContract() {
         val capabilities = context.resources.getStringArray(R.array.android_wear_capabilities)

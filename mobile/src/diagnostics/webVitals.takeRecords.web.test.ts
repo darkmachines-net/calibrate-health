@@ -1,3 +1,5 @@
+/** @file Regression coverage for web Vitals take Records web: client Web Vitals terminal record drain. */
+
 import { reportClientDiagnostic } from './clientDiagnostics';
 import { observeClientWebVitals } from './webVitals.web';
 

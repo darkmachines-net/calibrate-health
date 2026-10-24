@@ -1,3 +1,5 @@
+/** @file Canonical image publication receipts and exact workflow/source attestation verification. */
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -28,6 +30,7 @@ function requireText(value, pattern, label) {
   return value;
 }
 
+/** Validates repository, image, release, workflow, and digest identity into canonical receipt fields. */
 export function createGhcrReleaseReceipt(values) {
   const repository = requireText(values?.repository, REPOSITORY_PATTERN, 'GitHub repository');
   const ghcrImage = requireText(values?.ghcrImage, GHCR_IMAGE_PATTERN, 'GHCR image repository');
@@ -51,11 +54,13 @@ export function createGhcrReleaseReceipt(values) {
   });
 }
 
+/** Serializes the validated image receipt into stable canonical JSON bytes. */
 export function serializeGhcrReleaseReceipt(values) {
   const receipt = createGhcrReleaseReceipt(values);
   return `${JSON.stringify(receipt, null, 2)}\n`;
 }
 
+/** Parses exact allow/revoke workflow SHA directives, rejecting malformed or duplicate trust entries. */
 export function parseGhcrReleaseWorkflowTrustSet(contents) {
   if (typeof contents !== 'string') throw new Error('GHCR workflow trust set must be text.');
   const allowed = [];
@@ -81,6 +86,7 @@ export function parseGhcrReleaseWorkflowTrustSet(contents) {
   });
 }
 
+/** Extracts bounded workflow candidates from verified GitHub attestation output for the expected repository. */
 export function parseGhcrAttestationWorkflowCandidates(contents, repository) {
   requireText(repository, REPOSITORY_PATTERN, 'GitHub repository');
   let results;
@@ -207,6 +213,7 @@ function hasPostHardeningAttestationMarker(git, root, revision) {
   }
 }
 
+/** Authorizes an image signer against current protected-master trust policy, with explicit revocation taking precedence. */
 export function authorizeGhcrReleaseWorkflow({
   repositoryRoot,
   trustSet,
@@ -342,6 +349,7 @@ function readRegularFile(file, maximumBytes, label) {
   return fs.readFileSync(resolved, 'utf8');
 }
 
+/** Dispatches canonical receipt and signer-trust operations using explicit files and source identities. */
 export function runGhcrReleaseReceiptCli(args = process.argv.slice(2), output = process.stdout) {
   const { command, values } = parseArguments(args);
   if (command === 'trusted-workflows') {

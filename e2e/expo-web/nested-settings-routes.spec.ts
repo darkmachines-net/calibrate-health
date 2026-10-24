@@ -1,3 +1,5 @@
+/** @file Regression coverage for nested settings routes: promoted settings routes have category fallbacks on direct entry. */
+
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, expectApiFailure, hideTransientPwaNotices, test } from './fixtures';
@@ -200,7 +202,7 @@ test('nested settings PR screenshot evidence', async ({ page, ux }, testInfo) =>
   await page.setViewportSize(phone ? { width: 390, height: 844 } : { width: 1024, height: 1000 });
   await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
   await ux.install('populated');
-  const directory = path.resolve('docs/pr-screenshots');
+  const directory = path.resolve('.codex-screenshots');
   await page.route('**/auth/sessions', (route) => route.fulfill({
     contentType: 'application/json',
     body: JSON.stringify({ sessions: [

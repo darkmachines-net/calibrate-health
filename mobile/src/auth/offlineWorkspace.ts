@@ -1,3 +1,5 @@
+/** @file Account/server-scoped offline identity snapshots for local continuity without granting server authorization. */
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dehydrate, hydrate, type DehydratedState, type QueryClient } from '@tanstack/react-query';
 import type { UserClientPayload } from '@calibrate/api-client';
@@ -48,10 +50,12 @@ export function saveOfflineWorkspace(server: string, user: UserClientPayload, cl
     });
 }
 
+/** Serializes removal of the cached offline workspace for the specified server origin. */
 export function clearOfflineWorkspace(server: string): Promise<void> {
     return serialize(server, () => AsyncStorage.removeItem(key(server)));
 }
 
+/** Restores a valid origin-bound account snapshot into React Query, returning null for unusable snapshots. */
 export function restoreOfflineWorkspace(server: string, client: QueryClient): Promise<UserClientPayload | null> {
     return serialize(server, async () => {
         const encoded = await AsyncStorage.getItem(key(server));

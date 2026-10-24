@@ -1,3 +1,5 @@
+/** @file dev Test Data Utils: Pure helpers for building deterministic dev seed data. */
+
 import { FoodLogDayOrigin, FoodLogDayStatus, MealPeriod } from '@prisma/client';
 import { formatDateToLocalDateString, normalizeToUtcDateOnly } from '../utils/date';
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for server settings: server settings authorize operator-bound accounts and persist strict feature switches. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');

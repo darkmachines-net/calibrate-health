@@ -1,3 +1,5 @@
+/** @file Disposable native upgrade rehearsal with isolated version allocation and retained evidence. */
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -204,6 +206,7 @@ export function resolveNativeUpgradeTooling(environment = process.env, options =
   };
 }
 
+/** Rejects a rehearsal configuration when a required executable or artifact tool is missing. */
 export function assertToolingExists(tooling) {
   for (const [name, candidate] of Object.entries(tooling)) {
     if (name === 'sdkRoot' || name === 'javaHome') continue;
@@ -287,6 +290,7 @@ async function resolveCommit(repository, ref, runner) {
   return commit.toLowerCase();
 }
 
+/** Builds a dry-run or execution plan for exact baseline/candidate commits and temporary version lanes. */
 export function createNativeUpgradePlan(config, context) {
   return {
     schemaVersion: 1,
@@ -354,6 +358,7 @@ export function removeOwnedTempRoot(root, id) {
   fs.rmSync(resolved, { recursive: true, force: false });
 }
 
+/** Applies temporary paired version codes only inside the disposable rehearsal checkout. */
 export function overrideCheckoutVersions(checkout, versionCode) {
   const { wear: wearVersionCode } = rehearsalVersionCodes(versionCode);
   const appJsonPath = path.join(checkout, 'mobile', 'app.json');
@@ -485,6 +490,7 @@ function gradleRequest(checkout, project, args, tooling, environment, label) {
   };
 }
 
+/** Builds one rehearsal checkout with credential-free dependency installation and a validated emulator ABI. */
 export async function buildCheckout(label, checkout, tooling, environment, runner, phoneAbi, options = {}) {
   if (!SUPPORTED_EMULATOR_ABIS.includes(phoneAbi)) throw new Error(`Unsupported phone build ABI: ${phoneAbi}.`);
   await runner({
@@ -537,12 +543,14 @@ export async function buildCheckout(label, checkout, tooling, environment, runne
   };
 }
 
+/** Extracts application and version identity from rehearsal APK badging output. */
 export function parseApkBadging(output) {
   const match = output.match(/package:\s+name='([^']+)'\s+versionCode='(\d+)'\s+versionName='([^']+)'/);
   if (!match) throw new Error('Unable to parse APK package metadata.');
   return { applicationId: match[1], versionCode: Number(match[2]), versionName: match[3] };
 }
 
+/** Extracts the normalized signing certificate fingerprint from rehearsal APK inspection. */
 export function parseSignerFingerprint(output) {
   const match = output.match(/certificate SHA-256 digest:\s*([0-9a-f:]+)/i);
   if (!match) throw new Error('Unable to parse APK signing certificate fingerprint.');
@@ -567,6 +575,7 @@ async function inspectApk(file, tooling, runner, label) {
   };
 }
 
+/** Requires baseline and candidate phone/watch artifacts to match the application, version lanes, and signer policy. */
 export function assertArtifactSet(artifacts, config) {
   const rows = [artifacts.baseline.phone, artifacts.baseline.wear, artifacts.candidate.phone, artifacts.candidate.wear];
   for (const artifact of rows) {
@@ -584,6 +593,7 @@ export function assertArtifactSet(artifacts, config) {
   if (signers.size !== 1) throw new Error('Phone/Wear baseline and candidate APKs do not share one disposable signer.');
 }
 
+/** Extracts installed version, install/update times, and signing evidence from an Android package dump. */
 export function parsePackageDump(output) {
   const versionCode = Number(output.match(/\bversionCode=(\d+)/)?.[1]);
   const versionName = output.match(/\bversionName=([^\r\n]+)/)?.[1]?.trim();
@@ -788,6 +798,7 @@ export async function executeUpgradeInstallSequence(options) {
   };
 }
 
+/** Normalizes raw rehearsal observations into hosted upgrade evidence tied to the exact candidate source. */
 export function createHostedUpgradeEvidence(rawEvidence, sourceCommit) {
   const hosted = createStartedHostedNativeEvidence('upgrade', sourceCommit);
   const plan = rawEvidence?.plan;
@@ -1017,6 +1028,7 @@ export async function runNativeUpgradeRehearsal(config, dependencies = {}) {
   return { status: evidence.status, evidenceFile: outputFile, evidence };
 }
 
+/** Returns rehearsal usage text documenting the default dry-run and explicit emulator mutation options. */
 export function nativeUpgradeHelp() {
   return `Usage: npm run test:native:upgrade -- --baseline <git-ref> --phone-serial <serial> --wear-serial <serial> [options]
 

@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Onboarding Draft: useOnboardingDraft. */
+
 const mockValues = new Map<string, string>();
 let mockMeasurementSystem: 'metric' | 'us' = 'metric';
 jest.mock('../platform/deviceLocale', () => ({ getDeviceLocale: () => ({ languageTag: 'en-US', regionCode: 'US', measurementSystem: mockMeasurementSystem }) }));

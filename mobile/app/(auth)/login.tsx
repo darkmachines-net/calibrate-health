@@ -1,3 +1,5 @@
+/** @file login: Presents sign-in, optional native server selection, and pending account-deletion cleanup guidance. */
+
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Link, useLocalSearchParams, type Href } from 'expo-router';
@@ -17,6 +19,7 @@ import { readAuthServerDraft } from '../../src/auth/authServerDraft';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
 
+/** Presents sign-in, optional native server selection, and pending account-deletion cleanup guidance. */
 export default function LoginScreen() {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();

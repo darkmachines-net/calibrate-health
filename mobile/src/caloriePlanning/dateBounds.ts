@@ -1,3 +1,5 @@
+/** @file date Bounds: Oldest selectable DOB that can still be age 120 on the supplied local date. */
+
 /** Oldest selectable DOB that can still be age 120 on the supplied local date. */
 export function getMinimumDateOfBirth(localToday: string): string {
     const [year, month, day] = localToday.split('-').map(Number);

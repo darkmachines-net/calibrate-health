@@ -1,3 +1,5 @@
+/** @file Shared public API request/response types and compatibility shapes layered over the generated wire schema. */
+
 import type {
     ActivityLevel,
     ActivityRecordType,

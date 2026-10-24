@@ -1,3 +1,5 @@
+/** @file Regression coverage for native upgrade rehearsal: CLI is dry-run by default and requires explicit emulator serials. */
+
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';

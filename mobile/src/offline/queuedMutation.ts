@@ -1,3 +1,5 @@
+/** @file Lossless queued request serialization and stable mutation identity validation. */
+
 export const OUTBOX_MUTATION_STATES = {
     PENDING: 'pending',
     REPLAYING: 'replaying',
@@ -60,6 +62,7 @@ export function serializeMutationPayload(payload: unknown): string {
     return JSON.stringify(payload);
 }
 
+/** Parses and validates stored JSON mutation data, rejecting unsupported values before replay. */
 export function parseMutationPayload(serialized: string): JsonValue {
     const payload: unknown = JSON.parse(serialized);
     assertJsonValue(payload, new Set());

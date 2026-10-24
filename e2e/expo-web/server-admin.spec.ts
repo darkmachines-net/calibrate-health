@@ -1,3 +1,5 @@
+/** @file Regression coverage for server admin: administrator changes persist and gate scanner entry points. */
+
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { expect, hideTransientPwaNotices, test } from './fixtures';

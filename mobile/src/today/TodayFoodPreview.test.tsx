@@ -1,3 +1,5 @@
+/** @file Regression coverage for Today Food Preview: TodayFoodPreview. */
+
 import { fireEvent, render, within } from '@testing-library/react-native';
 import type { FoodLogEntry } from '@calibrate/api-client';
 import { TodayFoodPreview } from './TodayFoodPreview';

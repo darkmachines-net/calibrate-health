@@ -1,3 +1,5 @@
+/** @file Regression coverage for my Food Editing: recipe editing restores live source foods and preserves orphan snapshots. */
+
 import type { MyFoodDetail, MyFoodSummary } from '@calibrate/api-client';
 import { hydrateRecipeIngredientDrafts, serializeRecipeIngredientDrafts } from './myFoodEditing';
 

@@ -1,3 +1,5 @@
+/** @file Onboarding Progress: Renders a bounded, accessible onboarding step indicator without competing with the page heading. */
+
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '../components/AppText';
 import { radius, spacing, useAppTheme } from '../theme';
@@ -5,6 +7,7 @@ import { ONBOARDING_STEPS } from './steps';
 
 const PROGRESS_TRACK_HEIGHT = 4; // A quiet progress cue leaves the page heading in focus.
 
+/** Renders a bounded, accessible onboarding step indicator without competing with the page heading. */
 export function OnboardingProgress({ activeIndex }: { activeIndex: number }) {
     const { colors } = useAppTheme();
     const current = Math.min(Math.max(activeIndex + 1, 1), ONBOARDING_STEPS.length);

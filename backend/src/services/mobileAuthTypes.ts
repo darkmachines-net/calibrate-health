@@ -1,3 +1,5 @@
+/** @file Native session and phone/watch pairing wire types with internal credential details separated from responses. */
+
 import type { MobileDevicePlatform as MobileDevicePlatformWire } from '../../../shared/domain';
 import type { UserClientPayload } from '../utils/userSerialization';
 

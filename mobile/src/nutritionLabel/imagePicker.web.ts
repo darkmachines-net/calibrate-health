@@ -1,3 +1,5 @@
+/** @file Browser nutrition-label image selection and upload preparation within the user gesture. */
+
 export type LabelImageSource = 'camera' | 'library';
 export type LabelImage = { uri: string; upload: Blob };
 export class LabelImageError extends Error {}
@@ -27,6 +29,7 @@ export function chooseLabelImage(source: LabelImageSource): Promise<LabelImage |
     });
 }
 
+/** Releases the browser object URL allocated for a selected label image. */
 export function releaseLabelImage(image: LabelImage): void {
     URL.revokeObjectURL(image.uri);
 }

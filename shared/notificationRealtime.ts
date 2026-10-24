@@ -1,3 +1,5 @@
+/** @file Versioned account notification SSE event shapes and payload construction. */
+
 export const NOTIFICATION_REALTIME_EVENT_NAME = 'notification-update';
 
 export const NOTIFICATION_REALTIME_REASONS = {
@@ -29,6 +31,7 @@ export const buildNotificationRealtimePayload = (
     updated_at: now.toISOString()
 });
 
+/** Accept only recognized reminder invalidation reasons with a nonempty update timestamp. */
 export const isNotificationRealtimePayload = (value: unknown): value is NotificationRealtimePayload => {
     if (!value || typeof value !== 'object') {
         return false;

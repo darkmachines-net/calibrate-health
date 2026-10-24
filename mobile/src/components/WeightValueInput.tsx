@@ -1,3 +1,5 @@
+/** @file Weight Value Input: Renders unit-aware weight entry and stepping controls that adapt to enlarged text. */
+
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     Platform,
@@ -45,6 +47,7 @@ const WEIGHT_STEPPER_SIZE = 56;
 const WEIGHT_UNIT_STACK_FONT_SCALE = 1.3; // Moves the unit below enlarged input text instead of over the digits.
 const DEFAULT_HELPER_TEXT = 'Use one decimal place for a precise, consistent trend.';
 
+/** Renders unit-aware weight entry and stepping controls that adapt to enlarged text. */
 export const WeightValueInput: React.FC<WeightValueInputProps> = ({
     label = 'Weight',
     helperText = DEFAULT_HELPER_TEXT,

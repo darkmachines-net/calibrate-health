@@ -1,3 +1,5 @@
+/** @file Regression coverage for wear pairing: phone pairing issuance is authenticated and carries the selected self-hosted origin. */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CalibrateApiClient } from '../src/client.ts';

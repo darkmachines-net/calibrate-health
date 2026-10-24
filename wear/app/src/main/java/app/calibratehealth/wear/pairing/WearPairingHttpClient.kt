@@ -1,3 +1,5 @@
+/** Bounded direct HTTP exchange of one-time pairing credentials for a watch-scoped session. */
+
 package app.calibratehealth.wear.pairing
 
 import app.calibratehealth.wear.data.security.SecureSession

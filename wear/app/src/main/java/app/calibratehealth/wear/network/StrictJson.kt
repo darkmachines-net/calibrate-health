@@ -1,3 +1,5 @@
+/** Dependency-free bounded JSON parser and serializer for the watch network trust boundary. */
+
 package app.calibratehealth.wear.network
 
 /** Small dependency-free JSON model used at the network trust boundary and in plain JVM tests. */
@@ -17,19 +19,26 @@ object StrictJson {
     private const val MAX_DEPTH = 24
     private const val MAX_COLLECTION_ENTRIES = 128
 
+    /** Parses bounded JSON with strict syntax, nesting, and collection limits at the network boundary. */
     fun parse(input: String): JsonValue {
         if (input.length > MAX_INPUT_CHARS) throw InvalidJsonException("JSON response is too large.")
         return Parser(input).parse()
     }
 
+    /** Serializes the internal JSON model with escaped strings and deterministic object insertion order. */
     fun stringify(value: JsonValue): String = buildString { appendValue(value) }
 
+    /** Builds an ordered JSON object from key/value pairs. */
     fun objectOf(vararg entries: Pair<String, JsonValue>): JsonValue.Object =
         JsonValue.Object(linkedMapOf(*entries))
 
+    /** Wraps text as a JSON string value for safe serialization. */
     fun string(value: String): JsonValue = JsonValue.StringValue(value)
+    /** Wraps a numeric value in the internal JSON number representation. */
     fun number(value: Number): JsonValue = JsonValue.NumberValue(value.toString())
+    /** Wraps a boolean in the internal JSON model. */
     fun boolean(value: Boolean): JsonValue = JsonValue.BooleanValue(value)
+    /** Represents an optional string as a JSON string or explicit null. */
     fun nullableString(value: String?): JsonValue = value?.let(::string) ?: JsonValue.Null
 
     private fun StringBuilder.appendValue(value: JsonValue) {

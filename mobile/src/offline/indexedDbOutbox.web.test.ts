@@ -1,3 +1,5 @@
+/** @file Regression coverage for indexed Db Outbox web: IndexedDbOutbox. */
+
 import { IDBFactory } from 'fake-indexeddb';
 import { IndexedDbOutbox, openIndexedDbOutboxDatabase } from './indexedDbOutbox.web';
 import { OUTBOX_MUTATION_STATES } from './queuedMutation';

@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend v1: computeWeightTrendV1: reproduces the retired scalar Kalman output. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

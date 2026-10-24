@@ -1,3 +1,5 @@
+/** @file Regression coverage for query: active notification query reconciliation. */
+
 import { QueryClient } from '@tanstack/react-query';
 import type { InAppNotification } from '@calibrate/api-client';
 import { IN_APP_NOTIFICATION_TYPES } from '@calibrate/shared/inAppNotifications';

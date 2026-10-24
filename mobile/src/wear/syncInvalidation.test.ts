@@ -1,3 +1,5 @@
+/** @file Regression coverage for sync Invalidation: Wear sync invalidation coordinator. */
+
 const mockStorage = new Map<string, string>();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({

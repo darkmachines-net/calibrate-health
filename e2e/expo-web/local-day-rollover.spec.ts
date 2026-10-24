@@ -1,3 +1,5 @@
+/** @file Browser regressions for local-day rollover and date navigation after background suspension. */
+
 import { expect, test, hideTransientPwaNotices } from './fixtures';
 import type { Page } from '@playwright/test';
 

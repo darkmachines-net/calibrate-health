@@ -1,3 +1,5 @@
+/** @file Regression coverage for native internal release: CLI accepts only command-specific internal options and requires Console coordination. */
+
 /** Exercise local paired builds, internal-track plans, and private-runtime artifact verification. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

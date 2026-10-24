@@ -1,3 +1,5 @@
+/** @file Regression coverage for account trust migration: account trust migration verifies existing users without inventing legal acceptance. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

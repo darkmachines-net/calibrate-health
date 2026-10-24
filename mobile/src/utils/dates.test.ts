@@ -1,3 +1,5 @@
+/** @file Regression coverage for dates: mobile local-day handling. */
+
 import {
     addDaysToDateOnly,
     getLocalDateForTimestamp

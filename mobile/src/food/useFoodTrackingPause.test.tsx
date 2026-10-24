@@ -1,3 +1,5 @@
+/** @file Regression coverage for use Food Tracking Pause: keeps queued start/date across a new observer, manual refetch and another remount. */
+
 import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

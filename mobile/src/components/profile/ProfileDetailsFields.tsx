@@ -1,3 +1,5 @@
+/** @file Profile Details Fields: Profile identity inputs shared by onboarding and the account editor. */
+
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {

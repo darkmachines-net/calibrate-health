@@ -1,3 +1,5 @@
+/** @file Authenticated browser notification stream lifecycle and bounded cache invalidation. */
+
 import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import {
@@ -26,6 +28,7 @@ type NotificationStreamDependencies = {
     cancelReconnect(timerId: number): void;
 };
 
+/** Builds the versioned server-sent notification stream URL for the selected server. */
 export function getNotificationStreamUrl(serverUrl: string): string {
     return new URL('/api/v1/notifications/stream', serverUrl).toString();
 }

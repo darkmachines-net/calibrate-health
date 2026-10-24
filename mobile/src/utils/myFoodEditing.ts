@@ -1,3 +1,5 @@
+/** @file my Food Editing: Restores editable live references and preserves orphan/external ingredient snapshots verbatim. */
+
 import type { CreateRecipePayload, MyFoodDetail, MyFoodSummary } from '@calibrate/api-client';
 
 export type RecipeIngredientDraft =
@@ -61,6 +63,7 @@ export function hydrateRecipeIngredientDrafts(
     });
 }
 
+/** Serializes recipe drafts in display order while retaining saved-food references or external snapshots. */
 export function serializeRecipeIngredientDrafts(
     drafts: RecipeIngredientDraft[]
 ): CreateRecipePayload['ingredients'] {

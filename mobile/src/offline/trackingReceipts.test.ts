@@ -1,3 +1,5 @@
+/** @file Regression coverage for tracking Receipts: keeps acknowledged food visible through partial replay and deduplicates a pre-dequeue crash. */
+
 import { QueryClient } from '@tanstack/react-query';
 import { applyTrackingReceipt } from './trackingReceipts';
 import { projectFood, preserveFoodReceiptIdentities } from './trackingProjection';

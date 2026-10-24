@@ -1,3 +1,5 @@
+/** @file Regression coverage for Progress Screen: Progress goal completion flow. */
+
 jest.mock('../offline/provider', () => ({ useOfflineOutbox: () => ({ mutations: [] }) }));
 import React from 'react';
 import { router } from 'expo-router';

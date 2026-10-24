@@ -1,3 +1,5 @@
+/** @file Strict diagnostic payload validation and bounded privacy-safe operational aggregation. */
+
 import type {
   ClientDiagnosticDurationBucket,
   ClientDiagnosticEvent,

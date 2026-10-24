@@ -1,3 +1,5 @@
+/** Conditional snapshot refresh, account-safe cache commits, and worker dependency reconstruction. */
+
 package app.calibratehealth.wear.sync
 
 import android.content.Context
@@ -106,6 +108,7 @@ class WatchSnapshotSynchronizer(
     private val onRemindersChanged: (List<app.calibratehealth.wear.notifications.WearReminder>) -> Unit = {},
     private val nowEpochMs: () -> Long = System::currentTimeMillis
 ) {
+    /** Refreshes conditional server state and commits it only while the captured account remains current. */
     suspend fun refresh(
         onAuthoritativeSnapshotCommitted: suspend () -> Unit = {}
     ): SnapshotSyncResult {
@@ -201,6 +204,7 @@ private data class CapturedSnapshotWork(
 
 /** Explicit event hook used after pairing; no periodic worker is registered. */
 object WearSyncScheduler {
+    /** Schedules outbox synchronization and periodic reminder refresh after successful pairing. */
     fun scheduleAfterPairing(context: Context) {
         WorkManagerOutboxScheduler(context).schedule()
         WearReminderRefreshScheduler(context).schedule()
@@ -215,6 +219,7 @@ data class WearSyncDependencies(
 
 /** Process-independent dependency graph used whenever WorkManager recreates a worker. */
 object WearSyncRuntime {
+    /** Reconstructs database, secure session, HTTP, and synchronization dependencies for a fresh worker process. */
     fun create(context: Context): WearSyncDependencies {
         val appContext = context.applicationContext
         val database = CalibrateWearDatabase.get(appContext)

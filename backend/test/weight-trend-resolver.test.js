@@ -1,3 +1,5 @@
+/** @file Regression coverage for weight trend resolver: weightTrend resolver: defaults to shared v2 and exports model version 2. */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 

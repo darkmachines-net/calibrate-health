@@ -1,3 +1,5 @@
+/** @file Regression coverage for fixed page layout: Today anchors its actions, puts weigh-in first, and shows concise chronological meal totals. */
+
 import { applyTwoHundredPercentText } from './text-scaling';
 import type { Locator, Page } from '@playwright/test';
 import { expect, test, hideTransientPwaNotices, FROZEN_LOCAL_DATE, type AuthenticatedApiOptions } from './fixtures';

@@ -1,3 +1,5 @@
+/** Regression tests and fixtures for Account Session Coordinator. */
+
 package app.calibratehealth.wear.data.security
 
 import kotlinx.coroutines.runBlocking
@@ -7,6 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AccountSessionCoordinatorTest {
+    /** Verifies that local clear removes credentials before account scoped data. */
     @Test
     fun `local clear removes credentials before account scoped data`() = runBlocking {
         val events = mutableListOf<String>()
@@ -18,6 +21,7 @@ class AccountSessionCoordinatorTest {
         assertNull(tokenStore.session)
     }
 
+    /** Verifies that account replacement clears credentials then account data before writing session. */
     @Test
     fun `account replacement clears credentials then account data before writing session`() = runBlocking {
         val events = mutableListOf<String>()
@@ -30,6 +34,7 @@ class AccountSessionCoordinatorTest {
         assertEquals(2L, tokenStore.session?.userId)
     }
 
+    /** Verifies that same account refresh replaces tokens without discarding cache. */
     @Test
     fun `same account refresh replaces tokens without discarding cache`() = runBlocking {
         val events = mutableListOf<String>()
@@ -43,6 +48,7 @@ class AccountSessionCoordinatorTest {
         assertEquals("new-access", tokenStore.session?.accessToken)
     }
 
+    /** Verifies that late refresh cannot restore an account that was replaced. */
     @Test
     fun `late refresh cannot restore an account that was replaced`() = runBlocking {
         val events = mutableListOf<String>()
@@ -64,6 +70,7 @@ class AccountSessionCoordinatorTest {
         assertEquals(active, tokenStore.session)
     }
 
+    /** Verifies that failed account-data deletion leaves no credential usable. */
     @Test
     fun `failed account-data deletion leaves no credential usable`() = runBlocking {
         val events = mutableListOf<String>()
@@ -79,6 +86,7 @@ class AccountSessionCoordinatorTest {
         assertNull(tokenStore.session)
     }
 
+    /** Verifies that invalid replacement is rejected before existing state changes. */
     @Test
     fun `invalid replacement is rejected before existing state changes`() = runBlocking {
         val events = mutableListOf<String>()
@@ -96,6 +104,7 @@ class AccountSessionCoordinatorTest {
         assertEquals(original, tokenStore.session)
     }
 
+    /** Verifies that nonpositive backend user id is rejected before existing state changes. */
     @Test
     fun `nonpositive backend user id is rejected before existing state changes`() = runBlocking {
         val events = mutableListOf<String>()

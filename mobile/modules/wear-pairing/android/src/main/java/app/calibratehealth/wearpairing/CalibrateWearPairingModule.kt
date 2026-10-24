@@ -1,3 +1,5 @@
+/** Expo bridge exposing watch discovery, pairing, and account-bound coordination to the shared phone client. */
+
 package app.calibratehealth.wearpairing
 
 import com.google.android.gms.wearable.CapabilityClient

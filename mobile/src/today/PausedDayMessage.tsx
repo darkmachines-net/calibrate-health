@@ -1,3 +1,5 @@
+/** @file Paused Day Message: Explains paused tracking and its expected resume date without implying automatic resumption. */
+
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,6 +16,7 @@ const PAUSE_SYMBOL_SIZE = 80; // Anchors the paused day in the space normally us
 const PAUSE_GLYPH_SIZE = 36; // Keeps the pause symbol legible without competing with the heading.
 const MESSAGE_MAX_WIDTH = 440; // Keeps centered explanatory copy readable on wide screens.
 
+/** Explains paused tracking and its expected resume date without implying automatic resumption. */
 export function PausedDayMessage({ isToday }: { isToday: boolean }) {
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);

@@ -1,3 +1,5 @@
+/** @file activity: Presents imported activity for a selected local date without adding it to the calorie target. */
+
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -222,6 +224,7 @@ function ActivityDetailsDisclosure({
     );
 }
 
+/** Presents imported activity for a selected local date without adding it to the calorie target. */
 export default function ActivityScreen() {
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);

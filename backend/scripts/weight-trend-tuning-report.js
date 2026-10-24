@@ -1,3 +1,5 @@
+/** @file Deterministic weight-trend tuning fixture generation and verification from versioned model inputs. */
+
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -11,7 +13,7 @@ const {
 const { computeWeightTrendV1 } = require('../src/services/weightTrendV1');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const REPORT_PATH = path.resolve(__dirname, '../../docs/weight-trend-v2-tuning-report.json');
+const REPORT_PATH = path.resolve(__dirname, '../../backend/test/fixtures/weight-trend-v2-tuning-report.json');
 
 function seededRandom(seed) {
   let state = seed >>> 0;
@@ -67,12 +69,14 @@ function collectNumericParameterEntries(value, pathPrefix = '', entries = []) {
   return entries;
 }
 
+/** Hash sorted numeric model inputs, excluding manifest/model version labels, for tuning governance. */
 function fingerprintNumericParameters(parameterManifest) {
   const entries = collectNumericParameterEntries(parameterManifest)
     .sort(([left], [right]) => left.localeCompare(right));
   return crypto.createHash('sha256').update(JSON.stringify(entries)).digest('hex');
 }
 
+/** Compare numeric inputs with the approved fingerprint and require a model-version increase for changes. */
 function assessParameterGovernance(parameterManifest) {
   const currentFingerprint = fingerprintNumericParameters(parameterManifest);
   const constantsChanged = currentFingerprint !== WEIGHT_TREND_APPROVED_NUMERIC_PARAMETER_BASELINE.sha256;
@@ -245,6 +249,7 @@ function buildStabilityResults() {
   };
 }
 
+/** Run deterministic coverage, accuracy and stability scenarios and return their reproducible governance report. */
 function buildTuningReport(parameterManifest = WEIGHT_TREND_PARAMETER_MANIFEST) {
   const coverage = buildCoverageResults();
   const rmse = buildRmseResults();

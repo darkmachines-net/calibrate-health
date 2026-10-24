@@ -1,3 +1,5 @@
+/** @file Regression coverage for compact rail: rail links, keyboard, history, resizing and enlarged text. */
+
 import { expect, hideTransientPwaNotices, test } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';
 

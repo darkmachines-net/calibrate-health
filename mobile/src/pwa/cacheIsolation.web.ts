@@ -1,3 +1,5 @@
+/** @file Account-scoped browser cache cleanup and worker notification without leaking identity. */
+
 export const PWA_CACHE_NAMES = {
     USER_PREFIX: 'calibrate-expo-web-user-'
 } as const;

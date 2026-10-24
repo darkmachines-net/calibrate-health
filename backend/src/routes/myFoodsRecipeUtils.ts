@@ -1,3 +1,5 @@
+/** @file my Foods Recipe Utils: Parsing helpers for recipe ingredient payloads. */
+
 import { parseNonNegativeNumber, parsePositiveInteger, parsePositiveNumber } from '../utils/requestParsing';
 import {
   createHttpError,
