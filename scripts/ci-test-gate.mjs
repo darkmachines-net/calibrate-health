@@ -1,16 +1,19 @@
-/** @file Enforces successful test results for every surface selected by the trusted CI classifier. */
+/** @file Enforces selected backend and combined mobile/API test jobs before allowing a PR merge. */
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-/** Require successful tests for every surface selected by the PR classifier. */
+/** Require successful selected jobs, including API-only runs; reject missing selections and failed classification. */
 export function verifyRequiredTests(needs) {
   if (needs?.changes?.result !== 'success') throw new Error('Test classification did not succeed.');
+  const outputs = needs.changes.outputs ?? {};
+  for (const surface of ['backend', 'mobile', 'api']) {
+    if (!['true', 'false'].includes(outputs[surface])) throw new Error(`Missing test selection for ${surface}.`);
+  }
   for (const surface of ['backend', 'mobile']) {
-    const selected = needs.changes.outputs?.[surface];
+    const selected = outputs[surface] === 'true' || (surface === 'mobile' && outputs.api === 'true');
     const result = needs[`${surface}-tests`]?.result;
-    if (selected !== 'true' && selected !== 'false') throw new Error(`Missing test selection for ${surface}.`);
-    if (result !== 'success' && !(selected === 'false' && result === 'skipped')) {
+    if (result !== 'success' && !(!selected && result === 'skipped')) {
       throw new Error(`${surface} tests did not succeed (${result ?? 'missing'}).`);
     }
   }

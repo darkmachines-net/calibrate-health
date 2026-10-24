@@ -50,49 +50,21 @@ jobs:
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
-      - name: Detect affected database surfaces
+      - name: Checkout complete PR history for affected checks
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select affected PR inputs
         if: inputs.release_sha == '' && github.event_name == 'pull_request'
         id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            database:
-              - '.github/workflows/database-upgrade.yml'
-              - 'backend/package.json'
-              - 'backend/package-lock.json'
-              - 'backend/prisma.config.ts'
-              - 'backend/prisma/**'
-              - 'backend/src/config/database.ts'
-              - 'backend/src/config/databaseUtils.ts'
-              - 'backend/src/observability.ts'
-              - 'backend/src/routes/goals.ts'
-              - 'backend/src/routes/metrics.ts'
-              - 'backend/src/routes/user.ts'
-              - 'backend/src/routes/imports.ts'
-              - 'backend/src/services/calorie*.ts'
-              - 'backend/src/services/goal*.ts'
-              - 'backend/src/services/watch*.ts'
-              - 'backend/src/services/clientOperation*.ts'
-              - 'backend/src/services/sync*.ts'
-              - 'backend/src/services/import*.ts'
-              - 'backend/src/services/loseItImport.ts'
-              - 'backend/src/services/metricProgress.ts'
-              - 'backend/src/services/materializedWeightTrend.ts'
-              - 'backend/src/services/weightTrend*.ts'
-              - 'backend/src/utils/date.ts'
-              - 'backend/src/utils/goal*.ts'
-              - 'backend/src/utils/units.ts'
-              - 'backend/tsconfig.json'
-              - 'deploy/backup/**'
-              - 'scripts/postgres-*.mjs'
-              - 'shared/weightTrend*.ts'
-              - 'shared/goal*.ts'
-              - 'shared/calorie*.ts'
-            migrations:
-              - '.github/workflows/database-upgrade.yml'
-              - 'backend/prisma/migrations/**'
-              - 'scripts/postgres-rollback-smoke.mjs'
-              - 'scripts/postgres-rollback-smoke.test.mjs'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
 
       - name: Select database execution
         id: decision

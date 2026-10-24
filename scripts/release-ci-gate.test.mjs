@@ -1,4 +1,4 @@
-/** @file Regression coverage for release ci gate: complete exact-candidate CI permits finalization, with canonical skips only. */
+/** @file Guards exact-candidate CI, classifier success and required-check publication, allowing only canonical skips. */
 
 /** Validate exact-candidate CI identities and protected merge sequencing. */
 import assert from 'node:assert/strict';
@@ -221,7 +221,7 @@ test('required release checks are published on the validated candidate with link
   const writes = [];
   await publishRequiredChecks(f.api, async (repository, check) => writes.push({ repository, ...check }), f.binding);
   assert.deepEqual(writes.map(check => check.name), [
-    'Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)', 'Required Tests',
+    'Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)', 'Classify Lint Inputs', 'Required Tests',
   ]);
   for (const check of writes) {
     assert.equal(check.repository, identity.repository);

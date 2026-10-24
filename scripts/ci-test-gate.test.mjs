@@ -1,15 +1,15 @@
-/** @file Guards required-test aggregation against failed classification, skipped required jobs, and workflow drift. */
+/** @file Guards required-test aggregation, including API-only runs, against classification failures and skipped selected jobs. */
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { verifyRequiredTests } from './ci-test-gate.mjs';
 
-function results(backend = 'true', mobile = 'true') {
+function results(backend = 'true', mobile = 'true', api = 'false') {
   return {
-    changes: { result: 'success', outputs: { backend, mobile } },
+    changes: { result: 'success', outputs: { backend, mobile, api } },
     'backend-tests': { result: backend === 'true' ? 'success' : 'skipped' },
-    'mobile-tests': { result: mobile === 'true' ? 'success' : 'skipped' },
+    'mobile-tests': { result: mobile === 'true' || api === 'true' ? 'success' : 'skipped' },
   };
 }
 
@@ -17,6 +17,18 @@ test('successful selected suites and explicitly unselected suites satisfy the ga
   for (const backend of ['true', 'false']) {
     for (const mobile of ['true', 'false']) assert.doesNotThrow(() => verifyRequiredTests(results(backend, mobile)));
   }
+});
+
+test('API-only changes require the combined mobile/API job even when mobile unit tests are irrelevant', () => {
+  assert.doesNotThrow(() => verifyRequiredTests(results('false', 'false', 'true')));
+  for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
+    const needs = results('false', 'false', 'true');
+    needs['mobile-tests'].result = result;
+    assert.throws(() => verifyRequiredTests(needs), /mobile tests/);
+  }
+  const needs = results('false', 'false');
+  delete needs.changes.outputs.api;
+  assert.throws(() => verifyRequiredTests(needs), /Missing test selection for api/);
 });
 
 test('a failed or absent classifier never authorizes a merge', () => {
