@@ -918,7 +918,7 @@ Signing passwords are accepted only through hidden prompts or CALIBRATE_ANDROID_
 }
 
 /** Verifies retained artifacts and explicit device plans before installation, launch, or physical evidence collection. */
-export async function runNativeReleaseDevices(options = {}) {
+async function runNativeReleaseDevices(options = {}) {
   const root = options.repositoryRoot ?? repositoryRoot;
   const environment = options.environment ?? process.env;
   const config = options.config ?? parseNativeReleaseDeviceArgs(process.argv.slice(2));
