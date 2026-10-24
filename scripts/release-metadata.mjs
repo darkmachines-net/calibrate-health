@@ -2,23 +2,18 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { isDeepStrictEqual } from 'node:util';
 import { compareVersions as compareSemver } from '@mchartier/expo-release/engine';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const REPOSITORY_ROOT = path.resolve(SCRIPT_DIR, '..');
-export const RELEASE_MANIFEST_PATH = path.join(REPOSITORY_ROOT, 'shared', 'release.json');
 export const GOOGLE_PLAY_MAX_VERSION_CODE = 2_100_000_000;
 
 const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const STABLE_SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const NATIVE_RELEASE_TAG_PATTERN = /^native-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
-const HISTORICAL_NATIVE_RELEASE_TAG_PATTERN = /^(?:native-)?v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
-const RELEASE_VALIDATION_MODES = new Set(['current', 'historical-prepared']);
-export const HISTORICAL_PREPARED_RELEASE_COMMIT = '93ff7474521fd93456027df0729d8797e9c47b54';
-const SERVER_RELEASE_FILE_PATHS = Object.freeze({
+export const SERVER_RELEASE_FILE_PATHS = Object.freeze({
   manifest: 'shared/release.json',
   diagnostics: 'shared/client-diagnostic-versions.json',
   rootPackage: 'package.json',
@@ -28,35 +23,6 @@ const SERVER_RELEASE_FILE_PATHS = Object.freeze({
   openApi: 'docs/openapi/v1.yaml',
   generatedApi: 'packages/api-client/src/generated/v1.ts'
 });
-export const PREPARED_RELEASE_MIRROR_PATHS = Object.freeze(
-  Object.values(SERVER_RELEASE_FILE_PATHS).sort()
-);
-const HISTORICAL_PREPARED_RELEASE_MANIFEST = {
-  schema_version: 1,
-  server: {
-    version: '0.35.0',
-    api: { current: 'v1', supported: ['v1'], legacy_alias: '/api' }
-  },
-  android: {
-    application_id: 'app.calibratehealth.mobile',
-    mobile: {
-      version_name: '0.2.6',
-      version_code: 8,
-      native_release_tag: 'v0.13.2',
-      minimum_supported_version: '0.1.0'
-    },
-    wear: {
-      version_name: '0.2.6',
-      version_code: 8,
-      minimum_supported_version: '0.2.0'
-    },
-    channels: {
-      debug: { wear_build_type: 'debug' },
-      internal: { mobile_eas_profile: 'internal', wear_build_type: 'internal' },
-      production: { mobile_eas_profile: 'production', wear_build_type: 'release' }
-    }
-  }
-};
 
 /** Read canonical JSON; malformed input must stop release preparation. */
 const readJson = async (filePath) => JSON.parse(await readFile(filePath, 'utf8'));
@@ -161,30 +127,13 @@ const readOptionalFile = async (filePath) => {
 /** Resolve a manifest field without assuming every optional parent exists. */
 const getPath = (value, dottedPath) => dottedPath.split('.').reduce((current, key) => current?.[key], value);
 
-/** Parse numeric and prerelease identifiers without losing integer precision. */
 const CLIENT_DIAGNOSTIC_PLATFORMS = ['web', 'android_phone', 'ios', 'wear_os'];
 const MAX_CLIENT_DIAGNOSTIC_VERSIONS_PER_PLATFORM = 16;
 
-// Only the exact pre-iOS recovery identity may use the historical native contract.
-/** Allow only the explicitly supported historical mirror layout. */
-function isExactHistoricalPreparedRelease(manifest, { validationMode, sourceCommit } = {}) {
-  return validationMode === 'historical-prepared'
-    && sourceCommit === HISTORICAL_PREPARED_RELEASE_COMMIT
-    && isDeepStrictEqual(manifest, HISTORICAL_PREPARED_RELEASE_MANIFEST);
-}
-
-/** Select the diagnostic platform set valid for this historical manifest. */
-function clientDiagnosticPlatforms(manifest, validationOptions) {
-  if (isExactHistoricalPreparedRelease(manifest, validationOptions)) {
-    return CLIENT_DIAGNOSTIC_PLATFORMS.filter((platform) => platform !== 'ios');
-  }
-  return CLIENT_DIAGNOSTIC_PLATFORMS;
-}
-
 /** Keep the reviewed rollout window synchronized with current releases and the generated API source. */
-export function validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource, validationOptions = {}) {
+export function validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource) {
   const errors = [];
-  const platforms = clientDiagnosticPlatforms(manifest, validationOptions);
+  const platforms = CLIENT_DIAGNOSTIC_PLATFORMS;
   const supported = diagnosticVersions?.supported_versions;
   const previousWebRelease = diagnosticVersions?.previous_web_release;
   if (diagnosticVersions?.schema_version !== 1) {
@@ -257,22 +206,8 @@ export function validateClientDiagnosticVersionContract(manifest, diagnosticVers
 }
 
 /** Validate paired codes, compatibility fields, and canonical release identities. */
-export function validateManifest(manifest, { validationMode = 'current', sourceCommit = null } = {}) {
-  if (!RELEASE_VALIDATION_MODES.has(validationMode)) {
-    throw new Error(`Unknown release validation mode: ${validationMode}`);
-  }
-  const isHistoricalPreparedManifest = isDeepStrictEqual(manifest, HISTORICAL_PREPARED_RELEASE_MANIFEST);
-  const enforceCurrentNativePolicy = !isExactHistoricalPreparedRelease(manifest, { validationMode, sourceCommit });
+export function validateManifest(manifest) {
   const errors = [];
-  if (
-    validationMode === 'historical-prepared'
-    && isHistoricalPreparedManifest
-    && sourceCommit !== HISTORICAL_PREPARED_RELEASE_COMMIT
-  ) {
-    errors.push(
-      `Historical prepared release v0.35.0 requires source commit ${HISTORICAL_PREPARED_RELEASE_COMMIT}.`
-    );
-  }
   const requiredSemvers = [
     'server.version',
     'android.mobile.version_name',
@@ -295,9 +230,9 @@ export function validateManifest(manifest, { validationMode = 'current', sourceC
       errors.push(`android.${client}.version_code must be a positive integer.`);
     } else if (versionCode > GOOGLE_PLAY_MAX_VERSION_CODE) {
       errors.push(`android.${client}.version_code cannot exceed Google Play's ${GOOGLE_PLAY_MAX_VERSION_CODE} limit.`);
-    } else if (enforceCurrentNativePolicy && client === 'mobile' && versionCode % 2 !== 1) {
+    } else if (client === 'mobile' && versionCode % 2 !== 1) {
       errors.push('android.mobile.version_code must be odd so phone and Wear releases remain globally unique in Play.');
-    } else if (enforceCurrentNativePolicy && client === 'wear' && versionCode % 2 !== 0) {
+    } else if (client === 'wear' && versionCode % 2 !== 0) {
       errors.push('android.wear.version_code must be even so phone and Wear releases remain globally unique in Play.');
     }
     const current = getPath(manifest, `android.${client}.version_name`);
@@ -310,8 +245,7 @@ export function validateManifest(manifest, { validationMode = 'current', sourceC
   const mobileVersionCode = manifest?.android?.mobile?.version_code;
   const wearVersionCode = manifest?.android?.wear?.version_code;
   if (
-    enforceCurrentNativePolicy
-    && Number.isSafeInteger(mobileVersionCode)
+    Number.isSafeInteger(mobileVersionCode)
     && mobileVersionCode === wearVersionCode
   ) {
     errors.push('android mobile and Wear version_code values must be globally unique in Play.');
@@ -319,22 +253,10 @@ export function validateManifest(manifest, { validationMode = 'current', sourceC
 
   const nativeReleaseTag = manifest?.android?.mobile?.native_release_tag;
   const mobileVersionName = manifest?.android?.mobile?.version_name;
-  if (enforceCurrentNativePolicy) {
-    if (typeof nativeReleaseTag !== 'string' || !NATIVE_RELEASE_TAG_PATTERN.test(nativeReleaseTag)) {
-      errors.push('android.mobile.native_release_tag must be a stable native-vMAJOR.MINOR.PATCH tag.');
-    } else if (
-      STABLE_SEMVER_PATTERN.test(mobileVersionName ?? '') &&
-      nativeReleaseTag !== `native-v${mobileVersionName}`
-    ) {
-      errors.push('android.mobile.native_release_tag must match android.mobile.version_name.');
-    }
-  } else if (
-    typeof nativeReleaseTag !== 'string'
-    || !HISTORICAL_NATIVE_RELEASE_TAG_PATTERN.test(nativeReleaseTag)
-  ) {
-    errors.push(
-      'android.mobile.native_release_tag must be a stable vMAJOR.MINOR.PATCH or native-vMAJOR.MINOR.PATCH tag.'
-    );
+  if (typeof nativeReleaseTag !== 'string' || !NATIVE_RELEASE_TAG_PATTERN.test(nativeReleaseTag)) {
+    errors.push('android.mobile.native_release_tag must be a stable native-vMAJOR.MINOR.PATCH tag.');
+  } else if (STABLE_SEMVER_PATTERN.test(mobileVersionName ?? '') && nativeReleaseTag !== `native-v${mobileVersionName}`) {
+    errors.push('android.mobile.native_release_tag must match android.mobile.version_name.');
   }
 
   const applicationId = manifest?.android?.application_id;
@@ -372,16 +294,9 @@ const capture = (source, pattern, label, errors) => {
 };
 
 /** Compare every tracked version mirror against the canonical release manifest. */
-export async function checkRepository(
-  root = REPOSITORY_ROOT,
-  { validationMode = 'current', sourceCommit = null } = {}
-) {
+export async function checkRepository(root = REPOSITORY_ROOT) {
   const manifest = await readJson(path.join(root, 'shared', 'release.json'));
-  const resolvedSourceCommit = validationMode === 'historical-prepared'
-    ? sourceCommit
-    : null;
-  const validationOptions = { validationMode, sourceCommit: resolvedSourceCommit };
-  const errors = validateManifest(manifest, validationOptions);
+  const errors = validateManifest(manifest);
   const [
     rootPackage,
     rootPackageLock,
@@ -413,7 +328,7 @@ export async function checkRepository(
     readFile(path.join(root, 'docs', 'openapi', 'v1.yaml'), 'utf8'),
     readFile(path.join(root, 'packages', 'api-client', 'src', 'generated', 'v1.ts'), 'utf8')
   ]);
-  errors.push(...validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource, validationOptions));
+  errors.push(...validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource));
 
   assertMatch(errors, 'package.json version', rootPackage.version, manifest.server.version);
   assertMatch(errors, 'package-lock.json version', rootPackageLock.version, manifest.server.version);
@@ -447,15 +362,7 @@ export async function checkRepository(
   );
   assertMatch(errors, 'mobile/app.json expo.version', expoConfig.expo?.version, manifest.android.mobile.version_name);
   assertMatch(errors, 'mobile/app.json expo.android.versionCode', expoConfig.expo?.android?.versionCode, manifest.android.mobile.version_code);
-  // Both platforms share the mobile counter; the exact pre-iOS recovery source has no iOS block.
-  if (!isExactHistoricalPreparedRelease(manifest, validationOptions) || expoConfig.expo?.ios) {
-    assertMatch(
-      errors,
-      'mobile/app.json expo.ios.buildNumber',
-      expoConfig.expo?.ios?.buildNumber,
-      String(manifest.android.mobile.version_code)
-    );
-  }
+  assertMatch(errors, 'mobile/app.json expo.ios.buildNumber', expoConfig.expo?.ios?.buildNumber, String(manifest.android.mobile.version_code));
   assertMatch(errors, 'mobile/app.json expo.android.package', expoConfig.expo?.android?.package, manifest.android.application_id);
   assertMatch(
     errors,
@@ -500,7 +407,7 @@ export async function checkRepository(
     }
   }
 
-  for (const diagnosticPlatform of clientDiagnosticPlatforms(manifest, validationOptions)) {
+  for (const diagnosticPlatform of CLIENT_DIAGNOSTIC_PLATFORMS) {
     const versions = diagnosticVersions?.supported_versions?.[diagnosticPlatform];
     if (Array.isArray(versions)) {
       const marker = `platform?: "${diagnosticPlatform}";`;
@@ -547,22 +454,32 @@ export function createNativeReleaseReplacements(originals, nextVersion, codes) {
   const mobilePackage = JSON.parse(originals.mobilePackage);
   const mobileApp = JSON.parse(originals.mobileApp);
   const pairingPackage = JSON.parse(originals.pairingPackage);
-  const currentPhoneDiagnosticVersions = [...diagnostics.supported_versions.android_phone];
-  const currentIosDiagnosticVersions = [...diagnostics.supported_versions.ios];
-  const currentWearDiagnosticVersions = [...diagnostics.supported_versions.wear_os];
-  /** Retain the bounded diagnostic compatibility window when advancing a native version. */
-  const advanceDiagnosticVersions = (versions) =>
-    [nextVersion, ...versions.filter((version) => version !== nextVersion)]
+  let openApi = originals.openApi;
+  let generatedApi = originals.generatedApi;
+  const generatedNewline = generatedApi.includes('\r\n') ? '\r\n' : '\n';
+  /** Render one platform diagnostic enum in the canonical OpenAPI layout. */
+  const openApiLine = (platform, versions) =>
+    `- properties: { platform: { const: ${platform} }, version: { enum: [${versions.join(', ')}] } }`;
+  /** Render the matching generated client diagnostic version union. */
+  const generatedBlock = (platform, versions) => [
+    `platform?: "${platform}";`,
+    '            /** @enum {unknown} */',
+    `            version?: "${versions.join('" | "')}";`
+  ].join(generatedNewline);
+  for (const platform of CLIENT_DIAGNOSTIC_PLATFORMS.filter(value => value !== 'web')) {
+    const current = diagnostics.supported_versions[platform];
+    const next = [nextVersion, ...current.filter(version => version !== nextVersion)]
       .slice(0, MAX_CLIENT_DIAGNOSTIC_VERSIONS_PER_PLATFORM);
+    diagnostics.supported_versions[platform] = next;
+    openApi = replaceExactlyOnce(openApi, openApiLine(platform, current), openApiLine(platform, next), `OpenAPI ${platform} versions`);
+    generatedApi = replaceExactlyOnce(generatedApi, generatedBlock(platform, current), generatedBlock(platform, next), `Generated API ${platform} versions`);
+  }
 
   manifest.android.mobile.version_name = nextVersion;
   manifest.android.mobile.version_code = mobileVersionCode;
   manifest.android.mobile.native_release_tag = nextNativeTag;
   manifest.android.wear.version_name = nextVersion;
   manifest.android.wear.version_code = wearVersionCode;
-  diagnostics.supported_versions.android_phone = advanceDiagnosticVersions(currentPhoneDiagnosticVersions);
-  diagnostics.supported_versions.ios = advanceDiagnosticVersions(currentIosDiagnosticVersions);
-  diagnostics.supported_versions.wear_os = advanceDiagnosticVersions(currentWearDiagnosticVersions);
   rootLock.packages.mobile.version = nextVersion;
   rootLock.packages['mobile/modules/wear-pairing'].version = nextVersion;
   mobilePackage.version = nextVersion;
@@ -603,21 +520,7 @@ export function createNativeReleaseReplacements(originals, nextVersion, codes) {
     'Wear versionName'
   );
 
-  const nextPhoneDiagnosticVersions = diagnostics.supported_versions.android_phone;
-  const nextIosDiagnosticVersions = diagnostics.supported_versions.ios;
-  const nextWearDiagnosticVersions = diagnostics.supported_versions.wear_os;
-  /** Render one platform diagnostic enum in the canonical OpenAPI layout. */
-  const openApiLine = (platform, versions) =>
-    `- properties: { platform: { const: ${platform} }, version: { enum: [${versions.join(', ')}] } }`;
-  const generatedNewline = originals.generatedApi.includes('\r\n') ? '\r\n' : '\n';
-  /** Render the matching generated client diagnostic version union. */
-  const generatedBlock = (platform, versions) => [
-    `platform?: "${platform}";`,
-    '            /** @enum {unknown} */',
-    `            version?: "${versions.join('" | "')}";`
-  ].join(generatedNewline);
-
-  const replacements = {
+  return {
     manifest: formatJson(manifest, originals.manifest),
     diagnostics: formatJson(diagnostics, originals.diagnostics),
     rootLock: formatJson(rootLock, originals.rootLock),
@@ -626,58 +529,9 @@ export function createNativeReleaseReplacements(originals, nextVersion, codes) {
     pairingPackage: formatJson(pairingPackage, originals.pairingPackage),
     pairingGradle,
     wearGradle,
-    openApi: replaceExactlyOnce(
-      replaceExactlyOnce(
-        originals.openApi,
-        openApiLine('android_phone', currentPhoneDiagnosticVersions),
-        openApiLine('android_phone', nextPhoneDiagnosticVersions),
-        'docs/openapi/v1.yaml android_phone versions'
-      ),
-      openApiLine('wear_os', currentWearDiagnosticVersions),
-      openApiLine('wear_os', nextWearDiagnosticVersions),
-      'docs/openapi/v1.yaml wear_os versions'
-    ),
-    generatedApi: replaceExactlyOnce(
-      replaceExactlyOnce(
-        originals.generatedApi,
-        generatedBlock('android_phone', currentPhoneDiagnosticVersions),
-        generatedBlock('android_phone', nextPhoneDiagnosticVersions),
-        'generated API android_phone versions'
-      ),
-      generatedBlock('wear_os', currentWearDiagnosticVersions),
-      generatedBlock('wear_os', nextWearDiagnosticVersions),
-      'generated API wear_os versions'
-    )
+    openApi,
+    generatedApi
   };
-  replacements.openApi = replaceExactlyOnce(
-    replacements.openApi,
-    openApiLine('ios', currentIosDiagnosticVersions),
-    openApiLine('ios', nextIosDiagnosticVersions),
-    'docs/openapi/v1.yaml ios versions'
-  );
-  replacements.generatedApi = replaceExactlyOnce(
-    replacements.generatedApi,
-    generatedBlock('ios', currentIosDiagnosticVersions),
-    generatedBlock('ios', nextIosDiagnosticVersions),
-    'generated API ios versions'
-  );
-  if (originals.mobileGradle) {
-    let mobileGradle = replacePatternExactlyOnce(
-      originals.mobileGradle,
-      /versionCode\s+\d+/g,
-      `versionCode ${mobileVersionCode}`,
-      'generated mobile versionCode'
-    );
-    mobileGradle = replacePatternExactlyOnce(
-      mobileGradle,
-      /versionName\s+["'][^"']+["']/g,
-      `versionName "${nextVersion}"`,
-      'generated mobile versionName'
-    );
-    replacements.mobileGradle = mobileGradle;
-  }
-
-  return replacements;
 }
 
 

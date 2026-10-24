@@ -139,7 +139,7 @@ test('build sequence runs release mirror validation after prebuild and before Gr
       }
       if (request.label === 'verify candidate release mirrors') {
         assert.deepEqual(request.args, [
-          path.join('C:', 'owned-temp', 'candidate', 'scripts', 'release-config.mjs'),
+          path.join('C:', 'owned-temp', 'candidate', 'scripts', 'release-metadata.mjs'),
           'check'
         ]);
       }

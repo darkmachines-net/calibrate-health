@@ -512,7 +512,7 @@ export async function buildCheckout(label, checkout, tooling, environment, runne
   });
   await runner({
     command: process.execPath,
-    args: [path.join(checkout, 'scripts', fs.existsSync(path.join(checkout, 'scripts', 'release-metadata.mjs')) ? 'release-metadata.mjs' : 'release-config.mjs'), 'check'],
+    args: [path.join(checkout, 'scripts', 'release-metadata.mjs'), 'check'],
     cwd: checkout,
     env: environment,
     label: `verify ${label} release mirrors`

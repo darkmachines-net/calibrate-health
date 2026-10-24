@@ -5,15 +5,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { hash, trackedIdentity } from '@mchartier/expo-release';
 import { applicationIdentity } from './release-inputs.mjs';
-import { checkRepository, createServerReleaseReplacements, createNativeReleaseReplacements, NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
+import { checkRepository, createServerReleaseReplacements, createNativeReleaseReplacements, SERVER_RELEASE_FILE_PATHS, NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
 import { NATIVE_RELEASE_ARTIFACT_CONTRACTS } from './native-release-evidence.mjs';
 import { readNativeReleaseBuildProvenance } from './native-release-build.mjs';
 import { verifyNativeArtifacts } from './native-artifact-checks.mjs';
 import { inspectBundleRuntime } from './native-runtime-checks.mjs';
-
-const serverFiles = { manifest: 'shared/release.json', diagnostics: 'shared/client-diagnostic-versions.json', rootPackage: 'package.json',
-  rootLock: 'package-lock.json', backendPackage: 'backend/package.json', backendLock: 'backend/package-lock.json',
-  openApi: 'docs/openapi/v1.yaml', generatedApi: 'packages/api-client/src/generated/v1.ts' };
 
 /** Transform only metadata mirrors using the shared planner's allocated versions. */
 export function stamp(root, plan) {
@@ -21,7 +17,7 @@ export function stamp(root, plan) {
     const current = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, fs.readFileSync(path.join(root, file), 'utf8')]));
     for (const [key, value] of Object.entries(update(current))) fs.writeFileSync(path.join(root, files[key]), value);
   };
-  if (plan.server) transform(serverFiles, value => createServerReleaseReplacements(value, plan.versions.server));
+  if (plan.server) transform(SERVER_RELEASE_FILE_PATHS, value => createServerReleaseReplacements(value, plan.versions.server));
   if (plan.native) transform(NATIVE_RELEASE_FILE_PATHS, value => createNativeReleaseReplacements(value, plan.versions.mobile,
     { mobileVersionCode: plan.pair[0], wearVersionCode: plan.pair[1] }));
   if (plan.bump) fs.writeFileSync(path.join(root, 'mobile/release-version.json'), JSON.stringify({ version: plan.versions.mobile }, null, 2) + '\n');

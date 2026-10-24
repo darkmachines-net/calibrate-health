@@ -8,22 +8,42 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { stamp } from './release-hooks.mjs';
+import { checkRepository, validateManifest, validateClientDiagnosticVersionContract } from './release-metadata.mjs';
 import { sourceEnvironment } from '@mchartier/expo-release';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const config=JSON.parse(fs.readFileSync(path.join(root,'release.config.json')));
 const allocation={server:true,native:true,bump:'major',versions:{server:'0.99.0',mobile:'1.0.0'},pair:[101,102]};
 
-test('version stamping changes only declared application metadata', t => {
+test('version stamping keeps every current mirror and diagnostic platform consistent', async t => {
   const copy=fs.mkdtempSync(path.join(os.tmpdir(),'release-metadata-'));
   t.after(()=>fs.rmSync(copy,{recursive:true,force:true}));
-  for(const file of config.metadataFiles){const destination=path.join(copy,file);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.copyFileSync(path.join(root,file),destination);}
+  for(const file of [...config.metadataFiles,'mobile/eas.json']){const destination=path.join(copy,file);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.copyFileSync(path.join(root,file),destination);}
   stamp(copy,allocation);
   const app=JSON.parse(fs.readFileSync(path.join(copy,'mobile/app.json')));
   assert.equal(app.expo.version,'1.0.0');
   const release=JSON.parse(fs.readFileSync(path.join(copy,'shared/release.json')));
   assert.equal(release.server.version,'0.99.0');assert.equal(release.android.mobile.version_code,101);assert.equal(release.android.wear.version_code,102);
   const diagnostics=JSON.parse(fs.readFileSync(path.join(copy,'shared/client-diagnostic-versions.json')));
-  assert.ok(diagnostics.supported_versions.android_phone.includes('1.0.0'));
+  for(const platform of ['android_phone','ios','wear_os']) {
+    assert.equal(diagnostics.supported_versions[platform][0],'1.0.0');
+    assert.equal(new Set(diagnostics.supported_versions[platform]).size,diagnostics.supported_versions[platform].length);
+  }
+  assert.deepEqual((await checkRepository(copy)).errors,[]);
+  delete app.expo.ios;
+  fs.writeFileSync(path.join(copy,'mobile/app.json'),JSON.stringify(app));
+  assert.ok((await checkRepository(copy)).errors.some(error=>error.includes('expo.ios.buildNumber')));
+});
+
+test('legacy duplicate codes, release tags and missing iOS diagnostics are rejected', () => {
+  const manifest=JSON.parse(fs.readFileSync(path.join(root,'shared/release.json')));
+  manifest.android.mobile.version_code=manifest.android.wear.version_code=8;
+  manifest.android.mobile.native_release_tag='v0.13.2';
+  const errors=validateManifest(manifest);
+  for(const message of ['must be odd','globally unique','native-vMAJOR.MINOR.PATCH'])assert.ok(errors.some(error=>error.includes(message)));
+  const diagnostics=JSON.parse(fs.readFileSync(path.join(root,'shared/client-diagnostic-versions.json')));
+  delete diagnostics.supported_versions.ios;
+  const invalid=validateClientDiagnosticVersionContract(manifest,diagnostics,fs.readFileSync(path.join(root,'docs/openapi/v1.yaml'),'utf8'));
+  assert.ok(invalid.some(error=>error.includes('must define exactly')));
 });
 
 test('OTA patch stamps the bundle version without manufacturing a new binary build number', t => {
