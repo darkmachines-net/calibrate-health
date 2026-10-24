@@ -105,7 +105,7 @@
         },
         {
           "path": "gradle/verification-metadata.xml",
-          "sha256": "f4365c2b69b133277ea3aa2151b99d64a08fc6830a154374a72147e6db75c26b"
+          "sha256": "d792a90de50f9b08c5eeb06e91a272f914a5b8c4a44965d9f900b5fdc1cf01c3"
         },
         {
           "path": "settings-gradle.lockfile",

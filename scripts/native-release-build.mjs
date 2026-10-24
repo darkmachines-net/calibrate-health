@@ -389,7 +389,7 @@ function canonicalNativeReleaseGradleStateText(bytes) {
   return source.replace(/\r\n/g, '\n');
 }
 
-/** Rejects weakened dependency verification metadata, including bypass lists and commented configuration. */
+/** Rejects verification bypasses, malformed hashes, and missing artifacts from each platform's current toolchain. */
 export function assertNativeReleaseVerificationMetadata(label, source) {
   if (source.includes('<!--') || source.includes('-->')) {
     throw new Error(`${label} Gradle verification metadata must not contain XML comments.`);
@@ -468,27 +468,21 @@ export function assertNativeReleaseVerificationMetadata(label, source) {
     'com.android.tools.lint:lint-checks:32.2.1:lint-checks-32.2.1.pom',
     'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.2.10-2.0.2:symbol-processing-aa-embeddable-2.2.10-2.0.2.jar',
     'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.2.10-2.0.2:symbol-processing-aa-embeddable-2.2.10-2.0.2.pom',
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139-linux.jar',
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139-windows.jar',
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139.pom',
-    'com.android.tools:play-sdk-proto:31.12.0:play-sdk-proto-31.12.0.jar',
-    'com.android.tools:play-sdk-proto:31.12.0:play-sdk-proto-31.12.0.pom',
-    'com.android.tools.external.com-intellij:intellij-core:31.12.0:intellij-core-31.12.0.jar',
-    'com.android.tools.external.com-intellij:intellij-core:31.12.0:intellij-core-31.12.0.pom',
-    'com.android.tools.external.com-intellij:kotlin-compiler:31.12.0:kotlin-compiler-31.12.0.jar',
-    'com.android.tools.external.com-intellij:kotlin-compiler:31.12.0:kotlin-compiler-31.12.0.pom',
-    'com.android.tools.external.org-jetbrains:uast:31.12.0:uast-31.12.0.jar',
-    'com.android.tools.external.org-jetbrains:uast:31.12.0:uast-31.12.0.pom',
-    'com.android.tools.lint:lint:31.12.0:lint-31.12.0.jar',
-    'com.android.tools.lint:lint:31.12.0:lint-31.12.0.pom',
-    'com.android.tools.lint:lint-api:31.12.0:lint-api-31.12.0.jar',
-    'com.android.tools.lint:lint-api:31.12.0:lint-api-31.12.0.pom',
-    'com.android.tools.lint:lint-checks:31.12.0:lint-checks-31.12.0.jar',
-    'com.android.tools.lint:lint-checks:31.12.0:lint-checks-31.12.0.pom',
-    'com.android.tools.lint:lint-gradle:31.12.0:lint-gradle-31.12.0.jar',
-    'com.android.tools.lint:lint-gradle:31.12.0:lint-gradle-31.12.0.pom',
-    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.1.20-2.0.1:symbol-processing-aa-embeddable-2.1.20-2.0.1.jar',
-    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.1.20-2.0.1:symbol-processing-aa-embeddable-2.1.20-2.0.1.pom',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934-linux.jar',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934-windows.jar',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934.pom',
+    'com.android.tools:play-sdk-proto:32.2.1:play-sdk-proto-32.2.1.jar',
+    'com.android.tools:play-sdk-proto:32.2.1:play-sdk-proto-32.2.1.pom',
+    'com.android.tools.external.com-intellij:intellij-core:32.2.1:intellij-core-32.2.1.jar',
+    'com.android.tools.external.com-intellij:intellij-core:32.2.1:intellij-core-32.2.1.pom',
+    'com.android.tools.external.com-intellij:kotlin-compiler:32.2.1:kotlin-compiler-32.2.1.jar',
+    'com.android.tools.external.com-intellij:kotlin-compiler:32.2.1:kotlin-compiler-32.2.1.pom',
+    'com.android.tools.external.org-jetbrains:uast:32.2.1:uast-32.2.1.jar',
+    'com.android.tools.external.org-jetbrains:uast:32.2.1:uast-32.2.1.pom',
+    'com.android.tools.lint:lint:32.2.1:lint-32.2.1.jar',
+    'com.android.tools.lint:lint:32.2.1:lint-32.2.1.pom',
+    'com.android.tools.lint:lint-api:32.2.1:lint-api-32.2.1.jar',
+    'com.android.tools.lint:lint-api:32.2.1:lint-api-32.2.1.pom',
     'com.google.guava:guava-parent:32.1.3-jre:guava-parent-32.1.3-jre.pom',
     'com.google.guava:guava-parent:33.3.1-android:guava-parent-33.3.1-android.pom',
     'com.google.guava:guava-parent:33.4.3-android:guava-parent-33.4.3-android.pom',
@@ -502,7 +496,7 @@ export function assertNativeReleaseVerificationMetadata(label, source) {
     'org.junit:junit-bom:5.13.4:junit-bom-5.13.4.module',
     'org.junit:junit-bom:5.8.2:junit-bom-5.8.2.pom',
     'org.junit:junit-bom:5.9.2:junit-bom-5.9.2.module',
-    'org.junit:junit-bom:5.9.3:junit-bom-5.9.3.module'
+    'org.junit:junit-bom:5.11.0-M2:junit-bom-5.11.0-M2.module'
   ];
   const wearCleanRunArtifacts = [
     'com.android.tools.build:aapt2:8.11.0-12782657:aapt2-8.11.0-12782657-linux.jar',

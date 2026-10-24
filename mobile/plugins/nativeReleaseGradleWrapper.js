@@ -37,13 +37,17 @@ function nativeReleaseGradleContract(label = 'phone') {
 const DEPENDENCY_LOCKING_MARKER = '// calibrate: strict native dependency locking';
 const PHONE_DEPENDENCY_STATE_DIRECTORY = path.join('gradle', 'native-release', 'phone');
 const WINDOWS_OBJECT_PATH_MARKER = '// calibrate: bounded Windows native object paths';
-// Leave room for Ninja's temporary filenames beneath long Expo/worktree paths.
-const WINDOWS_CMAKE_OBJECT_PATH_MAX = 180;
+// Leave space below Windows MAX_PATH without making the cap shorter than managed
+// worktree object directories, which prevents CMake from hashing long source paths.
+const WINDOWS_CMAKE_OBJECT_PATH_MAX = 240;
 const WINDOWS_OBJECT_PATH_BLOCK = `${WINDOWS_OBJECT_PATH_MARKER}
 if (System.getProperty('os.name').startsWith('Windows')) {
   allprojects {
     ['com.android.application', 'com.android.library'].each { androidPlugin ->
       plugins.withId(androidPlugin) {
+        // Keep prefab paths below MAX_PATH inside long managed worktrees.
+        def calibrateCmakeProject = project.path.substring(1).replace(':', '--')
+        android.externalNativeBuild.cmake.buildStagingDirectory = rootProject.file("../../.cache/cxx/\${calibrateCmakeProject}")
         android.defaultConfig.externalNativeBuild.cmake.arguments '-DCMAKE_OBJECT_PATH_MAX=${WINDOWS_CMAKE_OBJECT_PATH_MAX}'
       }
     }
@@ -111,10 +115,11 @@ function injectNativeDependencyLocking(source) {
   return `${source.trimEnd()}\n\n${DEPENDENCY_LOCKING_BLOCK}`;
 }
 
-/** Adds the Windows native object-path limit once to generated Gradle source. */
+/** Adds Windows CMake path bounds and checkout-local staging once to generated Gradle source. */
 function injectWindowsNativeObjectPathLimit(source) {
   if (source.includes(WINDOWS_OBJECT_PATH_MARKER)) return source;
-  return `${source.trimEnd()}\n\n${WINDOWS_OBJECT_PATH_BLOCK}`;
+  // React Native's root plugin evaluates :app eagerly; register before it runs.
+  return `${WINDOWS_OBJECT_PATH_BLOCK}\n${source}`;
 }
 
 /** Restores reviewed phone dependency locks and verification metadata after generated Android prebuild. */
