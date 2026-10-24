@@ -23,7 +23,7 @@ type WeightSaveResultProps = {
     trendLoading: boolean;
     trendError: string | null;
     reduceMotion: boolean;
-    headingRef?: React.RefObject<View | null>;
+    headingRef?: React.RefObject<React.ComponentRef<typeof View> | null>;
 };
 
 /** Presents saved, queued, or deleted weight outcomes with progress recognition and optional trend context. */

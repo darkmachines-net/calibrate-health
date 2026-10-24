@@ -51,7 +51,7 @@ const entries: FoodLogEntry[] = [
     }
 ];
 
-function renderSheet(props: Partial<React.ComponentProps<typeof SaveMealAsRecipeSheet>> = {}) {
+async function renderSheet(props: Partial<React.ComponentProps<typeof SaveMealAsRecipeSheet>> = {}) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
@@ -60,7 +60,7 @@ function renderSheet(props: Partial<React.ComponentProps<typeof SaveMealAsRecipe
     });
     const onClose = jest.fn();
     const onSaved = jest.fn();
-    const screen = render(
+    const screen = await render(
         <QueryClientProvider client={queryClient}>
             <SaveMealAsRecipeSheet
                 visible
@@ -82,23 +82,23 @@ describe('SaveMealAsRecipeSheet', () => {
         mockCreateRecipeFromFoodLogs.mockResolvedValue({ id: 7, name: 'Margarita' });
     });
 
-    it('preselects the meal and updates totals when an ingredient is excluded', () => {
-        const screen = renderSheet();
+    it('preselects the meal and updates totals when an ingredient is excluded', async () => {
+        const screen = await renderSheet();
 
         expect(screen.getByText('108 kcal total')).toBeTruthy();
         expect(screen.getByRole('checkbox', { name: 'Exclude Tequila' }).props.accessibilityState).toEqual(
             expect.objectContaining({ checked: true })
         );
-        fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Lime juice' }));
+        await fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Lime juice' }));
         expect(screen.getByText('96 kcal total')).toBeTruthy();
         expect(screen.getByText(/1 item selected/)).toBeTruthy();
     });
 
     it('creates a recipe from selected log ids in their displayed order', async () => {
-        const screen = renderSheet();
-        fireEvent.changeText(screen.getByLabelText('Recipe name'), 'Margarita');
-        fireEvent.changeText(screen.getByLabelText('These items make'), '2');
-        fireEvent.press(screen.getByRole('button', { name: 'Save recipe' }));
+        const screen = await renderSheet();
+        await fireEvent.changeText(screen.getByLabelText('Recipe name'), 'Margarita');
+        await fireEvent.changeText(screen.getByLabelText('These items make'), '2');
+        await fireEvent.press(screen.getByRole('button', { name: 'Save recipe' }));
 
         await waitFor(() => expect(mockCreateRecipeFromFoodLogs).toHaveBeenCalledWith({
             name: 'Margarita',
@@ -108,13 +108,13 @@ describe('SaveMealAsRecipeSheet', () => {
         await waitFor(() => expect(screen.onSaved).toHaveBeenCalledWith('Margarita'));
     });
 
-    it('requires a name, positive yield, and at least one selected ingredient', () => {
-        const screen = renderSheet();
+    it('requires a name, positive yield, and at least one selected ingredient', async () => {
+        const screen = await renderSheet();
         expect(screen.getByRole('button', { name: 'Save recipe' })).toBeDisabled();
 
-        fireEvent.changeText(screen.getByLabelText('Recipe name'), 'Margarita');
-        fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Tequila' }));
-        fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Lime juice' }));
+        await fireEvent.changeText(screen.getByLabelText('Recipe name'), 'Margarita');
+        await fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Tequila' }));
+        await fireEvent.press(screen.getByRole('checkbox', { name: 'Exclude Lime juice' }));
         expect(screen.getByText('Select at least one ingredient.')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Save recipe' })).toBeDisabled();
     });

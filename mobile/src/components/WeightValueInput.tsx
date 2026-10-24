@@ -8,8 +8,7 @@ import {
     TextInput,
     useWindowDimensions,
     View,
-    type NativeSyntheticEvent,
-    type TextInputSubmitEditingEventData
+    type TextInputSubmitEditingEvent
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { WeightUnit } from '@calibrate/shared';
@@ -33,10 +32,10 @@ type WeightValueInputProps = {
     min: number;
     max?: number;
     editable: boolean;
-    inputRef?: React.RefObject<TextInput | null>;
+    inputRef?: React.RefObject<React.ComponentRef<typeof TextInput> | null>;
     onChangeText: (value: string) => void;
     onStep?: () => void;
-    onSubmitEditing?: (event: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
+    onSubmitEditing?: (event: TextInputSubmitEditingEvent) => void;
 };
 
 const WEIGHT_VALUE_FONT_SIZE = 52; // Makes the single central measurement the visual anchor of the sheet.
@@ -65,12 +64,12 @@ export const WeightValueInput: React.FC<WeightValueInputProps> = ({
     const theme = useAppTheme();
     const { fontScale } = useWindowDimensions();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const measurementInputRef = useRef<TextInput | null>(null);
+    const measurementInputRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
     const [webFontScale, setWebFontScale] = useState(1);
     const effectiveFontScale = Math.max(fontScale, webFontScale);
     const stackUnit = effectiveFontScale >= WEIGHT_UNIT_STACK_FONT_SCALE;
     const valueHeight = Math.max(WEIGHT_VALUE_HEIGHT, Math.ceil(WEIGHT_VALUE_LINE_HEIGHT * effectiveFontScale) + theme.spacing.md);
-    const setMeasurementInput = useCallback((node: TextInput | null) => {
+    const setMeasurementInput = useCallback((node: React.ComponentRef<typeof TextInput> | null) => {
         measurementInputRef.current = node;
         if (inputRef) inputRef.current = node;
     }, [inputRef]);

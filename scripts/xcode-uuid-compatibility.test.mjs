@@ -6,20 +6,18 @@ import test from 'node:test';
 
 const require = createRequire(import.meta.url);
 
-/** Prove the security override still satisfies the Expo config plugin that owns the xcode dependency. */
-test('patched UUID remains compatible with xcode CommonJS project identifiers', () => {
+/** SDK 58 uses xcode's built-in UUID generation without the retired uuid override. */
+test('Expo xcode generates valid CommonJS project identifiers without the legacy UUID dependency', () => {
   const configPluginPackage = require.resolve('@expo/config-plugins/package.json');
   const requireFromConfigPlugin = createRequire(configPluginPackage);
   const xcodeEntry = requireFromConfigPlugin.resolve('xcode');
   const requireFromXcode = createRequire(xcodeEntry);
   const xcode = requireFromXcode('xcode');
-  const uuidPackage = requireFromXcode('uuid/package.json');
+  const xcodePackage = requireFromXcode('xcode/package.json');
   const project = xcode.project('fixture.pbxproj');
   /** SDK 58 uses xcode's built-in UUID generation without the retired uuid override. */
   project.hash = { project: { objects: {} } };
 
-  /** SDK 58 uses xcode's built-in UUID generation without the retired uuid override. */
-  assert.equal(uuidPackage.version, '11.1.1');
-  /** SDK 58 uses xcode's built-in UUID generation without the retired uuid override. */
+  assert.equal(xcodePackage.dependencies.uuid, undefined);
   assert.match(project.generateUuid(), /^[0-9A-F]{24}$/);
 });

@@ -1,6 +1,6 @@
-/** @file Browser lifecycle tests for date refresh on visibility, focus, and page restoration. */
+/** @file Browser local-date refresh coverage across visibility changes, suspended tabs, and listener cleanup. */
 
-import { act, cleanupAsync, renderHook } from '@testing-library/react-native';
+import { act, cleanup, renderHook } from '@testing-library/react-native';
 import { useCurrentLocalDate } from './useCurrentLocalDate';
 
 jest.mock('../platform/appForeground', () => jest.requireActual('../platform/appForeground.web'));
@@ -11,7 +11,8 @@ describe('browser local day lifecycle', () => {
     const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
 
     beforeEach(() => {
-        jest.useFakeTimers();
+        // Keep React's async-render microtasks real so timer counts measure only the local-day clock.
+        jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] });
         jest.setSystemTime(new Date('2026-07-22T06:59:30Z'));
         const target = {
             addEventListener: (name: string, listener: () => void) => events.set(name, listener),
@@ -21,7 +22,7 @@ describe('browser local day lifecycle', () => {
         Object.defineProperty(globalThis, 'window', { configurable: true, value: target });
     });
     afterEach(async () => {
-        await cleanupAsync();
+        await cleanup();
         if (documentDescriptor) Object.defineProperty(globalThis, 'document', documentDescriptor);
         else Reflect.deleteProperty(globalThis, 'document');
         if (windowDescriptor) Object.defineProperty(globalThis, 'window', windowDescriptor);
@@ -29,17 +30,17 @@ describe('browser local day lifecycle', () => {
         jest.useRealTimers();
     });
 
-    it.each(['visibilitychange', 'focus', 'pageshow'])('refreshes on %s after a suspended tab returns', event => {
-        const { result, unmount } = renderHook(() => useCurrentLocalDate('America/Los_Angeles'));
+    it.each(['visibilitychange', 'focus', 'pageshow'])('refreshes on %s after a suspended tab returns', async event => {
+        const { result, unmount } = await renderHook(() => useCurrentLocalDate('America/Los_Angeles'));
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
-        act(() => events.get('visibilitychange')?.());
+        await act(() => events.get('visibilitychange')?.());
         expect(jest.getTimerCount()).toBe(0);
         jest.setSystemTime(new Date('2026-07-24T16:00:00Z'));
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
-        act(() => events.get(event)?.());
+        await act(() => events.get(event)?.());
         expect(result.current).toBe('2026-07-24');
         expect(jest.getTimerCount()).toBe(1);
-        unmount();
+        await unmount();
         expect(events.size).toBe(0);
         expect(jest.getTimerCount()).toBe(0);
     });

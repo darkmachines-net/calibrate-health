@@ -19,8 +19,8 @@ const options = [
 ] as const;
 
 describe('Combobox', () => {
-    it('exposes selected value and opens its listbox from the keyboard', () => {
-        const screen = render(
+    it('exposes selected value and opens its listbox from the keyboard', async () => {
+        const screen = await render(
             <Combobox label="Region" value="europe" options={options} onChange={jest.fn()} />
         );
 
@@ -29,36 +29,36 @@ describe('Combobox', () => {
         expect(trigger.props.accessibilityState).toEqual(expect.objectContaining({ expanded: false }));
 
 
-        fireEvent(trigger, 'keyDown', { key: 'ArrowDown', preventDefault: jest.fn() });
+        await fireEvent(trigger, 'keyDown', { key: 'ArrowDown', preventDefault: jest.fn() });
         expect(screen.getByTestId('combobox-listbox').props.nativeID).toBe('combobox-listbox');
         expect(trigger.props.accessibilityState).toEqual(expect.objectContaining({ expanded: true }));
 
     });
 
-    it('filters searchable options and selects without duplicating field text', () => {
+    it('filters searchable options and selects without duplicating field text', async () => {
         const onChange = jest.fn();
-        const screen = render(
+        const screen = await render(
             <Combobox label="Region" options={options} onChange={onChange} searchable />
         );
 
-        fireEvent.press(screen.getByRole('combobox', { name: 'Region' }));
-        expect(screen.UNSAFE_getByType(Listbox).props.focusInitialOption).toBe(false);
-        fireEvent.changeText(screen.getByLabelText('Search Region'), 'pac');
+        await fireEvent.press(screen.getByRole('combobox', { name: 'Region' }));
+        expect(screen.getByLabelText('Search Region')).toHaveProp('autoFocus', true);
+        await fireEvent.changeText(screen.getByLabelText('Search Region'), 'pac');
         expect(screen.getByText('Pacific')).toBeTruthy();
         expect(screen.queryByText('Europe')).toBeNull();
-        fireEvent.press(screen.getByLabelText('Pacific'));
+        await fireEvent.press(screen.getByLabelText('Pacific'));
         expect(onChange).toHaveBeenCalledWith('pacific');
     });
 
-    it('closes on Escape and marks invalid controls', () => {
-        const screen = render(
+    it('closes on Escape and marks invalid controls', async () => {
+        const screen = await render(
             <Combobox label="Region" options={options} onChange={jest.fn()} errorText="Choose a region." />
         );
 
         const trigger = screen.getByRole('combobox', { name: 'Region' });
         expect(trigger.props.accessibilityHint).toContain('Choose a region.');
-        fireEvent.press(trigger);
-        fireEvent(screen.getByLabelText('America'), 'keyDown', {
+        await fireEvent.press(trigger);
+        await fireEvent(screen.getByLabelText('America'), 'keyDown', {
             key: 'Escape',
             preventDefault: jest.fn()
         });
@@ -67,7 +67,7 @@ describe('Combobox', () => {
 });
 
 describe('OverlaySelect compatibility', () => {
-    it('preserves controlled legacy selection while using the shared combobox', () => {
+    it('preserves controlled legacy selection while using the shared combobox', async () => {
         function Harness() {
             const [value, setValue] = useState('america');
             const [open, setOpen] = useState(false);
@@ -86,19 +86,19 @@ describe('OverlaySelect compatibility', () => {
             );
         }
 
-        const screen = render(<Harness />);
+        const screen = await render(<Harness />);
         const trigger = screen.getByRole('combobox', { name: 'Select region' });
-        fireEvent.press(trigger);
-        fireEvent.press(screen.getByLabelText('Europe'));
+        await fireEvent.press(trigger);
+        await fireEvent.press(screen.getByLabelText('Europe'));
         expect(trigger).toHaveAccessibilityValue({ text: 'Europe' });
         expect(trigger.props.accessibilityState).toEqual(expect.objectContaining({ expanded: false }));
     });
 });
 describe('Listbox', () => {
-    it('supports typeahead, Home/End, arrows, Enter, and disabled-option skipping', () => {
+    it('supports typeahead, Home/End, arrows, Enter, and disabled-option skipping', async () => {
         const onActiveChange = jest.fn();
         const onSelect = jest.fn();
-        const screen = render(
+        const screen = await render(
             <Listbox
                 label="Regions"
                 options={options}
@@ -110,19 +110,19 @@ describe('Listbox', () => {
         );
 
         const america = screen.getByLabelText('America');
-        fireEvent(america, 'keyDown', { key: 'p', preventDefault: jest.fn() });
+        await fireEvent(america, 'keyDown', { key: 'p', preventDefault: jest.fn() });
         expect(onActiveChange).toHaveBeenLastCalledWith('pacific');
-        fireEvent(america, 'keyDown', { key: 'End', preventDefault: jest.fn() });
+        await fireEvent(america, 'keyDown', { key: 'End', preventDefault: jest.fn() });
         expect(onActiveChange).toHaveBeenLastCalledWith('pacific');
-        fireEvent(america, 'keyDown', { key: 'ArrowUp', preventDefault: jest.fn() });
+        await fireEvent(america, 'keyDown', { key: 'ArrowUp', preventDefault: jest.fn() });
         expect(onActiveChange).toHaveBeenLastCalledWith('pacific');
-        fireEvent(america, 'keyDown', { key: 'Enter', preventDefault: jest.fn() });
+        await fireEvent(america, 'keyDown', { key: 'Enter', preventDefault: jest.fn() });
         expect(onSelect).toHaveBeenCalledWith('america');
     });
 
-    it('restores a keyboard-focusable option when filtering removes the active row', () => {
+    it('restores a keyboard-focusable option when filtering removes the active row', async () => {
         const onActiveChange = jest.fn();
-        const screen = render(
+        const screen = await render(
             <Listbox
                 label="Regions"
                 options={options}
@@ -132,10 +132,10 @@ describe('Listbox', () => {
                 focusInitialOption={false}
             />
         );
-        fireEvent(screen.getByLabelText('Pacific'), 'focus');
+        await fireEvent(screen.getByLabelText('Pacific'), 'focus');
         expect(screen.getByLabelText('Pacific').props.tabIndex).toBe(0);
 
-        screen.rerender(
+        await screen.rerender(
             <Listbox
                 label="Regions"
                 options={[options[1]]}

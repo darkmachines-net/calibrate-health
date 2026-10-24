@@ -55,7 +55,7 @@ describe('AccountSessionsPanel', () => {
     it('protects the current session and confirms remote and bulk revocation in adaptive dialogs', async () => {
         const onRevoke = jest.fn().mockResolvedValue(undefined);
         const onRevokeOthers = jest.fn().mockResolvedValue(undefined);
-        const screen = render(
+        const screen = await render(
             <AccountSessionsPanel
                 sessions={sessions}
                 revokingOthers={false}
@@ -70,19 +70,19 @@ describe('AccountSessionsPanel', () => {
         expect(screen.getAllByText('iPhone or iPad')).toHaveLength(2);
         expect(screen.getByText('Last activity: Not recorded')).toBeTruthy();
 
-        fireEvent.press(screen.getByTestId('settings-session-revoke-mobile_remote'));
+        await fireEvent.press(screen.getByTestId('settings-session-revoke-mobile_remote'));
         expect(screen.getByTestId('settings-session-confirmation')).toBeTruthy();
         expect(screen.getByText('Revoke signed-in session?')).toBeTruthy();
         expect(screen.getByText('This signs Pixel 9 out remotely.')).toBeTruthy();
         await act(async () => {
-            fireEvent.press(screen.getByTestId('settings-session-confirm'));
+            await fireEvent.press(screen.getByTestId('settings-session-confirm'));
         });
         expect(onRevoke).toHaveBeenCalledWith('mobile_remote');
 
-        fireEvent.press(screen.getByTestId('settings-session-revoke-others'));
+        await fireEvent.press(screen.getByTestId('settings-session-revoke-others'));
         expect(screen.getByText('Revoke all other sessions?')).toBeTruthy();
         await act(async () => {
-            fireEvent.press(screen.getByTestId('settings-session-confirm'));
+            await fireEvent.press(screen.getByTestId('settings-session-confirm'));
         });
         expect(onRevokeOthers).toHaveBeenCalledTimes(1);
     });
@@ -90,7 +90,7 @@ describe('AccountSessionsPanel', () => {
     it('keeps a revoke failure reachable inside the open confirmation', async () => {
         const onRevoke = jest.fn().mockRejectedValue(new Error('offline'));
         const onRevokeOthers = jest.fn().mockResolvedValue(undefined);
-        const screen = render(
+        const screen = await render(
             <AccountSessionsPanel
                 sessions={sessions}
                 revokingOthers={false}
@@ -99,11 +99,11 @@ describe('AccountSessionsPanel', () => {
             />
         );
 
-        fireEvent.press(screen.getByTestId('settings-session-revoke-mobile_remote'));
+        await fireEvent.press(screen.getByTestId('settings-session-revoke-mobile_remote'));
         await act(async () => {
-            fireEvent.press(screen.getByTestId('settings-session-confirm'));
+            await fireEvent.press(screen.getByTestId('settings-session-confirm'));
         });
-        screen.rerender(
+        await screen.rerender(
             <AccountSessionsPanel
                 sessions={sessions}
                 revokingOthers={false}

@@ -8,8 +8,10 @@ import { execFileSync } from 'node:child_process';
 // Keep local setup and doctor on the same Android tool versions.
 export const NATIVE_TOOLCHAIN = Object.freeze({
   nodeMinimum: '22.14.0',
-  platform: '36',
-  buildTools: '36.0.0',
+  platform: '37.0',
+  buildTools: '37.0.0',
+  wearPlatform: '36',
+  wearBuildTools: '36.0.0',
   ndk: '27.1.12297006',
   cmake: '3.31.6',
   commandLineTools: '20.0',
@@ -37,6 +39,8 @@ export const NATIVE_TOOL_DOWNLOADS = Object.freeze({
 export const NATIVE_SDK_PACKAGES = Object.freeze({
   'SDK platform': 'platforms;android-' + NATIVE_TOOLCHAIN.platform,
   'SDK build-tools': 'build-tools;' + NATIVE_TOOLCHAIN.buildTools,
+  'Wear SDK platform': 'platforms;android-' + NATIVE_TOOLCHAIN.wearPlatform,
+  'Wear SDK build-tools': 'build-tools;' + NATIVE_TOOLCHAIN.wearBuildTools,
   'SDK platform-tools': 'platform-tools',
   NDK: 'ndk;' + NATIVE_TOOLCHAIN.ndk,
   CMake: 'cmake;' + NATIVE_TOOLCHAIN.cmake
@@ -122,14 +126,18 @@ export function inspectNativeToolchain(environment = process.env, options = {}) 
     return jar;
   });
   check('SDK platform', () => requireFile(path.join(sdkRoot, 'platforms', 'android-' + NATIVE_TOOLCHAIN.platform, 'android.jar')));
-  check('SDK build-tools', () => {
-    const directory = path.join(sdkRoot, 'build-tools', NATIVE_TOOLCHAIN.buildTools);
+  for (const [name, version] of [
+    ['SDK build-tools', NATIVE_TOOLCHAIN.buildTools],
+    ['Wear SDK build-tools', NATIVE_TOOLCHAIN.wearBuildTools]
+  ]) check(name, () => {
+    const directory = path.join(sdkRoot, 'build-tools', version);
     requireFile(path.join(directory, 'lib', 'apksigner.jar'));
     requireFile(path.join(directory, 'lib', 'd8.jar'));
     requireFile(path.join(directory, executable('aapt2')));
     requireFile(path.join(directory, executable('zipalign')));
     return requireFile(path.join(directory, executable('aapt')));
   });
+  check('Wear SDK platform', () => requireFile(path.join(sdkRoot, 'platforms', 'android-' + NATIVE_TOOLCHAIN.wearPlatform, 'android.jar')));
   check('SDK platform-tools', () => runVersion(
     path.join(sdkRoot, 'platform-tools', executable('adb')), ['version'], /Android Debug Bridge version/, 'ADB'
   ));

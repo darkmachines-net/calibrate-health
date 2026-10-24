@@ -68,8 +68,8 @@ describe('PublicLegalPage', () => {
         mockReplace.mockClear();
     });
 
-    it('uses a public trust shell while keeping signed-in recovery inside Settings', () => {
-        const screen = render(<PublicLegalPage {...props} />);
+    it('uses a public trust shell while keeping signed-in recovery inside Settings', async () => {
+        const screen = await render(<PublicLegalPage {...props} />);
         expect(screen.getByTestId('legal-public-shell')).toBeTruthy();
         const pageStyle = StyleSheet.flatten(screen.getByTestId('legal-page').props.style);
         expect(pageStyle).toEqual(expect.objectContaining({ gap: spacing.lg }));
@@ -91,15 +91,15 @@ describe('PublicLegalPage', () => {
         expect(screen.queryByTestId('legal-app-header')).toBeNull();
 
         mockUser = { id: 7 };
-        screen.rerender(<PublicLegalPage {...props} />);
+        await screen.rerender(<PublicLegalPage {...props} />);
         expect(screen.getByTestId('legal-in-app-shell')).toBeTruthy();
         const appHeader = within(screen.getByTestId('legal-app-header'));
         expect(appHeader.getByRole('header', { name: 'Privacy policy' })).toBeTruthy();
         expect(appHeader.getByLabelText('App actions')).toBeTruthy();
 
-        fireEvent.press(appHeader.getByRole('button', { name: 'Back to Settings' }));
+        await fireEvent.press(appHeader.getByRole('button', { name: 'Back to Settings' }));
         expect(appHeader.queryByRole('button', { name: 'Open notifications' })).toBeNull();
-        fireEvent.press(appHeader.getByRole('button', { name: 'Account & settings' }));
+        await fireEvent.press(appHeader.getByRole('button', { name: 'Account & settings' }));
 
         expect(mockReplace).toHaveBeenCalledWith('/settings');
         expect(mockPush).toHaveBeenCalledTimes(1);

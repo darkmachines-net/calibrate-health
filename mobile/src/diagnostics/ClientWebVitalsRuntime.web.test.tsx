@@ -37,60 +37,60 @@ describe('ClientWebVitalsRuntime', () => {
         mockUseAuth.mockReturnValue(authState(false, true));
     });
 
-    it('starts one buffered observer for a direct Today document after auth confirmation', () => {
+    it('starts one buffered observer for a direct Today document after auth confirmation', async () => {
         const cleanup = jest.fn();
         mockObserveClientWebVitals.mockReturnValue(cleanup);
         mockUsePathname.mockReturnValue('/today');
         mockUseAuth.mockReturnValue(authState(true, false));
-        const view = render(<ClientWebVitalsRuntime />);
+        const view = await render(<ClientWebVitalsRuntime />);
 
         expect(mockGetClientDiagnosticRoute).toHaveBeenCalledWith('/today');
         expect(mockObserveClientWebVitals).not.toHaveBeenCalled();
 
         mockUseAuth.mockReturnValue(authState(false, true));
-        view.rerender(<ClientWebVitalsRuntime />);
+        await view.rerender(<ClientWebVitalsRuntime />);
         expect(mockObserveClientWebVitals).toHaveBeenCalledTimes(1);
         expect(mockObserveClientWebVitals).toHaveBeenCalledWith('today');
 
         mockUsePathname.mockReturnValue('/my-foods');
-        view.rerender(<ClientWebVitalsRuntime />);
+        await view.rerender(<ClientWebVitalsRuntime />);
         expect(mockGetClientDiagnosticRoute).toHaveBeenCalledTimes(1);
         expect(mockObserveClientWebVitals).toHaveBeenCalledTimes(1);
 
-        view.unmount();
+        await view.unmount();
         expect(cleanup).toHaveBeenCalledWith(false);
     });
 
-    it('discards a partial sample when the authenticated session is lost', () => {
+    it('discards a partial sample when the authenticated session is lost', async () => {
         const cleanup = jest.fn();
         mockObserveClientWebVitals.mockReturnValue(cleanup);
         mockUsePathname.mockReturnValue('/today');
         mockUseAuth.mockReturnValue(authState(false, true));
-        const view = render(<ClientWebVitalsRuntime />);
+        const view = await render(<ClientWebVitalsRuntime />);
 
         expect(mockObserveClientWebVitals).toHaveBeenCalledWith('today');
         mockUseAuth.mockReturnValue(authState(false, false));
-        view.rerender(<ClientWebVitalsRuntime />);
+        await view.rerender(<ClientWebVitalsRuntime />);
 
         expect(cleanup).toHaveBeenCalledTimes(1);
         expect(cleanup).toHaveBeenCalledWith(false);
-        view.unmount();
+        await view.unmount();
         expect(cleanup).toHaveBeenCalledTimes(1);
     });
 
-    it('never observes a login document after an SPA transition to Today', () => {
+    it('never observes a login document after an SPA transition to Today', async () => {
         mockUsePathname.mockReturnValue('/login');
         mockUseAuth.mockReturnValue(authState(true, false));
-        const view = render(<ClientWebVitalsRuntime />);
+        const view = await render(<ClientWebVitalsRuntime />);
 
         expect(mockGetClientDiagnosticRoute).toHaveBeenCalledWith('/login');
         expect(mockObserveClientWebVitals).not.toHaveBeenCalled();
 
         mockUseAuth.mockReturnValue(authState(false, false));
-        view.rerender(<ClientWebVitalsRuntime />);
+        await view.rerender(<ClientWebVitalsRuntime />);
         mockUsePathname.mockReturnValue('/today');
         mockUseAuth.mockReturnValue(authState(false, true));
-        view.rerender(<ClientWebVitalsRuntime />);
+        await view.rerender(<ClientWebVitalsRuntime />);
 
         expect(mockGetClientDiagnosticRoute).toHaveBeenCalledTimes(1);
         expect(mockObserveClientWebVitals).not.toHaveBeenCalled();

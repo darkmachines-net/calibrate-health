@@ -112,15 +112,16 @@ function recentFood(name: string, mealPeriod: MealPeriod): RecentFoodSummary {
     };
 }
 
-function renderSheet(seed?: (queryClient: QueryClient) => void) {
+async function renderSheet(seed?: (queryClient: QueryClient) => void) {
     const queryClient = new QueryClient({
         defaultOptions: {
-            queries: { retry: false, gcTime: 0 },
+            // Seeded offline library entries must survive until Search mounts its observer.
+            queries: { retry: false, gcTime: Infinity },
             mutations: { retry: false, gcTime: 0 }
         }
     });
     seed?.(queryClient);
-    return render(
+    return await render(
         <QueryClientProvider client={queryClient}>
             <AddFoodSheet
                 visible
@@ -161,8 +162,8 @@ describe('AddFoodSheet async resource states', () => {
         onlineManager.setOnline(false);
     });
 
-    afterEach(() => {
-        cleanup();
+    afterEach(async () => {
+        await cleanup();
         onlineManager.setOnline(true);
     });
 
@@ -170,12 +171,12 @@ describe('AddFoodSheet async resource states', () => {
     it.each(['COMPLETE', 'INCOMPLETE'])('reopens a %s day only when food is submitted', async (status) => {
         onlineManager.setOnline(true);
         mockApi.getFoodDay.mockResolvedValue({ date: '2026-08-08', status });
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await screen.findByText('Adding food reopens this day so you can complete it again.');
         expect(mockApi.setFoodDayStatus).not.toHaveBeenCalled();
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await waitFor(() => expect(mockApi.createFoodLog).toHaveBeenCalled());
         expect(mockApi.setFoodDayStatus).toHaveBeenCalledWith({ date: '2026-08-08', status: 'OPEN' }, expect.any(String));
         expect(mockApi.setFoodDayStatus.mock.invocationCallOrder[0]).toBeLessThan(mockApi.createFoodLog.mock.invocationCallOrder[0]);
@@ -185,11 +186,11 @@ describe('AddFoodSheet async resource states', () => {
         onlineManager.setOnline(true);
         mockApi.getFoodDay.mockResolvedValue({ date: '2026-08-08', status: 'COMPLETE' });
         mockApi.setFoodDayStatus.mockRejectedValue(new TypeError('Network request failed'));
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await screen.findByText('Adding food reopens this day so you can complete it again.');
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(2));
         expect(mockEnqueue.mock.calls[0]).toEqual(['food-day.set-status', { date: '2026-08-08', status: 'OPEN' }, expect.any(String)]);
         expect(mockEnqueue.mock.calls[1]).toEqual(['food.create', expect.objectContaining({ date: '2026-08-08', calories: 120 })]);
@@ -211,12 +212,12 @@ describe('AddFoodSheet async resource states', () => {
         const dispatch = createOutboxDispatch('reopen-regression', async () => rows, write, () => true);
         mockWithOutbox = dispatch;
         mockEnqueue.mockImplementation((operation: string, payload: unknown) => dispatch(enqueue => enqueue(operation, payload)));
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await screen.findByText('Adding food reopens this day so you can complete it again.');
         onlineManager.setOnline(false);
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await waitFor(() => expect(order).toEqual(['OPEN']));
         const competing = dispatch(enqueue => enqueue('food-day.set-status', { date: '2026-08-08', status: 'COMPLETE' }));
         release(); await competing;
@@ -227,10 +228,10 @@ describe('AddFoodSheet async resource states', () => {
     it.each(['food-day.set-status', 'food-day.update'])('reopens after durable %s completion despite a cached OPEN day', async operation => {
         const rows = [{ id: 'prior-day', namespace: 'test', sequence: 1, state: 'pending', attemptCount: 0, lastError: null, createdAt: 1, updatedAt: 1, operation, payload: { date: '2026-08-08', status: 'COMPLETE', is_complete: true } } as QueuedMutation];
         mockWithOutbox = createOutboxDispatch('stale-open-' + operation, async () => rows, async (kind, payload) => { rows.push({ operation: kind, payload } as QueuedMutation); }, () => true);
-        const screen = renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'OPEN' }));
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        const screen = await renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'OPEN' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await waitFor(() => expect(rows.map(row => (row.payload as { status?: string }).status ?? row.operation)).toEqual(['COMPLETE', 'OPEN', 'food.create']));
         expect(mockApi.createFoodLog).not.toHaveBeenCalled();
     });
@@ -239,10 +240,10 @@ describe('AddFoodSheet async resource states', () => {
         const rows = [{ id: 'prior-day', namespace: 'test', sequence: 1, state: 'pending', attemptCount: 0, lastError: null, createdAt: 1, updatedAt: 1, operation: 'food-tracking-pause.start', payload: { starts_on: '2026-08-08' } } as QueuedMutation];
         const write = jest.fn(async () => undefined);
         mockWithOutbox = createOutboxDispatch('stale-paused', async () => rows, write, () => true);
-        const screen = renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'OPEN' }));
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        const screen = await renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'OPEN' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await screen.findByRole('alert');
         expect(write).not.toHaveBeenCalled();
         expect(mockApi.createFoodLog).not.toHaveBeenCalled();
@@ -261,10 +262,10 @@ describe('AddFoodSheet async resource states', () => {
             await recordFoodDayReceipt(namespace, 'food-tracking-pause.resume', { resumed_on: resumedOn }, 'applied-resume');
         }
         mockWithOutbox = createOutboxDispatch(namespace, async () => kind === 'receipt' ? [] : rows, write, () => true, true);
-        const screen = renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'PAUSED' }));
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        const screen = await renderSheet(client => client.setQueryData(['mobile-food-day', '2026-08-08'], { date: '2026-08-08', status: 'PAUSED' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         if (allowed) await waitFor(() => expect(write).toHaveBeenCalledWith('food.create', expect.objectContaining({ date: '2026-08-08', calories: 120 }), 'food-operation-id'));
         else { await screen.findByRole('alert'); expect(write).not.toHaveBeenCalled(); }
         expect(mockApi.setFoodDayStatus).not.toHaveBeenCalled();
@@ -275,11 +276,11 @@ describe('AddFoodSheet async resource states', () => {
         onlineManager.setOnline(true);
         mockApi.getFoodDay.mockResolvedValue({ date: '2026-08-08', status: 'COMPLETE' });
         mockApi.setFoodDayStatus.mockRejectedValue(new Error('Unable to reopen day'));
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await screen.findByText('Adding food reopens this day so you can complete it again.');
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
-        fireEvent.changeText(screen.getByLabelText('Calories'), '120');
-        fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.changeText(screen.getByLabelText('Calories'), '120');
+        await fireEvent.press(screen.getByRole('button', { name: 'Add & close' }));
         await screen.findByRole('alert');
         expect(mockApi.createFoodLog).not.toHaveBeenCalled();
         expect(mockEnqueue).not.toHaveBeenCalled();
@@ -292,7 +293,7 @@ describe('AddFoodSheet async resource states', () => {
                 ? [recentFood('Snack yogurt', MEAL_PERIODS.AFTERNOON_SNACK)]
                 : [recentFood('Breakfast oats', MEAL_PERIODS.BREAKFAST)]
         }));
-        const screen = renderSheet();
+        const screen = await renderSheet();
 
         expect(await screen.findByText('Breakfast oats')).toBeTruthy();
         expect(mockApi.getRecentFoods).toHaveBeenCalledWith({
@@ -302,8 +303,8 @@ describe('AddFoodSheet async resource states', () => {
         });
         expect(mockApi.searchFood).not.toHaveBeenCalled();
 
-        fireEvent.press(screen.getByLabelText('Select meal'));
-        fireEvent.press(screen.getByLabelText('Afternoon Snack'));
+        await fireEvent.press(screen.getByLabelText('Select meal'));
+        await fireEvent.press(screen.getByLabelText('Afternoon Snack'));
 
         expect(await screen.findByText('Snack yogurt')).toBeTruthy();
         expect(mockApi.getRecentFoods).toHaveBeenLastCalledWith({
@@ -314,10 +315,10 @@ describe('AddFoodSheet async resource states', () => {
     }, 10_000);
 
     it('does not describe an uncached offline food search as having no matches', async () => {
-        const screen = renderSheet();
+        const screen = await renderSheet();
         const searchField = screen.getByLabelText('Search foods');
-        fireEvent.changeText(searchField, 'apple');
-        fireEvent(searchField, 'submitEditing');
+        await fireEvent.changeText(searchField, 'apple');
+        await fireEvent(searchField, 'submitEditing');
 
         await waitFor(() => expect(screen.getByText('Connect to the internet to load food search.')).toBeTruthy());
         expect(screen.queryByText('No matching foods found.')).toBeNull();
@@ -325,21 +326,21 @@ describe('AddFoodSheet async resource states', () => {
         expect(mockApi.searchFood).not.toHaveBeenCalled();
     });
 
-    it('keeps the empty web search result region keyboard reachable', () => {
+    it('keeps the empty web search result region keyboard reachable', async () => {
         const replacedPlatform = jest.replaceProperty(Platform, 'OS', 'web');
         try {
-            const screen = renderSheet();
+            const screen = await renderSheet();
             expect(screen.getByTestId('food-search-results').props.tabIndex).toBe(0);
         } finally {
             replacedPlatform.restore();
         }
     });
 
-    it('keeps results visible and actionable while the mobile search field is focused', () => {
+    it('keeps results visible and actionable while the mobile search field is focused', async () => {
         const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
 
         try {
-            const screen = renderSheet((queryClient) => {
+            const screen = await renderSheet((queryClient) => {
                 queryClient.setQueryData(['mobile-recent-foods', MEAL_PERIODS.BREAKFAST, 'browse'], {
                     items: [createRecentFoodFixture()]
                 });
@@ -347,7 +348,7 @@ describe('AddFoodSheet async resource states', () => {
             });
             const searchField = screen.getByLabelText('Search foods');
 
-            fireEvent(searchField, 'focus');
+            await fireEvent(searchField, 'focus');
 
             expect(screen.queryByRole('button', { name: 'Scan' })).toBeNull();
             expect(screen.queryByRole('button', { name: 'Saved foods' })).toBeNull();
@@ -355,9 +356,9 @@ describe('AddFoodSheet async resource states', () => {
             expect(screen.queryByRole('radio', { name: 'Quick' })).toBeNull();
             expect(screen.getByTestId('food-search-results')).toBeTruthy();
 
-            fireEvent(searchField, 'blur');
+            await fireEvent(searchField, 'blur');
             expect(screen.getByTestId('food-search-results')).toBeTruthy();
-            fireEvent.press(screen.getByLabelText('Choose amount for Greek yogurt'));
+            await fireEvent.press(screen.getByLabelText('Choose amount for Greek yogurt'));
 
             expect(dismissKeyboard).toHaveBeenCalled();
             expect(screen.queryByTestId('food-search-results')).toBeNull();
@@ -366,13 +367,13 @@ describe('AddFoodSheet async resource states', () => {
         }
     });
 
-    it('removes the Android bottom inset only while the search workspace is focused', () => {
+    it('removes the Android bottom inset only while the search workspace is focused', async () => {
         const replacedPlatform = jest.replaceProperty(Platform, 'OS', 'android');
         try {
-            const screen = renderSheet();
+            const screen = await renderSheet();
 
             expect(screen.getByTestId('add-food-sheet-content').props.style).toBeUndefined();
-            fireEvent(screen.getByLabelText('Search foods'), 'focus');
+            await fireEvent(screen.getByLabelText('Search foods'), 'focus');
             expect(screen.getByTestId('add-food-sheet-content').props.style).toMatchObject({
                 paddingBottom: 0
             });
@@ -382,7 +383,7 @@ describe('AddFoodSheet async resource states', () => {
     });
 
     it('finds cached library recipes offline and opens quantity confirmation without logging', async () => {
-        const screen = renderSheet((queryClient) => {
+        const screen = await renderSheet((queryClient) => {
             queryClient.setQueryData(getSavedFoodsLibraryQueryKey('', 'RECIPE'), {
                 pages: [{ items: [{
                     id: 14, type: 'RECIPE', name: 'Overnight oats', is_pinned: false,
@@ -392,11 +393,11 @@ describe('AddFoodSheet async resource states', () => {
             });
         });
         const searchField = screen.getByLabelText('Search foods');
-        fireEvent.changeText(searchField, 'oats');
-        fireEvent(searchField, 'submitEditing');
+        await fireEvent.changeText(searchField, 'oats');
+        await fireEvent(searchField, 'submitEditing');
         expect(await screen.findByText('Overnight oats')).toBeTruthy();
         expect(screen.getByText('Offline - showing saved information')).toBeTruthy();
-        fireEvent.press(screen.getByLabelText('Choose amount for Overnight oats'));
+        await fireEvent.press(screen.getByLabelText('Choose amount for Overnight oats'));
         expect(screen.getByLabelText('Amount')).toBeTruthy();
         expect(mockApi.getMyFoods).not.toHaveBeenCalled();
         expect(mockApi.createFoodLog).not.toHaveBeenCalled();
@@ -415,7 +416,7 @@ describe('AddFoodSheet async resource states', () => {
             recipe_total_calories: 640,
             yield_servings: 2
         }]);
-        const screen = renderSheet();
+        const screen = await renderSheet();
 
         expect(screen.getByRole('radio', { name: 'Quick' })).toBeTruthy();
         expect(screen.getByRole('radio', { name: 'Search' })).toBeTruthy();
@@ -423,22 +424,22 @@ describe('AddFoodSheet async resource states', () => {
         expect(screen.queryByLabelText('Search recipes')).toBeNull();
 
         const searchField = screen.getByLabelText('Search foods');
-        fireEvent.changeText(searchField, '  oats  ');
-        fireEvent(searchField, 'submitEditing');
+        await fireEvent.changeText(searchField, '  oats  ');
+        await fireEvent(searchField, 'submitEditing');
 
         expect(await screen.findByText('Overnight oats')).toBeTruthy();
         expect(screen.getByText('Recipe | 320 kcal per serving')).toBeTruthy();
     });
 
-    it('links to Saved foods from the Add Food sheet', () => {
-        const screen = renderSheet();
+    it('links to Saved foods from the Add Food sheet', async () => {
+        const screen = await renderSheet();
 
-        fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
 
         const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock } };
         expect(router.push).toHaveBeenCalledWith('/my-foods');
 
-        fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Quick' }));
         expect(screen.queryByRole('button', { name: 'Saved foods' })).toBeNull();
     });
 
@@ -447,18 +448,18 @@ describe('AddFoodSheet async resource states', () => {
         mockConfirmDiscardChanges.mockResolvedValue(false);
         const recentFood = createRecentFoodFixture();
         mockApi.getRecentFoods.mockResolvedValue({ items: [recentFood] });
-        const screen = renderSheet();
+        const screen = await renderSheet();
         const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock } };
 
-        fireEvent.press(await screen.findByLabelText('Choose amount for Greek yogurt'));
-        fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Scan' }));
+        await fireEvent.press(await screen.findByLabelText('Choose amount for Greek yogurt'));
+        await fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Scan' }));
 
         await waitFor(() => expect(mockConfirmDiscardChanges).toHaveBeenCalledTimes(2));
         expect(router.push).not.toHaveBeenCalled();
 
         mockConfirmDiscardChanges.mockResolvedValue(true);
-        fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
 
         await waitFor(() => expect(router.push).toHaveBeenCalledWith('/my-foods'));
     });

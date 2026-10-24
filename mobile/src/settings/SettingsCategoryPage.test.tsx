@@ -29,9 +29,9 @@ const resourceProps = {
 };
 
 describe('SettingsCategoryPage', () => {
-    it('keeps profile and preference destinations in Profile & preferences', () => {
+    it('keeps profile and preference destinations in Profile & preferences', async () => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="profile"
                 isWeb
@@ -48,9 +48,9 @@ describe('SettingsCategoryPage', () => {
             'Preferences'
         ]);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Profile photo' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Profile details' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Preferences' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Profile photo' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Profile details' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Preferences' }));
 
         expect(callbacks.onOpenSheet.mock.calls).toEqual([
             ['profile-photo']
@@ -58,9 +58,9 @@ describe('SettingsCategoryPage', () => {
         expect(callbacks.onOpenPage.mock.calls).toEqual([['profile-details'], ['preferences']]);
     });
 
-    it('keeps password, session, and logout destinations in Security & access', () => {
+    it('keeps password, session, and logout destinations in Security & access', async () => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="security"
                 isWeb
@@ -76,9 +76,9 @@ describe('SettingsCategoryPage', () => {
             'Log out'
         ]);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Password' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Signed-in devices, 3' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Log out' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Password' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Signed-in devices, 3' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Log out' }));
 
         expect(callbacks.onOpenSheet.mock.calls).toEqual([
             ['password']
@@ -87,9 +87,9 @@ describe('SettingsCategoryPage', () => {
         expect(callbacks.onLogout).toHaveBeenCalledTimes(1);
     });
 
-    it.each([true, false])('hides Android connections on web/iOS (isWeb=%s)', (isWeb) => {
+    it.each([true, false])('hides Android connections on web/iOS (isWeb=%s)', async (isWeb) => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="connections"
                 isWeb={isWeb}
@@ -106,8 +106,8 @@ describe('SettingsCategoryPage', () => {
         expect(screen.queryByRole('button', { name: 'Health Connect' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Galaxy Watch' })).toBeNull();
 
-        fireEvent.press(screen.getByRole('button', { name: 'Activity' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Connected assistants, 2' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Activity' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Connected assistants, 2' }));
 
         expect(callbacks.onOpenSheet).not.toHaveBeenCalled();
         expect(callbacks.onOpenPage.mock.calls).toEqual([
@@ -116,9 +116,9 @@ describe('SettingsCategoryPage', () => {
         ]);
     });
 
-    it('shows Android connection destinations and opens their pages', () => {
+    it('shows Android connection destinations and opens their pages', async () => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="connections"
                 isWeb={false}
@@ -134,16 +134,16 @@ describe('SettingsCategoryPage', () => {
             'Galaxy Watch',
             'Connected assistants, 2'
         ]);
-        fireEvent.press(screen.getByRole('button', { name: 'Health Connect' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Health Connect' }));
         expect(callbacks.onOpenPage).toHaveBeenCalledWith('health-connect');
-        fireEvent.press(screen.getByRole('button', { name: 'Galaxy Watch' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Galaxy Watch' }));
         expect(callbacks.onOpenPage).toHaveBeenCalledWith('watch');
         expect(callbacks.onOpenSheet).not.toHaveBeenCalled();
     });
 
-    it('keeps saved content, import, sync, export, and deletion in Data & privacy', () => {
+    it('keeps saved content, import, sync, export, and deletion in Data & privacy', async () => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="data"
                 isWeb
@@ -161,11 +161,11 @@ describe('SettingsCategoryPage', () => {
             'Delete account'
         ]);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Import from Lose It' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Offline changes, 1 failed' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Export account data' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Delete account' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Saved foods' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Import from Lose It' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Offline changes, 1 failed' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Export account data' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Delete account' }));
 
         expect(callbacks.onOpenPage).toHaveBeenCalledWith('my-foods');
         expect(callbacks.onOpenSheet.mock.calls).toEqual([
@@ -176,9 +176,9 @@ describe('SettingsCategoryPage', () => {
         expect(callbacks.onDeleteAccount).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps every product link and app destination in Help & app', () => {
+    it('keeps every product link and app destination in Help & app', async () => {
         const callbacks = createCallbacks();
-        const screen = render(
+        const screen = await render(
             <SettingsCategoryPage
                 category="help"
                 isWeb
@@ -193,12 +193,12 @@ describe('SettingsCategoryPage', () => {
             'settings-section-app'
         ]);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Support and feedback' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Privacy policy' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Terms of service' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Software license' }));
-        fireEvent.press(screen.getByRole('button', { name: 'About Calibrate' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Advanced settings' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Support and feedback' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Privacy policy' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Terms of service' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Software license' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'About Calibrate' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Advanced settings' }));
 
         expect(callbacks.onOpenProductLink.mock.calls).toEqual([
             ['support'],

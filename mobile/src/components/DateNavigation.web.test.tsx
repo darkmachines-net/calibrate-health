@@ -6,7 +6,7 @@ import { DateNavigation } from './DateNavigation.web';
 import type { LogDateNavigation } from '../hooks/useLogDateNavigation';
 
 type TestInstance = {
-    props: Record<string, unknown>;
+    props: Record<string, unknown> & { style?: Parameters<typeof StyleSheet.flatten>[0] };
     findByType: (type: string) => TestInstance;
     findByProps: (props: Record<string, unknown>) => TestInstance;
 };
@@ -133,7 +133,7 @@ describe('DateNavigation web', () => {
         const toolbar = tree!.root.findByProps({ accessibilityRole: 'toolbar' });
         const trigger = tree!.root.findByProps({ accessibilityLabel: 'Choose date' });
         const dateText = trigger.findByProps({ children: 'Jul 17, 2026' });
-        const triggerStyle = trigger.props.style as (state: { pressed: boolean }) => unknown;
+        const triggerStyle = trigger.props.style as (state: { pressed: boolean }) => Parameters<typeof StyleSheet.flatten>[0];
 
         expect(StyleSheet.flatten(toolbar.props.style)).toMatchObject({ gap: 8 });
         expect(StyleSheet.flatten(triggerStyle({ pressed: false }))).toMatchObject({ paddingHorizontal: 8 });

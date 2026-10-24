@@ -64,7 +64,7 @@ jest.mock('expo-router', () => {
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 describe('onboarding direct-entry auth hydration', () => {
-    it('keeps the route mounted while auth hydrates, then redirects only a confirmed signed-out session', () => {
+    it('keeps the route mounted while auth hydrates, then redirects only a confirmed signed-out session', async () => {
         mockUseAuth.mockReturnValue({
             api: {},
             user: null,
@@ -72,7 +72,7 @@ describe('onboarding direct-entry auth hydration', () => {
             updateCurrentUser: jest.fn()
         } as unknown as ReturnType<typeof useAuth>);
 
-        const screen = render(<OnboardingScreen />);
+        const screen = await render(<OnboardingScreen />);
 
         expect(screen.getByText('Checking your session...')).toBeTruthy();
         expect(screen.queryByTestId('onboarding-auth-redirect')).toBeNull();
@@ -83,7 +83,7 @@ describe('onboarding direct-entry auth hydration', () => {
             isLoading: false,
             updateCurrentUser: jest.fn()
         } as unknown as ReturnType<typeof useAuth>);
-        screen.rerender(<OnboardingScreen />);
+        await screen.rerender(<OnboardingScreen />);
 
         expect(screen.getByTestId('onboarding-auth-redirect').props.children).toBe('/(auth)/login');
     });

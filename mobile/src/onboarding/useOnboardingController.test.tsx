@@ -55,16 +55,16 @@ const OPTIONS: CaloriePlanOptionsResponse = {
     ]
 };
 
-function renderController() {
+async function renderController() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false, gcTime: Infinity } } });
     const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
-    return { ...renderHook(({ user }: { user: UserClientPayload }) => useOnboardingController(user), { wrapper, initialProps: { user: USER } }), client };
+    return { ...await renderHook(({ user }: { user: UserClientPayload }) => useOnboardingController(user), { wrapper, initialProps: { user: USER } }), client };
 }
 
 describe('onboarding controller', () => {
-    beforeAll(() => notifyManager.setNotifyFunction((callback) => { act(callback); }));
+    beforeAll(() => notifyManager.setNotifyFunction(async (callback) => { await act(callback); }));
     afterAll(() => notifyManager.setNotifyFunction((callback) => { callback(); }));
     beforeEach(() => {
         jest.clearAllMocks();
@@ -83,18 +83,18 @@ describe('onboarding controller', () => {
     it('reuses the operation ID for an unchanged retry and creates one after the submitted data changes', async () => {
         mockApi.completeOnboarding.mockRejectedValueOnce(new Error('Network unavailable'))
             .mockRejectedValueOnce(new Error('Network unavailable'));
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(result.current.completion.isError).toBe(true));
         expect(mockClearDraft).not.toHaveBeenCalled();
         expect(result.current.form).toEqual(FORM);
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(mockApi.completeOnboarding).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(result.current.completion.isPending).toBe(false));
         expect(mockApi.completeOnboarding.mock.calls[1][1]).toBe(mockApi.completeOnboarding.mock.calls[0][1]);
-        act(() => result.current.setForm((form) => ({ ...form, targetWeight: '69', targetWeightGrams: 69000 })));
-        act(() => result.current.next());
+        await act(() => result.current.setForm((form) => ({ ...form, targetWeight: '69', targetWeightGrams: 69000 })));
+        await act(() => result.current.next());
         await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/today'));
         expect(mockApi.completeOnboarding.mock.calls[2][1]).not.toBe(mockApi.completeOnboarding.mock.calls[0][1]);
         expect(Crypto.randomUUID).toHaveBeenCalledTimes(2);
@@ -103,19 +103,19 @@ describe('onboarding controller', () => {
     it('submits only once for rapid presses before mutation state rerenders', async () => {
         let resolveCompletion!: (value: unknown) => void;
         mockApi.completeOnboarding.mockImplementationOnce(() => new Promise((resolve) => { resolveCompletion = resolve; }));
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => { result.current.next(); result.current.next(); });
+        await act(() => { result.current.next(); result.current.next(); });
         await waitFor(() => expect(mockApi.completeOnboarding).toHaveBeenCalledTimes(1));
         await act(async () => resolveCompletion({ user: COMPLETED_USER, receipt: {} }));
         await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
     });
 
     it('opens Today after durable completion even if background cache refresh fails', async () => {
-        const { result, client } = renderController();
+        const { result, client } = await renderController();
         jest.spyOn(client, 'invalidateQueries').mockRejectedValue(new Error('Refresh failed'));
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/today'));
         expect(mockClearDraft).toHaveBeenCalled();
         expect(mockUpdateCurrentUser).toHaveBeenCalledWith(COMPLETED_USER);
@@ -130,9 +130,9 @@ describe('onboarding controller', () => {
         ['daily_deficit', 'dailyChangeAbs', 'plan']
     ] as const)('shows %s server errors at the affected field', async (serverField, field, step) => {
         mockApi.completeOnboarding.mockRejectedValueOnce(new ApiError('Invalid details', 400, { field_errors: { [serverField]: ['Review this value.'] } }));
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(result.current.errors[field]).toBe('Review this value.'));
         expect(result.current.step).toBe(step);
         expect(result.current.focusAttempt).toBeGreaterThan(0);
@@ -141,14 +141,14 @@ describe('onboarding controller', () => {
     });
 
     it('requires a new explicit pace when updated profile options make the old choice unavailable', async () => {
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
         mockApi.getCaloriePlanOptions.mockResolvedValueOnce({
             ...OPTIONS,
             planOptions: OPTIONS.planOptions.map((option) => option.dailyDeficit === 500
                 ? { ...option, available: false, dailyCalorieTarget: null, reasonCode: 'TARGET_BELOW_MINIMUM' } : option)
         });
-        act(() => result.current.setForm((form) => ({ ...form, activityLevel: 'SEDENTARY' })));
+        await act(() => result.current.setForm((form) => ({ ...form, activityLevel: 'SEDENTARY' })));
         await waitFor(() => expect(result.current.form.dailyChangeAbs).toBe(''));
         expect(result.current.errors.dailyChangeAbs).toContain('Choose an available pace');
         expect(result.current.planVerified).toBe(false);
@@ -156,21 +156,21 @@ describe('onboarding controller', () => {
     });
 
     it('retains the selected pace during a failed profile check and blocks submission', async () => {
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
         mockApi.getCaloriePlanOptions.mockRejectedValueOnce(new Error('Network unavailable'));
-        act(() => result.current.setForm((form) => ({ ...form, activityLevel: 'LIGHT' })));
+        await act(() => result.current.setForm((form) => ({ ...form, activityLevel: 'LIGHT' })));
         await waitFor(() => expect(result.current.planQuery.isError).toBe(true));
         expect(result.current.form.dailyChangeAbs).toBe('500');
         expect(result.current.planVerified).toBe(false);
-        act(() => result.current.next());
+        await act(() => result.current.next());
         expect(mockApi.completeOnboarding).not.toHaveBeenCalled();
     });
 
-    it.each(['about', 'activity'] as const)('returns a restored final step to invalid %s details before submitting', (step) => {
+    it.each(['about', 'activity'] as const)('returns a restored final step to invalid %s details before submitting', async (step) => {
         mockInitialForm = step === 'about' ? { ...FORM, heightMillimeters: null } : { ...FORM, activityLevel: null };
-        const { result } = renderController();
-        act(() => result.current.next());
+        const { result } = await renderController();
+        await act(() => result.current.next());
         expect(result.current.step).toBe(step);
         expect(result.current.returnToPlan).toBe(true);
         expect(Object.keys(result.current.errors)).not.toHaveLength(0);
@@ -178,20 +178,20 @@ describe('onboarding controller', () => {
     });
 
     it('validates edits and returns directly to the plan without forcing the activity screen again', async () => {
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.editStep('about'));
-        act(() => result.current.setForm((form) => ({ ...form, heightMillimeters: null })));
-        act(() => result.current.next());
+        await act(() => result.current.editStep('about'));
+        await act(() => result.current.setForm((form) => ({ ...form, heightMillimeters: null })));
+        await act(() => result.current.next());
         expect(result.current.step).toBe('about');
         expect(result.current.errors.height).toBeDefined();
-        act(() => result.current.setForm((form) => ({ ...form, heightMillimeters: 1700, heightCm: '170' })));
-        act(() => result.current.next());
+        await act(() => result.current.setForm((form) => ({ ...form, heightMillimeters: 1700, heightCm: '170' })));
+        await act(() => result.current.next());
         expect(result.current.step).toBe('plan');
         expect(result.current.returnToPlan).toBe(false);
         expect(result.current.form.currentWeightGrams).toBe(80000);
-        act(() => result.current.editStep('activity'));
-        act(() => result.current.back());
+        await act(() => result.current.editStep('activity'));
+        await act(() => result.current.back());
         expect(result.current.step).toBe('plan');
     });
 
@@ -199,15 +199,15 @@ describe('onboarding controller', () => {
     it.each(['unmount', 'account', 'server'] as const)('ignores a completion that arrives after %s replacement', async (change) => {
         let resolveCompletion!: (value: unknown) => void;
         mockApi.completeOnboarding.mockImplementationOnce(() => new Promise((resolve) => { resolveCompletion = resolve; }));
-        const { result, unmount, rerender, client } = renderController();
+        const { result, unmount, rerender, client } = await renderController();
         const invalidate = jest.spyOn(client, 'invalidateQueries');
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(mockApi.completeOnboarding).toHaveBeenCalledTimes(1));
-        if (change === 'unmount') unmount();
+        if (change === 'unmount') await unmount();
         else {
             if (change === 'server') mockServerUrl = 'https://another.example';
-            rerender({ user: { ...USER, id: change === 'account' ? 8 : USER.id } });
+            await rerender({ user: { ...USER, id: change === 'account' ? 8 : USER.id } });
         }
         await act(async () => resolveCompletion({ user: COMPLETED_USER, receipt: {} }));
         if (change !== 'unmount') await waitFor(() => expect(result.current.completion.isSuccess).toBe(true));
@@ -220,11 +220,11 @@ describe('onboarding controller', () => {
     it('does not restore a session that ends while successful completion is clearing its draft', async () => {
         let finishCleanup!: () => void;
         mockClearDraft.mockImplementationOnce(() => new Promise<undefined>((resolve) => { finishCleanup = () => resolve(undefined); }));
-        const { result, unmount } = renderController();
+        const { result, unmount } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(mockClearDraft).toHaveBeenCalledTimes(1));
-        unmount();
+        await unmount();
         await act(async () => finishCleanup());
         expect(mockUpdateCurrentUser).not.toHaveBeenCalled();
         expect(router.replace).not.toHaveBeenCalled();
@@ -233,11 +233,11 @@ describe('onboarding controller', () => {
     it('ignores late server field errors after the account changes', async () => {
         let rejectCompletion!: (error: unknown) => void;
         mockApi.completeOnboarding.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCompletion = reject; }));
-        const { result, rerender } = renderController();
+        const { result, rerender } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         await waitFor(() => expect(mockApi.completeOnboarding).toHaveBeenCalledTimes(1));
-        rerender({ user: { ...USER, id: 8 } });
+        await rerender({ user: { ...USER, id: 8 } });
         await act(async () => rejectCompletion(new ApiError('Invalid details', 400, { field_errors: { height_mm: ['Review height.'] } })));
         await waitFor(() => expect(result.current.completion.isError).toBe(true));
         expect(result.current.step).toBe('plan');
@@ -249,9 +249,9 @@ describe('onboarding controller', () => {
 
     it('does not start tracking while offline', async () => {
         mockIsOnline = false;
-        const { result } = renderController();
+        const { result } = await renderController();
         await waitFor(() => expect(result.current.planVerified).toBe(true));
-        act(() => result.current.next());
+        await act(() => result.current.next());
         expect(result.current.actionError).toContain('Connect to the internet');
         expect(mockApi.completeOnboarding).not.toHaveBeenCalled();
     });

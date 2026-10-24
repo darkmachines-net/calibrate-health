@@ -30,8 +30,8 @@ describe('AboutScreen', () => {
         jest.clearAllMocks();
     });
 
-    it('leads with consumer purpose, trust, and accurate launch availability', () => {
-        const view = render(<AboutScreen />);
+    it('leads with consumer purpose, trust, and accurate launch availability', async () => {
+        const view = await render(<AboutScreen />);
 
         expect(view.getByText('About Calibrate')).toBeTruthy();
         expect(view.getByText(/compare calories with a personalized target/)).toBeTruthy();
@@ -41,8 +41,8 @@ describe('AboutScreen', () => {
         expect(view.queryByText('Software updates')).toBeNull();
     });
 
-    it('presents distinct links for every canonical product and trust destination', () => {
-        const view = render(<AboutScreen />);
+    it('presents distinct links for every canonical product and trust destination', async () => {
+        const view = await render(<AboutScreen />);
 
         const destinations = mockLink.mock.calls.map(([props]) => props.href);
         expect(destinations).toEqual(expect.arrayContaining([

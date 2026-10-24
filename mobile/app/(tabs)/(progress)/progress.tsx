@@ -141,7 +141,7 @@ export default function ProgressScreen() {
     const handledNextGoalRouteRef = useRef(false);
     const handledPlanReviewRouteRef = useRef(false);
     const goalDraftBaselineRef = useRef('');
-    const targetWeightInputRef = useRef<TextInput>(null);
+    const targetWeightInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
     const latestMetric = getLatestMetric(metricsQuery.data);
     const latestTrendMetric = getLatestMetric(trendSummaryQuery.data?.metrics);
 

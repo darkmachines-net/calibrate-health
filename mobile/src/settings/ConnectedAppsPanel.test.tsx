@@ -38,21 +38,21 @@ const connection: ConnectedAppSummary = {
 describe('ConnectedAppsPanel', () => {
     it('discloses plan context and keeps confirmation open when revocation fails', async () => {
         const onRevoke = jest.fn().mockRejectedValue(new Error('offline'));
-        const screen = render(
+        const screen = await render(
             <ConnectedAppsPanel connections={[connection]} onRevoke={onRevoke} />
         );
 
         expect(screen.getByText(
             'Food logs + calorie plan context | Weight progress + calorie plan context'
         )).toBeTruthy();
-        fireEvent.press(screen.getByTestId(`settings-connected-app-revoke-${connection.id}`));
+        await fireEvent.press(screen.getByTestId(`settings-connected-app-revoke-${connection.id}`));
         await act(async () => {
-            fireEvent.press(screen.getByTestId('settings-connected-app-confirm-revoke'));
+            await fireEvent.press(screen.getByTestId('settings-connected-app-confirm-revoke'));
         });
 
         expect(onRevoke).toHaveBeenCalledWith(connection.id);
         expect(screen.getByText('Revoke connected assistant?')).toBeTruthy();
-        screen.rerender(
+        await screen.rerender(
             <ConnectedAppsPanel
                 connections={[connection]}
                 errorMessage="Unable to revoke that connected assistant."

@@ -3,10 +3,8 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import Svg, { Text as SvgText } from 'react-native-svg';
 import type { TrendMetricEntry, WeightTrendSummary } from '@calibrate/api-client';
 import { WeightTrendCard } from '../WeightTrendCard';
-import { WeightTrendChart } from '../WeightTrendChart';
 import { WeightTrendPreviewCard } from './WeightTrendPreviewCard';
 
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
@@ -84,9 +82,9 @@ describe('WeightTrendPreviewCard', () => {
         });
     });
 
-    it('labels the current underlying trend with its as-of date and opens the full trend', () => {
+    it('labels the current underlying trend with its as-of date and opens the full trend', async () => {
         const onPress = jest.fn();
-        const screen = render(<WeightTrendPreviewCard onPress={onPress} onLogWeight={jest.fn()} />);
+        const screen = await render(<WeightTrendPreviewCard onPress={onPress} onLogWeight={jest.fn()} />);
 
         expect(screen.getByText('Trend')).toBeTruthy();
         expect(screen.queryByText('Weight trend')).toBeNull();
@@ -103,12 +101,12 @@ describe('WeightTrendPreviewCard', () => {
         expect(screen.getAllByRole('button')).toHaveLength(1);
         expect(screen.queryByRole('button', { name: 'Weight trend details' })).toBeNull();
 
-        fireEvent.press(screen.getByLabelText('Open full weight trend'));
+        await fireEvent.press(screen.getByLabelText('Open full weight trend'));
         expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it('fills its flexed preview immediately', () => {
-        const screen = render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
+    it('fills its flexed preview immediately', async () => {
+        const screen = await render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
         expect(screen.getByTestId('weight-trend-preview-canvas')).toHaveStyle({
             flex: 1,
             minHeight: 188
@@ -118,24 +116,27 @@ describe('WeightTrendPreviewCard', () => {
             .toHaveProp('height', 188);
     });
 
-    it('keeps a complete chart in the short-screen scrolling layout', () => {
-        const screen = render(<WeightTrendPreviewCard expanded onPress={jest.fn()} onLogWeight={jest.fn()} />);
+    it('keeps a complete chart in the short-screen scrolling layout', async () => {
+        const screen = await render(<WeightTrendPreviewCard expanded onPress={jest.fn()} onLogWeight={jest.fn()} />);
         expect(screen.getByTestId('weight-trend-preview-canvas')).toHaveStyle({ height: 188, flexShrink: 0, flexBasis: 'auto' });
-        const axisLabels = screen.UNSAFE_getAllByType(SvgText);
-        expect(axisLabels.every((label) => label.props.fontSize >= 12)).toBe(true);
+        const axisLabels = screen.container.queryAll((node) => node.type === 'RNSVGText');
+        expect(axisLabels.length).toBeGreaterThan(0);
+        expect(axisLabels.every((label) => label.props.font.fontSize >= 12)).toBe(true);
     });
 
-    it('reserves a larger chart and axis labels for native enlarged text', () => {
+    it('reserves a larger chart and axis labels for native enlarged text', async () => {
         Dimensions.set({
             window: { width: 390, height: 844, scale: 1, fontScale: 2 },
             screen: { width: 390, height: 844, scale: 1, fontScale: 2 }
         });
-        const screen = render(<WeightTrendPreviewCard expanded onPress={jest.fn()} onLogWeight={jest.fn()} />);
+        const screen = await render(<WeightTrendPreviewCard expanded onPress={jest.fn()} onLogWeight={jest.fn()} />);
         expect(screen.getByTestId('weight-trend-preview-canvas')).toHaveStyle({ height: 376 });
-        expect(screen.UNSAFE_getAllByType(SvgText).every((label) => label.props.fontSize === 24)).toBe(true);
+        const axisLabels = screen.container.queryAll((node) => node.type === 'RNSVGText');
+        expect(axisLabels.length).toBeGreaterThan(0);
+        expect(axisLabels.every((label) => label.props.font.fontSize === 24)).toBe(true);
     });
 
-    it('uses the same full visualization, axes, readings, and estimate band as the expanded chart', () => {
+    it('uses the same full visualization, axes, readings, and estimate band as the expanded chart', async () => {
         const metrics = [
             metric(3, '2026-07-20', 168, 168.2),
             metric(2, '2026-07-19', 169, 168.8),
@@ -150,21 +151,29 @@ describe('WeightTrendPreviewCard', () => {
             isLoading: false, status: 'success'
         });
 
-        const screen = render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
+        const screen = await render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
         expect(screen.getAllByTestId('weight-trend-measurement')).toHaveLength(3);
         expect(screen.queryByLabelText('Chart legend')).toBeNull();
-        const previewLayout = screen.UNSAFE_getByType(WeightTrendChart).props.chartLayout;
+        // Compare actual SVG geometry at matching dimensions, independent of renderer composites.
+        const layout = { nativeEvent: { layout: { width: 400, height: 300 } } };
+        await fireEvent(screen.getByTestId('weight-trend-preview-canvas'), 'layout', layout);
+        const expanded = await render(<WeightTrendCard />);
+        await fireEvent(expanded.getByTestId('weight-trend-chart-canvas'), 'layout', layout);
+        const measurements = (result: typeof screen) => result.getAllByTestId('weight-trend-measurement')
+            .map(({ props: { cx, cy, r } }) => ({ cx, cy, r }));
         const previewBand = screen.getByTestId('weight-trend-range-0').props;
-        const expanded = render(<WeightTrendCard />);
         expect(expanded.getByLabelText('Chart legend')).toBeTruthy();
-        expect(expanded.UNSAFE_getByType(WeightTrendChart).props.chartLayout).toEqual(previewLayout);
+        expect(measurements(expanded)).toEqual(measurements(screen));
         const expandedBand = expanded.getByTestId('weight-trend-range-0').props;
+        expect(previewBand.d).toEqual(expandedBand.d);
+        expect(screen.getByTestId('weight-trend-smoothed-path-0').props.d)
+            .toEqual(expanded.getByTestId('weight-trend-smoothed-path-0').props.d);
         expect(previewBand.fill).toEqual(expandedBand.fill);
         expect(previewBand.stroke).toEqual(expandedBand.stroke);
         expect(screen.queryByText(/Trend line:/)).toBeNull();
     });
 
-    it('labels a stale estimate by date without calling it current', () => {
+    it('labels a stale estimate by date without calling it current', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: {
                 metrics: METRICS,
@@ -185,7 +194,7 @@ describe('WeightTrendPreviewCard', () => {
             isLoading: false, status: 'success'
         });
 
-        const screen = render(
+        const screen = await render(
             <WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />
         );
 
@@ -195,7 +204,7 @@ describe('WeightTrendPreviewCard', () => {
         expect(screen.queryByLabelText('Log weight')).toBeNull();
     });
 
-    it('budgets the outdated estimate recovery action and releases its space when fresh data arrives', () => {
+    it('budgets the outdated estimate recovery action and releases its space when fresh data arrives', async () => {
         const onPress = jest.fn();
         const onLogWeight = jest.fn();
         const onMinimumHeightChange = jest.fn();
@@ -219,7 +228,7 @@ describe('WeightTrendPreviewCard', () => {
             isLoading: false, status: 'success'
         });
 
-        const screen = render(
+        const screen = await render(
             <WeightTrendPreviewCard onPress={onPress} onLogWeight={onLogWeight} onMinimumHeightChange={onMinimumHeightChange} />
         );
 
@@ -232,16 +241,16 @@ describe('WeightTrendPreviewCard', () => {
 
         // The button needs its touch target and gap even before the first layout event.
         expect(onMinimumHeightChange).toHaveBeenLastCalledWith(322);
-        fireEvent(screen.getByTestId('trend-preview-heading'), 'layout', {
+        await fireEvent(screen.getByTestId('trend-preview-heading'), 'layout', {
             nativeEvent: { layout: { width: 358, height: 70 } }
         });
         expect(onMinimumHeightChange).toHaveBeenLastCalledWith(342);
-        fireEvent(screen.getByTestId('trend-preview-recovery-action'), 'layout', {
+        await fireEvent(screen.getByTestId('trend-preview-recovery-action'), 'layout', {
             nativeEvent: { layout: { width: 358, height: 62 } }
         });
         expect(onMinimumHeightChange).toHaveBeenLastCalledWith(356);
 
-        fireEvent.press(screen.getByLabelText('Log weight'));
+        await fireEvent.press(screen.getByLabelText('Log weight'));
         expect(onLogWeight).toHaveBeenCalledTimes(1);
         expect(onPress).not.toHaveBeenCalled();
 
@@ -249,15 +258,15 @@ describe('WeightTrendPreviewCard', () => {
             data: { metrics: METRICS, meta: { total_points: 2, trend_summary: trendSummary() } },
             error: null, isLoading: false, status: 'success'
         });
-        screen.rerender(<WeightTrendPreviewCard onPress={onPress} onLogWeight={onLogWeight} onMinimumHeightChange={onMinimumHeightChange} />);
-        fireEvent(screen.getByTestId('trend-preview-heading'), 'layout', {
+        await screen.rerender(<WeightTrendPreviewCard onPress={onPress} onLogWeight={onLogWeight} onMinimumHeightChange={onMinimumHeightChange} />);
+        await fireEvent(screen.getByTestId('trend-preview-heading'), 'layout', {
             nativeEvent: { layout: { width: 358, height: 50 } }
         });
         expect(screen.queryByLabelText('Log weight')).toBeNull();
         expect(onMinimumHeightChange).toHaveBeenLastCalledWith(266);
     });
 
-    it('does not label an unavailable estimate as current', () => {
+    it('does not label an unavailable estimate as current', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: {
                 metrics: METRICS,
@@ -277,7 +286,7 @@ describe('WeightTrendPreviewCard', () => {
             isLoading: false, status: 'success'
         });
 
-        const screen = render(
+        const screen = await render(
             <WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />
         );
 
@@ -290,7 +299,7 @@ describe('WeightTrendPreviewCard', () => {
         expect(screen.queryByLabelText('Log weight')).toBeNull();
     });
 
-    it('links an empty current period with existing history to the full trend', () => {
+    it('links an empty current period with existing history to the full trend', async () => {
         const onPress = jest.fn();
         (useQuery as jest.Mock).mockReturnValue({
             data: {
@@ -300,21 +309,20 @@ describe('WeightTrendPreviewCard', () => {
             error: null,
             isLoading: false, status: 'success'
         });
-        const screen = render(<WeightTrendPreviewCard onPress={onPress} onLogWeight={jest.fn()} />);
+        const screen = await render(<WeightTrendPreviewCard onPress={onPress} onLogWeight={jest.fn()} />);
         expect(screen.getByText('No weigh-ins in the last four weeks. Open Details to view your history.')).toBeTruthy();
-        fireEvent.press(screen.getByLabelText('Open full weight trend'));
+        await fireEvent.press(screen.getByLabelText('Open full weight trend'));
         expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it('draws against the measured canvas without stretching its markers', () => {
-        const screen = render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
-        fireEvent(
+    it('draws against the measured canvas without stretching its markers', async () => {
+        const screen = await render(<WeightTrendPreviewCard onPress={jest.fn()} onLogWeight={jest.fn()} />);
+        await fireEvent(
             screen.getByTestId('weight-trend-preview-canvas'),
             'layout',
             { nativeEvent: { layout: { width: 480, height: 320 } } }
         );
-        const chart = screen.UNSAFE_getByType(Svg);
-        expect(chart.props.viewBox).toBe('0 0 480 320');
-        expect(chart.props.preserveAspectRatio).toBeUndefined();
+        const chart = screen.getByTestId('weight-trend-chart');
+        expect(chart.props).toMatchObject({ minX: 0, minY: 0, vbWidth: 480, vbHeight: 320, align: 'xMidYMid', meetOrSlice: 0 });
     });
 });

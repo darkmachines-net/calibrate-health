@@ -20,8 +20,8 @@ export function FoodLogDockActions({ addFood, dayAction, stacked }: FoodLogDockA
     const [width, setWidth] = useState(0);
     const [addHeight, setAddHeight] = useState(0);
     const [dayHeight, setDayHeight] = useState(0);
-    const dayActionRef = useRef<View>(null);
-    const addFoodRef = useRef<View>(null);
+    const dayActionRef = useRef<React.ComponentRef<typeof View>>(null);
+    const addFoodRef = useRef<React.ComponentRef<typeof View>>(null);
     const active = Boolean(progress);
     const gap = theme.spacing.sm;
     const halfWidth = Math.max(0, (width - gap) / 2);

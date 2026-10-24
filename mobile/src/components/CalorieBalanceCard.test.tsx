@@ -5,18 +5,18 @@ import { Dimensions, processColor, StyleSheet } from 'react-native';
 import { themes } from '../theme';
 import { CalorieBalanceCard } from './CalorieBalanceCard';
 
-function setWindowDimensions(width: number, fontScale: number) {
+async function setWindowDimensions(width: number, fontScale: number) {
     const dimensions = { width, height: 768, scale: 1, fontScale };
-    act(() => {
+    await act(() => {
         Dimensions.set({ window: dimensions, screen: dimensions });
     });
 }
 
 describe('CalorieBalanceCard', () => {
-    afterEach(() => setWindowDimensions(1_024, 1));
+    afterEach(async () => await setWindowDimensions(1_024, 1));
 
-    it('keeps the card focused on percentage eaten and calories remaining', () => {
-        const screen = render(
+    it('keeps the card focused on percentage eaten and calories remaining', async () => {
+        const screen = await render(
             <CalorieBalanceCard totalCalories={1456} targetCalories={1820} compact />
         );
 
@@ -28,8 +28,8 @@ describe('CalorieBalanceCard', () => {
         expect(screen.queryByText('Target')).toBeNull();
     });
 
-    it('retains the detailed calorie bookkeeping in the accessibility summary', () => {
-        const screen = render(
+    it('retains the detailed calorie bookkeeping in the accessibility summary', async () => {
+        const screen = await render(
             <CalorieBalanceCard totalCalories={1456} targetCalories={1820} compact />
         );
 
@@ -38,16 +38,16 @@ describe('CalorieBalanceCard', () => {
         )).toBeTruthy();
     });
 
-    it.each(['Compared with current target', 'Compared with saved target'])('exposes %s visually and to assistive technology at 320px', comparisonLabel => {
-        setWindowDimensions(320, 1);
-        const screen = render(<CalorieBalanceCard totalCalories={1800} targetCalories={2100} comparisonLabel={comparisonLabel} compact open />);
+    it.each(['Compared with current target', 'Compared with saved target'])('exposes %s visually and to assistive technology at 320px', async comparisonLabel => {
+        await setWindowDimensions(320, 1);
+        const screen = await render(<CalorieBalanceCard totalCalories={1800} targetCalories={2100} comparisonLabel={comparisonLabel} compact open />);
         expect(screen.getByText(comparisonLabel)).toBeTruthy();
         expect(screen.getByText('kcal remaining')).toBeTruthy();
         expect(screen.getByLabelText(`Daily balance. 300 kcal remaining. 1,800 eaten out of 2,100 calorie target. ${comparisonLabel}.`)).toBeTruthy();
     });
 
-    it('keeps neutral progress styling through target and uses danger only when over', () => {
-        const atTarget = render(
+    it('keeps neutral progress styling through target and uses danger only when over', async () => {
+        const atTarget = await render(
             <CalorieBalanceCard totalCalories={1820} targetCalories={1820} compact />
         );
 
@@ -55,8 +55,8 @@ describe('CalorieBalanceCard', () => {
         expect(atTarget.getByTestId('calorie-gauge-progress', { includeHiddenElements: true }).props.stroke.payload)
             .toEqual(processColor(themes.light.colors.primary));
 
-        atTarget.unmount();
-        const overTarget = render(
+        await atTarget.unmount();
+        const overTarget = await render(
             <CalorieBalanceCard totalCalories={2000} targetCalories={1820} compact />
         );
         expect(overTarget.getByTestId('calorie-balance-value', { includeHiddenElements: true }).props.children).toBe('180');
@@ -65,8 +65,8 @@ describe('CalorieBalanceCard', () => {
             .toEqual(processColor(themes.light.colors.danger));
     });
 
-    it('keeps an unavailable target out of the gauge without losing logged calories', () => {
-        const screen = render(
+    it('keeps an unavailable target out of the gauge without losing logged calories', async () => {
+        const screen = await render(
             <CalorieBalanceCard
                 totalCalories={1456}
                 targetCalories={null}
@@ -86,9 +86,9 @@ describe('CalorieBalanceCard', () => {
         ['keeps the compact hero horizontal at the supported phone width', 320, 1, 'row'],
         ['stacks below the supported phone width', 319, 1, 'column'],
         ['stacks at the supported phone width for large text', 320, 1.6, 'column']
-    ])('%s', (_label, width, fontScale, flexDirection) => {
-        setWindowDimensions(width, fontScale);
-        const screen = render(
+    ])('%s', async (_label, width, fontScale, flexDirection) => {
+        await setWindowDimensions(width, fontScale);
+        const screen = await render(
             <CalorieBalanceCard totalCalories={360} targetCalories={2100} compact />
         );
 

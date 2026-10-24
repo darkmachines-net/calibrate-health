@@ -87,14 +87,14 @@ function readyPresentation() {
     };
 }
 
-function renderScreen() {
+async function renderScreen() {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
             mutations: { retry: false, gcTime: 0 }
         }
     });
-    return render(
+    return await render(
         <QueryClientProvider client={queryClient}>
             <ActivityScreen />
         </QueryClientProvider>
@@ -124,7 +124,7 @@ describe('ActivityScreen async resource states', () => {
             message: 'Health Connect is connected. No imported activity is available yet.'
         });
         mockGetActivityDays.mockResolvedValue({ days: [] });
-        const screen = renderScreen();
+        const screen = await renderScreen();
 
         await waitFor(() => expect(screen.getByText('No imported activity for this day')).toBeTruthy());
         expect(screen.getByText('Today')).toBeTruthy();
@@ -133,7 +133,7 @@ describe('ActivityScreen async resource states', () => {
         expect(screen.queryByText('Imported weight')).toBeNull();
         expect(screen.queryByText('Exercise details')).toBeNull();
 
-        fireEvent.press(screen.getByLabelText('Show activity details'));
+        await fireEvent.press(screen.getByLabelText('Show activity details'));
 
         expect(screen.getByTestId('activity-details-content')).toBeTruthy();
         expect(screen.getByText('Imported weight')).toBeTruthy();
@@ -145,7 +145,7 @@ describe('ActivityScreen async resource states', () => {
     });
 
     it('shows one selected-day failure and retries only that resource', async () => {
-        const screen = renderScreen();
+        const screen = await renderScreen();
 
         await waitFor(() => {
             expect(screen.getAllByText("Can't load selected-day activity")).toHaveLength(1);
@@ -154,7 +154,7 @@ describe('ActivityScreen async resource states', () => {
         expect(screen.queryByText("Can't load activity details")).toBeNull();
         expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(1);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Retry' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Retry' }));
 
         await waitFor(() => {
             const selectedRequests = mockGetActivityDays.mock.calls.filter(
@@ -181,7 +181,7 @@ describe('ActivityScreen async resource states', () => {
         });
         mockGetActivityDays.mockResolvedValue({ days: [] });
 
-        const screen = renderScreen();
+        const screen = await renderScreen();
 
         expect(screen.queryByTestId('activity-details')).toBeNull();
         expect(screen.getByText('No activity imported yet')).toBeTruthy();

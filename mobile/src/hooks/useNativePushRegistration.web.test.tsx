@@ -85,7 +85,7 @@ describe('Expo browser push registration', () => {
 
     it('waits for a user gesture before prompting and creating an endpoint', async () => {
         const harness = createHarness();
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.PERMISSION_REQUIRED));
         expect(harness.environment.requestPermission).not.toHaveBeenCalled();
         expect(harness.subscribe).not.toHaveBeenCalled();
@@ -103,19 +103,19 @@ describe('Expo browser push registration', () => {
             expirationTime: null,
             keys: { p256dh: 'public-key', auth: 'auth-secret' }
         });
-        unmount();
+        await unmount();
     });
 
     it('repairs an existing granted endpoint without prompting', async () => {
         const existing = createSubscription();
         const harness = createHarness({ permission: 'granted', subscription: existing });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
 
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
         expect(harness.environment.requestPermission).not.toHaveBeenCalled();
         expect(harness.subscribe).not.toHaveBeenCalled();
         expect(harness.api.registerBrowserPushSubscription).toHaveBeenCalledTimes(1);
-        unmount();
+        await unmount();
     });
 
     it('preserves an existing endpoint while cookie-session hydration is in progress', async () => {
@@ -126,7 +126,7 @@ describe('Expo browser push registration', () => {
             isLoading: true,
             user: null
         } as unknown as ReturnType<typeof useAuth>);
-        const rendered = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const rendered = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
 
         await waitFor(() => expect(rendered.result.current.state).toBe(NATIVE_PUSH_STATES.CHECKING));
         expect(existing.unsubscribe).not.toHaveBeenCalled();
@@ -136,50 +136,50 @@ describe('Expo browser push registration', () => {
             isLoading: false,
             user: { id: 7 }
         } as unknown as ReturnType<typeof useAuth>);
-        rendered.rerender({});
+        await rendered.rerender({});
 
         await waitFor(() => expect(rendered.result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
         expect(existing.unsubscribe).not.toHaveBeenCalled();
-        rendered.unmount();
+        await rendered.unmount();
     });
 
     it('supports an existing endpoint on a compatible server that predates web-push discovery', async () => {
         const existing = createSubscription();
         const harness = createHarness({ permission: 'granted', subscription: existing });
         harness.api.getClientConfig.mockResolvedValue({ capabilities: {} } as never);
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
 
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
         expect(harness.api.registerBrowserPushSubscription).toHaveBeenCalledTimes(1);
-        unmount();
+        await unmount();
     });
 
     it('surfaces an operator-disabled browser capability without requesting permission', async () => {
         const harness = createHarness({ webPush: false });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
 
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.DISABLED));
         expect(harness.environment.requestPermission).not.toHaveBeenCalled();
         expect(harness.api.getBrowserPushPublicKey).not.toHaveBeenCalled();
-        unmount();
+        await unmount();
     });
 
     it('removes a newly-created local endpoint when the server save fails', async () => {
         const harness = createHarness({ registrationError: new Error('unreachable') });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.PERMISSION_REQUIRED));
 
         await act(async () => result.current.requestPermission());
 
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.ERROR));
         expect(harness.createdSubscription.unsubscribe).toHaveBeenCalledTimes(1);
-        unmount();
+        await unmount();
     });
 
     it('removes server ownership and the browser endpoint before a session changes', async () => {
         const existing = createSubscription();
         const harness = createHarness({ permission: 'granted', subscription: existing });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
 
         await act(async () => cleanupBrowserPushBeforeSessionChange());
@@ -187,13 +187,13 @@ describe('Expo browser push registration', () => {
         expect(harness.api.unregisterBrowserPushSubscription).toHaveBeenCalledWith(existing.endpoint);
         expect(existing.unsubscribe).toHaveBeenCalledTimes(1);
         expect(result.current.state).toBe(NATIVE_PUSH_STATES.SIGNED_OUT);
-        unmount();
+        await unmount();
     });
 
     it('lets the user disable a registered endpoint without revoking browser permission', async () => {
         const existing = createSubscription();
         const harness = createHarness({ permission: 'granted', subscription: existing });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
 
         await act(async () => result.current.disableRegistration());
@@ -201,13 +201,13 @@ describe('Expo browser push registration', () => {
         expect(harness.api.unregisterBrowserPushSubscription).toHaveBeenCalledWith(existing.endpoint);
         expect(existing.unsubscribe).toHaveBeenCalledTimes(1);
         expect(result.current.state).toBe(NATIVE_PUSH_STATES.PERMISSION_REQUIRED);
-        unmount();
+        await unmount();
     });
 
     it('re-registers a browser-rotated endpoint reported by the service worker', async () => {
         const existing = createSubscription();
         const harness = createHarness({ permission: 'granted', subscription: existing });
-        const { result, unmount } = renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
+        const { result, unmount } = await renderHook(() => useNativePushRegistration(), { wrapper: harness.wrapper });
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.REGISTERED));
         harness.api.registerBrowserPushSubscription.mockClear();
 
@@ -220,6 +220,6 @@ describe('Expo browser push registration', () => {
 
         await waitFor(() => expect(harness.api.registerBrowserPushSubscription).toHaveBeenCalledTimes(1));
         expect(harness.api.unregisterBrowserPushSubscription).toHaveBeenCalledWith('https://push.example/old');
-        unmount();
+        await unmount();
     });
 });

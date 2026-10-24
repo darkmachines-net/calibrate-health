@@ -55,7 +55,7 @@ jest.mock('../wear/syncInvalidation', () => ({ queueWearSyncInvalidation: jest.f
 describe('native offline outbox provider recovery', () => {
     it('reconciles remaining work after successful scoped discard', async () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => <OfflineOutboxProvider executeMutation={async () => undefined}>{children}</OfflineOutboxProvider>;
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(result.current.isReady).toBe(true));
         mockReconcile.mockClear();
         await act(async () => { await result.current.discardFailedMutation('failed'); });
@@ -91,7 +91,7 @@ describe('native offline outbox provider recovery', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result, unmount } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result, unmount } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
         await waitFor(() => expect(openOutboxDatabase).toHaveBeenCalled());
         await waitFor(() => expect(mockOutbox.list).toHaveBeenCalled());
@@ -100,9 +100,9 @@ describe('native offline outbox provider recovery', () => {
         await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(1));
         expect(mockRetryFailed).not.toHaveBeenCalled();
 
-        act(() => appStateListener?.('background'));
+        await act(() => appStateListener?.('background'));
         expect(mockRetryFailed).not.toHaveBeenCalled();
-        act(() => appStateListener?.('active'));
+        await act(() => appStateListener?.('active'));
         await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(2));
         expect(mockRetryFailed).not.toHaveBeenCalled();
         await act(async () => { await result.current.retryFailed('chosen-failure'); });
@@ -115,7 +115,7 @@ describe('native offline outbox provider recovery', () => {
             retryAfterMs: null
         }));
 
-        unmount();
+        await unmount();
         expect(remove).toHaveBeenCalledTimes(1);
     });
 
@@ -155,7 +155,7 @@ describe('native offline outbox provider recovery', () => {
             const wrapper = ({ children }: { children: React.ReactNode }) => (
                 <OfflineOutboxProvider executeMutation={jest.fn()}>{children}</OfflineOutboxProvider>
             );
-            const { unmount } = renderHook(() => useOfflineOutbox(), { wrapper });
+            const { unmount } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(1));
             await act(async () => {
@@ -174,7 +174,7 @@ describe('native offline outbox provider recovery', () => {
             });
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(3));
 
-            unmount();
+            await unmount();
             jest.runOnlyPendingTimers();
             expect(mockReconcile).toHaveBeenCalledTimes(3);
             expect(remove).toHaveBeenCalledTimes(1);
@@ -210,10 +210,10 @@ describe('native offline outbox provider recovery', () => {
             const wrapper = ({ children }: { children: React.ReactNode }) => (
                 <OfflineOutboxProvider executeMutation={jest.fn()}>{children}</OfflineOutboxProvider>
             );
-            renderHook(() => useOfflineOutbox(), { wrapper });
+            await renderHook(() => useOfflineOutbox(), { wrapper });
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(1));
 
-            act(() => onlineManager.setOnline(false));
+            await act(() => onlineManager.setOnline(false));
             await act(async () => {
                 jest.advanceTimersByTime(150_000);
                 await Promise.resolve();
@@ -221,7 +221,7 @@ describe('native offline outbox provider recovery', () => {
             expect(mockReconcile).toHaveBeenCalledTimes(1);
             expect(mockRetryFailed).not.toHaveBeenCalled();
 
-            act(() => onlineManager.setOnline(true));
+            await act(() => onlineManager.setOnline(true));
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(2));
             expect(mockRetryFailed).not.toHaveBeenCalled();
         } finally {
@@ -237,17 +237,18 @@ describe('native offline outbox provider recovery', () => {
             let releaseOldNotification!: () => void;
             const oldNotification = new Promise<void>((resolve) => { releaseOldNotification = resolve; });
             const onReplayCompleted = jest.fn(() => oldNotification);
+            const executeMutation = jest.fn();
             const wrapper = ({ children }: { children: React.ReactNode }) => (
-                <OfflineOutboxProvider executeMutation={jest.fn()} onReplayCompleted={onReplayCompleted}>
+                <OfflineOutboxProvider executeMutation={executeMutation} onReplayCompleted={onReplayCompleted}>
                     {children}
                 </OfflineOutboxProvider>
             );
-            const { result, rerender, unmount } = renderHook(() => useOfflineOutbox(), { wrapper });
+            const { result, rerender, unmount } = await renderHook(() => useOfflineOutbox(), { wrapper });
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(1));
 
             mockReconcile.mockResolvedValueOnce(successfulMetricReplay);
             let oldReconciliation!: Promise<ReconcileResult>;
-            act(() => { oldReconciliation = result.current.reconcile(); });
+            await act(() => { oldReconciliation = result.current.reconcile(); });
             await waitFor(() => expect(onReplayCompleted).toHaveBeenCalledTimes(1));
 
             const currentDeferred = {
@@ -279,7 +280,7 @@ describe('native offline outbox provider recovery', () => {
                 })
                 .mockResolvedValueOnce(successfulEmptyReplay);
             mockAuthState = { serverUrl: 'https://health.example', user: { id: 9 } };
-            rerender({});
+            await rerender({});
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(3));
             await waitFor(() => expect(result.current.mutations).toEqual([
                 expect.objectContaining({ id: 'current-account-operation' })
@@ -297,7 +298,7 @@ describe('native offline outbox provider recovery', () => {
                 await Promise.resolve();
             });
             await waitFor(() => expect(mockReconcile).toHaveBeenCalledTimes(4));
-            unmount();
+            await unmount();
         } finally {
             jest.useRealTimers();
         }

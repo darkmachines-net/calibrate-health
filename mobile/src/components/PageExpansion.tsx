@@ -15,7 +15,7 @@ const PAGE_COLLAPSE_DURATION = 360;
 const DETAIL_REVEAL_END = 0.65; // Crossfade source and detail together so the growing pane never blanks the source.
 const BACK_ICON_SIZE = 20; // Keeps the return arrow aligned with the header's label text.
 
-type Region = { ref: React.RefObject<View | null>; order: number };
+type Region = { ref: React.RefObject<React.ComponentRef<typeof View> | null>; order: number };
 type Bounds = { top: number; height: number };
 type Transition = Bounds & { id: string; order: number };
 export type PageExpansionConfig = {
@@ -45,7 +45,7 @@ export function useExpansionMotion(id: string) {
 /** A measured overview region stays mounted while its siblings move out of the pane. */
 export function ExpansionRegion({ id, order, style, ...props }: ViewProps & { id?: string; order: number }) {
     const context = React.useContext(ExpansionContext);
-    const ref = useRef<View>(null);
+    const ref = useRef<React.ComponentRef<typeof View>>(null);
     const register = context?.register;
     useEffect(() => id ? register?.(id, { ref, order }) : undefined, [id, order, register]);
     const transition = context?.transition;
@@ -76,9 +76,9 @@ type PageExpansionProps = {
 export function PageExpansion({ config, columnStyle, children, footer }: PageExpansionProps) {
     const theme = useAppTheme();
     const reducedMotion = useReducedMotionPreference();
-    const viewport = useRef<View>(null);
-    const overview = useRef<View>(null);
-    const backControl = useRef<View>(null);
+    const viewport = useRef<React.ComponentRef<typeof View>>(null);
+    const overview = useRef<React.ComponentRef<typeof View>>(null);
+    const backControl = useRef<React.ComponentRef<typeof View>>(null);
     const regions = useRef(new Map<string, Region>());
     const progress = useRef(new Animated.Value(0)).current;
     const [height, setHeight] = useState(0);

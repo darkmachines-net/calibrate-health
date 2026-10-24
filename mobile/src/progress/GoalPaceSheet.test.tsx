@@ -30,11 +30,11 @@ jest.mock('../components/GoalDailyChangeSelect', () => {
             onChange: (value: string) => void;
         }) => <View><Text>{value}</Text><Button title="Choose 250" onPress={() => onChange('250')}/></View> };
 });
-function setup() {
+async function setup() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false, gcTime: Infinity } } });
     const close = jest.fn();
     const startNewGoal = jest.fn();
-    const screen = render(<QueryClientProvider client={client}><GoalPaceSheet goal={goal} onClose={close} onStartNewGoal={startNewGoal}/></QueryClientProvider>);
+    const screen = await render(<QueryClientProvider client={client}><GoalPaceSheet goal={goal} onClose={close} onStartNewGoal={startNewGoal}/></QueryClientProvider>);
     return { ...screen, client, close, startNewGoal };
 }
 beforeEach(() => {
@@ -47,41 +47,41 @@ beforeEach(() => {
     mockApi.adjustGoalPace.mockResolvedValue({ ...goal, daily_deficit: 250 });
 });
 test('cancel never writes and a failed save retains draft and identical operation for retry', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
-    fireEvent.press(screen.getByText('Cancel'));
+    await fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Cancel'));
     await waitFor(() => expect(screen.close).toHaveBeenCalledTimes(1));
     expect(mockApi.adjustGoalPace).not.toHaveBeenCalled();
     mockApi.adjustGoalPace.mockRejectedValueOnce(new TypeError('Network unavailable'));
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText('Save pace')).toBeEnabled());
     expect(screen.getByText('250')).toBeTruthy();
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(2));
     expect(mockApi.adjustGoalPace.mock.calls[0]).toEqual(mockApi.adjustGoalPace.mock.calls[1]);
     expect(mockApi.adjustGoalPace.mock.calls[1]).toEqual([7, { daily_deficit: 250, expected_plan_version: 'a'.repeat(64) }, 'stable-operation-001']);
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 test('pending duplicate presses submit once and keep dismissal disabled', async () => {
     let resolveSave!: (value: GoalEntry) => void;
     mockApi.adjustGoalPace.mockImplementation(() => new Promise(resolve => { resolveSave = resolve; }));
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
-    fireEvent.press(screen.getByText('Save pace'));
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByRole('button', { name: /Sav(?:e|ing) pace/ }));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled());
     expect(screen.getByRole('button', { name: 'Set a new goal' })).toBeDisabled();
     await act(async () => resolveSave({ ...goal, daily_deficit: 250 }));
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 test.each(['offline', 'pending weight', 'cached preview failure'])('%s prevents saving', async (condition) => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
     if (condition === 'offline')
         mockOnline = false;
@@ -91,107 +91,107 @@ test.each(['offline', 'pending weight', 'cached preview failure'])('%s prevents 
         mockApi.getGoalPaceOptions.mockRejectedValueOnce(new TypeError('failed check'));
         await act(async () => { await screen.client.refetchQueries({ queryKey: ['goal-pace-options'] }); });
     }
-    screen.rerender(<QueryClientProvider client={screen.client}><GoalPaceSheet goal={goal} onClose={screen.close} onStartNewGoal={screen.startNewGoal}/></QueryClientProvider>);
+    await screen.rerender(<QueryClientProvider client={screen.client}><GoalPaceSheet goal={goal} onClose={screen.close} onStartNewGoal={screen.startNewGoal}/></QueryClientProvider>);
     expect(screen.getByRole('button', { name: 'Save pace' })).toBeDisabled();
     expect(mockApi.adjustGoalPace).not.toHaveBeenCalled();
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 test('stale goal conflict refreshes honestly and cannot silently save a replacement goal', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
     mockApi.adjustGoalPace.mockRejectedValueOnce(new ApiError('Your goal changed.', 409, { code: 'GOAL_PLAN_CHANGED' }));
     mockApi.getGoalPaceOptions.mockResolvedValue({ ...options, goal: { ...goal, id: 8 } });
-    fireEvent.press(screen.getByText('Choose 250'));
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await screen.findByText('A new goal is active. Close and reopen to use the current goal.');
     expect(screen.getByRole('button', { name: 'Save pace' })).toBeDisabled();
     expect(mockApi.adjustGoalPace.mock.calls[0][0]).toBe(7);
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 
 test('same-goal conflict presents the new authoritative pace before a second save', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
     mockApi.adjustGoalPace.mockRejectedValueOnce(new ApiError('Your plan changed.', 409, { code: 'GOAL_PLAN_CHANGED' }));
     mockApi.getGoalPaceOptions.mockResolvedValue({ ...options, goal: { ...goal, daily_deficit: 750 },
         expected_plan_version: 'b'.repeat(64), planOptions: [...options.planOptions, { dailyDeficit: 750, available: true, dailyCalorieTarget: 1850 }] });
-    fireEvent.press(screen.getByText('Choose 250'));
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await screen.findByText('750');
     expect(screen.queryByText('250')).toBeNull();
     expect(screen.getByText('That information changed. Refresh it and try again.')).toBeTruthy();
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(2));
     expect(mockApi.adjustGoalPace.mock.calls[1][1]).toEqual({ daily_deficit: 750, expected_plan_version: 'b'.repeat(64) });
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 
 test('starting a new goal confirms a dirty pace draft and never saves that draft', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Choose 250'));
     jest.mocked(confirmDiscardChanges).mockResolvedValueOnce(false);
-    fireEvent.press(screen.getByText('Set a new goal'));
+    await fireEvent.press(screen.getByText('Set a new goal'));
     await waitFor(() => expect(confirmDiscardChanges).toHaveBeenCalledTimes(1));
     expect(screen.startNewGoal).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByText('Set a new goal'));
+    await fireEvent.press(screen.getByText('Set a new goal'));
     await waitFor(() => expect(screen.startNewGoal).toHaveBeenCalledTimes(1));
     expect(mockApi.adjustGoalPace).not.toHaveBeenCalled();
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 
 test('manual plan refresh replaces a stale draft before enabling a save with the new version', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Choose 250'));
     mockApi.getGoalPaceOptions.mockResolvedValue({ ...options, goal: { ...goal, daily_deficit: 750 },
         expected_plan_version: 'b'.repeat(64), planOptions: [...options.planOptions, { dailyDeficit: 750, available: true, dailyCalorieTarget: 1850 }] });
-    fireEvent.press(screen.getByText('Retry plan check'));
+    await fireEvent.press(screen.getByText('Retry plan check'));
     await screen.findByText('750');
     expect(screen.queryByText('250')).toBeNull();
     expect(mockApi.adjustGoalPace).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(1));
     expect(mockApi.adjustGoalPace.mock.calls[0][1]).toEqual({ daily_deficit: 750, expected_plan_version: 'b'.repeat(64) });
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 
 test('manual refresh of an unchanged plan retains the unsaved draft', async () => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
-    fireEvent.press(screen.getByText('Retry plan check'));
+    await fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Retry plan check'));
     await waitFor(() => expect(mockApi.getGoalPaceOptions).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByText('Save pace')).toBeEnabled());
     expect(screen.getByText('250')).toBeTruthy();
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(1));
     expect(mockApi.adjustGoalPace.mock.calls[0][1]).toEqual({ daily_deficit: 250, expected_plan_version: 'a'.repeat(64) });
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });
 
  test.each([false, true])('pace retry requires verified reconnection (%s) and preserves the operation', async (verified) => {
-    const screen = setup();
+    const screen = await setup();
     await waitFor(() => expect(screen.getByText('500')).toBeTruthy());
-    fireEvent.press(screen.getByText('Choose 250'));
+    await fireEvent.press(screen.getByText('Choose 250'));
     mockApi.adjustGoalPace.mockRejectedValueOnce(new TypeError('Lost response'));
-    fireEvent.press(screen.getByText('Save pace'));
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText('Save pace')).toBeEnabled());
     mockReconnection = true;
     mockRecheck.mockResolvedValue(verified);
-    screen.rerender(<QueryClientProvider client={screen.client}><GoalPaceSheet goal={goal} onClose={screen.close} onStartNewGoal={screen.startNewGoal}/></QueryClientProvider>);
-    fireEvent.press(screen.getByText('Save pace'));
+    await screen.rerender(<QueryClientProvider client={screen.client}><GoalPaceSheet goal={goal} onClose={screen.close} onStartNewGoal={screen.startNewGoal}/></QueryClientProvider>);
+    await fireEvent.press(screen.getByText('Save pace'));
     await waitFor(() => expect(mockRecheck).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText(verified ? 'Retry refresh' : 'Save pace')).toBeTruthy());
     expect(mockApi.adjustGoalPace).toHaveBeenCalledTimes(verified ? 2 : 1);
     if (verified) expect(mockApi.adjustGoalPace.mock.calls[1]).toEqual(mockApi.adjustGoalPace.mock.calls[0]);
-    screen.unmount();
+    await screen.unmount();
     screen.client.clear();
 });

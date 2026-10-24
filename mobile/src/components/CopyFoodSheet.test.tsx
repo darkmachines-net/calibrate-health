@@ -50,9 +50,9 @@ describe('CopyFoodSheet', () => {
         expect(getDefaultCopyTargetDate('2026-07-21', '2026-07-21', '2026-07-21')).toBe('2026-07-21');
     });
 
-    it('allows a meal to move across meal periods on the same local date', () => {
+    it('allows a meal to move across meal periods on the same local date', async () => {
         const onSubmit = jest.fn();
-        const screen = render(
+        const screen = await render(
             <CopyFoodSheet
                 visible
                 source={{ kind: 'meal', meal: 'BREAKFAST' }}
@@ -64,15 +64,15 @@ describe('CopyFoodSheet', () => {
             />
         );
 
-        fireEvent.press(screen.getByRole('button', { name: 'Copy to meal' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Copy to date' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Copy meal' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Copy to meal' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Copy to date' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Copy meal' }));
 
         expect(onSubmit).toHaveBeenCalledWith({ kind: 'meal', targetDate: '2026-07-21', targetMeal: 'LUNCH' });
     });
 
-    it('prevents a whole-day copy from targeting its source day', () => {
-        const screen = render(
+    it('prevents a whole-day copy from targeting its source day', async () => {
+        const screen = await render(
             <CopyFoodSheet
                 visible
                 source={{ kind: 'day' }}
@@ -84,7 +84,7 @@ describe('CopyFoodSheet', () => {
             />
         );
 
-        fireEvent.press(screen.getByRole('button', { name: 'Copy to date' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Copy to date' }));
 
         expect(screen.getByText('Choose a different day.')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Copy day' })).toBeDisabled();

@@ -48,7 +48,7 @@ export function FixedPage({ header, context, children, footer, scrollWhenShort =
     const [contextHeight, setContextHeight] = React.useState(0);
     const [footerHeight, setFooterHeight] = React.useState(0);
     const [webTextScale, setWebTextScale] = React.useState(1);
-    const probe = React.useRef<Text>(null);
+    const probe = React.useRef<React.ComponentRef<typeof Text>>(null);
     const readTextScale = React.useCallback(() => {
         if (Platform.OS !== 'web' || typeof window === 'undefined') return;
         const element = probe.current as unknown as HTMLElement | null;

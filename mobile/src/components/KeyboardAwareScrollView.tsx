@@ -15,6 +15,7 @@ type KeyboardAwareScrollViewProps = ScrollViewProps & {
     keyboardContextHeight?: number;
     revealFocusedInputOnFocus?: boolean;
 };
+type FocusedInput = Parameters<React.ComponentRef<typeof ScrollView>['scrollResponderScrollNativeHandleToKeyboard']>[0];
 
 const DEFAULT_KEYBOARD_CONTEXT_HEIGHT = 192; // Keeps validation, actions, or the first search result visible below the active field.
 const WEB_KEYBOARD_OVERLAY_THRESHOLD = 80; // Ignores small visual-viewport changes caused by mobile browser chrome.
@@ -35,8 +36,8 @@ export const KeyboardAwareScrollView: React.FC<KeyboardAwareScrollViewProps> = (
     showsVerticalScrollIndicator = false,
     ...props
 }) => {
-    const scrollViewRef = useRef<ScrollView>(null);
-    const focusedInputRef = useRef<unknown>(null);
+    const scrollViewRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+    const focusedInputRef = useRef<FocusedInput | null | undefined>(null);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(() => Platform.OS !== 'web' && Keyboard.isVisible());
     const visualViewportHeight = useVisualViewportHeight();
     const isWebKeyboardOverlayVisible = Platform.OS === 'web'
@@ -45,7 +46,7 @@ export const KeyboardAwareScrollView: React.FC<KeyboardAwareScrollViewProps> = (
         && visualViewportHeight < window.innerHeight - WEB_KEYBOARD_OVERLAY_THRESHOLD;
     const shouldRevealKeyboardContext = isKeyboardVisible || isWebKeyboardOverlayVisible;
 
-    const revealFocusedInput = useCallback((input: unknown = focusedInputRef.current) => {
+    const revealFocusedInput = useCallback((input: FocusedInput | null | undefined = focusedInputRef.current) => {
         if (!input) return;
 
         requestAnimationFrame(() => {
@@ -53,7 +54,7 @@ export const KeyboardAwareScrollView: React.FC<KeyboardAwareScrollViewProps> = (
                 Platform.OS === 'web'
                 && typeof (input as { scrollIntoView?: unknown }).scrollIntoView === 'function'
             ) {
-                (input as Element).scrollIntoView({ block: 'center', inline: 'nearest' });
+                (input as unknown as Element).scrollIntoView({ block: 'center', inline: 'nearest' });
                 return;
             }
 

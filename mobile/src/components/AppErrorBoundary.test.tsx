@@ -44,7 +44,7 @@ describe('AppErrorBoundary', () => {
 
     it('shows a stable support reference and emits only the fixed privacy-safe tuple', async () => {
         const reportDiagnostic = jest.fn(async () => 'different-response-id');
-        const view = render(
+        const view = await render(
             <AppErrorBoundary reportDiagnostic={reportDiagnostic}>
                 <AlwaysThrows />
             </AppErrorBoundary>
@@ -88,7 +88,7 @@ describe('AppErrorBoundary', () => {
 
     it('replays the default reporter support reference once after confirmed registration', async () => {
         jest.replaceProperty(Platform, 'OS', 'web');
-        const view = render(
+        const view = await render(
             <AppErrorBoundary>
                 <AlwaysThrows />
             </AppErrorBoundary>
@@ -128,7 +128,7 @@ describe('AppErrorBoundary', () => {
 
     it('catches a root-runtime hook failure before providers mount', async () => {
         const reportDiagnostic = jest.fn(async () => ROOT_REQUEST_ID);
-        const view = render(
+        const view = await render(
             <AppErrorBoundary reportDiagnostic={reportDiagnostic}>
                 <ThrowingRootRuntime />
             </AppErrorBoundary>
@@ -148,7 +148,7 @@ describe('AppErrorBoundary', () => {
         const reportDiagnostic = jest.fn(async () => {
             throw new TypeError('network unavailable at https://private.example');
         });
-        const view = render(
+        const view = await render(
             <AppErrorBoundary reportDiagnostic={reportDiagnostic}>
                 <AlwaysThrows />
             </AppErrorBoundary>
@@ -160,34 +160,34 @@ describe('AppErrorBoundary', () => {
         );
     });
 
-    it('resets and remounts the app subtree without reloading the process', () => {
+    it('resets and remounts the app subtree without reloading the process', async () => {
         let shouldThrow = true;
         const RecoverableChild = () => {
             if (shouldThrow) throw new Error('Recoverable failure');
             return <Text>Recovered app</Text>;
         };
-        const view = render(
+        const view = await render(
             <AppErrorBoundary>
                 <RecoverableChild />
             </AppErrorBoundary>
         );
 
         shouldThrow = false;
-        fireEvent.press(view.getByTestId('app-error-retry'));
+        await fireEvent.press(view.getByTestId('app-error-retry'));
 
         expect(view.getByText('Recovered app')).toBeTruthy();
         expect(view.queryByRole('alert')).toBeNull();
     });
 
-    it('offers a full app restart when resetting is not enough', () => {
+    it('offers a full app restart when resetting is not enough', async () => {
         const restartApp = jest.fn();
-        const view = render(
+        const view = await render(
             <AppErrorBoundary restartApp={restartApp}>
                 <AlwaysThrows />
             </AppErrorBoundary>
         );
 
-        fireEvent.press(view.getByTestId('app-error-restart'));
+        await fireEvent.press(view.getByTestId('app-error-restart'));
 
         expect(restartApp).toHaveBeenCalledTimes(1);
     });

@@ -94,8 +94,8 @@ describe('WeightTrendCard', () => {
         (useQuery as jest.Mock).mockReturnValue({ data: response(), error: null, isLoading: false, status: 'success' });
     });
 
-    it('uses the screen pane directly instead of adding a second card surface', () => {
-        const screen = render(<WeightTrendCard testID="weight-trend-content" />);
+    it('uses the screen pane directly instead of adding a second card surface', async () => {
+        const screen = await render(<WeightTrendCard testID="weight-trend-content" />);
         const style = StyleSheet.flatten(screen.getByTestId('weight-trend-content').props.style);
 
         expect(style).toEqual(expect.objectContaining({ width: '100%', gap: spacing.md }));
@@ -104,8 +104,8 @@ describe('WeightTrendCard', () => {
         expect(style).not.toHaveProperty('backgroundColor');
     });
 
-    it('defaults the consolidated summary to the latest point and selects from web offset coordinates', () => {
-        const screen = render(<WeightTrendCard />);
+    it('defaults the consolidated summary to the latest point and selects from web offset coordinates', async () => {
+        const screen = await render(<WeightTrendCard />);
         const chart = screen.getByLabelText('Select nearest weigh-in');
 
         const initialSummary = within(screen.getByTestId('selected-trend-summary'));
@@ -119,41 +119,41 @@ describe('WeightTrendCard', () => {
         expect(screen.getAllByText('Scale reading')).toHaveLength(2);
         expect(screen.getByText('Underlying trend')).toBeTruthy();
         expect(screen.getByText('95% estimate range')).toBeTruthy();
-        fireEvent.press(chart, { nativeEvent: { offsetX: 170 } });
+        await fireEvent(chart, 'press', { nativeEvent: { offsetX: 170 } });
         expect(screen.getByText('Jul 14, 2026')).toBeTruthy();
-        fireEvent.press(chart, { nativeEvent: { offsetX: 18 } });
+        await fireEvent(chart, 'press', { nativeEvent: { offsetX: 18 } });
         expect(screen.getByText('Jul 13, 2026')).toBeTruthy();
     });
 
-    it('provides accessible previous and next point navigation', () => {
-        const screen = render(<WeightTrendCard />);
+    it('provides accessible previous and next point navigation', async () => {
+        const screen = await render(<WeightTrendCard />);
         const previous = screen.getByLabelText('Previous weigh-in');
         const next = screen.getByLabelText('Next weigh-in');
 
         expect(next).toHaveProp('accessibilityState', { disabled: true });
-        fireEvent.press(previous);
+        await fireEvent.press(previous);
         expect(screen.getByText('Jul 14, 2026')).toBeTruthy();
         expect(screen.getByTestId('weight-trend-selection-announcement').props.children).toContain(
             'Selected Jul 14, 2026'
         );
         expect(screen.getByLabelText('Next weigh-in')).toHaveProp('accessibilityState', { disabled: false });
-        fireEvent.press(screen.getByLabelText('Previous weigh-in'));
+        await fireEvent.press(screen.getByLabelText('Previous weigh-in'));
         expect(screen.getByText('Jul 13, 2026')).toBeTruthy();
         expect(screen.getByLabelText('Previous weigh-in')).toHaveProp('accessibilityState', { disabled: true });
     });
 
-    it('supports Left, Right, Home, and End from the chart focus target', () => {
-        const screen = render(<WeightTrendCard />);
+    it('supports Left, Right, Home, and End from the chart focus target', async () => {
+        const screen = await render(<WeightTrendCard />);
         const chart = screen.getByLabelText('Select nearest weigh-in');
         const preventDefault = jest.fn();
 
-        fireEvent(chart, 'keyDown', { key: 'ArrowLeft', preventDefault });
+        await fireEvent(chart, 'keyDown', { key: 'ArrowLeft', preventDefault });
         expect(screen.getByText('Jul 14, 2026')).toBeTruthy();
-        fireEvent(chart, 'keyDown', { key: 'Home', preventDefault });
+        await fireEvent(chart, 'keyDown', { key: 'Home', preventDefault });
         expect(screen.getByText('Jul 13, 2026')).toBeTruthy();
-        fireEvent(chart, 'keyDown', { key: 'ArrowRight', preventDefault });
+        await fireEvent(chart, 'keyDown', { key: 'ArrowRight', preventDefault });
         expect(screen.getByText('Jul 14, 2026')).toBeTruthy();
-        fireEvent(chart, 'keyDown', { key: 'End', preventDefault });
+        await fireEvent(chart, 'keyDown', { key: 'End', preventDefault });
         expect(screen.getByText('Jul 15, 2026')).toBeTruthy();
         expect(screen.getByTestId('weight-trend-selection-announcement').props.children).toContain(
             'Selected Jul 15, 2026'
@@ -161,24 +161,24 @@ describe('WeightTrendCard', () => {
         expect(preventDefault).toHaveBeenCalledTimes(4);
     });
 
-    it('keeps the current selection when a press has no usable coordinate', () => {
-        const screen = render(<WeightTrendCard />);
-        fireEvent.press(screen.getByLabelText('Select nearest weigh-in'), { nativeEvent: {} });
+    it('keeps the current selection when a press has no usable coordinate', async () => {
+        const screen = await render(<WeightTrendCard />);
+        await fireEvent(screen.getByLabelText('Select nearest weigh-in'), 'press', { nativeEvent: {} });
         expect(within(screen.getByTestId('selected-trend-summary')).getByText('Jul 15, 2026')).toBeTruthy();
     });
 
-    it('renders the first-weigh-in state for a single metric', () => {
+    it('renders the first-weigh-in state for a single metric', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: response([METRICS[0]], null),
             error: null,
             isLoading: false, status: 'success'
         });
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getByText('First weigh-in recorded')).toBeTruthy();
         expect(screen.getByText('168.3 lb on Jul 15, 2026')).toBeTruthy();
     });
 
-    it('draws raw measurements as dots and segments only the modeled trend', () => {
+    it('draws raw measurements as dots and segments only the modeled trend', async () => {
         const metrics = [
             { ...createMetric(4, '2026-07-25', 168.3), trend_weight: 168.2 },
             { ...createMetric(3, '2026-07-24', 168.7), trend_weight: 168.8 },
@@ -187,7 +187,7 @@ describe('WeightTrendCard', () => {
         ];
         (useQuery as jest.Mock).mockReturnValue({ data: response(metrics, null), error: null, isLoading: false, status: 'success' });
 
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.queryByTestId('weight-trend-measurement-path')).toBeNull();
         expect(screen.getByTestId('weight-trend-smoothed-path-0')).toBeTruthy();
         expect(screen.getByTestId('weight-trend-smoothed-path-1')).toBeTruthy();
@@ -195,7 +195,7 @@ describe('WeightTrendCard', () => {
         expect(screen.getByTestId('weight-trend-range-1')).toBeTruthy();
     });
 
-    it('shows old context as measurement-only and marks the model boundary for Year and All', () => {
+    it('shows old context as measurement-only and marks the model boundary for Year and All', async () => {
         const metrics = [
             createMetric(3, '2026-07-15', 168.3),
             createMetric(2, '2026-07-14', 168.7),
@@ -209,14 +209,14 @@ describe('WeightTrendCard', () => {
             }
         ];
         (useQuery as jest.Mock).mockReturnValue({ data: response(metrics, null), error: null, isLoading: false, status: 'success' });
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
 
-        fireEvent.press(screen.getByText('All'));
+        await fireEvent.press(screen.getByText('All'));
         expect(screen.getByTestId('weight-trend-model-boundary')).toBeTruthy();
         expect(screen.getByText(/Earlier dots are measurements only/)).toBeTruthy();
 
-        fireEvent.press(screen.getByLabelText('Previous weigh-in'));
-        fireEvent.press(screen.getByLabelText('Previous weigh-in'));
+        await fireEvent.press(screen.getByLabelText('Previous weigh-in'));
+        await fireEvent.press(screen.getByLabelText('Previous weigh-in'));
         const details = within(screen.getByTestId('selected-trend-summary'));
         expect(details.getByText('Scale reading')).toBeTruthy();
         expect(details.getByText(/no underlying trend estimate/)).toBeTruthy();
@@ -224,8 +224,8 @@ describe('WeightTrendCard', () => {
         expect(details.queryByText(/95% trend range/)).toBeNull();
     });
 
-    it('focuses on the underlying estimate and keeps concise context below the chart', () => {
-        const screen = render(<WeightTrendCard />);
+    it('focuses on the underlying estimate and keeps concise context below the chart', async () => {
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getAllByText('168.2 lb').length).toBeGreaterThan(0);
         expect(screen.queryByText('Smoothed weight')).toBeNull();
         const summary = within(screen.getByTestId('selected-trend-summary'));
@@ -235,18 +235,18 @@ describe('WeightTrendCard', () => {
         expect(summary.getByText(/95% trend range/)).toBeTruthy();
         expect(screen.queryByText(/uncertainty in the estimate/)).toBeNull();
         const rangeHelp = screen.getByLabelText('About the 95% trend range');
-        fireEvent(rangeHelp, 'hoverIn');
+        await fireEvent(rangeHelp, 'hoverIn');
         expect(screen.getByText(/uncertainty in the estimate/)).toBeTruthy();
         expect(screen.getByTestId('trend-range-tooltip')).toHaveStyle({ position: 'absolute' });
-        fireEvent(rangeHelp, 'hoverOut');
+        await fireEvent(rangeHelp, 'hoverOut');
         expect(screen.queryByText(/uncertainty in the estimate/)).toBeNull();
-        fireEvent(rangeHelp, 'focus');
+        await fireEvent(rangeHelp, 'focus');
         expect(screen.getByTestId('trend-range-tooltip')).toHaveProp('role', 'tooltip');
-        fireEvent(rangeHelp, 'blur');
+        await fireEvent(rangeHelp, 'blur');
         expect(screen.queryByTestId('trend-range-tooltip')).toBeNull();
-        fireEvent.press(rangeHelp);
+        await fireEvent.press(rangeHelp);
         expect(screen.getByTestId('trend-range-tooltip')).toHaveStyle({ position: 'absolute' });
-        fireEvent.press(rangeHelp);
+        await fireEvent.press(rangeHelp);
         expect(screen.queryByTestId('trend-range-tooltip')).toBeNull();
         expect(screen.queryByText('Scale reading variation')).toBeNull();
         expect(screen.queryByText('About 80% within +/- 0.6 lb')).toBeNull();
@@ -256,16 +256,16 @@ describe('WeightTrendCard', () => {
         expect(screen.queryByText(/0\.19|low volatility/)).toBeNull();
     });
 
-    it('preserves a useful snapshot for legacy payloads', () => {
+    it('preserves a useful snapshot for legacy payloads', async () => {
         (useQuery as jest.Mock).mockReturnValue({ data: response(METRICS, null), error: null, isLoading: false, status: 'success' });
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getAllByText('168.2 lb').length).toBeGreaterThan(0);
         expect(screen.queryByText('Scale reading variation')).toBeNull();
         expect(screen.queryByText('Current pace estimate')).toBeNull();
         expect(screen.getByText('Trend line: steady over 2 days.')).toBeTruthy();
     });
 
-    it('keeps raw readings usable and labels trend fitting as unavailable', () => {
+    it('keeps raw readings usable and labels trend fitting as unavailable', async () => {
         const summary: WeightTrendSummary = {
             ...createTrendSummary(),
             status: 'unavailable',
@@ -297,7 +297,7 @@ describe('WeightTrendCard', () => {
             status: 'success'
         });
 
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getByTestId('weight-trend-unavailable')).toHaveProp('accessibilityRole', 'alert');
         expect(screen.getByText('Trend estimate temporarily unavailable')).toBeTruthy();
         expect(screen.getByText('Your scale readings are still shown. Try again later for the underlying trend.')).toBeTruthy();
@@ -312,18 +312,18 @@ describe('WeightTrendCard', () => {
         )).toBeTruthy();
     });
 
-    it('shows estimate freshness without adding pace information', () => {
+    it('shows estimate freshness without adding pace information', async () => {
         const summary = createTrendSummary();
         summary.freshness = 'outdated';
         summary.days_since_latest = 18;
         (useQuery as jest.Mock).mockReturnValue({ data: response(METRICS, summary), error: null, isLoading: false, status: 'success' });
 
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getByText('Current weigh-in needed')).toBeTruthy();
         expect(screen.queryByText('Current pace estimate')).toBeNull();
     });
 
-    it('distinguishes an empty selected range from a user with no weight history', () => {
+    it('distinguishes an empty selected range from a user with no weight history', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: {
                 metrics: [],
@@ -332,18 +332,18 @@ describe('WeightTrendCard', () => {
             error: null,
             isLoading: false, status: 'success'
         });
-        const screen = render(<WeightTrendCard />);
+        const screen = await render(<WeightTrendCard />);
         expect(screen.getByText('No weigh-ins in this range. Choose All to view your weight history.')).toBeTruthy();
-        fireEvent.press(screen.getByText('All'));
+        await fireEvent.press(screen.getByText('All'));
         expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({
             queryKey: ['mobile-metrics-trend', 'all']
         }));
     });
 
-    it('exposes the dynamic chart as one named image', () => {
+    it('exposes the dynamic chart as one named image', async () => {
         const platform = jest.replaceProperty(Platform, 'OS', 'ios');
         try {
-            const screen = render(<WeightTrendCard />);
+            const screen = await render(<WeightTrendCard />);
             const chart = screen.getByTestId('weight-trend-chart');
             expect(chart).toHaveProp('accessibilityRole', 'image');
             expect(chart.props.accessibilityLabel).toContain('Weight chart from Jul 13, 2026 to Jul 15, 2026');
@@ -356,10 +356,10 @@ describe('WeightTrendCard', () => {
         }
     });
 
-    it('uses DOM-safe accessibility props for the web chart', () => {
+    it('uses DOM-safe accessibility props for the web chart', async () => {
         const platform = jest.replaceProperty(Platform, 'OS', 'web');
         try {
-            const chart = render(<WeightTrendCard />).getByTestId('weight-trend-chart');
+            const chart = (await render(<WeightTrendCard />)).getByTestId('weight-trend-chart');
             expect(chart.props).toEqual(expect.objectContaining({
                 'aria-label': expect.stringContaining('Weight chart from Jul 13, 2026 to Jul 15, 2026'),
                 role: 'img'
@@ -372,20 +372,20 @@ describe('WeightTrendCard', () => {
         }
     });
 
-    it('does not expose the raw chart data table', () => {
-        const screen = render(<WeightTrendCard />);
+    it('does not expose the raw chart data table', async () => {
+        const screen = await render(<WeightTrendCard />);
         expect(screen.queryByLabelText('View data table')).toBeNull();
         expect(screen.queryByTestId('weight-trend-data-table')).toBeNull();
     });
 
-    it('preserves the minimum plot height and grows to all available space', () => {
-        const screen = render(<WeightTrendCard />);
+    it('preserves the minimum plot height and grows to all available space', async () => {
+        const screen = await render(<WeightTrendCard />);
         const canvas = screen.getByTestId('weight-trend-chart-canvas');
-        fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 100 } } });
+        await fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 100 } } });
         expect(screen.getByTestId('weight-trend-chart')).toHaveProp('height', 188);
-        fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 600 } } });
+        await fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 600 } } });
         expect(screen.getByTestId('weight-trend-chart')).toHaveProp('height', 600);
-        fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 240 } } });
+        await fireEvent(canvas, 'layout', { nativeEvent: { layout: { width: 340, height: 240 } } });
         expect(screen.getByTestId('weight-trend-chart')).toHaveProp('height', 240);
     });
 

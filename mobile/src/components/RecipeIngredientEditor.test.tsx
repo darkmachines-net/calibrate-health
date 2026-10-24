@@ -33,14 +33,14 @@ function savedFood(id: number, name = `Saved food ${id}`, calories = 100): MyFoo
     };
 }
 
-function renderWithQueryClient(node: React.ReactElement) {
+async function renderWithQueryClient(node: React.ReactElement) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
             mutations: { retry: false, gcTime: 0 }
         }
     });
-    return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
+    return await render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
 }
 
 describe('RecipeIngredientSelector', () => {
@@ -59,15 +59,15 @@ describe('RecipeIngredientSelector', () => {
                 : { items: firstPage, next_cursor: 'page-2' }
         ));
         const onAddIngredient = jest.fn();
-        const screen = renderWithQueryClient(
+        const screen = await renderWithQueryClient(
             <RecipeIngredientSelector enabled onAddIngredient={onAddIngredient} />
         );
 
         await waitFor(() => expect(screen.getByText(`Saved food ${RECIPE_INGREDIENT_PAGE_SIZE}`)).toBeTruthy());
         expect(screen.queryByText('Deep pantry lentils')).toBeNull();
-        fireEvent.press(screen.getByRole('button', { name: 'Load more saved foods' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Load more saved foods' }));
         await waitFor(() => expect(screen.getByText('Deep pantry lentils')).toBeTruthy());
-        fireEvent.press(screen.getByRole('button', { name: 'Add Deep pantry lentils to recipe' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Add Deep pantry lentils to recipe' }));
 
         expect(mockApi.getMyFoodsLibrary).toHaveBeenLastCalledWith(expect.objectContaining({
             type: 'FOOD',
@@ -82,12 +82,12 @@ describe('RecipeIngredientSelector', () => {
             items: q === 'unfindable' ? [] : [savedFood(1)],
             next_cursor: null
         }));
-        const screen = renderWithQueryClient(
+        const screen = await renderWithQueryClient(
             <RecipeIngredientSelector enabled onAddIngredient={jest.fn()} />
         );
         await waitFor(() => expect(screen.getByText('Saved food 1')).toBeTruthy());
 
-        fireEvent.changeText(screen.getByLabelText('Search saved foods'), ' unfindable ');
+        await fireEvent.changeText(screen.getByLabelText('Search saved foods'), ' unfindable ');
 
         await waitFor(() => expect(mockApi.getMyFoodsLibrary).toHaveBeenCalledWith(expect.objectContaining({
             q: 'unfindable',
@@ -118,14 +118,14 @@ describe('RecipeIngredientEditor', () => {
             const [ingredients, setIngredients] = useState(initial);
             return <RecipeIngredientEditor enabled ingredients={ingredients} onChange={setIngredients} />;
         };
-        const screen = renderWithQueryClient(<Harness />);
+        const screen = await renderWithQueryClient(<Harness />);
 
         await waitFor(() => expect(screen.getAllByText('Renamed authoritative oats')).toHaveLength(2));
         expect(screen.getByText('180 kcal')).toBeTruthy();
-        fireEvent.press(screen.getByRole('button', { name: 'Increase Renamed authoritative oats servings' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Increase Renamed authoritative oats servings' }));
         expect(screen.getByText('1.25x')).toBeTruthy();
         expect(screen.getByText('225 kcal')).toBeTruthy();
-        fireEvent.press(screen.getByRole('button', { name: 'Remove Renamed authoritative oats' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Remove Renamed authoritative oats' }));
         expect(screen.queryByRole('button', { name: 'Remove Renamed authoritative oats' })).toBeNull();
         expect(screen.getAllByText('Renamed authoritative oats')).toHaveLength(1);
     });
@@ -142,15 +142,15 @@ describe('RecipeIngredientEditor', () => {
             const [ingredients, setIngredients] = useState(initial);
             return <RecipeIngredientEditor enabled ingredients={ingredients} onChange={setIngredients} />;
         };
-        const screen = renderWithQueryClient(<Harness />);
+        const screen = await renderWithQueryClient(<Harness />);
 
-        fireEvent.press(screen.getByRole('button', { name: 'Increase Legacy precise oats servings' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Increase Legacy precise oats servings' }));
         expect(screen.getByText('1.35x')).toBeTruthy();
-        fireEvent.press(screen.getByRole('button', { name: 'Decrease Legacy precise oats servings' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Decrease Legacy precise oats servings' }));
         expect(screen.getByText('1.1x')).toBeTruthy();
     });
 
-    it('never increases a legacy quantity that is below the current decrement step', () => {
+    it('never increases a legacy quantity that is below the current decrement step', async () => {
         const tinyFood = savedFood(46, 'Tiny precise amount');
         const initial: RecipeIngredientDraft[] = [{
             key: 'existing-11',
@@ -162,7 +162,7 @@ describe('RecipeIngredientEditor', () => {
             const [ingredients, setIngredients] = useState(initial);
             return <RecipeIngredientEditor enabled ingredients={ingredients} onChange={setIngredients} />;
         };
-        const screen = renderWithQueryClient(<Harness />);
+        const screen = await renderWithQueryClient(<Harness />);
 
         const decrease = screen.getByRole('button', { name: 'Decrease Tiny precise amount servings' });
         expect(decrease.props.accessibilityState.disabled).toBe(true);

@@ -43,7 +43,7 @@ export function getWeightTrendPreviewMinimumHeight(viewportWidth: number, {
 export function useWeightTrendChartTypography() {
     const { width, fontScale } = useWindowDimensions();
     const [webAxisScale, setWebAxisScale] = React.useState(1);
-    const probe = React.useRef<Text>(null);
+    const probe = React.useRef<React.ComponentRef<typeof Text>>(null);
     const readScale = React.useCallback(() => {
         if (Platform.OS !== 'web' || typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') return;
         const element = probe.current as unknown as HTMLElement | null;

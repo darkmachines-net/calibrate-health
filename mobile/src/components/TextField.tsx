@@ -37,7 +37,7 @@ export const TextField: React.FC<TextFieldProps> = ({
     ...props
 }) => {
     const [isFocused, setIsFocused] = useState(false);
-    const internalRef = useRef<TextInput | null>(null);
+    const internalRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
 

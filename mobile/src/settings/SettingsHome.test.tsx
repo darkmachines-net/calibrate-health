@@ -21,9 +21,9 @@ describe('SettingsHome', () => {
         expect(shouldShowSettingsResourceStatus(error, true)).toBe(true);
     });
 
-    it('shows the two-section web landing page and opens each category in order', () => {
+    it('shows the two-section web landing page and opens each category in order', async () => {
         const onOpenCategory = jest.fn();
-        const screen = render(
+        const screen = await render(
             <SettingsHome
                 email="person@example.invalid"
                 goalSummary="Maintain weight"
@@ -62,7 +62,7 @@ describe('SettingsHome', () => {
             'Support, legal documents, product information, and advanced controls'
         )).toBeTruthy();
 
-        categoryButtons.forEach((button) => fireEvent.press(button));
+        for (const button of categoryButtons) await fireEvent.press(button);
         expect(onOpenCategory.mock.calls).toEqual([
             ['profile'],
             ['security'],
@@ -72,9 +72,9 @@ describe('SettingsHome', () => {
         ]);
     });
 
-    it('shows native summaries and opens each category in order', () => {
+    it('shows native summaries and opens each category in order', async () => {
         const onOpenCategory = jest.fn();
-        const screen = render(
+        const screen = await render(
             <SettingsHome
                 email="native@example.invalid"
                 goalSummary="Lose 1 lb per week"
@@ -104,7 +104,7 @@ describe('SettingsHome', () => {
             'Help & app, v0.0.0-test'
         ]);
 
-        categoryButtons.forEach((button) => fireEvent.press(button));
+        for (const button of categoryButtons) await fireEvent.press(button);
         expect(onOpenCategory.mock.calls).toEqual([
             ['profile'],
             ['security'],

@@ -26,7 +26,7 @@ describe('legacy add-food route', () => {
     it('hands the request to Today before replacing the modal-only route', async () => {
         mockUseLocalSearchParams.mockReturnValue({ date: '2026-07-17', meal: 'DINNER' });
 
-        render(<LogScreen />);
+        await render(<LogScreen />);
 
         await waitFor(() => {
             expect(mockRequestAddFood).toHaveBeenCalledWith({ date: '2026-07-17', meal: 'DINNER' });
@@ -44,7 +44,7 @@ describe('legacy add-food route', () => {
     it('drops an invalid meal supplied by an external route', async () => {
         mockUseLocalSearchParams.mockReturnValue({ date: '2026-07-17', meal: 'MIDNIGHT_FEAST' as never });
 
-        render(<LogScreen />);
+        await render(<LogScreen />);
 
         await waitFor(() => {
             expect(mockRequestAddFood).toHaveBeenCalledWith({ date: '2026-07-17', meal: undefined });

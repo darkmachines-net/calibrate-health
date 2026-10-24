@@ -1,13 +1,13 @@
 /** @file use Barcode Camera Lifecycle: Stops camera capture whenever another surface covers the preview or the route leaves the foreground. */
 
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 /** Stops camera capture whenever another surface covers the preview or the route leaves the foreground. */
 export function useBarcodeCameraLifecycle(obscured: boolean): boolean {
     const [isFocused, setIsFocused] = useState(false);
-    const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+    const [appState, setAppState] = useState(AppState.currentState);
 
     useFocusEffect(useCallback(() => {
         setIsFocused(true);

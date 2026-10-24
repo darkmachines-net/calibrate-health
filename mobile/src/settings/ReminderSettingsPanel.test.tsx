@@ -5,7 +5,7 @@ import { ReminderSettingsPanel } from './ReminderSettingsPanel';
 
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 
-function renderPanel() {
+async function renderPanel() {
     const callbacks = {
         onLogFoodEnabledChange: jest.fn(),
         onLogWeightEnabledChange: jest.fn(),
@@ -19,7 +19,7 @@ function renderPanel() {
         onRetryRegistration: jest.fn(),
         onDisableRegistration: jest.fn()
     };
-    const screen = render(
+    const screen = await render(
         <ReminderSettingsPanel
             timezone="America/Los_Angeles"
             logFoodEnabled
@@ -42,8 +42,8 @@ function renderPanel() {
 }
 
 describe('ReminderSettingsPanel', () => {
-    it('separates account reminder intent from runtime delivery permission', () => {
-        const { screen, callbacks } = renderPanel();
+    it('separates account reminder intent from runtime delivery permission', async () => {
+        const { screen, callbacks } = await renderPanel();
 
         expect(screen.getByTestId('settings-reminder-intent')).toBeTruthy();
         expect(screen.getByTestId('settings-delivery-permission')).toBeTruthy();
@@ -54,8 +54,8 @@ describe('ReminderSettingsPanel', () => {
         expect(screen.getAllByRole('switch')).toHaveLength(2);
         const foodReminderSwitch = screen.getByRole('switch', { name: 'Food reminders' });
         expect(foodReminderSwitch.props.accessibilityState).toEqual(expect.objectContaining({ checked: true }));
-        fireEvent.press(foodReminderSwitch);
-        fireEvent.press(screen.getByRole('button', { name: 'Enable push notifications' }));
+        await fireEvent.press(foodReminderSwitch);
+        await fireEvent.press(screen.getByRole('button', { name: 'Enable push notifications' }));
 
         expect(callbacks.onLogFoodEnabledChange).toHaveBeenCalledWith(false);
         expect(callbacks.onRequestPermission).toHaveBeenCalledTimes(1);

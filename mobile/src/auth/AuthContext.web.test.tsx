@@ -37,12 +37,12 @@ import { clearOnboardingDraft } from '../onboarding/draftStorage';
 import { clearBrowserUserScopedCaches } from '../pwa/cacheIsolation.web';
 
 const USER = { id: 7, email: 'person@example.com' };
-function renderAuth() {
+async function renderAuth() {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
     const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         <QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider>
     );
-    return renderHook(() => useAuth(), { wrapper });
+    return await renderHook(() => useAuth(), { wrapper });
 }
 
 describe('browser onboarding draft cleanup', () => {
@@ -53,7 +53,7 @@ describe('browser onboarding draft cleanup', () => {
     });
 
     it.each(['logout', 'clearLocalSession'] as const)('clears the current account draft on %s', async (method) => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         await act(async () => result.current[method]());
         expect(clearOnboardingDraft).toHaveBeenCalledWith('https://health.example', 7);
@@ -62,7 +62,7 @@ describe('browser onboarding draft cleanup', () => {
     });
 
     it('keeps restored and same-account drafts, but clears the former account after a different login', async () => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
         await act(async () => { await result.current.login('person@example.com', 'password', 'https://health.example'); });
@@ -75,14 +75,14 @@ describe('browser onboarding draft cleanup', () => {
 
     it('retains progress for a network failure during initial session restoration', async () => {
         mockRestoreSession.mockRejectedValueOnce(new Error('Network unavailable'));
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
     });
 
     it('still ends the session and clears browser caches if draft deletion fails', async () => {
         jest.mocked(clearOnboardingDraft).mockRejectedValueOnce(new Error('Storage unavailable'));
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         await act(async () => { await expect(result.current.logout()).rejects.toThrow('Storage unavailable'); });
         expect(result.current.user).toBeNull();
@@ -97,7 +97,7 @@ describe('browser offline workspace restoration', () => {
         const error = kind === 'network' ? new TypeError('Network unavailable') : new (require('@calibrate/api-client').ApiError)(503, 'Provider unavailable');
         mockRestoreSession.mockRejectedValueOnce(error);
         mockGetMe.mockResolvedValue({ user: USER });
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(result.current.user?.id).toBe(7);
         expect(result.current.pendingReconnection).toBe(true);
@@ -109,7 +109,7 @@ describe('browser offline workspace restoration', () => {
         await saveOfflineWorkspace('https://health.example', USER as never, new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } }));
         mockRestoreSession.mockRejectedValueOnce(new TypeError('Offline'));
         mockGetMe.mockResolvedValue({ user: { ...USER, id: 8 } });
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.pendingReconnection).toBe(true));
         await act(async () => { expect(await result.current.recheckClientCompatibility()).toBe(false); });
         expect(result.current.user).toBeNull();
@@ -120,33 +120,33 @@ describe('browser offline workspace restoration', () => {
 
 it('persists a verified user access update without waiting for another tracking query', async () => {
     mockRestoreSession.mockResolvedValue({ user: USER });
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     const updated = { ...result.current.user!, account_access: { state: 'full' } } as never;
-    act(() => result.current.updateCurrentUser(updated));
+    await act(() => result.current.updateCurrentUser(updated));
     const restored = await restoreOfflineWorkspace('https://health.example', new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } }));
     expect(restored?.account_access?.state).toBe('full');
 });
 
 it('keeps the established identity and enters reconnection after a completed timeout', async () => {
     mockRestoreSession.mockResolvedValue({ user: USER });
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     const observer = mockClientOptions.find((options) => options.onRequestError)?.onRequestError;
     expect(observer).toBeDefined();
-    act(() => observer!(new Error('Request timed out while connecting to https://health.example')));
+    await act(() => observer!(new Error('Request timed out while connecting to https://health.example')));
     expect(result.current.pendingReconnection).toBe(true);
     expect(result.current.user?.id).toBe(7);
 });
 
 it('ignores a successful reconnection response that arrives after explicit logout', async () => {
     mockRestoreSession.mockResolvedValue({ user: USER });
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     let finish!: (value: unknown) => void;
     mockGetMe.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     let reconnect!: Promise<boolean>;
-    act(() => { reconnect = result.current.recheckClientCompatibility(); });
+    await act(() => { reconnect = result.current.recheckClientCompatibility(); });
     await act(async () => result.current.logout());
     await act(async () => { finish({ user: USER }); expect(await reconnect).toBe(false); });
     expect(result.current.user).toBeNull();
@@ -155,15 +155,15 @@ it('ignores a successful reconnection response that arrives after explicit logou
 
 it('stays explicitly signed out across failed invalidation, restart, recovery and another-account login', async () => {
     mockRestoreSession.mockResolvedValue({ user: USER });
-    const first = renderAuth();
+    const first = await renderAuth();
     await waitFor(() => expect(first.result.current.user?.id).toBe(7));
     mockLogoutBrowser.mockRejectedValueOnce(new TypeError('Offline'));
     await act(async () => first.result.current.logout());
     expect(first.result.current.user).toBeNull();
-    first.unmount();
+    await first.unmount();
     mockLogoutBrowser.mockRejectedValueOnce(new TypeError('Still offline'));
     mockRestoreSession.mockClear();
-    const second = renderAuth();
+    const second = await renderAuth();
     await waitFor(() => expect(second.result.current.isLoading).toBe(false));
     expect(second.result.current.user).toBeNull();
     expect(mockRestoreSession).not.toHaveBeenCalled();
@@ -172,16 +172,16 @@ it('stays explicitly signed out across failed invalidation, restart, recovery an
     await act(async () => { expect(await second.result.current.login('other@example.com', 'password', 'https://health.example')).toBe(true); });
     expect(second.result.current.user?.id).toBe(8);
     expect(mockLogoutBrowser).toHaveBeenCalled();
-    second.unmount();
+    await second.unmount();
     mockRestoreSession.mockResolvedValue({ user: { ...USER, id: 8 } });
-    const third = renderAuth();
+    const third = await renderAuth();
     await waitFor(() => expect(third.result.current.user?.id).toBe(8));
 });
 
 
 it('clears UI and revokes the cookie session when writing logout intent fails', async () => {
     mockRestoreSession.mockResolvedValue({ user: USER });
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     mockLogoutBrowser.mockClear();
     jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('Storage full'));

@@ -18,16 +18,16 @@ describe.each([
     beforeEach(() => { jest.clearAllMocks(); });
     afterEach(() => { jest.restoreAllMocks(); });
 
-    it.each(['ios', 'web'] as const)('does not mount native integration controls on %s direct entry', (platform) => {
+    it.each(['ios', 'web'] as const)('does not mount native integration controls on %s direct entry', async (platform) => {
         jest.replaceProperty(Platform, 'OS', platform);
-        const screen = render(<SettingsScreen />);
+        const screen = await render(<SettingsScreen />);
         expect(screen.getByText(unavailableMessage)).toBeOnTheScreen();
         expect(IntegrationCard).not.toHaveBeenCalled();
     });
 
-    it('mounts the connection controls on Android', () => {
+    it('mounts the connection controls on Android', async () => {
         jest.replaceProperty(Platform, 'OS', 'android');
-        render(<SettingsScreen />);
+        await render(<SettingsScreen />);
         expect(IntegrationCard).toHaveBeenCalled();
     });
 });

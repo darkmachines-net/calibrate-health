@@ -86,7 +86,7 @@ describe('browser offline outbox provider', () => {
         await queue.claimNext(); await queue.fail('failed', 'Rejected');
         const executeMutation = jest.fn(async () => undefined);
         const wrapper = ({ children }: { children: React.ReactNode }) => <OfflineOutboxProvider executeMutation={executeMutation} openDatabase={openDatabase}>{children}</OfflineOutboxProvider>;
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(result.current.mutations).toHaveLength(2));
         expect(executeMutation).not.toHaveBeenCalled();
         await act(async () => { await result.current.discardFailedMutation('failed'); });
@@ -111,7 +111,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
         await waitFor(() => expect(result.current.isReady).toBe(false));
         expect(openDatabase).not.toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result, rerender } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result, rerender } = await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(result.current.isReady).toBe(true));
         await act(async () => {
             await result.current.enqueue('food.create', { calories: 100 }, 'user-7-operation');
@@ -139,7 +139,7 @@ describe('browser offline outbox provider', () => {
         ]);
 
         mockAuthState = { serverUrl: 'https://health.example', user: { id: 9 } };
-        rerender({});
+        await rerender({});
         expect(result.current.isReady).toBe(false);
         await waitFor(() => expect(result.current.isReady).toBe(true));
         expect(result.current.mutations).toEqual([]);
@@ -148,7 +148,7 @@ describe('browser offline outbox provider', () => {
         });
 
         mockAuthState = { serverUrl: 'https://health.example', user: { id: 7 } };
-        rerender({});
+        await rerender({});
         await waitFor(() => expect(result.current.isReady).toBe(true));
         expect(result.current.mutations).toEqual([expect.objectContaining({ id: 'user-7-operation' })]);
         await act(async () => { await result.current.discardAll(); });
@@ -184,17 +184,17 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result, rerender } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result, rerender } = await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(result.current.mutations).toEqual([
             expect.objectContaining({ id: 'old-account-operation' })
         ]));
 
         let oldReconciliation!: Promise<unknown>;
-        act(() => { oldReconciliation = result.current.reconcile(); });
+        await act(() => { oldReconciliation = result.current.reconcile(); });
         await waitFor(() => expect(onReplayCompleted).toHaveBeenCalledTimes(1));
 
         mockAuthState = { serverUrl: 'https://health.example', user: { id: 9 } };
-        rerender({});
+        await rerender({});
         expect(result.current.isReady).toBe(false);
         await waitFor(() => expect(result.current.mutations).toEqual([
             expect.objectContaining({ id: 'current-account-operation' })
@@ -227,7 +227,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
         await waitFor(() => expect(executeMutation).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'startup-operation', operation: 'food-day.update' })
@@ -265,7 +265,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(result.current.mutations).toEqual([
             expect.objectContaining({ id: 'retry-operation', state: 'failed', attemptCount: 1 })
         ]));
@@ -318,7 +318,7 @@ describe('browser offline outbox provider', () => {
                     {children}
                 </OfflineOutboxProvider>
             );
-            const { result, unmount } = renderHook(() => useOfflineOutbox(), { wrapper });
+            const { result, unmount } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
             await waitFor(() => expect(executeMutation).toHaveBeenCalledTimes(1));
             await waitFor(() => expect(result.current.mutations).toEqual([
@@ -344,7 +344,7 @@ describe('browser offline outbox provider', () => {
             await waitFor(() => expect(executeMutation).toHaveBeenCalledTimes(3));
             await waitFor(() => expect(result.current.mutations).toEqual([]));
 
-            unmount();
+            await unmount();
         } finally {
             jest.useRealTimers();
         }
@@ -370,11 +370,11 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        renderHook(() => useOfflineOutbox(), { wrapper });
+        await renderHook(() => useOfflineOutbox(), { wrapper });
         await waitFor(() => expect(openDatabase).toHaveBeenCalled());
         expect(executeMutation).not.toHaveBeenCalled();
 
-        act(() => visibility.show());
+        await act(() => visibility.show());
         await waitFor(() => expect(executeMutation).toHaveBeenCalledTimes(1));
     });
     it('keeps calorie outputs suppressed until a queued weight replay and refetch complete', async () => {
@@ -392,7 +392,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result } = renderHook(() => ({
+        const { result } = await renderHook(() => ({
             outbox: useOfflineOutbox(),
             weightPending: hasPendingWeightMutation(useOfflineOutbox().mutations)
         }), { wrapper });
@@ -402,7 +402,7 @@ describe('browser offline outbox provider', () => {
         });
         expect(result.current.weightPending).toBe(true);
 
-        act(() => connectivity.goOnline());
+        await act(() => connectivity.goOnline());
         await waitFor(() => expect(executeMutation).toHaveBeenCalled());
         expect(result.current.weightPending).toBe(true);
 
@@ -422,7 +422,7 @@ describe('browser offline outbox provider', () => {
                 {children}
             </OfflineOutboxProvider>
         );
-        const { result } = renderHook(() => useOfflineOutbox(), { wrapper });
+        const { result } = await renderHook(() => useOfflineOutbox(), { wrapper });
 
         await waitFor(() => expect(result.current.initializationError).toBe(error.message));
         expect(result.current.isReady).toBe(false);

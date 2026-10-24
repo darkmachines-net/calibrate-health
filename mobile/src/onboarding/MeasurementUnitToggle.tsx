@@ -21,7 +21,7 @@ type MeasurementUnitToggleProps = {
 /** Renders a unit-switch action and optionally restores keyboard focus after height fields change. */
 export function MeasurementUnitToggle({ measurement, unit, nextUnit, onPress, disabled, focusOnMount = false }: MeasurementUnitToggleProps) {
     const { colors } = useAppTheme();
-    const buttonRef = useRef<View>(null);
+    const buttonRef = useRef<React.ComponentRef<typeof View>>(null);
     useEffect(() => {
         if (!focusOnMount) return;
         // Height switches replace one field with two; retain focus on their unit control.
@@ -29,7 +29,7 @@ export function MeasurementUnitToggle({ measurement, unit, nextUnit, onPress, di
             buttonRef.current?.focus();
             if (Platform.OS === 'web') return;
             const handle = findNodeHandle(buttonRef.current);
-            if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+            if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
         });
         return () => cancelAnimationFrame(frame);
     }, [focusOnMount]);

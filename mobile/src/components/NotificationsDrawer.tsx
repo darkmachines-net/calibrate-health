@@ -5,6 +5,7 @@ import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View, useWi
 import type { InAppNotification } from '@calibrate/api-client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SUPPORTED_MODAL_ORIENTATIONS } from '../layout/adaptiveLayout';
+import { webSafeAreaPadding } from '../layout/webSafeArea';
 import { AppSection } from './AppSection';
 import { AppIconButton } from './AppIconButton';
 import { AppText } from './AppText';
@@ -66,7 +67,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
     const [shouldRender, setShouldRender] = useState(visible);
     const backdropOpacity = useRef(new Animated.Value(0)).current;
     const drawerProgress = useRef(new Animated.Value(1)).current;
-    const panelRef = useRef<View>(null);
+    const panelRef = useRef<React.ComponentRef<typeof View>>(null);
     const requestClose = () => { if (!isOpening) onClose(); };
 
     useModalFocusManagement({
@@ -243,7 +244,8 @@ const NotificationsSkeleton: React.FC<{ styles: ReturnType<typeof createStyles> 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     root: {
         flex: 1,
-        alignItems: 'flex-end'
+        alignItems: 'flex-end',
+        ...webSafeAreaPadding()
     },
     backdrop: {
         flex: 1,

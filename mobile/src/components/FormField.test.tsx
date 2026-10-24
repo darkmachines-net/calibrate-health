@@ -5,9 +5,9 @@ import { AccessibilityInfo, TextInput } from 'react-native';
 import { FormField, type FocusableFormControl } from './FormField';
 
 describe('FormField', () => {
-    it('associates its visible label, helper, and error with the control', () => {
+    it('associates its visible label, helper, and error with the control', async () => {
         let receivedProps: Record<string, unknown> | undefined;
-        const screen = render(
+        const screen = await render(
             <FormField
                 label="Email address"
                 helperText="Used to sign in."
@@ -34,7 +34,7 @@ describe('FormField', () => {
         const focus = jest.fn();
         const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(jest.fn());
         const controlRef = { current: { focus } as FocusableFormControl };
-        const screen = render(
+        const screen = await render(
             <FormField label="Name" errorText="Name is required." controlRef={controlRef} focusError>
                 {(controlProps) => <TextInput {...controlProps} />}
             </FormField>
@@ -43,19 +43,19 @@ describe('FormField', () => {
         await waitFor(() => expect(focus).toHaveBeenCalledTimes(1));
         expect(announce).toHaveBeenCalledWith('Name is required.');
 
-        screen.rerender(
+        await screen.rerender(
             <FormField label="Name" errorText="Name is required." controlRef={controlRef} focusError>
                 {(controlProps) => <TextInput {...controlProps} />}
             </FormField>
         );
         expect(focus).toHaveBeenCalledTimes(1);
 
-        screen.rerender(
+        await screen.rerender(
             <FormField label="Name" controlRef={controlRef} focusError>
                 {(controlProps) => <TextInput {...controlProps} />}
             </FormField>
         );
-        screen.rerender(
+        await screen.rerender(
             <FormField label="Name" errorText="Name is required." controlRef={controlRef} focusError>
                 {(controlProps) => <TextInput {...controlProps} />}
             </FormField>
@@ -65,9 +65,9 @@ describe('FormField', () => {
         announce.mockRestore();
     });
 
-    it('keeps hidden labels accessible without pointing to a missing label node', () => {
+    it('keeps hidden labels accessible without pointing to a missing label node', async () => {
         let receivedProps: Record<string, unknown> | undefined;
-        const screen = render(
+        const screen = await render(
             <FormField label="Search foods" hideLabel>
                 {(controlProps) => {
                     receivedProps = controlProps;

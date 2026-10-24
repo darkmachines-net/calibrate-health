@@ -49,7 +49,7 @@ describe('fixed client operation diagnostics', () => {
     it('does not duplicate one query failure across rerenders', async () => {
         const firstError = { requestId: '1111111111111111', message: 'private health payload' };
         const secondError = { requestId: '2222222222222222', message: 'private food payload' };
-        const { rerender } = renderHook(
+        const { rerender } = await renderHook(
             (props: { error: unknown; errorUpdatedAt: number }) => useClientQueryFailureDiagnostic({
                 operation: 'saved_foods_load',
                 isError: true,
@@ -60,10 +60,10 @@ describe('fixed client operation diagnostics', () => {
         );
 
         await waitFor(() => expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(1));
-        rerender({ error: firstError, errorUpdatedAt: 100 });
+        await rerender({ error: firstError, errorUpdatedAt: 100 });
         expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(1);
 
-        rerender({ error: secondError, errorUpdatedAt: 200 });
+        await rerender({ error: secondError, errorUpdatedAt: 200 });
         await waitFor(() => expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(2));
         expect(mockReportClientDiagnostic).toHaveBeenLastCalledWith(expect.objectContaining({
             operation: 'saved_foods_load',
@@ -72,19 +72,19 @@ describe('fixed client operation diagnostics', () => {
     });
 
     it('reports each degraded trend response once by data transition', async () => {
-        const { rerender } = renderHook(
+        const { rerender } = await renderHook(
             (props: { degraded: boolean; dataUpdatedAt: number }) =>
                 useWeightTrendDegradationDiagnostic(props.degraded, props.dataUpdatedAt),
             { initialProps: { degraded: true, dataUpdatedAt: 100 } }
         );
 
         await waitFor(() => expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(1));
-        rerender({ degraded: true, dataUpdatedAt: 100 });
+        await rerender({ degraded: true, dataUpdatedAt: 100 });
         expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(1);
 
-        rerender({ degraded: false, dataUpdatedAt: 200 });
+        await rerender({ degraded: false, dataUpdatedAt: 200 });
         expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(1);
-        rerender({ degraded: true, dataUpdatedAt: 300 });
+        await rerender({ degraded: true, dataUpdatedAt: 300 });
         await waitFor(() => expect(mockReportClientDiagnostic).toHaveBeenCalledTimes(2));
         expect(mockReportClientDiagnostic).toHaveBeenLastCalledWith({
             event: 'degraded_result',

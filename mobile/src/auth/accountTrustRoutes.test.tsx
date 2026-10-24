@@ -28,7 +28,7 @@ describe('account trust routes', () => {
     beforeEach(() => {
         mockUseLocalSearchParams.mockReturnValue({});
     });
-    it('keeps logout, support, export, and deletion discoverable for an unverified session', () => {
+    it('keeps logout, support, export, and deletion discoverable for an unverified session', async () => {
         const logout = jest.fn(async () => undefined);
         mockUseAuth.mockReturnValue({
             api: {
@@ -48,12 +48,12 @@ describe('account trust routes', () => {
             logout
         } as unknown as ReturnType<typeof useAuth>);
 
-        const screen = render(<VerifyEmailRoute />);
+        const screen = await render(<VerifyEmailRoute />);
 
         expect(screen.getByText('Support')).toBeTruthy();
         expect(screen.getByText('Account data and deletion')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
-        fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
         expect(logout).toHaveBeenCalledTimes(1);
     });
 
@@ -87,7 +87,7 @@ describe('account trust routes', () => {
             logout: jest.fn(async () => undefined)
         } as unknown as ReturnType<typeof useAuth>);
 
-        render(<VerifyEmailRoute />);
+        await render(<VerifyEmailRoute />);
 
         await waitFor(() => {
             expect(confirmEmailVerification).toHaveBeenCalledWith({ token: 'verification-token' });

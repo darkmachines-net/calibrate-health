@@ -39,25 +39,25 @@ describe('useBarcodeCameraLifecycle', () => {
         if (currentStateDescriptor) Object.defineProperty(AppState, 'currentState', currentStateDescriptor);
     });
 
-    it('runs only while focused, active, and unobscured, then cleans up its listener', () => {
-        const harness = renderHook(({ obscured }: { obscured: boolean }) => useBarcodeCameraLifecycle(obscured), {
+    it('runs only while focused, active, and unobscured, then cleans up its listener', async () => {
+        const harness = await renderHook(({ obscured }: { obscured: boolean }) => useBarcodeCameraLifecycle(obscured), {
             initialProps: { obscured: false }
         });
 
         expect(harness.result.current).toBe(true);
-        act(() => appStateListener?.('background'));
+        await act(() => appStateListener?.('background'));
         expect(harness.result.current).toBe(false);
-        act(() => appStateListener?.('active'));
+        await act(() => appStateListener?.('active'));
         expect(harness.result.current).toBe(true);
 
-        harness.rerender({ obscured: true });
+        await harness.rerender({ obscured: true });
         expect(harness.result.current).toBe(false);
-        harness.rerender({ obscured: false });
+        await harness.rerender({ obscured: false });
         expect(harness.result.current).toBe(true);
 
-        act(() => focusCleanup?.());
+        await act(() => focusCleanup?.());
         expect(harness.result.current).toBe(false);
-        harness.unmount();
+        await harness.unmount();
         expect(removeAppStateListener).toHaveBeenCalledTimes(1);
     });
 });

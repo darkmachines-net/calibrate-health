@@ -1,6 +1,5 @@
 /** @file Regression coverage for native setup: setup flags keep check read-only and reject unknown or conflicting options. */
 
-/** Regression coverage for native setup and its failure boundaries. */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -236,7 +235,8 @@ test('all missing toolchain components are reported together and tool stderr can
     JAVA_HOME: path.join(root, 'java'), ANDROID_HOME: path.join(root, 'sdk'), BUNDLETOOL_JAR: path.join(root, 'bundletool.jar')
   }, { platform: 'win32', capture: () => { throw new Error('secret-sentinel'); } });
   assert.deepEqual(checks.filter((check) => !check.ok).map((check) => check.name), [
-    'JDK 17', 'SDK command-line tools', 'SDK platform', 'SDK build-tools', 'SDK platform-tools', 'NDK', 'CMake', 'bundletool'
+    'JDK 17', 'SDK command-line tools', 'SDK platform', 'SDK build-tools', 'Wear SDK build-tools',
+    'Wear SDK platform', 'SDK platform-tools', 'NDK', 'CMake', 'bundletool'
   ]);
   assert.equal(JSON.stringify(checks).includes('secret-sentinel'), false);
 });

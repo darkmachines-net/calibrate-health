@@ -20,16 +20,16 @@ it('rehydrates intent without polluting server snapshots and filters another acc
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     client.setQueryData(['mobile-food', date], []);
     const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-    const view = renderHook(() => useTrackingFood(date), { wrapper });
+    const view = await renderHook(() => useTrackingFood(date), { wrapper });
     expect(view.result.current.data).toEqual([expect.objectContaining({ name: 'Local oats', calories: 200 })]);
     expect(client.getQueryData(['mobile-food', date])).toEqual([]);
     expect(mockGetFoodLog).not.toHaveBeenCalled();
-    mockAuth = { ...mockAuth, user: { id: 2 } }; view.rerender({});
+    mockAuth = { ...mockAuth, user: { id: 2 } }; await view.rerender({});
     expect(view.result.current.data).toEqual([]);
-    mockAuth = { ...mockAuth, user: { id: 1 }, serverUrl: 'https://two.invalid' }; view.rerender({});
+    mockAuth = { ...mockAuth, user: { id: 1 }, serverUrl: 'https://two.invalid' }; await view.rerender({});
     expect(view.result.current.data).toEqual([]);
     await waitFor(() => expect(mockGetFoodLog).toHaveBeenCalled());
-    view.unmount(); client.clear();
+    await view.unmount(); client.clear();
 });
 
 it('fetches unrelated dates and refreshes through a failed food edit without erasing queued intent', async () => {
@@ -38,13 +38,13 @@ it('fetches unrelated dates and refreshes through a failed food edit without era
     mockMutations = [{ ...queued, payload: { ...queued.payload as object, date: '2026-07-22' } }];
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-    const view = renderHook(() => useTrackingFood(date), { wrapper });
+    const view = await renderHook(() => useTrackingFood(date), { wrapper });
     await waitFor(() => expect(view.result.current.data?.[0].name).toBe('Server oats'));
     mockMutations = [{ ...queued, operation: 'food.update', payload: { date, id: 7, update: { calories: 200 } }, state: 'failed' }];
-    view.rerender({});
+    await view.rerender({});
     await view.result.current.refetch();
     await waitFor(() => expect(mockGetFoodLog).toHaveBeenCalledTimes(2));
     expect(view.result.current.data?.[0].calories).toBe(200);
     expect(client.getQueryData(['mobile-food', date])).toEqual([expect.objectContaining({ calories: 100 })]);
-    view.unmount(); client.clear();
+    await view.unmount(); client.clear();
 });

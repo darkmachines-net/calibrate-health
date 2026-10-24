@@ -110,7 +110,7 @@ describe('AuthProvider client/server compatibility recovery', () => {
                 <AuthProvider>{children}</AuthProvider>
             </QueryClientProvider>
         );
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = await renderHook(() => useAuth(), { wrapper });
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(result.current.clientServerIncompatibility).toEqual(expect.objectContaining({
@@ -147,7 +147,7 @@ describe('AuthProvider client/server compatibility recovery', () => {
                 <AuthProvider>{children}</AuthProvider>
             </QueryClientProvider>
         );
-        const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = await renderHook(() => useAuth(), { wrapper });
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(result.current.clientServerIncompatibility).toEqual(expect.objectContaining({
@@ -163,12 +163,12 @@ describe('AuthProvider client/server compatibility recovery', () => {
 const AUTH_PAYLOAD = {
     access_token: 'access', refresh_token: 'refresh', user: { id: 7, email: 'person@example.com' }
 };
-function renderAuth() {
+async function renderAuth() {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } } });
     const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         <QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider>
     );
-    return renderHook(() => useAuth(), { wrapper });
+    return await renderHook(() => useAuth(), { wrapper });
 }
 
 describe('native onboarding draft cleanup', () => {
@@ -183,10 +183,10 @@ describe('native onboarding draft cleanup', () => {
     });
 
     it('revokes the retained native refresh token through an ungated client after a tracking timeout', async () => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.user?.id).toBe(7));
         const trackingClient = mockClientOptions.find(options => options.onRequestError)!;
-        act(() => trackingClient.onRequestError!(new TypeError('Network unavailable')));
+        await act(() => trackingClient.onRequestError!(new TypeError('Network unavailable')));
         expect(result.current.pendingReconnection).toBe(true);
         await act(async () => result.current.logout());
         expect(mockLogoutMobile).toHaveBeenCalledWith('refresh');
@@ -199,7 +199,7 @@ describe('native onboarding draft cleanup', () => {
     });
 
     it.each(['logout', 'clearLocalSession'] as const)('clears the captured account draft on %s', async (method) => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         await act(async () => result.current[method]());
         expect(clearOnboardingDraft).toHaveBeenCalledWith('https://health.example', 7);
@@ -208,7 +208,7 @@ describe('native onboarding draft cleanup', () => {
     });
 
     it('preserves a same-account session and clears the former account on replacement', async () => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         await act(async () => { await result.current.login('person@example.com', 'password', 'https://health.example'); });
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
@@ -219,7 +219,7 @@ describe('native onboarding draft cleanup', () => {
     });
 
     it('preserves the draft after a failed server probe and clears it for a confirmed switch', async () => {
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         jest.mocked(testCalibrateServerConnection).mockResolvedValueOnce({ ok: false, url: null, code: 'unreachable', message: 'Offline' });
         await act(async () => { await result.current.setServerUrl('https://other.example'); });
@@ -232,7 +232,7 @@ describe('native onboarding draft cleanup', () => {
 
     it('does not clear saved progress for a transient startup network failure', async () => {
         mockGetClientConfig.mockRejectedValueOnce(new Error('Network unavailable'));
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
         expect(clearStoredTokens).not.toHaveBeenCalled();
@@ -250,7 +250,7 @@ describe('native offline workspace restoration', () => {
         await saveOfflineWorkspace('https://health.example', AUTH_PAYLOAD.user as never, cache);
         if (kind === 'network') mockGetClientConfig.mockRejectedValueOnce(new TypeError('Network unavailable'));
         else mockRefreshMobile.mockRejectedValueOnce(new (require('@calibrate/api-client').ApiError)(503, 'Authentication unavailable'));
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(result.current.user?.id).toBe(7);
         expect(result.current.pendingReconnection).toBe(true);
@@ -262,7 +262,7 @@ describe('native offline workspace restoration', () => {
     it('does not resurrect a confirmed rejected session on a later offline restart', async () => {
         await saveOfflineWorkspace('https://health.example', AUTH_PAYLOAD.user as never, new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } }));
         mockRefreshMobile.mockRejectedValueOnce(new (require('@calibrate/api-client').ApiError)(401, 'Revoked'));
-        const { result } = renderAuth();
+        const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(result.current.user).toBeNull();
         expect(await restoreOfflineWorkspace('https://health.example', new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } }))).toBeNull();
@@ -272,21 +272,21 @@ describe('native offline workspace restoration', () => {
 
 it('persists a verified user access update without waiting for another tracking query', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' }); mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     const updated = { ...result.current.user!, account_access: { state: 'full' } } as never;
-    act(() => result.current.updateCurrentUser(updated));
+    await act(() => result.current.updateCurrentUser(updated));
     const restored = await restoreOfflineWorkspace('https://health.example', new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } }));
     expect(restored?.account_access?.state).toBe('full');
 });
 
 it('keeps the established identity and enters reconnection after a completed timeout', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' }); mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     const observer = mockClientOptions.find((options) => options.onRequestError)?.onRequestError;
     expect(observer).toBeDefined();
-    act(() => observer!(new Error('Request timed out while connecting to https://health.example')));
+    await act(() => observer!(new Error('Request timed out while connecting to https://health.example')));
     expect(result.current.pendingReconnection).toBe(true);
     expect(result.current.user?.id).toBe(7);
 });
@@ -294,13 +294,13 @@ it('keeps the established identity and enters reconnection after a completed tim
 it('does not restore native tokens from a refresh that finishes after logout', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
     mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
-    act(() => mockClientOptions.find(options => options.onRequestError)!.onRequestError!(new TypeError('Network unavailable')));
+    await act(() => mockClientOptions.find(options => options.onRequestError)!.onRequestError!(new TypeError('Network unavailable')));
     let finish!: (value: unknown) => void;
     mockRefreshMobile.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     let reconnect!: Promise<boolean>;
-    act(() => { reconnect = result.current.recheckClientCompatibility(); void reconnect.catch(() => undefined); });
+    await act(() => { reconnect = result.current.recheckClientCompatibility(); void reconnect.catch(() => undefined); });
     await waitFor(() => expect(finish).toBeDefined());
     await act(async () => result.current.logout());
     await act(async () => { finish({ ...AUTH_PAYLOAD, refresh_token: 'rotated-after-logout' }); await expect(reconnect).rejects.toThrow('Authentication scope changed'); });
@@ -312,16 +312,16 @@ it('does not restore native tokens from a refresh that finishes after logout', a
 it('keeps native logout intent across offline restart and drains the old token before another account signs in', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
     mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const first = renderAuth();
+    const first = await renderAuth();
     await waitFor(() => expect(first.result.current.user?.id).toBe(7));
     mockLogoutMobile.mockRejectedValueOnce(new TypeError('Offline'));
     await act(async () => first.result.current.logout());
     expect(first.result.current.user).toBeNull();
     expect([...mockSecureLogoutStorage.values()].some(value => value.includes('refresh'))).toBe(true);
-    first.unmount();
+    await first.unmount();
     mockRefreshMobile.mockClear();
     mockLogoutMobile.mockRejectedValueOnce(new TypeError('Still offline'));
-    const second = renderAuth();
+    const second = await renderAuth();
     await waitFor(() => expect(second.result.current.isLoading).toBe(false));
     expect(second.result.current.user).toBeNull();
     expect(mockRefreshMobile).not.toHaveBeenCalled();
@@ -338,7 +338,7 @@ it('keeps native logout intent across offline restart and drains the old token b
 it('revokes the native session even when local draft cleanup fails', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
     mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     mockLogoutMobile.mockClear();
     jest.mocked(clearOnboardingDraft).mockRejectedValueOnce(new Error('Storage unavailable'));
@@ -352,7 +352,7 @@ it('revokes the native session even when local draft cleanup fails', async () =>
 it('clears UI and revokes the native token when writing logout intent fails', async () => {
     mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
     mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
-    const { result } = renderAuth();
+    const { result } = await renderAuth();
     await waitFor(() => expect(result.current.user?.id).toBe(7));
     mockLogoutMobile.mockClear();
     jest.mocked(require('expo-secure-store').setItemAsync).mockRejectedValueOnce(new Error('Storage full'));

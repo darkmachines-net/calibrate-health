@@ -32,7 +32,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
     const styles = useMemo(() => createStyles(theme), [theme]);
     const [isFocused, setIsFocused] = useState(false);
     const [pickerDate, setPickerDate] = useState<Date | null>(null);
-    const fieldRef = useRef<View | null>(null);
+    const fieldRef = useRef<React.ComponentRef<typeof View> | null>(null);
 
     useImperativeHandle(controlRef, () => ({
         focus: () => {
@@ -40,7 +40,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
             element?.focus();
             if (Platform.OS === 'web' || !element) return;
             const handle = findNodeHandle(element);
-            if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+            if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
         }
     }), []);
 

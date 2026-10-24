@@ -63,76 +63,76 @@ describe('PreferencesSettingsScreen draft refresh', () => {
     });
     afterEach(() => { jest.restoreAllMocks(); });
 
-    it('keeps permission requests and blocked-device recovery on Preferences', () => {
+    it('keeps permission requests and blocked-device recovery on Preferences', async () => {
         jest.replaceProperty(Platform, 'OS', 'ios');
         mockPushState = NATIVE_PUSH_STATES.PERMISSION_REQUIRED;
         const client = new QueryClient();
-        const screen = render(editor(client));
+        const screen = await render(editor(client));
         const delivery = within(screen.getByTestId('settings-delivery-permission'));
         expect(delivery.queryByText(/token|endpoint|p256dh|auth/i)).toBeNull();
-        fireEvent.press(delivery.getByRole('button', { name: 'Enable push notifications' }));
+        await fireEvent.press(delivery.getByRole('button', { name: 'Enable push notifications' }));
         expect(mockRequestPermission).toHaveBeenCalledTimes(1);
 
         mockPushState = NATIVE_PUSH_STATES.BLOCKED;
-        screen.rerender(editor(client));
+        await screen.rerender(editor(client));
         expect(delivery.getByText(/Enable them in iOS settings/)).toBeTruthy();
-        fireEvent.press(delivery.getByRole('button', { name: 'Open device settings' }));
-        fireEvent.press(delivery.getByRole('button', { name: 'Check again' }));
+        await fireEvent.press(delivery.getByRole('button', { name: 'Open device settings' }));
+        await fireEvent.press(delivery.getByRole('button', { name: 'Check again' }));
         expect(mockOpenSettings).toHaveBeenCalledTimes(1);
         expect(mockRefreshPermission).toHaveBeenCalledTimes(1);
-        screen.unmount();
+        await screen.unmount();
         client.clear();
     });
 
-    it('retries registration from Preferences without changing reminder intent', () => {
+    it('retries registration from Preferences without changing reminder intent', async () => {
         mockPushState = NATIVE_PUSH_STATES.ERROR;
         const client = new QueryClient();
-        const screen = render(editor(client));
-        fireEvent.press(screen.getByRole('button', { name: 'Retry push registration' }));
+        const screen = await render(editor(client));
+        await fireEvent.press(screen.getByRole('button', { name: 'Retry push registration' }));
         expect(mockRetryRegistration).toHaveBeenCalledTimes(1);
         expect(screen.getByRole('switch', { name: 'Food reminders' })).toBeChecked();
         expect(screen.getByRole('switch', { name: 'Weight reminders' })).toBeChecked();
-        screen.unmount();
+        await screen.unmount();
         client.clear();
     });
 
-    it.each(['ios', 'android'] as const)('uses the %s notification status on the routed page', (platform) => {
+    it.each(['ios', 'android'] as const)('uses the %s notification status on the routed page', async (platform) => {
         jest.replaceProperty(Platform, 'OS', platform);
         const client = new QueryClient();
-        const screen = render(editor(client));
+        const screen = await render(editor(client));
         const platformLabel = platform === 'ios' ? 'iOS' : 'Android';
         expect(screen.getByText(
             `Remote push is unavailable in Expo Go. Use a native ${platformLabel} development or release build.`
         )).toBeOnTheScreen();
-        screen.unmount();
+        await screen.unmount();
         client.clear();
     });
 
-    it('preserves unsaved reminder input when account data refreshes', () => {
+    it('preserves unsaved reminder input when account data refreshes', async () => {
         const client = new QueryClient();
-        const screen = render(editor(client));
-        fireEvent.changeText(screen.getByTestId('settings-food-reminder-time'), '08:30');
+        const screen = await render(editor(client));
+        await fireEvent.changeText(screen.getByTestId('settings-food-reminder-time'), '08:30');
 
         mockUser = { ...mockUser, reminder_log_food_time: '10:00', haptics_enabled: false };
-        screen.rerender(editor(client));
+        await screen.rerender(editor(client));
 
         expect(screen.getByTestId('settings-food-reminder-time').props.value).toBe('08:30');
         expect(screen.getByRole('switch', { name: 'Haptics' })).toBeChecked();
-        screen.unmount();
+        await screen.unmount();
         client.clear();
     });
 
-    it('refreshes an untouched editor without treating remote values as a draft', () => {
+    it('refreshes an untouched editor without treating remote values as a draft', async () => {
         const client = new QueryClient();
-        const screen = render(editor(client));
+        const screen = await render(editor(client));
         mockUser = { ...mockUser, reminder_log_food_time: '10:00' };
-        screen.rerender(editor(client));
+        await screen.rerender(editor(client));
         expect(screen.getByTestId('settings-food-reminder-time').props.value).toBe('10:00');
 
         mockUser = { ...mockUser, reminder_log_food_time: '11:00' };
-        screen.rerender(editor(client));
+        await screen.rerender(editor(client));
         expect(screen.getByTestId('settings-food-reminder-time').props.value).toBe('11:00');
-        screen.unmount();
+        await screen.unmount();
         client.clear();
     });
 });

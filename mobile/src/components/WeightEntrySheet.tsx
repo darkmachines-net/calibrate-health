@@ -92,7 +92,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
     const queryClient = useQueryClient();
     const reduceMotion = useReducedMotionPreference();
     const isOnline = useOnlineStatus();
-    const resultHeadingRef = useRef<View>(null);
+    const resultHeadingRef = useRef<React.ComponentRef<typeof View>>(null);
     const [phase, setPhase] = useState<SheetPhase>('loading');
     const [pendingAction, setPendingAction] = useState<'save' | 'delete'>('save');
     const [weight, setWeight] = useState('');
@@ -222,7 +222,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
             try {
                 if (Platform.OS !== 'web') {
                     const node = findNodeHandle(resultHeadingRef.current);
-                    if (node !== null) AccessibilityInfo.setAccessibilityFocus(node);
+                    if (node != null) AccessibilityInfo.setAccessibilityFocus(node);
                 }
                 AccessibilityInfo.announceForAccessibility(announcement);
             } catch {

@@ -61,7 +61,7 @@ describe('useAppUpdateController', () => {
             isRollBackToEmbedded: false
         });
         mockReloadAsync.mockResolvedValue(undefined);
-        const { result } = renderHook(() => useAppUpdateController());
+        const { result } = await renderHook(() => useAppUpdateController());
 
         await act(async () => result.current.action());
         expect(result.current.actionTitle).toBe('Install and restart');
@@ -75,7 +75,7 @@ describe('useAppUpdateController', () => {
     it('restarts immediately when an update is already downloaded', async () => {
         mockUpdatesState.isUpdatePending = true;
         mockReloadAsync.mockResolvedValue(undefined);
-        const { result } = renderHook(() => useAppUpdateController());
+        const { result } = await renderHook(() => useAppUpdateController());
 
         expect(result.current.actionTitle).toBe('Restart to update');
         await act(async () => result.current.action());

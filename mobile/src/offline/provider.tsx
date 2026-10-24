@@ -44,7 +44,10 @@ const OfflineOutboxContext = createContext<OfflineOutboxContextValue | null>(nul
 export function OfflineOutboxProvider({ children, executeMutation, onReplayCompleted }: OfflineOutboxProviderProps) {
     const { serverUrl, user } = useAuth();
     const userId = hasFullAccountAccess(user) ? user?.id : undefined;
-    const [outbox, setOutbox] = useState<SqliteOutbox | null>(null);
+    const namespace = userId === undefined ? null : createOutboxNamespace(serverUrl, userId);
+    const [outboxBinding, setOutboxBinding] = useState<{ namespace: string; store: SqliteOutbox } | null>(null);
+    // Concurrent rendering can observe the new account before the old store's effect is cleaned up.
+    const outbox = outboxBinding?.namespace === namespace ? outboxBinding.store : null;
     const [dayIntents, setDayIntents] = useState<QueuedMutation[]>([]);
     const [mutations, setMutations] = useState<QueuedMutation[]>([]);
     const [newEnqueue, setNewEnqueue] = useState<{ store: SqliteOutbox } | null>(null);
@@ -55,7 +58,7 @@ export function OfflineOutboxProvider({ children, executeMutation, onReplayCompl
 
     useEffect(() => {
         let active = true;
-        setOutbox(null);
+        setOutboxBinding(null);
         setMutations([]);
         setDayIntents([]);
         setInitializationError(null);
@@ -67,7 +70,7 @@ export function OfflineOutboxProvider({ children, executeMutation, onReplayCompl
             const receipts = await readFoodDayReceipts(userId === undefined ? 'unavailable' : createOutboxNamespace(serverUrl, userId));
             const nextMutations = await nextOutbox.list();
             if (active) {
-                setOutbox(nextOutbox);
+                setOutboxBinding({ namespace, store: nextOutbox });
                 setMutations(nextMutations);
                 setDayIntents(receipts);
             }

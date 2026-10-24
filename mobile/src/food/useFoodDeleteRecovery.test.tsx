@@ -54,13 +54,13 @@ describe('useFoodDeleteRecovery', () => {
         jest.restoreAllMocks();
     });
 
-    function setup(deleteFoodLog = jest.fn(async () => undefined)) {
+    async function setup(deleteFoodLog = jest.fn(async () => undefined)) {
         const enqueue = jest.fn(async () => undefined);
         const retryFailed = jest.fn(async () => undefined);
         const onCommitted = jest.fn(async () => undefined);
         const ids = ['delete-1', 'delete-2', 'delete-3'];
         const entries = [entry(1), entry(2), entry(3)];
-        const rendered = renderHook(() => useFoodDeleteRecovery({
+        const rendered = await renderHook(() => useFoodDeleteRecovery({
             entries,
             deleteFoodLog,
             outbox: { enqueue, mutations: [], retryFailed },
@@ -71,12 +71,12 @@ describe('useFoodDeleteRecovery', () => {
     }
 
     it('optimistically hides and Undo cancels timer, server, and outbox work', async () => {
-        const harness = setup();
+        const harness = await setup();
 
-        act(() => { harness.result.current.requestDelete(entry(1)); });
+        await act(() => { harness.result.current.requestDelete(entry(1)); });
         expect(harness.result.current.visibleEntries.map(({ id }) => id)).toEqual([2, 3]);
         expect(harness.result.current.pendingDelete?.operationId).toBe('delete-1');
-        act(() => { harness.result.current.undo('delete-1'); });
+        await act(() => { harness.result.current.undo('delete-1'); });
         expect(harness.result.current.visibleEntries.map(({ id }) => id)).toEqual([1, 2, 3]);
 
         await act(async () => {
@@ -88,16 +88,16 @@ describe('useFoodDeleteRecovery', () => {
     });
 
     it('flushes pending deletes on app background and route exit', async () => {
-        const harness = setup();
+        const harness = await setup();
 
-        act(() => { harness.result.current.requestDelete(entry(1)); });
+        await act(() => { harness.result.current.requestDelete(entry(1)); });
         await act(async () => {
             appStateListener?.('background');
             await drainPromises();
         });
         expect(harness.deleteFoodLog).toHaveBeenNthCalledWith(1, 1, 'delete-1');
 
-        act(() => { harness.result.current.requestDelete(entry(2)); });
+        await act(() => { harness.result.current.requestDelete(entry(2)); });
         await act(async () => {
             mockFocusCleanup?.();
             await drainPromises();
@@ -107,9 +107,9 @@ describe('useFoodDeleteRecovery', () => {
 
     it('queues offline deletes exactly once and in request order with their stable IDs', async () => {
         const deleteFoodLog = jest.fn(async () => { throw new TypeError('Network request failed'); });
-        const harness = setup(deleteFoodLog);
+        const harness = await setup(deleteFoodLog);
 
-        act(() => {
+        await act(() => {
             harness.result.current.requestDelete(entry(1));
             harness.result.current.requestDelete(entry(2));
         });
@@ -134,9 +134,9 @@ describe('useFoodDeleteRecovery', () => {
         const deleteFoodLog = jest.fn()
             .mockRejectedValueOnce(new Error('private server detail'))
             .mockResolvedValueOnce(undefined);
-        const harness = setup(deleteFoodLog);
+        const harness = await setup(deleteFoodLog);
 
-        act(() => { harness.result.current.requestDelete(entry(3)); });
+        await act(() => { harness.result.current.requestDelete(entry(3)); });
         await act(async () => {
             jest.advanceTimersByTime(6_000);
             await drainPromises();
@@ -174,7 +174,7 @@ describe('useFoodDeleteRecovery', () => {
             createdAt: 1,
             updatedAt: 2
         };
-        const rendered = renderHook(() => useFoodDeleteRecovery({
+        const rendered = await renderHook(() => useFoodDeleteRecovery({
             entries: [entry(1), entry(2)],
             deleteFoodLog: jest.fn(async () => undefined),
             outbox: {
