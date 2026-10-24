@@ -1,4 +1,4 @@
-/** @file Exact candidate/source CI proof verification before protected release finalization. */
+/** @file Verifies exact candidate/source CI and successful classification before protected release finalization. */
 
 import { appendFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 // Only canonical version-mirror candidates reach this gate. Builds intentionally
 // suppresses platform fan-out; database rollback requires an actual migration.
 export const REQUIRED_CI = {
-  'lint.yml': ['Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)'],
+  'lint.yml': ['Backend, Shared, API Client, and Mobile Typecheck', 'ESLint (zero warnings)', 'Classify Lint Inputs'],
   'tests.yml': ['Classify Test Inputs', 'Backend Tests', 'Mobile Tests', 'Required Tests'],
   'builds.yml': ['Classify Build Inputs', 'Release Configuration'],
   'container-scan.yml': ['Classify Production Image Inputs', 'High and Critical Vulnerabilities'],

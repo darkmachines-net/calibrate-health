@@ -51,26 +51,21 @@ jobs:
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
-      - name: Detect affected production image surfaces
+      - name: Checkout complete PR history for affected checks
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select affected PR inputs
         if: inputs.release_sha == '' && github.event_name == 'pull_request'
         id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            image:
-              - '.github/workflows/container-scan.yml'
-              - '.dockerignore'
-              - 'Dockerfile.app'
-              - 'backend/**'
-              - 'mobile/**'
-              - 'package-lock.json'
-              - 'package.json'
-              - 'packages/**'
-              - 'scripts/expo-cli-environment.mjs'
-              - 'scripts/expo-web-build.mjs'
-              - 'scripts/expo-web-release.mjs'
-              - 'scripts/production-container-smoke.mjs'
-              - 'shared/**'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
 
       - name: Select scan execution
         id: decision
