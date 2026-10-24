@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "repository": "MChartier/calibrate-health",
+  "repository": "darkmachines-net/calibrate-health",
   "defaultBranch": "master",
   "profiles": {
     "production": {
