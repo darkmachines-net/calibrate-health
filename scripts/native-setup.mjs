@@ -2,8 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';

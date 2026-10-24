@@ -114,9 +114,13 @@
   "devDependencies": {
     "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#bb7a6cb257664b7cc3c0e9e48f4c5b112a54aa8c",
     "@axe-core/playwright": "^4.12.1",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "^1.61.1",
     "@types/node": "^20.0.0",
     "esbuild-wasm": "^0.28.1",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
     "knip": "6.29.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.72.0",

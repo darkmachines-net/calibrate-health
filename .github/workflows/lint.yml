@@ -1,3 +1,4 @@
+# Check authored source for lint warnings and TypeScript errors before merge.
 name: Lint
 
 on:
@@ -56,23 +57,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
           persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Setup Node
         if: needs.changes.outputs.eslint == 'true' || needs.changes.outputs.kotlin == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
+          node-version: 22.14.0
           cache: npm
 
       - name: Install workspace deps

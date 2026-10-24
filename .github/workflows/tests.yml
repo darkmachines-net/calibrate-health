@@ -1,3 +1,4 @@
+# Run selected application suites and require successful results before merge.
 name: Tests
 
 on:
@@ -166,7 +167,7 @@ jobs:
         run: npm --prefix mobile test
 
   required-tests:
-    name: Required Tests${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Required Tests
     needs: [changes, backend-tests, mobile-tests]
     if: always()
     runs-on: ubuntu-latest
@@ -176,17 +177,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
           persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Verify test gate behavior
         run: node --test scripts/ci-test-gate.test.mjs
