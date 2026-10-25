@@ -51,7 +51,7 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
     const [actionHeight, setActionHeight] = useState(0);
     const inlineActions = desktop || fontScale >= 1.5
         || (availableHeight > 0 && actionHeight + MIN_FORM_VIEWPORT_HEIGHT > availableHeight);
-    const headingRef = useRef<View>(null);
+    const headingRef = useRef<React.ComponentRef<typeof View>>(null);
     const controls = useMemo(() => Object.fromEntries(CONTROL_ORDER.map((field) => [
         field, React.createRef<FocusableFormControl>()
     ])) as OnboardingControlRefs, []);
@@ -62,7 +62,7 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
         if (Platform.OS === 'web') headingRef.current?.focus();
         else {
             const handle = findNodeHandle(headingRef.current);
-            if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+            if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
         }
     }, [controller.step, controller.isHydrating]);
     useEffect(() => {

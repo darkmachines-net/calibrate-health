@@ -12,9 +12,9 @@ jest.mock('../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 7 }, ser
 jest.mock('../offline/provider', () => ({ useOfflineOutbox: () => ({ mutations: mockMutations }) }));
 const serverPause = { active: true, id: 4, starts_on: '2026-07-20', expected_resume_on: '2026-08-03', resumed_on: null, started_at: null, resumed_at: null, materialized_through: '2026-07-21', resume_confirmation_due: false };
 const queued = (operation: string, payload: QueuedMutation['payload']): QueuedMutation => ({ sequence: 1, operation, payload, namespace: 'https://example.test::user:7', id: '1', state: 'pending', attemptCount: 0, lastError: null, createdAt: 1, updatedAt: 1 });
-function mount() {
+async function mount() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-    const screen = renderHook(() => useFoodTrackingPause(), { wrapper: ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+    const screen = await renderHook(() => useFoodTrackingPause(), { wrapper: ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
     return { ...screen, client };
 }
 
@@ -22,11 +22,11 @@ it('keeps queued start/date across a new observer, manual refetch and another re
     mockMutations = [queued('food-tracking-pause.start', { starts_on: '2026-07-21', expected_resume_on: '2026-08-04' })];
     mockGetPause.mockResolvedValue({ pause: { ...serverPause, active: false } });
     for (let mountCount = 0; mountCount < 2; mountCount++) {
-        const screen = mount();
+        const screen = await mount();
         await waitFor(() => expect(screen.result.current.isSuccess).toBe(true));
         await act(async () => { await screen.result.current.refetch(); });
         expect(screen.result.current.data?.pause).toMatchObject({ active: true, starts_on: '2026-07-21', expected_resume_on: '2026-08-04' });
-        screen.unmount(); screen.client.clear();
+        await screen.unmount(); screen.client.clear();
     }
 });
 
@@ -36,24 +36,24 @@ it.each([
 ] as const)('keeps %s through server refetch until replay removes the overlay', async (operation, payload, expected) => {
     mockMutations = [queued(operation, payload)];
     mockGetPause.mockResolvedValue({ pause: serverPause });
-    const screen = mount();
+    const screen = await mount();
     await waitFor(() => expect(screen.result.current.isSuccess).toBe(true));
     await act(async () => { await screen.result.current.refetch(); });
     expect(screen.result.current.data?.pause).toMatchObject(expected);
     mockGetPause.mockResolvedValue({ pause: { ...serverPause, ...expected } });
-    mockMutations = []; screen.rerender({});
+    mockMutations = []; await screen.rerender({});
     await waitFor(() => expect(screen.result.current.data?.pause).toMatchObject(expected));
-    screen.unmount(); screen.client.clear();
+    await screen.unmount(); screen.client.clear();
 });
 
 it.each(['failed', 'discarded'])('restores server metadata when queued intent is %s', async disposition => {
     const mutation = queued('food-tracking-pause.update', { expected_resume_on: '2026-09-01' });
     mockMutations = [mutation]; mockGetPause.mockResolvedValue({ pause: serverPause });
-    const screen = mount();
+    const screen = await mount();
     await waitFor(() => expect(screen.result.current.isSuccess).toBe(true));
     expect(screen.result.current.data?.pause.expected_resume_on).toBe('2026-09-01');
     mockMutations = disposition === 'failed' ? [{ ...mutation, state: 'failed' }] : [];
-    screen.rerender({});
+    await screen.rerender({});
     await waitFor(() => expect(screen.result.current.data?.pause.expected_resume_on).toBe('2026-08-03'));
-    screen.unmount(); screen.client.clear();
+    await screen.unmount(); screen.client.clear();
 });

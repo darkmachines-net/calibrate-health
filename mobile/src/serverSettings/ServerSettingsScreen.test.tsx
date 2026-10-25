@@ -21,9 +21,9 @@ jest.mock('../components/AsyncStateBoundary', () => ({ useOnlineStatus: () => mo
 const response = (enabled: boolean, admin = true) => ({
     features: { nutrition_label_scanning: enabled }, is_admin: admin
 });
-function setup() {
+async function setup() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false, gcTime: 0 } } });
-    const screen = render(<QueryClientProvider client={client}><ServerSettingsScreen /></QueryClientProvider>);
+    const screen = await render(<QueryClientProvider client={client}><ServerSettingsScreen /></QueryClientProvider>);
     return { screen, client };
 }
 beforeEach(() => {
@@ -37,20 +37,20 @@ beforeEach(() => {
 afterEach(cleanup);
 
 test('admin can enable and disable the server setting and sees the persisted result', async () => {
-    const { screen } = setup();
+    const { screen } = await setup();
     const toggle = await screen.findByRole('switch', { name: 'Nutrition label scanning' });
     expect(toggle.props.accessibilityState.checked).toBe(false);
-    fireEvent.press(toggle);
+    await fireEvent.press(toggle);
     await waitFor(() => expect(screen.getByRole('switch').props.accessibilityState.checked).toBe(true));
     expect(mockApi.updateServerSettings).toHaveBeenLastCalledWith({ nutrition_label_scanning: true });
-    fireEvent.press(screen.getByRole('switch'));
+    await fireEvent.press(screen.getByRole('switch'));
     await waitFor(() => expect(screen.getByRole('switch').props.accessibilityState.checked).toBe(false));
     expect(mockApi.updateServerSettings).toHaveBeenLastCalledWith({ nutrition_label_scanning: false });
 });
 
 test('a direct admin URL does not expose controls to a non-admin', async () => {
     mockApi.getServerSettings.mockResolvedValue(response(false, false));
-    const { screen } = setup();
+    const { screen } = await setup();
     await screen.findByText(/administrator access is required/);
     expect(screen.queryByRole('switch')).toBeNull();
     expect(mockApi.updateServerSettings).not.toHaveBeenCalled();
@@ -58,26 +58,26 @@ test('a direct admin URL does not expose controls to a non-admin', async () => {
 
 test('failed saves retain the server value and permit retry', async () => {
     mockApi.updateServerSettings.mockRejectedValueOnce(new Error('Unavailable'));
-    const { screen } = setup();
-    fireEvent.press(await screen.findByRole('switch'));
+    const { screen } = await setup();
+    await fireEvent.press(await screen.findByRole('switch'));
     await screen.findByText('The setting could not be saved. Try again.');
     expect(screen.getByRole('switch').props.accessibilityState.checked).toBe(false);
-    fireEvent.press(screen.getByRole('switch'));
+    await fireEvent.press(screen.getByRole('switch'));
     await waitFor(() => expect(screen.getByRole('switch').props.accessibilityState.checked).toBe(true));
 });
 
 test('loading and failed configuration never expose a toggle and can be retried', async () => {
     mockApi.getServerSettings.mockRejectedValueOnce(new Error('Unavailable'));
-    const { screen } = setup();
+    const { screen } = await setup();
     expect(screen.queryByRole('switch')).toBeNull();
     await screen.findByText('Server settings could not be loaded.');
-    fireEvent.press(screen.getByText('Try again'));
+    await fireEvent.press(screen.getByText('Try again'));
     await screen.findByRole('switch');
 });
 
 test('offline administration cannot send a mutation', async () => {
     mockOnline = false;
-    const { screen } = setup();
+    const { screen } = await setup();
     expect(screen.getByText('Connect to the server to manage its settings.')).toBeTruthy();
     expect(screen.queryByRole('switch')).toBeNull();
     expect(mockApi.updateServerSettings).not.toHaveBeenCalled();
@@ -91,16 +91,16 @@ test('feature reads fail closed after refresh errors and never cross server or a
         return <AppText>{settings.nutritionLabelScanning ? 'enabled' : 'disabled'}</AppText>;
     }
     const tree = () => <QueryClientProvider client={client}><Probe /></QueryClientProvider>;
-    const screen = render(tree());
+    const screen = await render(tree());
     await screen.findByText('enabled');
     mockApi.getServerSettings.mockRejectedValue(new Error('Unavailable'));
     await act(async () => { await client.invalidateQueries({ queryKey: serverSettingsQueryKey(mockServerUrl, 1) }); });
     await screen.findByText('disabled');
     mockApi.getServerSettings.mockImplementation(() => new Promise(() => {}));
     mockServerUrl = 'https://two.example';
-    screen.rerender(tree());
+    await screen.rerender(tree());
     expect(screen.getByText('disabled')).toBeTruthy();
     mockUser = { id: 2 };
-    screen.rerender(tree());
+    await screen.rerender(tree());
     expect(screen.getByText('disabled')).toBeTruthy();
 });

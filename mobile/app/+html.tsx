@@ -1,8 +1,9 @@
 /** @file +html: Web-only document metadata shared by every statically rendered Expo route. */
 
 import { type PropsWithChildren } from 'react';
-import { ScrollViewStyleReset } from 'expo-router/html';
+import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { WEB_ACCESSIBILITY_STYLES } from '../src/accessibility/webAccessibilityStyles';
+import { resolveRouteMetadata } from '../src/navigation/routeMetadata';
 
 const ONE_TIME_TOKEN_BOOTSTRAP = `
 (function () {
@@ -21,10 +22,16 @@ const ONE_TIME_TOKEN_BOOTSTRAP = `
 })();`;
 
 /** Web-only document metadata shared by every statically rendered Expo route. */
-export default function RootHtml({ children }: PropsWithChildren) {
+export default function RootHtml({ children, pathname }: PropsWithChildren<{ pathname: string }>) {
+    const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
+    const metadata = resolveRouteMetadata(pathname, { authenticated: false });
     return (
-        <html lang="en">
+        <html lang="en" {...htmlAttributes}>
             <head>
+                <title>{metadata.title}</title>
+                <meta name="description" content={metadata.description} />
+                <meta name="robots" content={metadata.robots} />
+                {metadata.canonicalPath ? <link rel="canonical" href={metadata.canonicalPath} /> : null}
                 <meta charSet="utf-8" />
                 <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
                 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
@@ -35,9 +42,11 @@ export default function RootHtml({ children }: PropsWithChildren) {
                 <style dangerouslySetInnerHTML={{ __html: WEB_ACCESSIBILITY_STYLES }} />
                 <script dangerouslySetInnerHTML={{ __html: ONE_TIME_TOKEN_BOOTSTRAP }} />
                 <ScrollViewStyleReset />
+                {headNodes}
             </head>
-            <body>
+            <body {...bodyAttributes}>
                 {children}
+                {bodyNodes}
             </body>
         </html>
     );

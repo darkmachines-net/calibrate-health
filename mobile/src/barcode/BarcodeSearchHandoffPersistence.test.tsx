@@ -35,7 +35,7 @@ function HandoffHarness() {
 
 describe('barcode Search foods handoff persistence', () => {
     it('keeps the Add food sheet open after transient route params are scrubbed in place', async () => {
-        const screen = render(<HandoffHarness />);
+        const screen = await render(<HandoffHarness />);
 
         await waitFor(() => expect(screen.getByText('Add food DINNER')).toBeTruthy());
         expect(screen.getByText('Params scrubbed')).toBeTruthy();

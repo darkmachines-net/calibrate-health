@@ -4,8 +4,8 @@ import { render } from '@testing-library/react-native';
 import { AuthBrand } from './AuthBrand';
 
 describe('AuthBrand', () => {
-    it('renders the gauge wordmark and screen-specific supporting copy', () => {
-        const screen = render(<AuthBrand description="Your Calibrate history, on your server." />);
+    it('renders the gauge wordmark and screen-specific supporting copy', async () => {
+        const screen = await render(<AuthBrand description="Your Calibrate history, on your server." />);
 
         expect(screen.getByText('Calibrate Health')).toBeTruthy();
         expect(screen.getByText('calibrate')).toBeTruthy();

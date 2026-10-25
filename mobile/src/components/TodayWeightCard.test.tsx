@@ -15,9 +15,9 @@ const TODAY_METRIC: MetricEntry = {
 };
 
 describe('TodayWeightCard', () => {
-    it("shows today's saved weight and offers to edit it", () => {
+    it("shows today's saved weight and offers to edit it", async () => {
         const onPress = jest.fn();
-        const screen = render(
+        const screen = await render(
             <TodayWeightCard metric={TODAY_METRIC} weightUnit="LB" isToday onPress={onPress} />
         );
 
@@ -27,12 +27,12 @@ describe('TodayWeightCard', () => {
         expect(screen.queryByRole('button', { name: 'Edit weight' })).toBeNull();
         expect(screen.getAllByRole('button')).toHaveLength(1);
 
-        fireEvent.press(screen.getByTestId('today-weight-card-press-layer'));
+        await fireEvent.press(screen.getByTestId('today-weight-card-press-layer'));
         expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it('offers a focused weigh-in action when today has no measurement', () => {
-        const screen = render(
+    it('offers a focused weigh-in action when today has no measurement', async () => {
+        const screen = await render(
             <TodayWeightCard metric={null} weightUnit="KG" isToday onPress={jest.fn()} />
         );
 
@@ -42,8 +42,8 @@ describe('TodayWeightCard', () => {
         expect(screen.queryByText('No weigh-in yet')).toBeNull();
     });
 
-    it('uses day-specific copy when browsing a previous date', () => {
-        const screen = render(
+    it('uses day-specific copy when browsing a previous date', async () => {
+        const screen = await render(
             <TodayWeightCard metric={TODAY_METRIC} weightUnit="LB" isToday={false} onPress={jest.fn()} />
         );
 
@@ -51,9 +51,9 @@ describe('TodayWeightCard', () => {
         expect(screen.getByText('Logged for this day')).toBeTruthy();
     });
 
-    it('uses one full-row target and lets compact weight copy wrap', () => {
+    it('uses one full-row target and lets compact weight copy wrap', async () => {
         const onPress = jest.fn();
-        const screen = render(
+        const screen = await render(
             <TodayWeightCard metric={TODAY_METRIC} weightUnit="LB" isToday onPress={onPress} />
         );
         const target = screen.getByTestId('today-weight-card-press-layer');
@@ -67,10 +67,10 @@ describe('TodayWeightCard', () => {
             flex: 1
         });
 
-        fireEvent(target, 'hoverIn');
+        await fireEvent(target, 'hoverIn');
         expect(target).toHaveStyle({ backgroundColor: themes.light.colors.surfaceHovered });
-        fireEvent(target, 'hoverOut');
-        fireEvent.press(target);
+        await fireEvent(target, 'hoverOut');
+        await fireEvent.press(target);
         expect(onPress).toHaveBeenCalledTimes(1);
     });
 });

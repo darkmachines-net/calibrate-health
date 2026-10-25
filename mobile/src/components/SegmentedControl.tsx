@@ -122,8 +122,8 @@ export function SegmentedControl<T extends string>({
         const element = optionRefs.current[index];
         element?.focus?.();
         if (Platform.OS === 'web' || !element) return;
-        const handle = findNodeHandle(element as View);
-        if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+        const handle = findNodeHandle(element as React.ComponentRef<typeof View>);
+        if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
     }, [disabled]);
 
     React.useEffect(() => {

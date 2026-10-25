@@ -1,7 +1,7 @@
 /** @file Regression coverage for Async State Boundary: AsyncStateBoundary. */
 
 import { Text } from 'react-native';
-import type { ReactTestInstance } from 'react-test-renderer';
+import type { TestInstance as ReactTestInstance } from 'test-renderer';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ApiError } from '@calibrate/api-client';
 import { ASYNC_RESOURCE_STATES } from '../asyncState/resolveAsyncState';
@@ -30,22 +30,22 @@ describe('AsyncStateBoundary', () => {
         children: <Text>Cached breakfast</Text>
     };
 
-    it('renders exactly the selected loading or empty branch', () => {
-        const view = render(
+    it('renders exactly the selected loading or empty branch', async () => {
+        const view = await render(
             <AsyncStateBoundary {...baseProps} state={{ kind: ASYNC_RESOURCE_STATES.LOADING, error: null }} />
         );
         expect(view.getByText('Shaped food skeleton')).toBeTruthy();
         expect(view.queryByText('No food logged yet')).toBeNull();
         expect(view.queryByText('Cached breakfast')).toBeNull();
 
-        view.rerender(
+        await view.rerender(
             <AsyncStateBoundary {...baseProps} state={{ kind: ASYNC_RESOURCE_STATES.EMPTY, error: null }} />
         );
         expect(view.getByText('No food logged yet')).toBeTruthy();
         expect(view.queryByText('Shaped food skeleton')).toBeNull();
     });
 
-    it('uses safe terminal copy and preserves a bounded request reference', () => {
+    it('uses safe terminal copy and preserves a bounded request reference', async () => {
         const rawMessage = 'SELECT password_hash FROM users failed';
         const error = new ApiError(rawMessage, 500, {
             message: rawMessage,
@@ -53,7 +53,7 @@ describe('AsyncStateBoundary', () => {
             retryable: true,
             request_id: 'request-123'
         });
-        const view = render(
+        const view = await render(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{ kind: ASYNC_RESOURCE_STATES.ERROR, error }}
@@ -78,7 +78,7 @@ describe('AsyncStateBoundary', () => {
         const retryGate = deferred();
         const retryFood = jest.fn(() => retryGate.promise);
         const retryProfile = jest.fn();
-        const view = render(
+        const view = await render(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{ kind: ASYNC_RESOURCE_STATES.DEGRADED, error: new Error('private provider text') }}
@@ -88,7 +88,7 @@ describe('AsyncStateBoundary', () => {
 
         expect(view.getByText('Cached breakfast')).toBeTruthy();
         expect(view.getByText("Couldn't refresh food log")).toBeTruthy();
-        fireEvent.press(view.getByLabelText('Retry'));
+        await fireEvent.press(view.getByLabelText('Retry'));
         expect(retryFood).toHaveBeenCalledTimes(1);
         expect(retryProfile).not.toHaveBeenCalled();
         expect(view.getByLabelText('Retrying...')).toHaveProp('accessibilityState', { busy: true, disabled: true });
@@ -101,8 +101,8 @@ describe('AsyncStateBoundary', () => {
         ));
     });
 
-    it('labels cached offline content without offering a doomed retry', () => {
-        const view = render(
+    it('labels cached offline content without offering a doomed retry', async () => {
+        const view = await render(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{ kind: ASYNC_RESOURCE_STATES.STALE, error: null }}
@@ -115,8 +115,8 @@ describe('AsyncStateBoundary', () => {
         expect(view.queryByLabelText('Retry')).toBeNull();
     });
 
-    it('lets a parent boundary own stale copy without hiding cached content or degraded recovery', () => {
-        const view = render(
+    it('lets a parent boundary own stale copy without hiding cached content or degraded recovery', async () => {
+        const view = await render(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{ kind: ASYNC_RESOURCE_STATES.STALE, error: null }}
@@ -127,7 +127,7 @@ describe('AsyncStateBoundary', () => {
         expect(view.getByText('Cached breakfast')).toBeTruthy();
         expect(view.queryByText('Offline - showing saved information')).toBeNull();
 
-        view.rerender(
+        await view.rerender(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{ kind: ASYNC_RESOURCE_STATES.DEGRADED, error: new Error('private provider text') }}
@@ -139,8 +139,8 @@ describe('AsyncStateBoundary', () => {
         expect(view.getByLabelText('Retry')).toBeTruthy();
     });
 
-    it('renders uncached offline content as a connection-specific terminal state without Retry', () => {
-        const view = render(
+    it('renders uncached offline content as a connection-specific terminal state without Retry', async () => {
+        const view = await render(
             <AsyncStateBoundary
                 {...baseProps}
                 state={{

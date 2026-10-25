@@ -30,8 +30,8 @@ const LEGACY_GRAMS_ENTRY: FoodLogEntry = {
 };
 
 describe('FoodLogTimelineCard', () => {
-    it('uses the detailed page pane directly instead of adding a second card surface', () => {
-        const screen = render(
+    it('uses the detailed page pane directly instead of adding a second card surface', async () => {
+        const screen = await render(
             <FoodLogTimelineCard
                 testID="food-log-content"
                 entries={[]}
@@ -47,8 +47,8 @@ describe('FoodLogTimelineCard', () => {
         expect(style).not.toHaveProperty('backgroundColor');
     });
 
-    it.each([350, 0])('shows empty meal rows alongside a logged %i kcal meal', (calories) => {
-        const { queryByLabelText, getAllByText, getByLabelText, getByText } = render(
+    it.each([350, 0])('shows empty meal rows alongside a logged %i kcal meal', async (calories) => {
+        const { queryByLabelText, getAllByText, getByLabelText, getByText } = await render(
             <FoodLogTimelineCard
                 entries={[{ ...MORNING_SNACK_ENTRY, calories }]}
                 onEditEntry={jest.fn()}
@@ -67,8 +67,8 @@ describe('FoodLogTimelineCard', () => {
         expect(getAllByText(`${calories} kcal`)).toHaveLength(2);
     });
 
-    it('shows all six empty periods without disclosure or copy actions on an empty day', () => {
-        const { getAllByText, queryAllByRole } = render(
+    it('shows all six empty periods without disclosure or copy actions on an empty day', async () => {
+        const { getAllByText, queryAllByRole } = await render(
             <FoodLogTimelineCard
                 entries={[]}
                 onEditEntry={jest.fn()}
@@ -83,8 +83,8 @@ describe('FoodLogTimelineCard', () => {
         expect(queryAllByRole('button')).toHaveLength(0);
     });
 
-    it('shows the real snapshot amount after expanding a meal', () => {
-        const { getByLabelText, getByText } = render(
+    it('shows the real snapshot amount after expanding a meal', async () => {
+        const { getByLabelText, getByText } = await render(
             <FoodLogTimelineCard
                 entries={[LEGACY_GRAMS_ENTRY]}
                 onEditEntry={jest.fn()}
@@ -96,9 +96,9 @@ describe('FoodLogTimelineCard', () => {
         expect(getByText('142 g')).toBeTruthy();
     });
 
-    it('offers an independently enabled save-recipe action under an expanded meal', () => {
+    it('offers an independently enabled save-recipe action under an expanded meal', async () => {
         const onSaveMealAsRecipe = jest.fn();
-        const { getByText } = render(
+        const { getByText } = await render(
             <FoodLogTimelineCard
                 entries={[MORNING_SNACK_ENTRY]}
                 disabled
@@ -108,15 +108,15 @@ describe('FoodLogTimelineCard', () => {
             />
         );
 
-        fireEvent.press(getByText('Save as recipe'));
+        await fireEvent.press(getByText('Save as recipe'));
 
         expect(onSaveMealAsRecipe).toHaveBeenCalledWith('MORNING_SNACK', [MORNING_SNACK_ENTRY]);
     });
 
-    it('exposes accessible meal and day copy actions only for populated content', () => {
+    it('exposes accessible meal and day copy actions only for populated content', async () => {
         const onCopyMeal = jest.fn();
         const onCopyDay = jest.fn();
-        const { getByRole, queryByLabelText } = render(
+        const { getByRole, queryByLabelText } = await render(
             <FoodLogTimelineCard
                 entries={[MORNING_SNACK_ENTRY]}
                 onEditEntry={jest.fn()}
@@ -126,16 +126,16 @@ describe('FoodLogTimelineCard', () => {
             />
         );
 
-        fireEvent.press(getByRole('button', { name: 'Copy Morning Snack' }));
-        fireEvent.press(getByRole('button', { name: 'Copy day' }));
+        await fireEvent.press(getByRole('button', { name: 'Copy Morning Snack' }));
+        await fireEvent.press(getByRole('button', { name: 'Copy day' }));
 
         expect(onCopyMeal).toHaveBeenCalledWith('MORNING_SNACK');
         expect(onCopyDay).toHaveBeenCalledTimes(1);
         expect(queryByLabelText('Copy Breakfast')).toBeNull();
     });
 
-    it('disables online-only copy without blocking queued edit and delete actions', () => {
-        const { getByRole } = render(
+    it('disables online-only copy without blocking queued edit and delete actions', async () => {
+        const { getByRole } = await render(
             <FoodLogTimelineCard
                 entries={[MORNING_SNACK_ENTRY]}
                 copyDisabled

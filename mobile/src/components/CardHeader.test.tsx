@@ -7,8 +7,8 @@ import { CardHeader } from './CardHeader';
 import { themes } from '../theme';
 
 describe('CardHeader', () => {
-    it('keeps card typography, metadata alignment, and actions consistent', () => {
-        const screen = render(
+    it('keeps card typography, metadata alignment, and actions consistent', async () => {
+        const screen = await render(
             <CardHeader
                 testID="card-header"
                 title="Trend"
@@ -50,8 +50,8 @@ describe('CardHeader', () => {
         expect(StyleSheet.flatten(actionContent.parent?.props.style)?.minHeight).toBeUndefined();
     });
 
-    it('supports comfortable density and explicit heading levels', () => {
-        const screen = render(
+    it('supports comfortable density and explicit heading levels', async () => {
+        const screen = await render(
             <CardHeader density="comfortable" headingLevel={3} testID="card-header" title="Security" />
         );
 

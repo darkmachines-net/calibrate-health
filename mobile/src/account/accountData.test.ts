@@ -56,7 +56,7 @@ describe('account export sharing', () => {
             uri: 'file:///cache/calibrate-account-export-2026-07-11.json',
             exists: true,
             create: jest.fn(),
-            write: jest.fn(),
+            write: jest.fn(async () => undefined),
             delete: jest.fn(() => { file.exists = false; })
         };
         const share = jest.fn(async () => undefined);
@@ -73,12 +73,56 @@ describe('account export sharing', () => {
         expect(file.delete).toHaveBeenCalledTimes(1);
     });
 
+    it('waits for the asynchronous file write before sharing or deleting', async () => {
+        let finishWrite!: () => void;
+        const writeCompleted = new Promise<void>((resolve) => { finishWrite = resolve; });
+        const file = {
+            uri: 'file:///cache/export.json',
+            exists: true,
+            create: jest.fn(),
+            write: jest.fn(() => writeCompleted),
+            delete: jest.fn()
+        };
+        const share = jest.fn(async () => undefined);
+        const exporting = shareAccountExport(accountExport(), {
+            isSharingAvailable: async () => true,
+            createCacheFile: () => file,
+            share
+        });
+        await Promise.resolve();
+        expect(file.write).toHaveBeenCalledTimes(1);
+        expect(share).not.toHaveBeenCalled();
+        expect(file.delete).not.toHaveBeenCalled();
+        finishWrite();
+        await exporting;
+        expect(share).toHaveBeenCalledTimes(1);
+        expect(file.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it('cleans up a rejected file write without opening the share sheet', async () => {
+        const file = {
+            uri: 'file:///cache/export.json',
+            exists: true,
+            create: jest.fn(),
+            write: jest.fn(async () => { throw new Error('disk full'); }),
+            delete: jest.fn()
+        };
+        const share = jest.fn(async () => undefined);
+        await expect(shareAccountExport(accountExport(), {
+            isSharingAvailable: async () => true,
+            createCacheFile: () => file,
+            share
+        })).rejects.toThrow('disk full');
+        expect(share).not.toHaveBeenCalled();
+        expect(file.delete).toHaveBeenCalledTimes(1);
+    });
+
     it('deletes the temporary file when the Android share sheet fails', async () => {
         const file = {
             uri: 'file:///cache/export.json',
             exists: true,
             create: jest.fn(),
-            write: jest.fn(),
+            write: jest.fn(async () => undefined),
             delete: jest.fn(() => { file.exists = false; })
         };
 

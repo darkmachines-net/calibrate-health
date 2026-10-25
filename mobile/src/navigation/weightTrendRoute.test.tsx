@@ -12,8 +12,8 @@ jest.mock('../components/WeightTrendCard', () => ({
 }));
 
 describe('WeightTrendScreen', () => {
-    it('leaves route navigation to the shared tab header', () => {
-        const screen = render(<WeightTrendScreen />);
+    it('leaves route navigation to the shared tab header', async () => {
+        const screen = await render(<WeightTrendScreen />);
         expect(screen.queryByLabelText('Back to Progress')).toBeNull();
     });
 });

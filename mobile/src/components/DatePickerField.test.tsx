@@ -26,10 +26,10 @@ jest.mock('@react-native-community/datetimepicker', () => {
 
 afterEach(() => jest.restoreAllMocks());
 
-function renderDateField(platform: 'ios' | 'android') {
+async function renderDateField(platform: 'ios' | 'android') {
     jest.replaceProperty(Platform, 'OS', platform);
     const onChangeDate = jest.fn();
-    const screen = render(
+    const screen = await render(
         <DatePickerField
             label="date of birth"
             value="1990-06-15"
@@ -38,42 +38,42 @@ function renderDateField(platform: 'ios' | 'android') {
             onChangeDate={onChangeDate}
         />
     );
-    fireEvent.press(screen.getByRole('button', { name: 'Choose date of birth' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose date of birth' }));
     return { screen, onChangeDate };
 }
 
-it('confirms an iOS draft only on Done and forwards local date bounds', () => {
-    const { screen, onChangeDate } = renderDateField('ios');
+it('confirms an iOS draft only on Done and forwards local date bounds', async () => {
+    const { screen, onChangeDate } = await renderDateField('ios');
     const picker = screen.getByTestId('native-date-picker');
     expect(picker.props.display).toBe('inline');
     expect(picker.props.minimumDate).toEqual(new Date(1900, 0, 1));
     expect(picker.props.maximumDate).toEqual(new Date(2026, 8, 5));
 
-    fireEvent(picker, 'change', { type: 'set' }, new Date(1991, 6, 16));
+    await fireEvent(picker, 'change', { type: 'set' }, new Date(1991, 6, 16));
     expect(onChangeDate).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     expect(onChangeDate).toHaveBeenCalledWith('1991-07-16');
     expect(screen.queryByTestId('native-date-picker')).toBeNull();
 });
 
-it('discards a canceled iOS draft and reopens the committed value', () => {
-    const { screen, onChangeDate } = renderDateField('ios');
-    fireEvent(screen.getByTestId('native-date-picker'), 'change', { type: 'set' }, new Date(1991, 6, 16));
-    fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+it('discards a canceled iOS draft and reopens the committed value', async () => {
+    const { screen, onChangeDate } = await renderDateField('ios');
+    await fireEvent(screen.getByTestId('native-date-picker'), 'change', { type: 'set' }, new Date(1991, 6, 16));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
     expect(onChangeDate).not.toHaveBeenCalled();
     expect(screen.queryByTestId('native-date-picker')).toBeNull();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Choose date of birth' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose date of birth' }));
     expect(screen.getByTestId('native-date-picker').props.value).toEqual(new Date(1990, 5, 15));
-    fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     expect(onChangeDate).toHaveBeenCalledWith('1990-06-15');
 });
 
-it.each(['set', 'dismissed'])('preserves Android dialog behavior for %s', (type) => {
-    const { screen, onChangeDate } = renderDateField('android');
+it.each(['set', 'dismissed'])('preserves Android dialog behavior for %s', async (type) => {
+    const { screen, onChangeDate } = await renderDateField('android');
     expect(screen.getByTestId('native-date-picker').props.display).toBe('calendar');
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    fireEvent(screen.getByTestId('native-date-picker'), 'change', { type }, new Date(1991, 6, 16));
+    await fireEvent(screen.getByTestId('native-date-picker'), 'change', { type }, new Date(1991, 6, 16));
     expect(screen.queryByTestId('native-date-picker')).toBeNull();
     if (type === 'set') {
         expect(onChangeDate).toHaveBeenCalledWith('1991-07-16');
@@ -82,8 +82,8 @@ it.each(['set', 'dismissed'])('preserves Android dialog behavior for %s', (type)
     }
 });
 
-it('announces its selected value and keeps enlarged date text untruncated', () => {
-    const screen = render(
+it('announces its selected value and keeps enlarged date text untruncated', async () => {
+    const screen = await render(
         <DatePickerField label="date of birth" value="1990-06-15" onChangeDate={jest.fn()} errorText="Review your date of birth." />
     );
     const button = screen.getByRole('button', { name: 'Choose date of birth' });
@@ -94,12 +94,12 @@ it('announces its selected value and keeps enlarged date text untruncated', () =
     expect(screen.getByRole('alert')).toHaveTextContent('Review your date of birth.');
 });
 
-it.each(['android', 'ios'] as const)('moves %s accessibility focus to the date button without opening its picker', (platform) => {
+it.each(['android', 'ios'] as const)('moves %s accessibility focus to the date button without opening its picker', async (platform) => {
     jest.replaceProperty(Platform, 'OS', platform);
     const findHandle = jest.spyOn(require('react-native'), 'findNodeHandle').mockReturnValue(73);
     const accessibilityFocus = jest.spyOn(ReactNative.AccessibilityInfo, 'setAccessibilityFocus').mockImplementation(jest.fn());
     const controlRef: { current: FocusableFormControl | null } = { current: null };
-    const screen = render(
+    const screen = await render(
         <DatePickerField label="date of birth" value="" onChangeDate={jest.fn()} controlRef={controlRef} />
     );
     mockNativeDateElement.focus.mockClear();

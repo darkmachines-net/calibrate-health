@@ -15,6 +15,7 @@ import {
     type ViewStyle
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { webSafeAreaPadding } from '../layout/webSafeArea';
 import {
     SUPPORTED_MODAL_ORIENTATIONS,
     TABLET_LAYOUT_BREAKPOINT
@@ -209,7 +210,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     const [presentationReady, setPresentationReady] = useState(false);
     const backdropOpacity = useRef(new Animated.Value(0)).current;
     const sheetProgress = useRef(new Animated.Value(1)).current;
-    const sheetRef = useRef<View>(null);
+    const sheetRef = useRef<React.ComponentRef<typeof View>>(null);
     const dismissRequestPendingRef = useRef(false);
     const titleId = React.useId();
     const descriptionId = React.useId();
@@ -341,6 +342,11 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         panelMaxHeight = fixedSheetHeight;
         panelHeight = fixedSheetHeight;
     }
+    if (Platform.OS === 'web' && (typeof panelMaxHeight === 'number' || typeof panelMaxHeight === 'string')) {
+        // Portaled sheets must also fit inside the root's CSS safe-area padding.
+        const maximum = typeof panelMaxHeight === 'number' ? `${panelMaxHeight}px` : panelMaxHeight;
+        panelMaxHeight = `min(${maximum}, 100%)` as ViewStyle['maxHeight'];
+    }
     const modalHeader = title || description ? (
         <View style={styles.modalHeader}>
             {title && (
@@ -381,6 +387,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                     styles.root,
                     isDialog && styles.dialogRoot,
                     isDialog && { paddingVertical: dialogVerticalInset },
+                    webSafeAreaPadding(isDialog ? theme.spacing.lg : 0),
                     visualViewportHeight !== undefined && styles.webViewportRoot,
                     visualViewportHeight !== undefined && { height: visualViewportHeight }
                 ]}
@@ -517,6 +524,7 @@ function createStyles(theme: AppTheme) {
         position: 'relative',
         zIndex: 1,
         width: '100%',
+        maxWidth: '100%',
         overflow: 'hidden',
         borderTopLeftRadius: theme.radius.sheet,
         borderTopRightRadius: theme.radius.sheet,

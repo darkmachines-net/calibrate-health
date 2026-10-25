@@ -279,7 +279,7 @@ export function Combobox<T extends string>({
     const [query, setQuery] = useState('');
     const [initialTypeahead, setInitialTypeahead] = useState('');
     const triggerRef = useRef<FocusableFormControl | null>(null);
-    const searchRef = useRef<TextInput | null>(null);
+    const searchRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
     const { focusVisible, handleFocus, handleBlur } = useFocusVisible();
     const isOpen = open ?? internalOpen;
     const selectedOption = options.find((option) => option.value === value);

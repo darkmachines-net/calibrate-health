@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { useIsFocused, usePreventRemove } from 'expo-router/build/react-navigation/core';
+import { useIsFocused, usePreventRemove } from 'expo-router';
 import { confirmDiscardChanges } from '../components/confirmDiscardChanges';
 import { useBrowserDiscardNavigation } from './useBrowserDiscardNavigation';
 import { registerNavigationGuard, type PrepareNavigation } from '../navigation/guardedNavigation';
@@ -19,7 +18,6 @@ export function useConfirmDiscardNavigation(
     isNavigationBlocked = false,
     onDiscard?: () => void
 ) {
-    const navigation = useNavigation();
     const isFocused = useIsFocused();
     const discardRef = useRef(onDiscard);
     discardRef.current = onDiscard;
@@ -65,8 +63,8 @@ export function useConfirmDiscardNavigation(
         return registerNavigationGuard(requestNavigation);
     }, [requestNavigation, shouldPreventRemoval]);
 
-    usePreventRemove(shouldPreventRemoval, ({ data }) => {
-        void requestNavigation(() => navigation.dispatch(data.action));
+    usePreventRemove(shouldPreventRemoval, ({ repeat }) => {
+        void requestNavigation(repeat);
     });
 
     useEffect(() => {

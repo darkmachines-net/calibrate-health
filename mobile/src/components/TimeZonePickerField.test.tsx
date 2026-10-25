@@ -14,31 +14,31 @@ jest.mock('../utils/timezones', () => {
 });
 
 describe('TimeZonePickerField', () => {
-    it('offers the permission-free device timezone as a clear action', () => {
+    it('offers the permission-free device timezone as a clear action', async () => {
         const onChange = jest.fn();
-        const screen = render(<TimeZonePickerField value="America/New_York" onChange={onChange} />);
+        const screen = await render(<TimeZonePickerField value="America/New_York" onChange={onChange} />);
 
         expect(screen.getByText('Pacific Time (Los Angeles)')).toBeTruthy();
         expect(screen.getByText('Detected from device settings: America/Los_Angeles')).toBeTruthy();
-        fireEvent.press(screen.getByText('Use device time zone'));
+        await fireEvent.press(screen.getByText('Use device time zone'));
         expect(onChange).toHaveBeenCalledWith('America/Los_Angeles');
     });
 
-    it('keeps manual IANA input behind an advanced affordance and validates before applying', () => {
+    it('keeps manual IANA input behind an advanced affordance and validates before applying', async () => {
         const onChange = jest.fn();
-        const screen = render(<TimeZonePickerField value="America/New_York" onChange={onChange} />);
+        const screen = await render(<TimeZonePickerField value="America/New_York" onChange={onChange} />);
 
         expect(screen.queryByLabelText('IANA time zone')).toBeNull();
-        fireEvent.press(screen.getByText('Enter IANA time zone manually'));
+        await fireEvent.press(screen.getByText('Enter IANA time zone manually'));
 
         const input = screen.getByLabelText('IANA time zone');
-        fireEvent.changeText(input, 'Mars/Olympus_Mons');
+        await fireEvent.changeText(input, 'Mars/Olympus_Mons');
         expect(screen.getByText('Enter a valid IANA time zone.')).toBeTruthy();
-        fireEvent.press(screen.getByText('Apply manual time zone'));
+        await fireEvent.press(screen.getByText('Apply manual time zone'));
         expect(onChange).not.toHaveBeenCalled();
 
-        fireEvent.changeText(input, 'Europe/Paris');
-        fireEvent.press(screen.getByText('Apply manual time zone'));
+        await fireEvent.changeText(input, 'Europe/Paris');
+        await fireEvent.press(screen.getByText('Apply manual time zone'));
         expect(onChange).toHaveBeenCalledWith('Europe/Paris');
     });
 });

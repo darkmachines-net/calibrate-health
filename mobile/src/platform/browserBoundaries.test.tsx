@@ -19,7 +19,7 @@ describe('browser-native feature boundaries', () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <HealthConnectProvider>{children}</HealthConnectProvider>
         );
-        const { result } = renderHook(() => useHealthConnect(), { wrapper });
+        const { result } = await renderHook(() => useHealthConnect(), { wrapper });
 
         expect(result.current.connection).toEqual({
             availability: 'not_android',
@@ -34,15 +34,15 @@ describe('browser-native feature boundaries', () => {
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <NativePushRegistrationProvider>{children}</NativePushRegistrationProvider>
         );
-        const { result } = renderHook(() => useNativePushRegistration(), { wrapper });
+        const { result } = await renderHook(() => useNativePushRegistration(), { wrapper });
 
         await waitFor(() => expect(result.current.state).toBe(NATIVE_PUSH_STATES.UNSUPPORTED));
         await expect(result.current.requestPermission()).resolves.toBeUndefined();
         await expect(result.current.retryRegistration()).resolves.toBeUndefined();
     });
 
-    it('renders intentional Wear guidance without initializing the native bridge', () => {
-        const standalone = render(<WearPairingCard />);
+    it('renders intentional Wear guidance without initializing the native bridge', async () => {
+        const standalone = await render(<WearPairingCard />);
         expect(standalone.getByText('Wear OS')).toBeTruthy();
         expect(standalone.getByText(/Android app/i)).toBeTruthy();
 

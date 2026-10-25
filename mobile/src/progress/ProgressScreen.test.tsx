@@ -127,7 +127,7 @@ describe('Progress goal completion flow', () => {
 
     it('routes the preview Log weight action to weight entry', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        const screen = render(
+        const screen = await render(
             <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
                 <QueryClientProvider client={queryClient}><ProgressScreen /></QueryClientProvider>
             </SafeAreaProvider>
@@ -135,22 +135,22 @@ describe('Progress goal completion flow', () => {
 
         await screen.findByText('Snapshot');
         expect(mockTrendPreviewProps).not.toBeNull();
-        act(() => mockTrendPreviewProps?.onPress());
+        await act(() => mockTrendPreviewProps?.onPress());
         expect(router.push).not.toHaveBeenCalled();
-        act(() => mockTrendPreviewProps?.onLogWeight());
+        await act(() => mockTrendPreviewProps?.onLogWeight());
         expect(router.push).toHaveBeenCalledWith('/weight');
         expect(mockPlanSummaryProps).not.toBeNull();
-        act(() => mockPlanSummaryProps?.onPress());
+        await act(() => mockPlanSummaryProps?.onPress());
         expect(router.push).not.toHaveBeenCalledWith('/plan-check');
 
-        screen.unmount();
+        await screen.unmount();
         queryClient.clear();
     });
 
     it('suppresses reached projection and target while a queued weight change is pending', async () => {
         mockWeightChangePending = true;
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        const screen = render(
+        const screen = await render(
             <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
                 <QueryClientProvider client={queryClient}><ProgressScreen /></QueryClientProvider>
             </SafeAreaProvider>
@@ -161,9 +161,9 @@ describe('Progress goal completion flow', () => {
         expect(screen.queryByText('Current target: 2,200 kcal/day')).toBeNull();
         expect(screen.queryByLabelText('Set next goal')).toBeNull();
         expect(mockPlanSummaryProps).not.toBeNull();
-        act(() => mockPlanSummaryProps?.onPress());
+        await act(() => mockPlanSummaryProps?.onPress());
         expect(router.push).not.toHaveBeenCalled();
-        screen.unmount();
+        await screen.unmount();
         queryClient.clear();
     });
 
@@ -171,7 +171,7 @@ describe('Progress goal completion flow', () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
         });
-        const screen = render(
+        const screen = await render(
             <SafeAreaProvider
                 initialMetrics={{
                     frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -184,7 +184,7 @@ describe('Progress goal completion flow', () => {
             </SafeAreaProvider>
         );
 
-        fireEvent.press(await screen.findByLabelText('Set next goal'));
+        await fireEvent.press(await screen.findByLabelText('Set next goal'));
 
         expect(screen.getByText('Set a new goal')).toBeTruthy();
         expect(screen.getAllByText('169 lb')).toHaveLength(2);
@@ -202,7 +202,7 @@ describe('Progress goal completion flow', () => {
         expect(screen.getByLabelText('Goal direction')).toHaveProp('accessibilityRole', 'radiogroup');
         expect(mockApi.createGoal).not.toHaveBeenCalled();
         expect(screen.queryByLabelText('Log weight')).toBeNull();
-        screen.unmount();
+        await screen.unmount();
         queryClient.clear();
     });
 
@@ -211,7 +211,7 @@ describe('Progress goal completion flow', () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
         });
-        const screen = render(
+        const screen = await render(
             <SafeAreaProvider
                 initialMetrics={{
                     frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -227,7 +227,7 @@ describe('Progress goal completion flow', () => {
         expect(await screen.findByText('Set a new goal')).toBeTruthy();
         expect(screen.getByLabelText('Target in pounds')).toHaveProp('value', '169');
         expect(mockApi.createGoal).not.toHaveBeenCalled();
-        screen.unmount();
+        await screen.unmount();
         queryClient.clear();
     });
 
@@ -236,7 +236,7 @@ describe('Progress goal completion flow', () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
         });
-        const screen = render(
+        const screen = await render(
             <SafeAreaProvider
                 initialMetrics={{
                     frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -262,16 +262,16 @@ describe('Progress goal completion flow', () => {
             expect(saveButton).toBeDisabled();
         });
 
-        fireEvent.press(within(editor).getByRole('button', { name: 'Retry' }));
+        await fireEvent.press(within(editor).getByRole('button', { name: 'Retry' }));
         await waitFor(() => expect(saveButton).toBeEnabled());
 
-        act(() => onlineManager.setOnline(false));
+        await act(() => onlineManager.setOnline(false));
         await waitFor(() => {
             expect(within(editor).getByText('Offline - showing saved information')).toBeTruthy();
             expect(saveButton).toBeDisabled();
         });
 
-        screen.unmount();
+        await screen.unmount();
         queryClient.clear();
     });
 });

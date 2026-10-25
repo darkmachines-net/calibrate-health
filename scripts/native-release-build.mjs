@@ -1,6 +1,5 @@
 /** @file Clean-source native release builds with credential isolation and verified phone/watch artifacts. */
 
-/** Repository release tooling for native release build. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -13,7 +12,8 @@ import {
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256,
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL,
   NATIVE_RELEASE_GRADLE_VERSION,
-  NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256
+  NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256,
+  nativeReleaseGradleContract
 } from '../mobile/plugins/nativeReleaseGradleWrapper.js';
 import { resolveExpoUpdateBuildConfig, writeNativeOtaBaseline } from './native-ota-contract.mjs';
 import {
@@ -31,7 +31,7 @@ export const REQUIRED_SIGNING_ENV = Object.freeze([
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, '..');
 
-// Expo SDK 57 release lint can exceed the generated project's 512 MiB metaspace cap.
+// Release lint can exceed the generated project's 512 MiB metaspace cap.
 export const RELEASE_GRADLE_JVM_ARGS = '-Xmx4096m -XX:MaxMetaspaceSize=1536m -Dfile.encoding=UTF-8';
 export const NATIVE_RELEASE_BUILD_PROVENANCE_SCHEMA_VERSION = 1;
 export const NATIVE_RELEASE_BUILD_PROVENANCE_PATH = 'build/native-release-provenance.json';
@@ -71,7 +71,7 @@ function releaseVersion(manifest, role) {
   return { versionName: value?.version_name, versionCode: value?.version_code };
 }
 
-/** Inspect native build inputs from the exact requested source. */
+/** Resolves a clean release-build checkout to an exact source commit. */
 export function readNativeReleaseBuildSource(root = repositoryRoot, execute = execFileSync) {
   /** Provide a deterministic Git adapter for build identity inspection. */
   const git = (args) => execute('git', args, {
@@ -89,7 +89,7 @@ export function readNativeReleaseBuildSource(root = repositoryRoot, execute = ex
   return sourceCommit;
 }
 
-/** Record exact native inputs used by the paired artifact build. */
+/** Captures canonical native release metadata and source identity for build provenance. */
 export function createNativeReleaseBuildProvenance(root, sourceCommit) {
   if (!COMMIT_PATTERN.test(sourceCommit ?? '')) {
     throw new Error('Native release build provenance requires a lowercase 40-character sourceCommit.');
@@ -128,7 +128,7 @@ export function createNativeReleaseBuildProvenance(root, sourceCommit) {
   };
 }
 
-/** Reject source or native-input drift in retained build evidence. */
+/** Returns provenance schema and identity errors without mutating the supplied record. */
 export function validateNativeReleaseBuildProvenance(provenance, options = {}) {
   const errors = [];
   if (!exactFields(provenance, PROVENANCE_FIELDS)) errors.push('Build provenance fields are invalid.');
@@ -186,7 +186,7 @@ export function validateNativeReleaseBuildProvenance(provenance, options = {}) {
   return errors;
 }
 
-/** Read and validate retained native build provenance. */
+/** Reads retained build provenance and rejects missing or invalid release-build evidence. */
 export function readNativeReleaseBuildProvenance(root, options = {}) {
   const relativePath = NATIVE_RELEASE_BUILD_PROVENANCE_PATH;
   const file = path.resolve(root, relativePath);
@@ -204,7 +204,7 @@ export function readNativeReleaseBuildProvenance(root, options = {}) {
   return provenance;
 }
 
-/** Persist build provenance before credentials are admitted. */
+/** Validates and writes the native build provenance artifact. */
 export function writeNativeReleaseBuildProvenance(root, provenance) {
   const errors = validateNativeReleaseBuildProvenance(provenance);
   if (errors.length) throw new Error(`Native release build provenance is invalid:\n- ${errors.join('\n- ')}`);
@@ -272,7 +272,7 @@ export function resolveNativeReleaseEnvironment(environment, options = {}) {
   };
 }
 
-/** Construct paired release tasks without rebuilding during submission. */
+/** Builds phone and Wear Gradle commands with strict dependency verification and host-appropriate wrappers. */
 export function nativeReleaseGradleCommands(platform = process.platform) {
   const wrapper = platform === 'win32' ? 'gradlew.bat' : './gradlew';
   const common = [
@@ -308,6 +308,7 @@ function gradlePropertyValues(source, name) {
 
 /** Reject generated or checked-in wrapper code that differs from the reviewed Gradle release. */
 export function assertNativeReleaseGradleWrapper(build, options = {}) {
+  const contract = nativeReleaseGradleContract(build.label);
   const readFile = options.readFile ?? fs.readFileSync;
   const propertiesFile = path.join(build.cwd, 'gradle', 'wrapper', 'gradle-wrapper.properties');
   const wrapperJar = path.join(build.cwd, 'gradle', 'wrapper', 'gradle-wrapper.jar');
@@ -326,26 +327,26 @@ export function assertNativeReleaseGradleWrapper(build, options = {}) {
 
   const distributionUrls = gradlePropertyValues(properties, 'distributionUrl');
   if (distributionUrls.length !== 1 ||
-      distributionUrls[0] !== NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL_PROPERTY) {
+      distributionUrls[0] !== contract.distributionUrlProperty) {
     throw new Error(
       `${build.label} Gradle wrapper must pin distributionUrl=` +
-      `${NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL_PROPERTY}.`
+      `${contract.distributionUrlProperty}.`
     );
   }
   const distributionChecksums = gradlePropertyValues(properties, 'distributionSha256Sum');
   if (distributionChecksums.length !== 1 ||
-      distributionChecksums[0] !== NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256) {
+      distributionChecksums[0] !== contract.distributionSha256) {
     throw new Error(
       `${build.label} Gradle wrapper must pin distributionSha256Sum=` +
-      `${NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256}.`
+      `${contract.distributionSha256}.`
     );
   }
 
   const wrapperJarSha256 = sha256(wrapperJarBytes);
-  if (wrapperJarSha256 !== NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256) {
+  if (wrapperJarSha256 !== contract.wrapperJarSha256) {
     throw new Error(
       `${build.label} Gradle wrapper JAR SHA-256 ${wrapperJarSha256} does not match the reviewed ` +
-      `Gradle ${NATIVE_RELEASE_GRADLE_VERSION} wrapper JAR.`
+      `Gradle ${contract.version} wrapper JAR.`
     );
   }
 }
@@ -388,7 +389,7 @@ function canonicalNativeReleaseGradleStateText(bytes) {
   return source.replace(/\r\n/g, '\n');
 }
 
-/** Require reviewed Gradle dependency verification metadata. */
+/** Rejects verification bypasses, malformed hashes, and missing artifacts from each platform's current toolchain. */
 export function assertNativeReleaseVerificationMetadata(label, source) {
   if (source.includes('<!--') || source.includes('-->')) {
     throw new Error(`${label} Gradle verification metadata must not contain XML comments.`);
@@ -458,27 +459,30 @@ export function assertNativeReleaseVerificationMetadata(label, source) {
     'org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.8.0:kotlinx-coroutines-bom-1.8.0.pom'
   ];
   const phoneCleanRunArtifacts = [
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139-linux.jar',
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139-windows.jar',
-    'com.android.tools.build:aapt2:8.12.0-13700139:aapt2-8.12.0-13700139.pom',
-    'com.android.tools:play-sdk-proto:31.12.0:play-sdk-proto-31.12.0.jar',
-    'com.android.tools:play-sdk-proto:31.12.0:play-sdk-proto-31.12.0.pom',
-    'com.android.tools.external.com-intellij:intellij-core:31.12.0:intellij-core-31.12.0.jar',
-    'com.android.tools.external.com-intellij:intellij-core:31.12.0:intellij-core-31.12.0.pom',
-    'com.android.tools.external.com-intellij:kotlin-compiler:31.12.0:kotlin-compiler-31.12.0.jar',
-    'com.android.tools.external.com-intellij:kotlin-compiler:31.12.0:kotlin-compiler-31.12.0.pom',
-    'com.android.tools.external.org-jetbrains:uast:31.12.0:uast-31.12.0.jar',
-    'com.android.tools.external.org-jetbrains:uast:31.12.0:uast-31.12.0.pom',
-    'com.android.tools.lint:lint:31.12.0:lint-31.12.0.jar',
-    'com.android.tools.lint:lint:31.12.0:lint-31.12.0.pom',
-    'com.android.tools.lint:lint-api:31.12.0:lint-api-31.12.0.jar',
-    'com.android.tools.lint:lint-api:31.12.0:lint-api-31.12.0.pom',
-    'com.android.tools.lint:lint-checks:31.12.0:lint-checks-31.12.0.jar',
-    'com.android.tools.lint:lint-checks:31.12.0:lint-checks-31.12.0.pom',
-    'com.android.tools.lint:lint-gradle:31.12.0:lint-gradle-31.12.0.jar',
-    'com.android.tools.lint:lint-gradle:31.12.0:lint-gradle-31.12.0.pom',
-    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.1.20-2.0.1:symbol-processing-aa-embeddable-2.1.20-2.0.1.jar',
-    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.1.20-2.0.1:symbol-processing-aa-embeddable-2.1.20-2.0.1.pom',
+    'com.android.tools.build:gradle:9.2.1:gradle-9.2.1.jar',
+    'com.android.tools.build:gradle:9.2.1:gradle-9.2.1.module',
+    'com.facebook.react:react-android:0.88.0:react-android-0.88.0-release.aar',
+    'com.android.tools.lint:lint-gradle:32.2.1:lint-gradle-32.2.1.jar',
+    'com.android.tools.lint:lint-gradle:32.2.1:lint-gradle-32.2.1.pom',
+    'com.android.tools.lint:lint-checks:32.2.1:lint-checks-32.2.1.jar',
+    'com.android.tools.lint:lint-checks:32.2.1:lint-checks-32.2.1.pom',
+    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.2.10-2.0.2:symbol-processing-aa-embeddable-2.2.10-2.0.2.jar',
+    'com.google.devtools.ksp:symbol-processing-aa-embeddable:2.2.10-2.0.2:symbol-processing-aa-embeddable-2.2.10-2.0.2.pom',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934-linux.jar',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934-windows.jar',
+    'com.android.tools.build:aapt2:9.2.1-15009934:aapt2-9.2.1-15009934.pom',
+    'com.android.tools:play-sdk-proto:32.2.1:play-sdk-proto-32.2.1.jar',
+    'com.android.tools:play-sdk-proto:32.2.1:play-sdk-proto-32.2.1.pom',
+    'com.android.tools.external.com-intellij:intellij-core:32.2.1:intellij-core-32.2.1.jar',
+    'com.android.tools.external.com-intellij:intellij-core:32.2.1:intellij-core-32.2.1.pom',
+    'com.android.tools.external.com-intellij:kotlin-compiler:32.2.1:kotlin-compiler-32.2.1.jar',
+    'com.android.tools.external.com-intellij:kotlin-compiler:32.2.1:kotlin-compiler-32.2.1.pom',
+    'com.android.tools.external.org-jetbrains:uast:32.2.1:uast-32.2.1.jar',
+    'com.android.tools.external.org-jetbrains:uast:32.2.1:uast-32.2.1.pom',
+    'com.android.tools.lint:lint:32.2.1:lint-32.2.1.jar',
+    'com.android.tools.lint:lint:32.2.1:lint-32.2.1.pom',
+    'com.android.tools.lint:lint-api:32.2.1:lint-api-32.2.1.jar',
+    'com.android.tools.lint:lint-api:32.2.1:lint-api-32.2.1.pom',
     'com.google.guava:guava-parent:32.1.3-jre:guava-parent-32.1.3-jre.pom',
     'com.google.guava:guava-parent:33.3.1-android:guava-parent-33.3.1-android.pom',
     'com.google.guava:guava-parent:33.4.3-android:guava-parent-33.4.3-android.pom',
@@ -492,7 +496,7 @@ export function assertNativeReleaseVerificationMetadata(label, source) {
     'org.junit:junit-bom:5.13.4:junit-bom-5.13.4.module',
     'org.junit:junit-bom:5.8.2:junit-bom-5.8.2.pom',
     'org.junit:junit-bom:5.9.2:junit-bom-5.9.2.module',
-    'org.junit:junit-bom:5.9.3:junit-bom-5.9.3.module'
+    'org.junit:junit-bom:5.11.0-M2:junit-bom-5.11.0-M2.module'
   ];
   const wearCleanRunArtifacts = [
     'com.android.tools.build:aapt2:8.11.0-12782657:aapt2-8.11.0-12782657-linux.jar',
@@ -613,7 +617,7 @@ export function assertNativeReleaseGradleDependencyState(build, options = {}) {
   }
 }
 
-/** Identify the exact pinned Gradle distribution cache. */
+/** Resolves the exact Gradle wrapper distribution cache beneath the configured user home. */
 export function nativeReleaseGradleDistributionCachePath(environment = process.env, options = {}) {
   const configuredGradleHome = environment.GRADLE_USER_HOME?.trim();
   const gradleUserHome = configuredGradleHome
@@ -622,7 +626,7 @@ export function nativeReleaseGradleDistributionCachePath(environment = process.e
   const wrapperDists = path.resolve(gradleUserHome, 'wrapper', 'dists');
   const distributionCache = path.resolve(
     wrapperDists,
-    `gradle-${NATIVE_RELEASE_GRADLE_VERSION}-bin`
+    `gradle-${nativeReleaseGradleContract(options.label).version}-bin`
   );
   if (path.dirname(distributionCache) !== wrapperDists) {
     throw new Error('Native release Gradle distribution cache path escaped wrapper/dists.');
@@ -642,15 +646,15 @@ export function removeNativeReleaseGradleDistributionCache(environment = process
   return distributionCache;
 }
 
-/** Validate every wrapper before evicting the exact distribution that the first wrapper will load. */
+/** Validate both platforms before evicting either reviewed distribution. */
 export function prepareNativeReleaseGradleExecution(builds, environment = process.env, options = {}) {
   assertNativeReleaseGradleInputs(builds, options);
   const removeDistributionCache = options.removeDistributionCache ??
     removeNativeReleaseGradleDistributionCache;
-  return removeDistributionCache(environment, options);
+  return builds.map((build) => removeDistributionCache(environment, { ...options, label: build.label }));
 }
 
-/** Fail before signing when prepared Gradle inputs have changed. */
+/** Verifies wrapper and locked dependency state for every requested native build. */
 export function assertNativeReleaseGradleInputs(builds, options = {}) {
   const assertWrapper = options.assertWrapper ?? assertNativeReleaseGradleWrapper;
   const assertDependencyState = options.assertDependencyState ??
@@ -659,7 +663,7 @@ export function assertNativeReleaseGradleInputs(builds, options = {}) {
   for (const build of builds) assertDependencyState(build);
 }
 
-/** Return the four expected phone and Wear artifact locations. */
+/** Returns the expected release APK and AAB output locations for one build. */
 export function nativeReleaseArtifactPaths(build) {
   const outputRoot = path.join(build.cwd, 'app', 'build', 'outputs');
   return [
@@ -673,7 +677,7 @@ export function prepareNativeReleaseArtifacts(build, removeFile = (file) => fs.r
   for (const file of nativeReleaseArtifactPaths(build)) removeFile(file);
 }
 
-/** Require the exact paired release outputs before publication. */
+/** Rejects a completed Gradle stage when any required release artifact is missing. */
 export function assertNativeReleaseArtifacts(build, fileExists = fs.existsSync) {
   const missing = nativeReleaseArtifactPaths(build).filter((file) => !fileExists(file));
   if (missing.length === 0) return;
@@ -684,7 +688,7 @@ export function assertNativeReleaseArtifacts(build, fileExists = fs.existsSync) 
   );
 }
 
-/** Construct credential-free managed Android prebuild. */
+/** Builds the credential-free clean Android prebuild command without installing dependencies. */
 export function nativeReleasePrebuildCommand(root = repositoryRoot) {
   return {
     label: 'phone prebuild',
@@ -760,7 +764,7 @@ function prepareGradle() {
   const removedDistributionCache = prepareNativeReleaseGradleExecution(builds, environment);
   console.log(
     'Credential-free phone prebuild and phone/Wear Gradle integrity verification completed. ' +
-    `Removed the pinned Gradle distribution cache at ${removedDistributionCache}.`
+    `Removed pinned Gradle distribution caches: ${removedDistributionCache.join(', ')}.`
   );
 }
 
@@ -780,8 +784,9 @@ function run() {
   }
   assertNativeReleaseGradleInputs(builds);
   const environment = resolveNativeReleaseEnvironment(process.env);
-  const removedDistributionCache = removeNativeReleaseGradleDistributionCache(environment);
-  console.log(`Removed the pinned Gradle distribution cache at ${removedDistributionCache}.`);
+  const removedDistributionCaches = builds.map((build) =>
+    removeNativeReleaseGradleDistributionCache(environment, { label: build.label }));
+  console.log(`Removed pinned Gradle distribution caches: ${removedDistributionCaches.join(', ')}.`);
 
   for (const build of builds) {
     prepareNativeReleaseArtifacts(build);

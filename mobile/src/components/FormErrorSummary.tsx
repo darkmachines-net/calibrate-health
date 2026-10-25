@@ -13,17 +13,17 @@ type FormErrorSummaryProps = {
     style?: TextStyle;
 };
 
-type FocusableView = View & { focus?: () => void };
+type FocusableView = React.ComponentRef<typeof View> & { focus?: () => void };
 
 export const FormErrorSummary = forwardRef<FormErrorSummaryHandle, FormErrorSummaryProps>(
     function FormErrorSummary({ message, style }, ref) {
-        const summaryRef = useRef<View>(null);
+        const summaryRef = useRef<React.ComponentRef<typeof View>>(null);
 
         useImperativeHandle(ref, () => ({
             focus() {
                 (summaryRef.current as FocusableView | null)?.focus?.();
                 const handle = findNodeHandle(summaryRef.current);
-                if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+                if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle);
                 AccessibilityInfo.announceForAccessibility(message);
             }
         }), [message]);

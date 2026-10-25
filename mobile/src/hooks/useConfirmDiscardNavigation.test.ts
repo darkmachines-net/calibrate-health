@@ -7,16 +7,10 @@ import { requestGuardedNavigation } from '../navigation/guardedNavigation';
 const mockDispatch = jest.fn();
 let mockShouldPreventRemove = false;
 let mockIsFocused = true;
-let mockPreventRemove: ((options: { data: { action: { type: string } } }) => void) | undefined;
+let mockPreventRemove: ((options: { repeat: () => void }) => void) | undefined;
 const mockConfirmDiscardChanges = jest.fn<Promise<boolean>, []>();
 
 jest.mock('expo-router', () => ({
-    useNavigation: () => ({
-        dispatch: mockDispatch
-    })
-}));
-
-jest.mock('expo-router/build/react-navigation/core', () => ({
     useIsFocused: () => mockIsFocused,
     usePreventRemove: (
         shouldPrevent: boolean,
@@ -41,21 +35,21 @@ describe('useConfirmDiscardNavigation', () => {
 
     it('confirms before a dirty route is removed and resumes the original action', async () => {
         mockConfirmDiscardChanges.mockResolvedValue(true);
-        renderHook(() => useConfirmDiscardNavigation(true));
+        await renderHook(() => useConfirmDiscardNavigation(true));
         const action = { type: 'GO_BACK' };
 
-        act(() => {
-            mockPreventRemove?.({ data: { action } });
+        await act(() => {
+            mockPreventRemove?.({ repeat: () => mockDispatch(action) });
         });
 
-        expect(mockShouldPreventRemove).toBe(true);
+        expect(mockShouldPreventRemove).toBe(false);
         await waitFor(() => expect(mockDispatch).toHaveBeenCalledWith(action));
     });
 
     it('keeps an explicit navigation request on the page when discard is cancelled', async () => {
         mockConfirmDiscardChanges.mockResolvedValue(false);
         const navigate = jest.fn();
-        const { result } = renderHook(() => useConfirmDiscardNavigation(true));
+        const { result } = await renderHook(() => useConfirmDiscardNavigation(true));
 
         await act(async () => {
             await result.current.requestNavigation(navigate);
@@ -64,11 +58,11 @@ describe('useConfirmDiscardNavigation', () => {
         expect(navigate).not.toHaveBeenCalled();
     });
 
-    it('blocks route removal without prompting while a save is pending', () => {
-        renderHook(() => useConfirmDiscardNavigation(false, true));
+    it('blocks route removal without prompting while a save is pending', async () => {
+        await renderHook(() => useConfirmDiscardNavigation(false, true));
 
-        act(() => {
-            mockPreventRemove?.({ data: { action: { type: 'GO_BACK' } } });
+        await act(() => {
+            mockPreventRemove?.({ repeat: () => mockDispatch({ type: 'GO_BACK' }) });
         });
 
         expect(mockShouldPreventRemove).toBe(true);
@@ -76,10 +70,10 @@ describe('useConfirmDiscardNavigation', () => {
         expect(mockDispatch).not.toHaveBeenCalled();
     });
 
-    it('blocks shell pushes while saving, including an otherwise clean editor', () => {
+    it('blocks shell pushes while saving, including an otherwise clean editor', async () => {
         const navigate = jest.fn();
-        renderHook(() => useConfirmDiscardNavigation(false, true));
-        act(() => requestGuardedNavigation(navigate));
+        await renderHook(() => useConfirmDiscardNavigation(false, true));
+        await act(() => requestGuardedNavigation(navigate));
         expect(navigate).not.toHaveBeenCalled();
         expect(mockConfirmDiscardChanges).not.toHaveBeenCalled();
     });
@@ -88,20 +82,20 @@ describe('useConfirmDiscardNavigation', () => {
         mockConfirmDiscardChanges.mockResolvedValue(true);
         const discard = jest.fn();
         const navigate = jest.fn();
-        const { rerender } = renderHook(() => useConfirmDiscardNavigation(true, false, discard));
+        const { rerender } = await renderHook(() => useConfirmDiscardNavigation(true, false, discard));
         await act(async () => requestGuardedNavigation(navigate));
         expect(discard).toHaveBeenCalledTimes(1);
         expect(navigate).toHaveBeenCalledTimes(1);
         expect(discard.mock.invocationCallOrder[0]).toBeLessThan(navigate.mock.invocationCallOrder[0]);
 
         mockIsFocused = false;
-        rerender({});
-        act(() => requestGuardedNavigation(navigate));
+        await rerender({});
+        await act(() => requestGuardedNavigation(navigate));
         expect(navigate).toHaveBeenCalledTimes(2);
         expect(mockShouldPreventRemove).toBe(false);
 
         mockIsFocused = true;
-        rerender({});
+        await rerender({});
         mockConfirmDiscardChanges.mockResolvedValue(false);
         await act(async () => requestGuardedNavigation(navigate));
         expect(mockShouldPreventRemove).toBe(true);
@@ -116,7 +110,7 @@ describe('useConfirmDiscardNavigation', () => {
         const prepare = jest.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
         const discard = jest.fn();
         const navigate = jest.fn();
-        renderHook(() => useConfirmDiscardNavigation(true, false, discard));
+        await renderHook(() => useConfirmDiscardNavigation(true, false, discard));
         await act(async () => requestGuardedNavigation(navigate, prepare));
         expect(prepare).toHaveBeenCalledTimes(1);
         expect(discard).not.toHaveBeenCalled();
@@ -144,7 +138,7 @@ describe('useConfirmDiscardNavigation', () => {
 
     it('requires successful preparation even without a focused editor', async () => {
         mockIsFocused = false;
-        renderHook(() => useConfirmDiscardNavigation(true));
+        await renderHook(() => useConfirmDiscardNavigation(true));
         const navigate = jest.fn();
         const prepare = jest.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
         await act(async () => requestGuardedNavigation(navigate, prepare));
@@ -158,8 +152,8 @@ describe('useConfirmDiscardNavigation', () => {
         let confirm: (answer: boolean) => void = () => {};
         mockConfirmDiscardChanges.mockReturnValue(new Promise((resolve) => { confirm = resolve; }));
         const navigate = jest.fn();
-        renderHook(() => useConfirmDiscardNavigation(true));
-        act(() => {
+        await renderHook(() => useConfirmDiscardNavigation(true));
+        await act(() => {
             requestGuardedNavigation(navigate);
             requestGuardedNavigation(navigate);
         });

@@ -1,6 +1,6 @@
 /** @file Regression coverage for Bottom Sheet Modal: BottomSheetModal. */
 
-import { Modal, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import {
     BottomSheetModal,
@@ -46,31 +46,38 @@ describe('BottomSheetModal', () => {
         expect(resolveSheetEntranceOffset(844, true)).toBe(32);
     });
 
-    it('keeps the panel hidden until the native modal reports that it is mounted', () => {
-        const screen = render(
-            <BottomSheetModal visible onRequestClose={jest.fn()}>
-                <Text>Choose a date</Text>
-            </BottomSheetModal>
-        );
+    it('keeps the panel hidden until the native modal reports that it is mounted', async () => {
+        jest.useFakeTimers();
+        try {
+            const screen = await render(
+                <BottomSheetModal visible onRequestClose={jest.fn()}>
+                    <Text>Choose a date</Text>
+                </BottomSheetModal>
+            );
 
-        expect(StyleSheet.flatten(screen.getByTestId('adaptive-dialog-panel').props.style).opacity).toBe(0);
-        expect(screen.UNSAFE_getByType(Modal).props.supportedOrientations).toEqual([
-            'portrait',
-            'portrait-upside-down',
-            'landscape',
-            'landscape-left',
-            'landscape-right'
-        ]);
+            expect(StyleSheet.flatten(screen.getByTestId('adaptive-dialog-panel').props.style).opacity).toBe(0);
+            expect(screen.container.queryAll((node) => node.type === 'Modal')[0].props.supportedOrientations).toEqual([
+                'portrait',
+                'portrait-upside-down',
+                'landscape',
+                'landscape-left',
+                'landscape-right'
+            ]);
 
-        act(() => {
-            screen.UNSAFE_getByType(Modal).props.onShow();
-        });
+            await act(async () => {
+                screen.container.queryAll((node) => node.type === 'Modal')[0].props.onShow();
+                await jest.runOnlyPendingTimersAsync();
+            });
 
-        expect(StyleSheet.flatten(screen.getByTestId('adaptive-dialog-panel').props.style).opacity).toBe(1);
+            expect(StyleSheet.flatten(screen.getByTestId('adaptive-dialog-panel').props.style).opacity).toBe(1);
+            await screen.unmount();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
-    it('anchors the web viewport root while the underlying page is scrolled', () => {
-        const screen = render(
+    it('anchors the web viewport root while the underlying page is scrolled', async () => {
+        const screen = await render(
             <BottomSheetModal visible onRequestClose={jest.fn()}>
                 <Text>Review calorie target</Text>
             </BottomSheetModal>
@@ -85,9 +92,9 @@ describe('BottomSheetModal', () => {
         });
     });
 
-    it('keeps the backdrop out of keyboard navigation and provides an explicit close action', () => {
+    it('keeps the backdrop out of keyboard navigation and provides an explicit close action', async () => {
         const onRequestClose = jest.fn();
-        const screen = render(
+        const screen = await render(
             <BottomSheetModal
                 visible
                 accessibilityLabel="Calibration details"
@@ -106,12 +113,12 @@ describe('BottomSheetModal', () => {
         });
         expect(screen.getByTestId('bottom-sheet-fixed-controls')).toBeTruthy();
         expect(screen.getByTestId('bottom-sheet-scroll')).toBeTruthy();
-        fireEvent.press(screen.getByLabelText('Close calibration details'));
+        await fireEvent.press(screen.getByLabelText('Close calibration details'));
         expect(onRequestClose).toHaveBeenCalledTimes(1);
     });
 
-    it('associates an accessible title and description with the dialog surface', () => {
-        const screen = render(
+    it('associates an accessible title and description with the dialog surface', async () => {
+        const screen = await render(
             <BottomSheetModal
                 visible
                 title="Edit calorie goal"
@@ -131,8 +138,8 @@ describe('BottomSheetModal', () => {
         });
     });
 
-    it('allows fixed-content sheets to own their bottom inset', () => {
-        const screen = render(
+    it('allows fixed-content sheets to own their bottom inset', async () => {
+        const screen = await render(
             <BottomSheetModal
                 visible
                 scrollable={false}
@@ -208,16 +215,16 @@ describe('BottomSheetModal', () => {
     });
     it('guards every platform close request while saving', async () => {
         const onRequestClose = jest.fn();
-        const screen = render(
+        const screen = await render(
             <BottomSheetModal visible dismissDisabled showCloseButton onRequestClose={onRequestClose}>
                 <Text>Saving goal</Text>
             </BottomSheetModal>
         );
 
-        fireEvent.press(screen.getByLabelText('Close details'));
-        fireEvent.press(screen.getByTestId('bottom-sheet-backdrop', { includeHiddenElements: true }));
+        await fireEvent.press(screen.getByLabelText('Close details'));
+        await fireEvent.press(screen.getByTestId('bottom-sheet-backdrop', { includeHiddenElements: true }));
         await act(async () => {
-            screen.UNSAFE_getByType(Modal).props.onRequestClose();
+            screen.container.queryAll((node) => node.type === 'Modal')[0].props.onRequestClose();
         });
         expect(onRequestClose).not.toHaveBeenCalled();
     });
@@ -225,7 +232,7 @@ describe('BottomSheetModal', () => {
     it('confirms dirty dismissal before closing', async () => {
         const onRequestClose = jest.fn();
         const confirmDismiss = jest.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-        const screen = render(
+        const screen = await render(
             <BottomSheetModal
                 visible
                 isDirty
@@ -235,7 +242,7 @@ describe('BottomSheetModal', () => {
                 <Text>Changed goal</Text>
             </BottomSheetModal>
         );
-        const modal = screen.UNSAFE_getByType(Modal);
+        const modal = screen.container.queryAll((node) => node.type === 'Modal')[0];
 
         await act(async () => {
             modal.props.onRequestClose();

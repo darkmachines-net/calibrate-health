@@ -14,7 +14,7 @@ describe('useBarcodeSearchHandoff', () => {
             date: '2026-08-09',
             meal: MEAL_PERIODS.DINNER
         };
-        const harness = renderHook(
+        const harness = await renderHook(
             ({ selectedDate, nextParams }: { selectedDate: string; nextParams: BarcodeSearchHandoffParams }) =>
                 useBarcodeSearchHandoff({
                     params: nextParams,
@@ -30,11 +30,11 @@ describe('useBarcodeSearchHandoff', () => {
         await waitFor(() => expect(setDate).toHaveBeenCalledWith('2026-08-09'));
         expect(openSheet).not.toHaveBeenCalled();
 
-        harness.rerender({ selectedDate: '2026-08-09', nextParams: params });
+        await harness.rerender({ selectedDate: '2026-08-09', nextParams: params });
         await waitFor(() => expect(openSheet).toHaveBeenCalledWith(MEAL_PERIODS.DINNER));
         expect(scrubParams).toHaveBeenCalledWith('2026-08-09');
 
-        harness.rerender({ selectedDate: '2026-08-09', nextParams: params });
+        await harness.rerender({ selectedDate: '2026-08-09', nextParams: params });
         expect(openSheet).toHaveBeenCalledTimes(1);
         expect(scrubParams).toHaveBeenCalledTimes(1);
     });
@@ -42,7 +42,7 @@ describe('useBarcodeSearchHandoff', () => {
     it('drops an invalid meal while retaining the requested date', async () => {
         const openSheet = jest.fn();
         const scrubParams = jest.fn();
-        renderHook(() => useBarcodeSearchHandoff({
+        await renderHook(() => useBarcodeSearchHandoff({
             params: { openAddFood: 'true', date: '2026-08-09', meal: 'MIDNIGHT_FEAST' },
             selectedDate: '2026-08-09',
             enabled: true,

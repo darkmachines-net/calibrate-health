@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
-import { Modal, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import type { InAppNotification } from '@calibrate/api-client';
 import { IN_APP_NOTIFICATION_TYPES } from '@calibrate/shared/inAppNotifications';
 import { ASYNC_RESOURCE_STATES } from '../asyncState/resolveAsyncState';
@@ -25,7 +25,7 @@ const NOTIFICATION: InAppNotification = {
     created_at: '2026-07-20T12:00:00.000Z'
 };
 
-function renderDrawer(overrides: Partial<React.ComponentProps<typeof NotificationsDrawer>> = {}) {
+async function renderDrawer(overrides: Partial<React.ComponentProps<typeof NotificationsDrawer>> = {}) {
     const props: React.ComponentProps<typeof NotificationsDrawer> = {
         visible: true,
         notifications: [NOTIFICATION],
@@ -38,13 +38,13 @@ function renderDrawer(overrides: Partial<React.ComponentProps<typeof Notificatio
         onRetry: jest.fn(),
         ...overrides
     };
-    return { props, screen: render(<NotificationsDrawer {...props} />) };
+    return { props, screen: await render(<NotificationsDrawer {...props} />) };
 }
 
 describe('NotificationsDrawer', () => {
-    it('slides its panel independently instead of fading the entire modal', () => {
-        const { screen } = renderDrawer();
-        const modal = screen.UNSAFE_getByType(Modal);
+    it('slides its panel independently instead of fading the entire modal', async () => {
+        const { screen } = await renderDrawer();
+        const modal = screen.container.queryAll((node) => node.type === 'Modal')[0];
         const panelStyle = StyleSheet.flatten(screen.getByTestId('notifications-drawer-panel').props.style);
 
         expect(modal.props.animationType).toBe('none');
@@ -65,22 +65,22 @@ describe('NotificationsDrawer', () => {
         expect(notificationDrawerWidth(1_024)).toBe(440);
     });
 
-    it('reviews and acts on notifications without requiring a notification-center route', () => {
-        const { props, screen } = renderDrawer();
+    it('reviews and acts on notifications without requiring a notification-center route', async () => {
+        const { props, screen } = await renderDrawer();
 
         expect(screen.getByText('1 unread')).toBeTruthy();
         expect(screen.getByText('Time to weigh in')).toBeTruthy();
-        fireEvent.press(screen.getByText('Log weight'));
-        fireEvent.press(screen.getByLabelText('Dismiss Time to weigh in'));
+        await fireEvent.press(screen.getByText('Log weight'));
+        await fireEvent.press(screen.getByLabelText('Dismiss Time to weigh in'));
 
         expect(props.onOpenNotification).toHaveBeenCalledWith(NOTIFICATION);
         expect(props.onDismissNotification).toHaveBeenCalledWith(NOTIFICATION);
     });
 
-    it('closes from the drawer header', () => {
-        const { props, screen } = renderDrawer();
+    it('closes from the drawer header', async () => {
+        const { props, screen } = await renderDrawer();
 
-        fireEvent.press(screen.getByLabelText('Close notifications'));
+        await fireEvent.press(screen.getByLabelText('Close notifications'));
 
         expect(props.onClose).toHaveBeenCalledTimes(1);
     });
@@ -92,15 +92,15 @@ describe('NotificationsDrawer', () => {
         ASYNC_RESOURCE_STATES.ERROR,
         ASYNC_RESOURCE_STATES.STALE,
         ASYNC_RESOURCE_STATES.DEGRADED
-    ])('has no archive entry point in the %s state', (kind) => {
-        const { screen } = renderDrawer({ state: { kind, error: new Error('unavailable') } });
+    ])('has no archive entry point in the %s state', async (kind) => {
+        const { screen } = await renderDrawer({ state: { kind, error: new Error('unavailable') } });
         expect(screen.queryByRole('button', { name: 'View all notifications' })).toBeNull();
         expect(screen.queryByTestId('view-all-notifications')).toBeNull();
     });
 
-    it('exposes one modal dialog and keeps the decorative backdrop out of the accessibility tree', () => {
-        const { screen } = renderDrawer();
-        const modal = screen.UNSAFE_getByType(Modal);
+    it('exposes one modal dialog and keeps the decorative backdrop out of the accessibility tree', async () => {
+        const { screen } = await renderDrawer();
+        const modal = screen.container.queryAll((node) => node.type === 'Modal')[0];
         const panel = screen.getByTestId('notifications-drawer-panel');
         const backdrop = screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true });
 
@@ -119,15 +119,15 @@ describe('NotificationsDrawer', () => {
         });
     });
 
-    it('does not render drawer content while closed', () => {
-        const { screen } = renderDrawer({ visible: false });
+    it('does not render drawer content while closed', async () => {
+        const { screen } = await renderDrawer({ visible: false });
 
         expect(screen.queryByText('Notifications')).toBeNull();
     });
 
     it('does not render empty reassurance when the notification request fails', async () => {
         const rawError = new Error('select * from private_notifications');
-        const { props, screen } = renderDrawer({
+        const { props, screen } = await renderDrawer({
             notifications: [],
             unreadCount: null,
             state: { kind: ASYNC_RESOURCE_STATES.ERROR, error: rawError }
@@ -139,13 +139,13 @@ describe('NotificationsDrawer', () => {
         expect(screen.queryByText(rawError.message)).toBeNull();
 
         await act(async () => {
-            fireEvent.press(screen.getByText('Retry'));
+            await fireEvent.press(screen.getByText('Retry'));
         });
         expect(props.onRetry).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps cached notifications visible after a failed refresh', () => {
-        const { screen } = renderDrawer({
+    it('keeps cached notifications visible after a failed refresh', async () => {
+        const { screen } = await renderDrawer({
             state: { kind: ASYNC_RESOURCE_STATES.DEGRADED, error: new Error('provider failed') }
         });
 
@@ -154,22 +154,22 @@ describe('NotificationsDrawer', () => {
         expect(screen.queryByText('provider failed')).toBeNull();
     });
 
-    it('does not relay notification action failures', () => {
+    it('does not relay notification action failures', async () => {
         const rawError = new Error('update notifications set read_at = now()');
-        const { screen } = renderDrawer({ actionError: rawError });
+        const { screen } = await renderDrawer({ actionError: rawError });
 
         expect(screen.getByText('Unable to update that notification. Try again.')).toBeTruthy();
         expect(screen.queryByText(rawError.message)).toBeNull();
         expect(screen.getByText('Time to weigh in')).toBeTruthy();
     });
 
-    it('limits the quick drawer to five items while keeping the global unread count', () => {
+    it('limits the quick drawer to five items while keeping the global unread count', async () => {
         const notifications = Array.from({ length: 7 }, (_, index) => ({
             ...NOTIFICATION,
             id: index + 1,
             title: `Reminder ${index + 1}`
         }));
-        const { screen } = renderDrawer({ notifications, unreadCount: 7 });
+        const { screen } = await renderDrawer({ notifications, unreadCount: 7 });
 
         expect(screen.getByTestId('notifications-drawer-list')).toBeTruthy();
         expect(screen.getByText('Reminder 1')).toBeTruthy();
@@ -179,26 +179,26 @@ describe('NotificationsDrawer', () => {
         expect(screen.queryByTestId('view-all-notifications')).toBeNull();
     });
 
-    it('keeps the editor behind the modal while opening and restores dismissal after failure', () => {
-        const { props, screen } = renderDrawer({ isOpening: true, isBusy: true });
+    it('keeps the editor behind the modal while opening and restores dismissal after failure', async () => {
+        const { props, screen } = await renderDrawer({ isOpening: true, isBusy: true });
         expect(screen.getByText('Opening reminder...')).toBeTruthy();
         expect(screen.getByLabelText('Close notifications').props.accessibilityState.disabled).toBe(true);
-        fireEvent.press(screen.getByLabelText('Close notifications'));
-        act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose());
-        fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
+        await fireEvent.press(screen.getByLabelText('Close notifications'));
+        await act(() => screen.container.queryAll((node) => node.type === 'Modal')[0].props.onRequestClose());
+        await fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
         expect(props.onClose).not.toHaveBeenCalled();
-        screen.rerender(<NotificationsDrawer {...props} isOpening={false} isBusy={false} actionError={new Error('failed')} />);
+        await screen.rerender(<NotificationsDrawer {...props} isOpening={false} isBusy={false} actionError={new Error('failed')} />);
         expect(screen.queryByText('Opening reminder...')).toBeNull();
-        fireEvent.press(screen.getByLabelText('Close notifications'));
-        act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose());
-        fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
+        await fireEvent.press(screen.getByLabelText('Close notifications'));
+        await act(() => screen.container.queryAll((node) => node.type === 'Modal')[0].props.onRequestClose());
+        await fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
         expect(props.onClose).toHaveBeenCalledTimes(3);
     });
 
-    it('closes through native Back and backdrop without opening another route', () => {
-        const { props, screen } = renderDrawer();
-        act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose());
-        fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
+    it('closes through native Back and backdrop without opening another route', async () => {
+        const { props, screen } = await renderDrawer();
+        await act(() => screen.container.queryAll((node) => node.type === 'Modal')[0].props.onRequestClose());
+        await fireEvent.press(screen.getByTestId('notifications-drawer-backdrop', { includeHiddenElements: true }));
         expect(props.onClose).toHaveBeenCalledTimes(2);
     });
 });

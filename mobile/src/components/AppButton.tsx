@@ -16,7 +16,7 @@ import { useFocusVisible } from './useFocusVisible';
 
 type AppButtonProps = Omit<PressableProps, 'android_ripple'> & {
     title: string;
-    buttonRef?: React.Ref<View>;
+    buttonRef?: React.Ref<React.ComponentRef<typeof View>>;
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
     leftIcon?: React.ReactNode;
     rightIcon?: React.ReactNode;

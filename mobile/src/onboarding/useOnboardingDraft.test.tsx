@@ -26,17 +26,17 @@ describe('useOnboardingDraft', () => {
     beforeEach(() => { mockValues.clear(); jest.clearAllMocks(); mockMeasurementSystem = 'metric'; });
 
     it('restores entered fields and step after remount, without reinitializing for a refreshed user', async () => {
-        const first = renderHook(({ user }: { user: UserClientPayload }) => useOnboardingDraft({ serverUrl: SERVER, user }), { initialProps: { user: USER } });
+        const first = await renderHook(({ user }: { user: UserClientPayload }) => useOnboardingDraft({ serverUrl: SERVER, user }), { initialProps: { user: USER } });
         await waitFor(() => expect(first.result.current.isHydrating).toBe(false));
-        act(() => {
+        await act(() => {
             first.result.current.setForm((form) => ({ ...form, currentWeight: '80.', dailyChangeAbs: '' }));
             first.result.current.setStep('plan');
         });
         await waitFor(() => expect(JSON.parse(mockValues.get(onboardingDraftStorageKey(SERVER, USER.id))!).step).toBe('plan'));
-        first.rerender({ user: { ...USER, sex: 'FEMALE' } });
+        await first.rerender({ user: { ...USER, sex: 'FEMALE' } });
         expect(first.result.current.form.currentWeight).toBe('80.');
-        first.unmount();
-        const second = renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
+        await first.unmount();
+        const second = await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
         await waitFor(() => expect(second.result.current.isHydrating).toBe(false));
         expect(second.result.current.form.currentWeight).toBe('80.');
         expect(second.result.current.form.dailyChangeAbs).toBe('');
@@ -49,7 +49,7 @@ describe('useOnboardingDraft', () => {
             ...createInitialOnboardingForm(USER), weightUnit: 'LB', heightUnit: 'CM'
         } }));
         mockMeasurementSystem = 'us';
-        const { result } = renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
+        const { result } = await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
         await waitFor(() => expect(result.current.isHydrating).toBe(false));
         expect(result.current.form.weightUnit).toBe('LB');
         expect(result.current.form.heightUnit).toBe('CM');
@@ -58,7 +58,7 @@ describe('useOnboardingDraft', () => {
     it('does not overwrite stored data with defaults while hydration is pending', async () => {
         let resolveRead!: (value: string) => void;
         jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise((resolve) => { resolveRead = resolve; }));
-        const { result } = renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
+        const { result } = await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
         await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
         expect(result.current.isHydrating).toBe(true);
         expect(AsyncStorage.setItem).not.toHaveBeenCalled();
@@ -69,9 +69,9 @@ describe('useOnboardingDraft', () => {
     it('ignores a delayed previous-account read and immediately hides its form', async () => {
         let resolveRead!: (value: string) => void;
         jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise((resolve) => { resolveRead = resolve; }));
-        const { result, rerender } = renderHook(({ user }: { user: UserClientPayload }) => useOnboardingDraft({ serverUrl: SERVER, user }), { initialProps: { user: USER } });
+        const { result, rerender } = await renderHook(({ user }: { user: UserClientPayload }) => useOnboardingDraft({ serverUrl: SERVER, user }), { initialProps: { user: USER } });
         await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
-        rerender({ user: { ...USER, id: 8 } });
+        await rerender({ user: { ...USER, id: 8 } });
         await waitFor(() => expect(result.current.isHydrating).toBe(false));
         await act(async () => resolveRead(JSON.stringify({ version: 1, step: 'plan', form: { ...createInitialOnboardingForm(USER), currentWeight: '75' } })));
         expect(result.current.form.currentWeight).toBe('');
@@ -79,10 +79,10 @@ describe('useOnboardingDraft', () => {
     });
 
     it('keeps a cleared draft deleted even if a mounted form changes afterward', async () => {
-        const { result } = renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
+        const { result } = await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
         await waitFor(() => expect(result.current.isHydrating).toBe(false));
         await act(async () => result.current.clearDraft());
-        act(() => result.current.setStep('plan'));
+        await act(() => result.current.setStep('plan'));
         await act(async () => undefined);
         expect(mockValues.has(onboardingDraftStorageKey(SERVER, USER.id))).toBe(false);
     });
@@ -90,18 +90,18 @@ describe('useOnboardingDraft', () => {
     it('clears stale drafts for completed users without saving a new one', async () => {
         const key = onboardingDraftStorageKey(SERVER, USER.id);
         mockValues.set(key, JSON.stringify({ version: 1, step: 'plan', form: createInitialOnboardingForm(USER) }));
-        renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: { ...USER, onboarding_completed_at: '2026-09-25T00:00:00Z' } }));
+        await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: { ...USER, onboarding_completed_at: '2026-09-25T00:00:00Z' } }));
         await waitFor(() => expect(mockValues.has(key)).toBe(false));
         expect(AsyncStorage.setItem).not.toHaveBeenCalled();
     });
 
     it('allows setup to continue when local storage cannot be read', async () => {
         jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('Storage unavailable'));
-        const { result } = renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
+        const { result } = await renderHook(() => useOnboardingDraft({ serverUrl: SERVER, user: USER }));
         await waitFor(() => expect(result.current.isHydrating).toBe(false));
         expect(result.current.storageError).toContain('You can still finish setup');
         expect(AsyncStorage.setItem).not.toHaveBeenCalled();
-        act(() => result.current.setForm((form) => ({ ...form, currentWeight: '80' })));
+        await act(() => result.current.setForm((form) => ({ ...form, currentWeight: '80' })));
         expect(result.current.form.currentWeight).toBe('80');
     });
 });

@@ -44,7 +44,7 @@ function setup(index = 0, prevented = false) {
     const props = {
         state: { key: 'tabs-key', index, routes },
         descriptors: Object.fromEntries(routes.map(route => [route.key, { options: {} }])),
-        navigation: { emit, dispatch }, insets: { top: 0, right: 0, bottom: 0, left: 0 }, onWidthChange: jest.fn()
+        emitter: { emit }, navigateToTab: dispatch, insets: { top: 0, right: 0, bottom: 0, left: 0 }, onWidthChange: jest.fn()
     } as unknown as WebNavigationRailProps;
     let tree!: ReturnType<typeof renderer.create>;
     renderer.act(() => { tree = renderer.create(<WebNavigationRail {...props} />); });

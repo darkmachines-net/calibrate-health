@@ -31,15 +31,15 @@ function status(): CalibrationStatusResponse {
 }
 
 describe('PlanCheckSummary', () => {
-    it('offers one full-width target for the heading, period, and diagnosis', () => {
+    it('offers one full-width target for the heading, period, and diagnosis', async () => {
         const onPress = jest.fn();
-        const screen = render(<PlanCheckSummaryView status={status()} onPress={onPress} />);
+        const screen = await render(<PlanCheckSummaryView status={status()} onPress={onPress} />);
         const target = screen.getByLabelText('Open plan check details. Your recent weight trend is slower than your goal');
         expect(screen.getByText('28 days through Sep 13')).toBeTruthy();
         expect(screen.getAllByRole('button')).toHaveLength(1);
         expect(within(target).getByText('Plan check')).toBeTruthy();
         expect(within(target).getByText('28 days through Sep 13')).toBeTruthy();
-        fireEvent.press(target);
+        await fireEvent.press(target);
         expect(onPress).toHaveBeenCalledTimes(1);
     });
 
@@ -49,22 +49,22 @@ describe('PlanCheckSummary', () => {
         [{ isLoading: true }, 'Building your plan check...'],
         [{ error: true }, 'Open details to retry your plan check.'],
         [{ offline: true }, 'Reconnect to load your plan check.']
-    ])('keeps a navigable slot when the check cannot show a diagnosis (%s)', (props, copy) => {
-        const screen = render(<PlanCheckSummaryView {...props} onPress={jest.fn()} />);
+    ])('keeps a navigable slot when the check cannot show a diagnosis (%s)', async (props, copy) => {
+        const screen = await render(<PlanCheckSummaryView {...props} onPress={jest.fn()} />);
         expect(screen.getByText(copy)).toBeTruthy();
         expect(screen.getByTestId('plan-check-summary')).toBeTruthy();
         expect(screen.getByRole('button')).toBeEnabled();
     });
 
-    it('points scheduled updates to the details that retain review and undo', () => {
+    it('points scheduled updates to the details that retain review and undo', async () => {
         const current = status();
         current.scheduledChange = { recommendationId: 7, effectiveLocalDate: '2026-09-14', dailyCalorieBudgetKcal: 1900 } as NonNullable<CalibrationStatusResponse['scheduledChange']>;
-        const screen = render(<PlanCheckSummaryView status={current} onPress={jest.fn()} />);
+        const screen = await render(<PlanCheckSummaryView status={current} onPress={jest.fn()} />);
         expect(screen.getByText('A calorie target update is scheduled. Open details to review or undo it.')).toBeTruthy();
     });
 
-    it('labels a saved diagnosis when a later refresh fails', () => {
-        const screen = render(<PlanCheckSummaryView status={status()} error onPress={jest.fn()} />);
+    it('labels a saved diagnosis when a later refresh fails', async () => {
+        const screen = await render(<PlanCheckSummaryView status={status()} error onPress={jest.fn()} />);
         expect(screen.getByText('Could not refresh | Showing saved check')).toBeTruthy();
         expect(screen.getByText('Your recent weight trend is slower than your goal')).toBeTruthy();
         expect(screen.getByRole('button')).toBeEnabled();

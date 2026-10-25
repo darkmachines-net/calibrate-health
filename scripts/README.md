@@ -107,6 +107,9 @@ Windows setup requires Node and Git, installs checksum-pinned JDK/SDK/bundletool
 and saves user-level `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `BUNDLETOOL_JAR`.
 Current-shell values win. SDK licenses are interactive unless `--accept-licenses` is
 supplied; `--skip-deps` handles tools only. Keep strict Gradle locks/checksums enabled.
+Phone SDK 58 builds use Gradle 9.4.1 and Android SDK/build-tools 37; Wear retains
+Gradle 8.14.3 and SDK/build-tools 36. Expo prebuild restores the reviewed phone
+wrapper, dependency locks and artifact checksums.
 The phone wrapper is restored by the Expo plugin; Wear has its own pinned toolchain.
 
 ### Versions, artifacts and installation

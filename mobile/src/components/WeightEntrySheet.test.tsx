@@ -131,7 +131,7 @@ const GOAL_REACHED_RESPONSE: MetricSaveResponse = {
     }
 };
 
-function renderSheet(props: Partial<React.ComponentProps<typeof WeightEntrySheet>> = {}) {
+async function renderSheet(props: Partial<React.ComponentProps<typeof WeightEntrySheet>> = {}) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
@@ -140,7 +140,7 @@ function renderSheet(props: Partial<React.ComponentProps<typeof WeightEntrySheet
     });
     const onClose = jest.fn();
     const onSaved = jest.fn();
-    const screen = render(
+    const screen = await render(
         <QueryClientProvider client={queryClient}>
             <WeightEntrySheet
                 visible
@@ -173,23 +173,23 @@ describe('WeightEntrySheet', () => {
     });
 
     it('allows a new weigh-in equal to the previous day but disables an unchanged same-day edit', async () => {
-        const newEntry = renderSheet();
+        const newEntry = await renderSheet();
         await waitFor(() => expect(newEntry.getByLabelText('Weight in pounds')).toHaveProp('value', '170'));
         expect(AccessibilityInfo.isScreenReaderEnabled).not.toHaveBeenCalled();
         expect(newEntry.getByRole('button', { name: 'Log weight' }).props.accessibilityState.disabled).toBe(false);
-        newEntry.unmount();
+        await newEntry.unmount();
 
         mockApi.getMetrics.mockResolvedValue([{ id: 2, date: '2026-08-03', weight: 170 }]);
-        const edit = renderSheet();
+        const edit = await renderSheet();
         await waitFor(() => expect(edit.getByRole('button', { name: 'Save weight' })).toBeTruthy());
         expect(edit.getByRole('button', { name: 'Save weight' }).props.accessibilityState.disabled).toBe(true);
     });
 
     it('asks for a soft confirmation before saving an unusually large change', async () => {
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '190,0');
-        fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '190,0');
+        await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
 
         expect(screen.getByText('Check this weight')).toBeTruthy();
         expect(screen.getByText('Is 190 lb correct?')).toBeTruthy();
@@ -197,11 +197,11 @@ describe('WeightEntrySheet', () => {
     });
 
     it('keeps the sheet open and celebrates a confirmed goal reach', async () => {
-        const screen = renderSheet();
+        const screen = await renderSheet();
         const invalidateQueries = jest.spyOn(screen.queryClient, 'invalidateQueries');
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
-        fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
+        await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
 
         await waitFor(() => expect(screen.getByText('Goal reached!')).toBeTruthy());
         expect(screen.getByTestId('goal-celebration-static', { includeHiddenElements: true })).toBeTruthy();
@@ -212,7 +212,7 @@ describe('WeightEntrySheet', () => {
         expect(mockTriggerWeightHaptic).toHaveBeenCalledWith(true, 'success');
         await waitFor(() => expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['mobile-goal'] }));
 
-        fireEvent.press(screen.getByRole('button', { name: 'Set next goal' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Set next goal' }));
         expect(screen.onClose).toHaveBeenCalledTimes(1);
         expect(mockReplace).toHaveBeenCalledWith({
             pathname: '/progress',
@@ -221,24 +221,24 @@ describe('WeightEntrySheet', () => {
     });
 
     it('persists a weigh-in when the network manager is offline instead of pausing the mutation', async () => {
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        act(() => onlineManager.setOnline(false));
+        await act(() => onlineManager.setOnline(false));
         try {
-            fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
-            fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+            await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
+            await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
             await waitFor(() => expect(screen.getByText('Saved on this device')).toBeTruthy());
             expect(mockEnqueue).toHaveBeenCalled();
             expect(mockApi.addMetric).not.toHaveBeenCalled();
-        } finally { act(() => onlineManager.setOnline(true)); }
+        } finally { await act(() => onlineManager.setOnline(true)); }
     });
 
     it('shows a neutral queued result without authoritative progress or confetti', async () => {
         mockApi.addMetric.mockRejectedValue(new TypeError('Network unavailable'));
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
-        fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
+        await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
 
         await waitFor(() => expect(screen.getByText('Saved on this device')).toBeTruthy());
         expect(screen.getByText(/milestones will update after this weigh-in syncs/)).toBeTruthy();
@@ -251,10 +251,10 @@ describe('WeightEntrySheet', () => {
 
     it('passes the disabled account preference through the logging flow', async () => {
         mockUser.haptics_enabled = false;
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
-        fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
+        await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
 
         await waitFor(() => expect(screen.getByText('Goal reached!')).toBeTruthy());
         expect(mockTriggerWeightHaptic).toHaveBeenCalledWith(false, 'success');
@@ -262,13 +262,13 @@ describe('WeightEntrySheet', () => {
 
     it('requires confirmation before deleting and does not auto-dismiss afterward', async () => {
         mockApi.getMetrics.mockResolvedValue([{ id: 2, date: '2026-08-03', weight: 170 }]);
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByRole('button', { name: 'Delete weigh-in' })).toBeTruthy());
-        fireEvent.press(screen.getByRole('button', { name: 'Delete weigh-in' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Delete weigh-in' }));
 
         expect(screen.getByText('Delete this weigh-in?')).toBeTruthy();
         expect(mockApi.deleteMetric).not.toHaveBeenCalled();
-        fireEvent.press(screen.getByRole('button', { name: 'Delete' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Delete' }));
 
         await waitFor(() => expect(screen.getByText('Weigh-in deleted')).toBeTruthy());
         expect(mockApi.deleteMetric).toHaveBeenCalledWith(2, 'weight-operation-id');
@@ -277,17 +277,17 @@ describe('WeightEntrySheet', () => {
     it.each(['metric.add', 'metric.delete'])('does not claim save/delete success behind failed %s and exposes explicit recovery', async operation => {
         mockApi.getMetrics.mockResolvedValue([{ id: 2, date: '2026-08-03', weight: 170 }]);
         mockMutations.push({ id: 'failed-weight', operation, payload: { id: 2, date: '2026-08-03', weight: 170 }, namespace: 'https://health.example::user:7', sequence: 1, state: 'failed', attemptCount: 1, lastError: 'Rejected', createdAt: 1, updatedAt: 1 });
-        const screen = renderSheet();
+        const screen = await renderSheet();
         await waitFor(() => expect(screen.getByLabelText('Weight in pounds')).toBeTruthy());
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '169.5');
         expect(screen.getByRole('button', { name: 'Save weight' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Delete weigh-in' })).toBeDisabled();
         expect(screen.queryByText('Saved on this device')).toBeNull();
         expect(mockEnqueue).not.toHaveBeenCalled();
-        fireEvent.press(screen.getByRole('button', { name: 'Discard related queued changes' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Discard related queued changes' }));
         expect(mockDiscardFailed).not.toHaveBeenCalled();
         expect(screen.getByText(/This does not undo anything/)).toBeTruthy();
-        fireEvent.press(screen.getByRole('button', { name: 'Confirm discard related changes' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Confirm discard related changes' }));
         await waitFor(() => expect(mockDiscardFailed).toHaveBeenCalledWith('failed-weight'));
     });
 

@@ -90,8 +90,8 @@ describe('AdvancedSettingsScreen', () => {
         mockedUseAppUpdateController.mockReturnValue(updateController());
     });
 
-    it('combines connection, diagnostics, and software updates on one page', () => {
-        const view = render(<AdvancedSettingsScreen />);
+    it('combines connection, diagnostics, and software updates on one page', async () => {
+        const view = await render(<AdvancedSettingsScreen />);
 
         expect(view.getByRole('header', { name: 'Connection' })).toBeTruthy();
         expect(view.getByRole('header', { name: 'Diagnostics' })).toBeTruthy();
@@ -102,21 +102,21 @@ describe('AdvancedSettingsScreen', () => {
     });
 
     it('tests and saves a selected server from the route', async () => {
-        const view = render(<AdvancedSettingsScreen />);
+        const view = await render(<AdvancedSettingsScreen />);
         const serverUrl = 'https://self-hosted.example.invalid';
 
-        fireEvent.changeText(view.getByLabelText('Server URL'), serverUrl);
-        fireEvent.press(view.getByRole('button', { name: 'Test Calibrate server connection' }));
-        fireEvent.press(view.getByRole('button', { name: 'Save connection' }));
+        await fireEvent.changeText(view.getByLabelText('Server URL'), serverUrl);
+        await fireEvent.press(view.getByRole('button', { name: 'Test Calibrate server connection' }));
+        await fireEvent.press(view.getByRole('button', { name: 'Save connection' }));
 
         expect(mockTestServerUrl).toHaveBeenCalledWith(serverUrl);
         await waitFor(() => expect(mockSetServerUrl).toHaveBeenCalledWith(serverUrl));
     });
 
-    it('does not offer the origin-bound server editor on web', () => {
+    it('does not offer the origin-bound server editor on web', async () => {
         const platform = jest.replaceProperty(Platform, 'OS', 'web');
         try {
-            const view = render(<AdvancedSettingsScreen />);
+            const view = await render(<AdvancedSettingsScreen />);
 
             expect(view.queryByRole('header', { name: 'Connection' })).toBeNull();
             expect(view.queryByLabelText('Server URL')).toBeNull();
@@ -127,10 +127,10 @@ describe('AdvancedSettingsScreen', () => {
         }
     });
 
-    it('uses iOS diagnostics and native-update copy on Apple devices', () => {
+    it('uses iOS diagnostics and native-update copy on Apple devices', async () => {
         const platform = jest.replaceProperty(Platform, 'OS', 'ios');
         try {
-            const view = render(<AdvancedSettingsScreen />);
+            const view = await render(<AdvancedSettingsScreen />);
 
             expect(view.getByText('iOS')).toBeTruthy();
             expect(view.getByText(/OTA updates can change iOS JavaScript and assets/)).toBeTruthy();
@@ -139,7 +139,7 @@ describe('AdvancedSettingsScreen', () => {
         }
     });
 
-    it('offers the update action from Advanced settings', () => {
+    it('offers the update action from Advanced settings', async () => {
         const action = jest.fn(async () => undefined);
         mockedUseAppUpdateController.mockReturnValue(updateController({
             action,
@@ -149,8 +149,8 @@ describe('AdvancedSettingsScreen', () => {
             status: 'A compatible OTA update is available and ready to download.'
         }));
 
-        const view = render(<AdvancedSettingsScreen />);
-        fireEvent.press(view.getByRole('button', { name: 'Install and restart' }));
+        const view = await render(<AdvancedSettingsScreen />);
+        await fireEvent.press(view.getByRole('button', { name: 'Install and restart' }));
 
         expect(action).toHaveBeenCalledTimes(1);
     });

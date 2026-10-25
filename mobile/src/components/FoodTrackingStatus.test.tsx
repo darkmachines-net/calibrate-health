@@ -8,7 +8,6 @@ import { AppState, Dimensions, StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { FoodLogDay, FoodTrackingPause } from '@calibrate/api-client';
 import { DayStatusCard, ResumeTrackingPrompt, foodDayQueryKey } from './FoodTrackingStatus';
-import { AppSection } from './AppSection';
 
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'tracking-operation-id') }));
@@ -112,7 +111,7 @@ const duePause: FoodTrackingPause = {
 let foregroundListener: ((state: string) => void) | undefined;
 let appStateSpy: jest.SpyInstance;
 
-function renderWithQuery(ui: React.ReactElement, cachedDay?: FoodLogDay) {
+async function renderWithQuery(ui: React.ReactElement, cachedDay?: FoodLogDay) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
@@ -120,7 +119,7 @@ function renderWithQuery(ui: React.ReactElement, cachedDay?: FoodLogDay) {
         }
     });
     if (cachedDay) queryClient.setQueryData(foodDayQueryKey(cachedDay.date), cachedDay);
-    return render(
+    return await render(
         <QueryClientProvider client={queryClient}>
             {ui}
         </QueryClientProvider>
@@ -129,8 +128,8 @@ function renderWithQuery(ui: React.ReactElement, cachedDay?: FoodLogDay) {
 
 describe('food tracking day resolution', () => {
     const originalWindow = Dimensions.get('window');
-    beforeEach(() => {
-        act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 1 } }));
+    beforeEach(async () => {
+        await act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 1 } }));
         jest.clearAllMocks();
         mockMutations = [];
         mockWithOutbox = undefined;
@@ -141,17 +140,17 @@ describe('food tracking day resolution', () => {
         });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         appStateSpy.mockRestore();
-        act(() => Dimensions.set({ window: originalWindow }));
+        await act(() => Dimensions.set({ window: originalWindow }));
     });
 
     it('queues day completion behind existing food intent even with healthy authentication', async () => {
         mockMutations = [{ id: 'pending-food', operation: 'food.create' }];
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('OPEN'));
-        const screen = renderWithQuery(<DayStatusCard date="2026-07-23" isToday />);
+        const screen = await renderWithQuery(<DayStatusCard date="2026-07-23" isToday />);
         await waitFor(() => expect(screen.getByText('Complete day')).toBeTruthy());
-        fireEvent.press(screen.getByText('Complete day'));
+        await fireEvent.press(screen.getByText('Complete day'));
         await waitFor(() => expect(mockEnqueue).toHaveBeenCalledWith('food-day.set-status', { date: '2026-07-23', status: 'COMPLETE' }, 'tracking-operation-id'));
         expect(mockApi.setFoodDayStatus).not.toHaveBeenCalled();
     });
@@ -161,18 +160,18 @@ describe('food tracking day resolution', () => {
         const rows = [{ id: 'pause', namespace: 'test', sequence: 1, state: 'pending', attemptCount: 0, lastError: null, createdAt: 1, updatedAt: 1, operation: 'food-tracking-pause.start', payload: { starts_on: date } } as QueuedMutation];
         mockWithOutbox = createOutboxDispatch('day-override-' + stale, async () => rows, mockEnqueue, () => true);
         mockApi.getFoodDay.mockResolvedValue(resolvedDay(stale ? 'COMPLETE' : 'PAUSED'));
-        const screen = renderWithQuery(<DayStatusCard date={date} isToday={stale} />);
+        const screen = await renderWithQuery(<DayStatusCard date={date} isToday={stale} />);
         const button = await screen.findByRole('button', { name: stale ? 'Edit or backfill' : 'Backfill this day' });
-        fireEvent.press(button);
+        await fireEvent.press(button);
         if (stale) { await screen.findByRole('alert'); expect(mockEnqueue).not.toHaveBeenCalled(); }
         else await waitFor(() => expect(mockEnqueue).toHaveBeenCalledWith('food-day.set-status', { date, status: 'OPEN', explicitPausedBackfill: true }, 'tracking-operation-id'));
         expect(mockApi.setFoodDayStatus).not.toHaveBeenCalled();
     });
 
     it('stacks completion and pause targets when native text is enlarged', async () => {
-        act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 2 } }));
+        await act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 2 } }));
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('OPEN'));
-        const screen = renderWithQuery(<DayStatusCard date="2026-07-23" isToday compact />);
+        const screen = await renderWithQuery(<DayStatusCard date="2026-07-23" isToday compact />);
         await waitFor(() => expect(screen.getByText('Not fully logged')).toBeTruthy());
         for (const name of ['Complete day', 'Pause tracking']) {
             expect(screen.getByRole('button', { name })).toHaveStyle({ width: '100%', minHeight: 48 });
@@ -181,7 +180,7 @@ describe('food tracking day resolution', () => {
 
     it('offers completion, incomplete, and pause actions for an open current day', async () => {
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('OPEN'));
-        const screen = renderWithQuery(<DayStatusCard date="2026-07-23" isToday compact />);
+        const screen = await renderWithQuery(<DayStatusCard date="2026-07-23" isToday compact />);
 
         await waitFor(() => expect(screen.getByText('Not fully logged')).toBeTruthy());
         expect(screen.getByText('Complete day')).toBeTruthy();
@@ -195,20 +194,20 @@ describe('food tracking day resolution', () => {
         expect(screen.getByRole('button', { name: 'Pause tracking' })).toHaveStyle({
             width: 0
         });
-        fireEvent.press(screen.getByLabelText('Pause tracking'));
+        await fireEvent.press(screen.getByLabelText('Pause tracking'));
 
         expect(screen.getByText('Pause calorie tracking?')).toBeTruthy();
         expect(screen.getByText(/Calorie tracking and all reminders will stop/)).toBeTruthy();
         expect(screen.getByText('Until I resume')).toBeTruthy();
         expect(screen.getByText('Choose expected resume date')).toBeTruthy();
-        fireEvent.press(screen.getByText('Choose expected resume date'));
+        await fireEvent.press(screen.getByText('Choose expected resume date'));
         expect(screen.queryByText('Choose expected resume date')).toBeNull();
         expect(screen.getByText('Pause with this date')).toBeTruthy();
     });
 
     it('removes the rectangular Android elevation from the past-day completion action', async () => {
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('OPEN'));
-        const screen = renderWithQuery(<DayStatusCard date="2026-07-23" isToday={false} />);
+        const screen = await renderWithQuery(<DayStatusCard date="2026-07-23" isToday={false} />);
 
         await waitFor(() => expect(screen.getByText('Not fully logged')).toBeTruthy());
         expect(screen.getByRole('button', { name: 'Complete day' })).toHaveStyle({
@@ -227,17 +226,17 @@ describe('food tracking day resolution', () => {
 
         for (const [day, title] of cases) {
             mockApi.getFoodDay.mockResolvedValueOnce(day);
-            const screen = renderWithQuery(<DayStatusCard date="2026-07-23" isToday />);
+            const screen = await renderWithQuery(<DayStatusCard date="2026-07-23" isToday />);
             await waitFor(() => expect(screen.getByText(title)).toBeTruthy());
             expect(screen.queryByText('Complete day')).toBeNull();
             expect(screen.queryByText('Mark incomplete')).toBeNull();
-            screen.unmount();
+            await screen.unmount();
         }
     });
 
     it('does not present failed cached day data as fully logged', async () => {
         mockApi.getFoodDay.mockRejectedValue(new Error('Status unavailable'));
-        const screen = renderWithQuery(
+        const screen = await renderWithQuery(
             <DayStatusCard date="2026-07-23" isToday />,
             resolvedDay('COMPLETE')
         );
@@ -252,7 +251,7 @@ describe('food tracking day resolution', () => {
 
     it('does not present cached completion when another required Today resource failed', async () => {
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('COMPLETE'));
-        const screen = renderWithQuery(
+        const screen = await renderWithQuery(
             <DayStatusCard date="2026-07-23" isToday failed />
         );
 
@@ -267,7 +266,7 @@ describe('food tracking day resolution', () => {
 
     it('fills only the remaining Today space with a centered status hero', async () => {
         mockApi.getFoodDay.mockResolvedValue(resolvedDay('PAUSED'));
-        const screen = renderWithQuery(
+        const screen = await renderWithQuery(
             <DayStatusCard
                 date="2026-07-23"
                 isToday
@@ -278,7 +277,7 @@ describe('food tracking day resolution', () => {
 
         await waitFor(() => expect(screen.getByText('Paused')).toBeTruthy());
         expect(screen.getByText("Today's status")).toBeTruthy();
-        expect(StyleSheet.flatten(screen.UNSAFE_getByType(AppSection).props.style)).toEqual(
+        expect(StyleSheet.flatten(screen.getByLabelText(/^Paused\./).props.style)).toEqual(
             expect.objectContaining({
                 flex: 1,
                 alignItems: 'center',
@@ -293,12 +292,12 @@ describe('food tracking day resolution', () => {
 
     it('asks for confirmation when an expected resume date is due and exposes every extension path', async () => {
         mockApi.getFoodTrackingPause.mockResolvedValue({ pause: duePause });
-        const screen = renderWithQuery(<ResumeTrackingPrompt />);
+        const screen = await renderWithQuery(<ResumeTrackingPrompt />);
 
         await waitFor(() => expect(screen.getByText('Ready to resume tracking?')).toBeTruthy());
         expect(screen.getByRole('dialog', { name: 'Ready to resume tracking?' })).toBeTruthy();
         expect(screen.getByText('Resume tracking')).toBeTruthy();
-        fireEvent.press(screen.getByText('Extend pause'));
+        await fireEvent.press(screen.getByText('Extend pause'));
 
         expect(screen.getByText('Tomorrow')).toBeTruthy();
         expect(screen.getByText('Choose another date')).toBeTruthy();
@@ -307,10 +306,10 @@ describe('food tracking day resolution', () => {
 
     it('keeps the pause active when the confirmation is dismissed and offers it again next foreground', async () => {
         mockApi.getFoodTrackingPause.mockResolvedValue({ pause: duePause });
-        const screen = renderWithQuery(<ResumeTrackingPrompt />);
+        const screen = await renderWithQuery(<ResumeTrackingPrompt />);
 
         await waitFor(() => expect(screen.getByText('Ready to resume tracking?')).toBeTruthy());
-        fireEvent.press(screen.getByText('Dismiss sheet'));
+        await fireEvent.press(screen.getByText('Dismiss sheet'));
         await waitFor(() => expect(screen.queryByText('Ready to resume tracking?')).toBeNull());
         expect(mockApi.resumeFoodTracking).not.toHaveBeenCalled();
         expect(mockApi.updateFoodTrackingPause).not.toHaveBeenCalled();
@@ -327,33 +326,33 @@ describe('food tracking day resolution', () => {
             pause: { ...duePause, expected_resume_on, resume_confirmation_due: false }
         }));
 
-        const tomorrowScreen = renderWithQuery(<ResumeTrackingPrompt />);
+        const tomorrowScreen = await renderWithQuery(<ResumeTrackingPrompt />);
         await waitFor(() => expect(tomorrowScreen.getByText('Extend pause')).toBeTruthy());
-        fireEvent.press(tomorrowScreen.getByText('Extend pause'));
-        fireEvent.press(tomorrowScreen.getByText('Tomorrow'));
+        await fireEvent.press(tomorrowScreen.getByText('Extend pause'));
+        await fireEvent.press(tomorrowScreen.getByText('Tomorrow'));
         await waitFor(() => expect(mockApi.updateFoodTrackingPause).toHaveBeenCalledWith(
             { expected_resume_on: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
             'tracking-operation-id'
         ));
-        tomorrowScreen.unmount();
+        await tomorrowScreen.unmount();
 
         mockApi.updateFoodTrackingPause.mockClear();
-        const chosenScreen = renderWithQuery(<ResumeTrackingPrompt />);
+        const chosenScreen = await renderWithQuery(<ResumeTrackingPrompt />);
         await waitFor(() => expect(chosenScreen.getByText('Extend pause')).toBeTruthy());
-        fireEvent.press(chosenScreen.getByText('Extend pause'));
-        fireEvent.press(chosenScreen.getByText('Choose another date'));
-        fireEvent.press(chosenScreen.getByText('Use chosen date'));
+        await fireEvent.press(chosenScreen.getByText('Extend pause'));
+        await fireEvent.press(chosenScreen.getByText('Choose another date'));
+        await fireEvent.press(chosenScreen.getByText('Use chosen date'));
         await waitFor(() => expect(mockApi.updateFoodTrackingPause).toHaveBeenCalledWith(
             { expected_resume_on: '2099-12-31' },
             'tracking-operation-id'
         ));
-        chosenScreen.unmount();
+        await chosenScreen.unmount();
 
         mockApi.updateFoodTrackingPause.mockClear();
-        const manualScreen = renderWithQuery(<ResumeTrackingPrompt />);
+        const manualScreen = await renderWithQuery(<ResumeTrackingPrompt />);
         await waitFor(() => expect(manualScreen.getByText('Extend pause')).toBeTruthy());
-        fireEvent.press(manualScreen.getByText('Extend pause'));
-        fireEvent.press(manualScreen.getByText('Until I resume'));
+        await fireEvent.press(manualScreen.getByText('Extend pause'));
+        await fireEvent.press(manualScreen.getByText('Until I resume'));
         await waitFor(() => expect(mockApi.updateFoodTrackingPause).toHaveBeenCalledWith(
             { expected_resume_on: null },
             'tracking-operation-id'
@@ -366,10 +365,10 @@ describe('food tracking day resolution', () => {
             pause: { ...duePause, active: false, resumed_on: '2026-07-23', resume_confirmation_due: false },
             day: resolvedDay('OPEN')
         });
-        const screen = renderWithQuery(<ResumeTrackingPrompt />);
+        const screen = await renderWithQuery(<ResumeTrackingPrompt />);
 
         await waitFor(() => expect(screen.getByText('Resume tracking')).toBeTruthy());
-        fireEvent.press(screen.getByText('Resume tracking'));
+        await fireEvent.press(screen.getByText('Resume tracking'));
         await waitFor(() => expect(mockApi.resumeFoodTracking).toHaveBeenCalledWith(
             { resumed_on: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
             'tracking-operation-id'
@@ -378,24 +377,24 @@ describe('food tracking day resolution', () => {
 it('routes ordinary pause queries and refetch through the receipt-aware reader', async () => {
     mockApi.getFoodTrackingPause.mockResolvedValue({ pause: { active: false } });
     const before = mockReadFoodPause.mock.calls.length;
-    const screen = renderWithQuery(<ResumeTrackingPrompt />);
+    const screen = await renderWithQuery(<ResumeTrackingPrompt />);
     await waitFor(() => expect(mockReadFoodPause.mock.calls.length).toBeGreaterThan(before));
     await act(async () => { foregroundListener?.('active'); });
     await waitFor(() => expect(mockReadFoodPause.mock.calls.length).toBeGreaterThan(before + 1));
-    screen.unmount();
+    await screen.unmount();
 });
 
     it('keeps a persisted queued resume hidden after remount and foreground refetch', async () => {
         mockMutations = [{ id: 'saved-resume', namespace: 'https://example.test::user:7', sequence: 1, operation: 'food-tracking-pause.resume', payload: { resumed_on: '2026-07-23' }, state: 'pending' }];
         mockApi.getFoodTrackingPause.mockResolvedValue({ pause: duePause });
         for (let restart = 0; restart < 2; restart++) {
-            const screen = renderWithQuery(<ResumeTrackingPrompt />);
+            const screen = await renderWithQuery(<ResumeTrackingPrompt />);
             await waitFor(() => expect(mockReadFoodPause).toHaveBeenCalled());
             await act(async () => { foregroundListener?.('active'); });
             expect(screen.queryByText('Resume tracking')).toBeNull();
             expect(mockApi.resumeFoodTracking).not.toHaveBeenCalled();
             expect(mockEnqueue).not.toHaveBeenCalled();
-            screen.unmount();
+            await screen.unmount();
         }
     });
 

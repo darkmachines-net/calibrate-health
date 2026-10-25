@@ -20,9 +20,9 @@ describe('useReducedMotionPreference', () => {
             return { remove: jest.fn() };
         });
 
-        const view = render(<Probe />);
+        const view = await render(<Probe />);
         await waitFor(() => expect(view.getByText('reduced')).toBeTruthy());
-        act(() => listener?.(false));
+        await act(() => listener?.(false));
         await waitFor(() => expect(view.getByText('animated')).toBeTruthy());
     });
 });

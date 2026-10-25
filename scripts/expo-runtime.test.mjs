@@ -7,15 +7,24 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { validateRuntimeResolution } from './expo-runtime.mjs';
 
+const require = createRequire(new URL('../mobile/package.json', import.meta.url));
+const sdkRoot = path.dirname(require.resolve('@expo/fingerprint/package.json'));
+const { normalizeAutolinkingConfig } = require(path.join(sdkRoot, 'build/sourcer/AutolinkingConfig.js'));
+
 /** Keep the fixture aligned with the locked SDK's normalized fingerprint source shape. */
 function resolved() {
   return { runtimeVersion: 'a'.repeat(40), fingerprintSources: [
     { id: 'expoAutolinkingConfig:android', contents: JSON.stringify({ modules: [{ packageName: 'expo-updates' }, { packageName: '@calibrate/wear-pairing' }] }) },
-    { id: 'rncoreAutolinkingConfig:android', contents: JSON.stringify({ 'react-native-health-connect': {} }) }
+    { id: 'rncoreAutolinkingConfig:android', contents: JSON.stringify(normalizeAutolinkingConfig({
+      'react-native-health-connect': {
+        root: 'node_modules/react-native-health-connect',
+        platforms: { android: { packageInstance: 'new HealthConnectPackage()' } }
+      }
+    }, { stripPaths: true })) }
   ] };
 }
 
-test('runtime resolution accepts a complete native graph', () => {
+test('runtime resolution accepts the locked SDK normalized native graph', () => {
   assert.equal(validateRuntimeResolution(resolved()), 'a'.repeat(40));
 });
 
@@ -28,9 +37,21 @@ test('a valid-looking hash cannot hide failed autolinking or appVersion policy',
   }
 });
 
+test('runtime resolution rejects missing Health Connect Android discovery', () => {
+  for (const native of [
+    [],
+    [{ name: 'another-module', platforms: { android: {} } }],
+    [{ name: 'react-native-health-connect' }],
+    [{ name: 'react-native-health-connect', platforms: { android: null } }],
+    [{ name: 'react-native-health-connect', platforms: { ios: {} } }]
+  ]) {
+    const value = resolved();
+    value.fingerprintSources[1].contents = JSON.stringify(native);
+    assert.throws(() => validateRuntimeResolution(value), /Incomplete React Native module discovery/);
+  }
+});
+
 test('SDK hashing ignores transient Kotlin sessions while retaining native plugin source', async (t) => {
-  const require = createRequire(new URL('../mobile/package.json', import.meta.url));
-  const sdkRoot = path.dirname(require.resolve('@expo/fingerprint/package.json'));
   const { normalizeOptionsAsync } = require(path.join(sdkRoot, 'build/Options.js'));
   const { createFingerprintFromSourcesAsync } = require(path.join(sdkRoot, 'build/hash/Hash.js'));
   const config = require('../mobile/fingerprint.config.js');

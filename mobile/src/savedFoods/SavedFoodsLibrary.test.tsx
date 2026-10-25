@@ -35,7 +35,7 @@ function savedFood(id: number, overrides: Partial<MyFoodSummary> = {}): MyFoodSu
     };
 }
 
-function renderLibrary(seed?: (queryClient: QueryClient) => void) {
+async function renderLibrary(seed?: (queryClient: QueryClient) => void) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
@@ -48,7 +48,7 @@ function renderLibrary(seed?: (queryClient: QueryClient) => void) {
         onCreateRecipe: jest.fn(),
         onEdit: jest.fn()
     };
-    const screen = render(
+    const screen = await render(
         <QueryClientProvider client={queryClient}>
             <SavedFoodsLibrary {...props} />
         </QueryClientProvider>
@@ -66,13 +66,13 @@ describe('SavedFoodsLibrary', () => {
         );
     });
 
-    afterEach(() => {
-        cleanup();
+    afterEach(async () => {
+        await cleanup();
         onlineManager.setOnline(true);
     });
 
     it('distinguishes initial loading from a verified empty library and exposes explicit create actions', async () => {
-        const screen = renderLibrary();
+        const screen = await renderLibrary();
 
         const loadingStyle = StyleSheet.flatten(screen.getByTestId('saved-foods-loading').props.style);
         expect(loadingStyle).toEqual(expect.objectContaining({ width: '100%', gap: spacing.md }));
@@ -87,15 +87,15 @@ describe('SavedFoodsLibrary', () => {
         });
         expect(screen.getByText('No saved foods yet. Create a food or recipe to reuse it when logging.')).toBeTruthy();
 
-        fireEvent.press(screen.getByRole('button', { name: 'Create food' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Create recipe' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Create food' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Create recipe' }));
         expect(screen.props.onCreateFood).toHaveBeenCalledTimes(1);
         expect(screen.props.onCreateRecipe).toHaveBeenCalledTimes(1);
     });
 
     it('shows an error instead of empty copy when an uncached request fails', async () => {
         mockApi.getMyFoodsLibrary.mockRejectedValue(new Error('request failed'));
-        const screen = renderLibrary();
+        const screen = await renderLibrary();
 
         await waitFor(() => expect(screen.getByTestId('async-state-error')).toBeTruthy());
         expect(screen.queryByTestId('saved-foods-empty')).toBeNull();
@@ -105,7 +105,7 @@ describe('SavedFoodsLibrary', () => {
     it('keeps cached content visible and labels it stale while offline', async () => {
         const cached = savedFood(7, { name: 'Cached oats' });
         onlineManager.setOnline(false);
-        const screen = renderLibrary((queryClient) => {
+        const screen = await renderLibrary((queryClient) => {
             queryClient.setQueryData(getSavedFoodsLibraryQueryKey('', 'ALL'), {
                 pages: [{ items: [cached], next_cursor: null }],
                 pageParams: [undefined]
@@ -135,22 +135,22 @@ describe('SavedFoodsLibrary', () => {
             }
             return Promise.resolve({ items: [first], next_cursor: 'page-2' });
         });
-        const screen = renderLibrary();
+        const screen = await renderLibrary();
 
         await waitFor(() => expect(screen.getByText('Apple')).toBeTruthy());
-        fireEvent.press(screen.getByRole('button', { name: 'Load more' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Load more' }));
         await waitFor(() => expect(screen.getByText('Oats')).toBeTruthy());
         expect(mockApi.getMyFoodsLibrary).toHaveBeenCalledWith(expect.objectContaining({
             cursor: 'page-2',
             limit: 24
         }));
 
-        fireEvent.press(screen.getByRole('radio', { name: 'Recipes' }));
+        await fireEvent.press(screen.getByRole('radio', { name: 'Recipes' }));
         await waitFor(() => expect(screen.getByText('Soup recipe')).toBeTruthy());
         expect(mockApi.getMyFoodsLibrary).toHaveBeenCalledWith(expect.objectContaining({ type: 'RECIPE' }));
 
         const callsBeforeSearch = mockApi.getMyFoodsLibrary.mock.calls.length;
-        fireEvent.changeText(screen.getByLabelText('Search saved foods'), '  oats  ');
+        await fireEvent.changeText(screen.getByLabelText('Search saved foods'), '  oats  ');
         expect(mockApi.getMyFoodsLibrary).toHaveBeenCalledTimes(callsBeforeSearch);
         await waitFor(() => expect(mockApi.getMyFoodsLibrary).toHaveBeenCalledWith(expect.objectContaining({
             q: 'oats',
@@ -161,11 +161,11 @@ describe('SavedFoodsLibrary', () => {
     it('pins and edits an item with item-specific accessible actions', async () => {
         const item = savedFood(12, { name: 'Greek yogurt' });
         mockApi.getMyFoodsLibrary.mockResolvedValue({ items: [item], next_cursor: null });
-        const screen = renderLibrary();
+        const screen = await renderLibrary();
 
         await waitFor(() => expect(screen.getByText('Greek yogurt')).toBeTruthy());
-        fireEvent.press(screen.getByRole('button', { name: 'Edit Greek yogurt' }));
-        fireEvent.press(screen.getByRole('button', { name: 'Pin Greek yogurt' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Edit Greek yogurt' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Pin Greek yogurt' }));
 
         expect(screen.props.onEdit).toHaveBeenCalledWith(item);
         await waitFor(() => expect(mockApi.setMyFoodPinned).toHaveBeenCalledWith(12, true));

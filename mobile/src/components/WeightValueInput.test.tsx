@@ -8,13 +8,13 @@ jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 
 describe('WeightValueInput', () => {
     const originalWindow = Dimensions.get('window');
-    beforeEach(() => {
-        act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 1 } }));
+    beforeEach(async () => {
+        await act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 1 } }));
     });
 
-    afterEach(() => act(() => Dimensions.set({ window: originalWindow })));
-    it('makes the measurement visually dominant and keeps native-sized controls', () => {
-        const screen = render(
+    afterEach(async () => await act(() => Dimensions.set({ window: originalWindow })));
+    it('makes the measurement visually dominant and keeps native-sized controls', async () => {
+        const screen = await render(
             <WeightValueInput
                 value="170.5"
                 unit="LB"
@@ -41,8 +41,8 @@ describe('WeightValueInput', () => {
         expect(screen.getByRole('button', { name: 'Increase weight by 0.1 pounds' })).toHaveStyle({ minHeight: 56 });
     });
 
-    it('supports goal-specific labeling without changing the control geometry', () => {
-        const screen = render(
+    it('supports goal-specific labeling without changing the control geometry', async () => {
+        const screen = await render(
             <WeightValueInput
                 label="Target"
                 value="165"
@@ -60,10 +60,10 @@ describe('WeightValueInput', () => {
         expect(screen.getByRole('button', { name: 'Decrease target by 0.1 pounds' })).toBeTruthy();
     });
 
-    it('normalizes a decimal comma and steps at one tenth', () => {
+    it('normalizes a decimal comma and steps at one tenth', async () => {
         const onChangeText = jest.fn();
         const onStep = jest.fn();
-        const screen = render(
+        const screen = await render(
             <WeightValueInput
                 value="170.5"
                 unit="LB"
@@ -75,16 +75,16 @@ describe('WeightValueInput', () => {
             />
         );
 
-        fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '171,2');
+        await fireEvent.changeText(screen.getByLabelText('Weight in pounds'), '171,2');
         expect(onChangeText).toHaveBeenCalledWith('171.2');
-        fireEvent.press(screen.getByRole('button', { name: 'Increase weight by 0.1 pounds' }));
+        await fireEvent.press(screen.getByRole('button', { name: 'Increase weight by 0.1 pounds' }));
         expect(onChangeText).toHaveBeenCalledWith('170.6');
         expect(onStep).toHaveBeenCalledTimes(1);
     });
 
-    it('makes room for 200% native text and moves the unit out of the numeric input', () => {
-        act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 2 } }));
-        const screen = render(<WeightValueInput value="170.5" unit="LB" step={0.1} min={0.1} editable onChangeText={jest.fn()} />);
+    it('makes room for 200% native text and moves the unit out of the numeric input', async () => {
+        await act(() => Dimensions.set({ window: { ...originalWindow, width: 320, fontScale: 2 } }));
+        const screen = await render(<WeightValueInput value="170.5" unit="LB" step={0.1} min={0.1} editable onChangeText={jest.fn()} />);
 
         expect(screen.getByLabelText('Weight in pounds')).toHaveStyle({ fontSize: 52, minHeight: 136, paddingHorizontal: 16 });
         expect(screen.getByTestId('weight-unit-slot')).toHaveStyle({ position: 'relative' });

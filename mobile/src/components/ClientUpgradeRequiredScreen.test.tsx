@@ -13,8 +13,8 @@ const requirement = {
 };
 
 describe('ClientUpgradeRequiredScreen', () => {
-    it('explains the version floor and preserves explicit recovery choices', () => {
-        const view = render(
+    it('explains the version floor and preserves explicit recovery choices', async () => {
+        const view = await render(
             <ClientUpgradeRequiredScreen
                 requirement={requirement}
                 serverUrl="https://health.example.com"
@@ -31,8 +31,8 @@ describe('ClientUpgradeRequiredScreen', () => {
         expect(view.getByLabelText('Sign out and choose another server')).toBeTruthy();
     });
 
-    it('renders the iOS version floor without Android-only copy', () => {
-        const view = render(
+    it('renders the iOS version floor without Android-only copy', async () => {
+        const view = await render(
             <ClientUpgradeRequiredScreen
                 requirement={{ ...requirement, platform: 'ios', message: 'Update Calibrate for iOS.' }}
                 serverUrl="https://health.example.com"
@@ -48,7 +48,7 @@ describe('ClientUpgradeRequiredScreen', () => {
     it('rechecks without clearing local state and reports a still-incompatible server', async () => {
         const onRecheck = jest.fn(async () => false);
         const onChooseServer = jest.fn(async () => undefined);
-        const view = render(
+        const view = await render(
             <ClientUpgradeRequiredScreen
                 requirement={requirement}
                 serverUrl="https://health.example.com"
@@ -57,7 +57,7 @@ describe('ClientUpgradeRequiredScreen', () => {
             />
         );
 
-        fireEvent.press(view.getByLabelText('Check again'));
+        await fireEvent.press(view.getByLabelText('Check again'));
         await waitFor(() => expect(onRecheck).toHaveBeenCalledTimes(1));
         expect(await view.findByText(/still requires a newer Calibrate version/)).toBeTruthy();
         expect(onChooseServer).not.toHaveBeenCalled();

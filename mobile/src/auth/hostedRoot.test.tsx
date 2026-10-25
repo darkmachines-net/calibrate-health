@@ -30,13 +30,13 @@ jest.mock('expo-router', () => {
 });
 
 describe('hosted web root', () => {
-    it('waits for auth before choosing the public landing or authenticated Today route', () => {
-        const screen = render(<WebHomeRoute />);
+    it('waits for auth before choosing the public landing or authenticated Today route', async () => {
+        const screen = await render(<WebHomeRoute />);
         expect(screen.getByText('Opening Calibrate...')).toBeTruthy();
         expect(screen.queryByTestId('hosted-landing')).toBeNull();
 
         mockAuthState = { user: null, isLoading: false };
-        screen.rerender(<WebHomeRoute />);
+        await screen.rerender(<WebHomeRoute />);
         expect(screen.getByTestId('hosted-landing')).toBeTruthy();
         expect(screen.getByTestId('hosted-landing-actions')).toBeTruthy();
         expect(screen.getByText('Sign in')).toBeTruthy();
@@ -53,7 +53,7 @@ describe('hosted web root', () => {
         });
 
         mockAuthState = { user: { id: 7 }, isLoading: false };
-        screen.rerender(<WebHomeRoute />);
+        await screen.rerender(<WebHomeRoute />);
         expect(screen.getByTestId('hosted-root-redirect')).toHaveTextContent('/today');
         expect(screen.queryByTestId('hosted-landing')).toBeNull();
     });

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Dimensions } from 'react-native';
-import { act, cleanupAsync, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError, type CalibrationStatusResponse } from '@calibrate/api-client';
 import { PlanCheckCard } from './PlanCheckCard';
@@ -193,14 +193,14 @@ function scheduledStatus(): CalibrationStatusResponse {
 
 const testQueryClients: QueryClient[] = [];
 
-function renderCard() {
+async function renderCard() {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false, gcTime: 0 },
             mutations: { retry: false, gcTime: 0 }
         }
     });
-    const screen = render(
+    const screen = await render(
         <QueryClientProvider client={queryClient}>
             <PlanCheckCard />
         </QueryClientProvider>
@@ -228,16 +228,16 @@ describe('Plan check card', () => {
     });
 
     afterEach(async () => {
-        await cleanupAsync();
+        await cleanup();
         testQueryClients.splice(0).forEach((client) => client.clear());
         await act(async () => {
             await new Promise((resolve) => setTimeout(resolve, 0));
         });
     });
 
-    it('suppresses stale decisions while evidence is syncing', () => {
+    it('suppresses stale decisions while evidence is syncing', async () => {
         mockHasPendingCalibrationEvidence = true;
-        const screen = renderCard();
+        const screen = await renderCard();
 
         expect(screen.getByText('Plan check')).toBeTruthy();
         expect(screen.getByText(/latest food and weight entries are syncing/)).toBeTruthy();
@@ -246,7 +246,7 @@ describe('Plan check card', () => {
 
     it('sets expectations without preview metrics while waiting', async () => {
         mockApi.getCalibrationStatus.mockResolvedValue(waitingStatus());
-        const screen = renderCard();
+        const screen = await renderCard();
 
         await waitFor(() => expect(screen.getByText('Not enough history for a reliable plan check')).toBeTruthy());
         expect(screen.getByText(/Keep logging meals and weight consistently/)).toBeTruthy();
@@ -259,7 +259,7 @@ describe('Plan check card', () => {
     });
 
     it('shows a retrospective on-track trend and no-change decision', async () => {
-        const screen = renderCard();
+        const screen = await renderCard();
 
         await waitFor(() => expect(
             screen.getByText('Your recent weight trend matches your goal')
@@ -276,19 +276,19 @@ describe('Plan check card', () => {
 
     it('keeps Apply inside the adjustment review', async () => {
         mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
-        const screen = renderCard();
+        const screen = await renderCard();
 
         await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
         expect(screen.getByText('Your recent weight trend is slower than your goal')).toBeTruthy();
         expect(screen.queryByText('Apply 1,750 kcal')).toBeNull();
 
-        fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
         expect(screen.getByText('Current calorie target')).toBeTruthy();
         expect(screen.getByText('Suggested calorie target')).toBeTruthy();
         expect(screen.getByText('Safety limit')).toBeTruthy();
         expect(screen.getByText('Apply 1,750 kcal')).toBeTruthy();
 
-        fireEvent.press(screen.getByText('Apply 1,750 kcal'));
+        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
         await waitFor(() => expect(mockApi.applyCalibrationRecommendation).toHaveBeenCalledWith(
             7,
             'plan-check-operation-id'
@@ -298,7 +298,7 @@ describe('Plan check card', () => {
 
     it('keeps the assessment visible with a scheduled update and supports Undo', async () => {
         mockApi.getCalibrationStatus.mockResolvedValue(scheduledStatus());
-        const screen = renderCard();
+        const screen = await renderCard();
 
         await waitFor(() => expect(screen.getByText('Calorie target update scheduled')).toBeTruthy());
         expect(screen.getByText('Your recent weight trend is slower than your goal')).toBeTruthy();
@@ -306,7 +306,7 @@ describe('Plan check card', () => {
         expect(screen.queryByText('Review adjustment')).toBeNull();
         expect(screen.queryByText('Keep your current calorie target for now.')).toBeNull();
 
-        fireEvent.press(screen.getByText('Undo'));
+        await fireEvent.press(screen.getByText('Undo'));
         await waitFor(() => expect(mockApi.cancelCalibrationRecommendation).toHaveBeenCalledWith(
             7,
             'plan-check-operation-id'
@@ -316,11 +316,11 @@ describe('Plan check card', () => {
     it('updates the cached scheduled state immediately after Apply', async () => {
         mockApi.getCalibrationStatus.mockResolvedValueOnce(recommendationStatus());
         mockApi.getCalibrationStatus.mockResolvedValue(scheduledStatus());
-        const { queryClient, ...screen } = renderCard();
+        const { queryClient, ...screen } = await renderCard();
 
         await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        fireEvent.press(screen.getByText('Review adjustment'));
-        fireEvent.press(screen.getByText('Apply 1,750 kcal'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
 
         await waitFor(() => {
             const cached = queryClient.getQueryData<CalibrationStatusResponse>(calibrationStatusQueryKey);
@@ -333,7 +333,7 @@ describe('Plan check card', () => {
         const status = baseStatus();
         const { assessment: _assessment, ...legacyEvaluation } = status.evaluation;
         mockApi.getCalibrationStatus.mockResolvedValue({ ...status, evaluation: legacyEvaluation });
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText(/not available from your connected server yet/)).toBeTruthy());
         expect(screen.queryByLabelText('Loading plan check')).toBeNull();
         expect(screen.queryByText('Legacy headline must not render')).toBeNull();
@@ -343,7 +343,7 @@ describe('Plan check card', () => {
         const status = waitingStatus();
         status.evaluation.assessment.blocker = 'trend_unavailable';
         mockApi.getCalibrationStatus.mockResolvedValue(status);
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText('Your weight trend is unavailable')).toBeTruthy());
         expect(screen.queryByText('Review your calorie plan')).toBeNull();
     });
@@ -353,7 +353,7 @@ describe('Plan check card', () => {
         { width: 1024, fontScale: 1.6, direction: 'column' }
     ] as const)('keeps comparisons readable at $width px and $fontScale font scale', async ({ width, fontScale, direction }) => {
         Dimensions.set({ window: { width, height: 844, scale: 1, fontScale } });
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByTestId('plan-check-metrics')).toHaveStyle({ flexDirection: direction }));
         expect(screen.getByTestId('plan-check-pace-comparison').props.accessibilityLabel)
             .toMatch(/not a forecast/);
@@ -361,17 +361,17 @@ describe('Plan check card', () => {
 
     it('requires a fresh review when the pending recommendation changes', async () => {
         mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
         expect(screen.getByText('Apply 1,750 kcal')).toBeTruthy();
         const next = recommendationStatus();
         next.recommendation = { ...next.recommendation!, id: 8, inputFingerprint: 'new-evidence' };
         next.evaluation.recommendation = { ...next.evaluation.recommendation!, recommendedTargetKcal: 1800 };
-        act(() => screen.queryClient.setQueryData(calibrationStatusQueryKey, next));
+        await act(() => screen.queryClient.setQueryData(calibrationStatusQueryKey, next));
         await waitFor(() => expect(screen.queryByText('Apply 1,750 kcal')).toBeNull());
         expect(screen.queryByText('Apply 1,800 kcal')).toBeNull();
-        fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
         expect(screen.getByText('Apply 1,800 kcal')).toBeTruthy();
         expect(mockApi.applyCalibrationRecommendation).not.toHaveBeenCalled();
     });
@@ -379,22 +379,22 @@ describe('Plan check card', () => {
     it('keeps the review retryable after a transient apply failure', async () => {
         mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
         mockApi.applyCalibrationRecommendation.mockRejectedValueOnce(new TypeError('Network request failed'));
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        fireEvent.press(screen.getByText('Review adjustment'));
-        fireEvent.press(screen.getByText('Apply 1,750 kcal'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
         await waitFor(() => expect(screen.getByText('Check your connection and try again.')).toBeTruthy());
-        fireEvent.press(screen.getByText('Apply 1,750 kcal'));
+        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
         await waitFor(() => expect(mockApi.applyCalibrationRecommendation).toHaveBeenCalledTimes(2));
     });
 
     it('refreshes stale evidence after an apply conflict instead of retrying the same recommendation', async () => {
         mockApi.getCalibrationStatus.mockResolvedValueOnce(recommendationStatus()).mockResolvedValue(baseStatus());
         mockApi.applyCalibrationRecommendation.mockRejectedValue(new ApiError('Stale', 409, null));
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        fireEvent.press(screen.getByText('Review adjustment'));
-        fireEvent.press(screen.getByText('Apply 1,750 kcal'));
+        await fireEvent.press(screen.getByText('Review adjustment'));
+        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
         await waitFor(() => expect(screen.getByText('Your recent weight trend matches your goal')).toBeTruthy());
         expect(screen.queryByText('Apply 1,750 kcal')).toBeNull();
         expect(mockApi.getCalibrationStatus).toHaveBeenCalledTimes(2);
@@ -403,9 +403,9 @@ describe('Plan check card', () => {
     it('refreshes the scheduled banner after an undo conflict', async () => {
         mockApi.getCalibrationStatus.mockResolvedValueOnce(scheduledStatus()).mockResolvedValue(baseStatus());
         mockApi.cancelCalibrationRecommendation.mockRejectedValue(new ApiError('Already effective', 409, null));
-        const screen = renderCard();
+        const screen = await renderCard();
         await waitFor(() => expect(screen.getByText('Undo')).toBeTruthy());
-        await act(async () => { fireEvent.press(screen.getByText('Undo')); });
+        await act(async () => { await fireEvent.press(screen.getByText('Undo')); });
         await waitFor(() => expect(screen.queryByText('Calorie target update scheduled')).toBeNull());
         expect(mockApi.getCalibrationStatus).toHaveBeenCalledTimes(2);
     });

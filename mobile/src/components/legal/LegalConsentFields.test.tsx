@@ -13,10 +13,10 @@ jest.mock('expo-router', () => {
 });
 
 describe('LegalConsentFields', () => {
-    it('exposes explicit checkbox state and independent change handlers', () => {
+    it('exposes explicit checkbox state and independent change handlers', async () => {
         const onTermsAcceptedChange = jest.fn();
         const onPrivacyAcceptedChange = jest.fn();
-        const screen = render(
+        const screen = await render(
             <LegalConsentFields
                 termsAccepted
                 privacyAccepted={false}
@@ -30,8 +30,8 @@ describe('LegalConsentFields', () => {
         expect(terms.props.accessibilityState).toEqual(expect.objectContaining({ checked: true }));
         expect(privacy.props.accessibilityState).toEqual(expect.objectContaining({ checked: false }));
 
-        fireEvent.press(terms);
-        fireEvent.press(privacy);
+        await fireEvent.press(terms);
+        await fireEvent.press(privacy);
         expect(onTermsAcceptedChange).toHaveBeenCalledWith(false);
         expect(onPrivacyAcceptedChange).toHaveBeenCalledWith(true);
     });

@@ -19,8 +19,8 @@ jest.mock('expo-router', () => {
     const ReactActual = jest.requireActual<typeof React>('react');
     return {
         useLocalSearchParams: jest.fn(),
-        Link: jest.fn(({ children }: { children: React.ReactElement }) =>
-            ReactActual.createElement(ReactActual.Fragment, null, children))
+        Link: jest.fn(({ children }: { children: React.ReactNode }) =>
+            ReactActual.createElement(require('react-native').Text, null, children))
     };
 });
 
@@ -72,20 +72,20 @@ describe('auth screen server navigation', () => {
         jest.restoreAllMocks();
     });
 
-    it('carries the login server draft into the registration link', () => {
-        const screen = render(<LoginScreen />);
+    it('carries the login server draft into the registration link', async () => {
+        const screen = await render(<LoginScreen />);
 
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
-        fireEvent.press(screen.getByLabelText('Show advanced connection options'));
+        await fireEvent.press(screen.getByLabelText('Show advanced connection options'));
         expect(screen.getByLabelText('Server URL')).toHaveProp('value', SELF_HOSTED_URL);
         expectAuthLink('/(auth)/register');
     });
 
-    it('carries the registration server draft back to the login link', () => {
-        const screen = render(<RegisterScreen />);
+    it('carries the registration server draft back to the login link', async () => {
+        const screen = await render(<RegisterScreen />);
 
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
-        fireEvent.press(screen.getByLabelText('Show advanced connection options'));
+        await fireEvent.press(screen.getByLabelText('Show advanced connection options'));
         expect(screen.getByLabelText('Server URL')).toHaveProp('value', SELF_HOSTED_URL);
         expectAuthLink('/(auth)/login');
     });
@@ -93,11 +93,11 @@ describe('auth screen server navigation', () => {
     it('submits login credentials with the routed server draft', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<LoginScreen />);
+        const screen = await render(<LoginScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'user@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret');
-        fireEvent.press(screen.getByLabelText('Sign in'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'user@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret');
+        await fireEvent.press(screen.getByLabelText('Sign in'));
 
         await waitFor(() => {
             expect(auth.login).toHaveBeenCalledWith('user@example.com', 'secret', SELF_HOSTED_URL);
@@ -107,13 +107,13 @@ describe('auth screen server navigation', () => {
     it('submits registration credentials with the routed server draft', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<RegisterScreen />);
+        const screen = await render(<RegisterScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
         expect(screen.queryByRole('checkbox')).toBeNull();
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         await waitFor(() => {
             expect(auth.register).toHaveBeenCalledWith('new@example.com', 'secret12', SELF_HOSTED_URL, {
@@ -123,47 +123,47 @@ describe('auth screen server navigation', () => {
         });
     });
 
-    it('shows actionable registration credential validation', () => {
+    it('shows actionable registration credential validation', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<RegisterScreen />);
+        const screen = await render(<RegisterScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'not-an-email');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'not-an-email');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid email address.');
         expect(auth.register).not.toHaveBeenCalled();
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'short');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'short');
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'short');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'short');
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         expect(screen.getByRole('alert')).toHaveTextContent('Password must be at least 8 characters.');
 
         const oversizedPassword = String.fromCodePoint(0x1f600).repeat(19);
-        fireEvent.changeText(screen.getByLabelText('Password'), oversizedPassword);
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), oversizedPassword);
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Password'), oversizedPassword);
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), oversizedPassword);
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         expect(screen.getByRole('alert')).toHaveTextContent('Password must be at most 72 bytes.');
         expect(auth.register).not.toHaveBeenCalled();
     });
 
 
-    it('requires both legal choices for hosted account creation', () => {
+    it('requires both legal choices for hosted account creation', async () => {
         const auth = authContextStub();
         auth.serverUrl = HOSTED_URL;
         mockUseLocalSearchParams.mockReturnValue({ serverUrl: HOSTED_URL });
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<RegisterScreen />);
+        const screen = await render(<RegisterScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'password123');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'password123');
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'password123');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'password123');
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         expect(screen.getByRole('alert')).toHaveTextContent('Review and accept both legal documents to create an account.');
         expect(auth.register).not.toHaveBeenCalled();
@@ -172,14 +172,14 @@ describe('auth screen server navigation', () => {
         jest.replaceProperty(Platform, 'OS', 'web');
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<LoginScreen />);
+        const screen = await render(<LoginScreen />);
 
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
         expect(screen.queryByLabelText('Show advanced connection options')).toBeNull();
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'user@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret');
-        fireEvent.press(screen.getByLabelText('Sign in'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'user@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret');
+        await fireEvent.press(screen.getByLabelText('Sign in'));
 
         await waitFor(() => {
             expect(auth.login).toHaveBeenCalledWith(
@@ -191,9 +191,9 @@ describe('auth screen server navigation', () => {
         expect(mockLink.mock.calls.some(([props]) => props.href === '/(auth)/register')).toBe(true);
     });
 
-    it('uses canonical privacy, terms, and support destinations on auth surfaces', () => {
-        render(<LoginScreen />);
-        render(<RegisterScreen />);
+    it('uses canonical privacy, terms, and support destinations on auth surfaces', async () => {
+        await render(<LoginScreen />);
+        await render(<RegisterScreen />);
 
         const destinations = mockLink.mock.calls.map(([props]) => props.href);
         expect(destinations).toEqual(expect.arrayContaining([
@@ -207,12 +207,12 @@ describe('auth screen server navigation', () => {
         const auth = authContextStub();
         auth.register.mockRejectedValueOnce(new Error('Unable to create account'));
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<RegisterScreen />);
+        const screen = await render(<RegisterScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'existing@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'existing@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'secret12');
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         await waitFor(() => {
             expect(screen.getByRole('alert')).toHaveTextContent('Unable to create account. Try again.');
@@ -221,15 +221,15 @@ describe('auth screen server navigation', () => {
         expect(within(createAccountButton).getByText('Create account')).toBeTruthy();
     });
 
-    it('prevents account creation when password confirmation does not match', () => {
+    it('prevents account creation when password confirmation does not match', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = render(<RegisterScreen />);
+        const screen = await render(<RegisterScreen />);
 
-        fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
-        fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
-        fireEvent.changeText(screen.getByLabelText('Confirm password'), 'different12');
-        fireEvent.press(screen.getByLabelText('Create account'));
+        await fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.com');
+        await fireEvent.changeText(screen.getByLabelText('Password'), 'secret12');
+        await fireEvent.changeText(screen.getByLabelText('Confirm password'), 'different12');
+        await fireEvent.press(screen.getByLabelText('Create account'));
 
         expect(screen.getByRole('alert')).toHaveTextContent('Passwords do not match.');
         expect(auth.register).not.toHaveBeenCalled();

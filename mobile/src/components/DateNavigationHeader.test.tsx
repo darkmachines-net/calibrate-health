@@ -7,7 +7,7 @@ import { DateNavigationHeader } from './DateNavigationHeader';
 import { SCREEN_CONTENT_WIDTHS, SCREEN_WIDE_LAYOUT_BREAKPOINT } from './Screen';
 
 type TestInstance = {
-    props: Record<string, unknown>;
+    props: Record<string, unknown> & { style?: Parameters<typeof StyleSheet.flatten>[0] };
     findByProps: (props: Record<string, unknown>) => TestInstance;
     findByType: (type: string) => TestInstance;
 };

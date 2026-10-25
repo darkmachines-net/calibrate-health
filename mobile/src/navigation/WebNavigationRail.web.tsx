@@ -18,7 +18,7 @@ const PILL_HEIGHT = 32;
 const ITEM_MIN_HEIGHT = 64;
 
 /** Renders the browser navigation rail and reports its measured width to the shared shell. */
-export function WebNavigationRail({ state, descriptors, navigation, insets, onWidthChange }: WebNavigationRailProps) {
+export function WebNavigationRail({ state, descriptors, emitter, insets, onWidthChange }: WebNavigationRailProps) {
     const { colors } = useAppTheme();
     const railRef = React.useRef<HTMLElement>(null);
     React.useLayoutEffect(() => {
@@ -61,7 +61,7 @@ export function WebNavigationRail({ state, descriptors, navigation, insets, onWi
                     const { options } = descriptors[route.key];
                     const color = focused ? colors.onPrimaryContainer : colors.muted;
                     const navigate = () => {
-                        const tabEvent = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                        const tabEvent = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                         if (!focused && !tabEvent.defaultPrevented) {
                             // Canonical link routing preserves browser history when leaving a retained editor.
                             router.navigate(canonicalPathForRoute(routeId));
@@ -79,7 +79,7 @@ export function WebNavigationRail({ state, descriptors, navigation, insets, onWi
                                 event.preventDefault();
                                 navigate();
                             }}
-                            onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+                            onLongPress={() => emitter.emit({ type: 'tabLongPress', target: route.key })}
                             style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: ITEM_MIN_HEIGHT,
                                 paddingVertical: spacing.xs, paddingHorizontal: spacing.xs, gap: spacing.xs,
                                 borderRadius: radius.md }}

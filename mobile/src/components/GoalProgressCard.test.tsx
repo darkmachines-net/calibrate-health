@@ -24,9 +24,9 @@ const GOAL: GoalEntry = {
 };
 
 describe('GoalProgressCard', () => {
-    it('combines the latest snapshot and goal projection in one section', () => {
+    it('combines the latest snapshot and goal projection in one section', async () => {
         const onEditGoal = jest.fn();
-        const screen = render(
+        const screen = await render(
             <GoalProgressCard
                 goal={GOAL}
                 latestMetric={{ id: 1, date: '2026-07-20', weight: 172 }}
@@ -35,7 +35,7 @@ describe('GoalProgressCard', () => {
             />
         );
 
-        fireEvent.press(screen.getByLabelText('Edit goal'));
+        await fireEvent.press(screen.getByLabelText('Edit goal'));
 
         expect(screen.getByText('Snapshot')).toBeTruthy();
         expect(screen.getByText('172 kg').props.accessibilityHint).toBe('Updated Jul 20');
@@ -66,8 +66,8 @@ describe('GoalProgressCard', () => {
         expect(onEditGoal).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the goal action separately focusable from the snapshot content', () => {
-        const screen = render(
+    it('keeps the goal action separately focusable from the snapshot content', async () => {
+        const screen = await render(
             <GoalProgressCard
                 goal={GOAL}
                 latestMetric={{ id: 1, date: '2026-07-20', weight: 172 }}
@@ -78,17 +78,17 @@ describe('GoalProgressCard', () => {
 
         const action = screen.getByLabelText('Edit goal');
         expect(within(action).queryByText('Snapshot')).toBeNull();
-        fireEvent(action, 'focus', { nativeEvent: {} });
+        await fireEvent(action, 'focus', { nativeEvent: {} });
         expect(action).toHaveStyle({
             outlineWidth: themes.light.interaction.focusRingWidth,
             outlineColor: themes.light.colors.focusRing
         });
-        fireEvent(action, 'blur', { nativeEvent: {} });
+        await fireEvent(action, 'blur', { nativeEvent: {} });
         expect(action).not.toHaveStyle({ outlineWidth: themes.light.interaction.focusRingWidth });
     });
 
-    it('keeps gain progress in the compact snapshot', () => {
-        const screen = render(
+    it('keeps gain progress in the compact snapshot', async () => {
+        const screen = await render(
             <GoalProgressCard
                 goal={{ ...GOAL, daily_deficit: -250, target_weight: 190 }}
                 latestMetric={{ id: 1, date: '2026-07-20', weight: 184 }}
@@ -99,9 +99,9 @@ describe('GoalProgressCard', () => {
         expect(screen.getByText('25% complete')).toBeTruthy();
     });
 
-    it('keeps a reached goal durable after a later fluctuation and offers the next-goal flow', () => {
+    it('keeps a reached goal durable after a later fluctuation and offers the next-goal flow', async () => {
         const onSetNextGoal = jest.fn();
-        const screen = render(
+        const screen = await render(
             <GoalProgressCard
                 goal={{
                     ...GOAL,
@@ -125,18 +125,18 @@ describe('GoalProgressCard', () => {
         )).toBeTruthy();
         expect(screen.queryByText('Goal date at selected pace')).toBeNull();
 
-        fireEvent.press(screen.getByLabelText('Set next goal'));
+        await fireEvent.press(screen.getByLabelText('Set next goal'));
         expect(onSetNextGoal).toHaveBeenCalledTimes(1);
     });
 
-    it('presents maintenance as ongoing without completion or projection semantics', () => {
+    it('presents maintenance as ongoing without completion or projection semantics', async () => {
         const maintenanceGoal: GoalEntry = {
             ...GOAL,
             target_weight: 170,
             daily_deficit: 0,
             projection: { status: 'maintenance', projected_end_date: null, reason_code: null }
         };
-        const screen = render(
+        const screen = await render(
             <GoalProgressCard
                 goal={maintenanceGoal}
                 latestMetric={{ id: 2, date: '2026-07-24', weight: 170 }}
@@ -153,9 +153,9 @@ describe('GoalProgressCard', () => {
         expect(screen.queryByText('Goal date at selected pace')).toBeNull();
     });
 
-    it('preserves progress but suppresses unsafe projection and target details', () => {
+    it('preserves progress but suppresses unsafe projection and target details', async () => {
         const onEditGoal = jest.fn();
-        const screen = render(
+        const screen = await render(
             <GoalProgressCard
                 goal={{
                     ...GOAL,
@@ -177,15 +177,15 @@ describe('GoalProgressCard', () => {
         expect(screen.getByText('59% complete')).toBeTruthy();
         expect(screen.getByText('Unavailable')).toBeTruthy();
         expect(screen.queryByText(/Current target:/)).toBeNull();
-        fireEvent.press(screen.getByLabelText('Review calorie plan'));
+        await fireEvent.press(screen.getByLabelText('Review calorie plan'));
         expect(onEditGoal).toHaveBeenCalledTimes(1);
     });
 
     it.each([
         ['requires_review', 'Stored goal preserved. Calorie target unavailable until you review this plan.'],
         [undefined, 'Stored goal preserved. Calorie target unavailable until the server verifies this plan.']
-    ] as const)('does not describe %s maintenance as active', (planStatus, planCopy) => {
-        const screen = render(
+    ] as const)('does not describe %s maintenance as active', async (planStatus, planCopy) => {
+        const screen = await render(
             <GoalProgressCard
                 goal={{
                     ...GOAL,
@@ -212,8 +212,8 @@ describe('GoalProgressCard', () => {
         expect(screen.queryByText('Maintaining weight with a steady calorie target.')).toBeNull();
     });
 
-    it('suppresses cached target and projection while a weight change is syncing', () => {
-        const screen = render(
+    it('suppresses cached target and projection while a weight change is syncing', async () => {
+        const screen = await render(
             <GoalProgressCard
                 goal={GOAL}
                 latestMetric={{ id: 2, date: '2026-07-20', weight: 170 }}

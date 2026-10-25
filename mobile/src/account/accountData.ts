@@ -21,7 +21,7 @@ type ShareFile = {
     uri: string;
     exists: boolean;
     create: (options?: { overwrite?: boolean }) => void;
-    write: (content: string) => void;
+    write: (content: string) => Promise<void>;
     delete: () => void;
 };
 
@@ -120,7 +120,7 @@ export async function shareAccountExport(
     const file = sharingDependencies.createCacheFile(buildAccountExportFilename(accountExport.exported_at));
     try {
         file.create({ overwrite: true });
-        file.write(serializeAccountExport(accountExport));
+        await file.write(serializeAccountExport(accountExport));
         await sharingDependencies.share(file.uri, {
             mimeType: ACCOUNT_EXPORT_MIME_TYPE,
             dialogTitle: 'Share calibrate account export'

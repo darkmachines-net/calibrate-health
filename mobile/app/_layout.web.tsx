@@ -7,8 +7,8 @@ import React from 'react';
 import { Slot, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { StyleSheet, View } from 'react-native';
+import { webSafeAreaPadding } from '../src/layout/webSafeArea';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { hasFullAccountAccess } from '../src/auth/accountAccess';
@@ -144,31 +144,29 @@ const WebRootRuntime: React.FC = () => {
     return (
         <>
             <WebSkipLink />
-            <SafeAreaProvider>
-                <QueryClientProvider client={queryClient}>
-                    <AuthProvider>
-                        <ClientDiagnosticsRuntime />
-                        <ClientWebVitalsRuntime />
-                        <BrowserPwaStatus />
-                        <NativePushRegistrationProvider>
-                            <BrowserRuntime>
-                                <StatusBar style={theme.dark ? 'light' : 'dark'} />
-                                <BrowserRoutePresentation />
-                                <View
-                                    style={[
-                                        styles.viewport,
-                                        visualViewportHeight !== undefined && styles.visualViewport,
-                                        { height: visualViewportHeight }
-                                    ]}
-                                >
-                                    <OfflineWorkspaceStatus />
-                                    <Slot />
-                                </View>
-                            </BrowserRuntime>
-                        </NativePushRegistrationProvider>
-                    </AuthProvider>
-                </QueryClientProvider>
-            </SafeAreaProvider>
+            <QueryClientProvider client={queryClient}>
+                <AuthProvider>
+                    <ClientDiagnosticsRuntime />
+                    <ClientWebVitalsRuntime />
+                    <BrowserPwaStatus />
+                    <NativePushRegistrationProvider>
+                        <BrowserRuntime>
+                            <StatusBar style={theme.dark ? 'light' : 'dark'} />
+                            <BrowserRoutePresentation />
+                            <View
+                                style={[
+                                    styles.viewport,
+                                    visualViewportHeight !== undefined && styles.visualViewport,
+                                    { height: visualViewportHeight }
+                                ]}
+                            >
+                                <OfflineWorkspaceStatus />
+                                <Slot />
+                            </View>
+                        </BrowserRuntime>
+                    </NativePushRegistrationProvider>
+                </AuthProvider>
+            </QueryClientProvider>
         </>
     );
 };
@@ -185,7 +183,8 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
     viewport: {
         flex: 1,
-        minHeight: 0
+        minHeight: 0,
+        ...webSafeAreaPadding()
     },
     visualViewport: {
         // Preserve the measured viewport height instead of collapsing it to a zero flex basis.

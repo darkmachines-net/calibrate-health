@@ -2,7 +2,7 @@
 
 Expo React Native client for calibrate on Android and iOS.
 
-The app tracks the latest stable Expo release and currently uses Expo SDK 57 with React Native 0.86. Development
+The app tracks the latest stable Expo release and currently uses Expo SDK 58 with React Native 0.88 and React 19.3. Development
 builds are the primary native workflow; Expo Go is useful for lightweight checks but is not the release runtime.
 
 ## Development
@@ -16,7 +16,7 @@ worktree setup and seeded/manual authentication.
 - Build/install with `npm --prefix mobile run android` or, on macOS, `npm --prefix mobile run ios`.
 - Android emulators reach the host at `10.0.2.2`; iOS Simulator uses `127.0.0.1`.
 - For Expo Go on a physical Android or iOS phone, start Expo with a LAN-reachable backend URL:
-  Use an Expo Go build supporting SDK 57. Health Connect, Wear pairing, and remote push require a custom development build.
+  Use an Expo Go build supporting SDK 58. Health Connect, Wear pairing, and remote push require a custom development build.
   `$env:EXPO_PUBLIC_CALIBRATE_SERVER_URL='http://<host-lan-ip>:<worktree-api-port>'; npm.cmd --prefix mobile run start -- --go --lan --clear`.
 - In Expo dev builds pointed at localhost, the emulator loopback, or a LAN backend, the app auto-mints a mobile
   session for `test@calibratehealth.app` when no stored session can be restored.

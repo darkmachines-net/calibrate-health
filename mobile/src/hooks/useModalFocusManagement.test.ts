@@ -94,7 +94,7 @@ describe('useModalFocusManagement', () => {
         });
     });
 
-    it('lets only the topmost nested modal contain focus and handle Escape', () => {
+    it('lets only the topmost nested modal contain focus and handle Escape', async () => {
         const fakeDocument = new FakeDocument();
         Object.assign(globalThis, {
             document: fakeDocument,
@@ -116,7 +116,7 @@ describe('useModalFocusManagement', () => {
         const innerClose = jest.fn();
         pageTrigger.focus();
 
-        const hook = renderHook(
+        const hook = await renderHook(
             ({ innerVisible }: { innerVisible: boolean }) => {
                 useModalFocusManagement({
                     visible: true,
@@ -137,10 +137,10 @@ describe('useModalFocusManagement', () => {
         expect(fakeDocument.activeElement).toBe(outerSelectorTrigger);
         outerSelectorTrigger.focus();
 
-        hook.rerender({ innerVisible: true });
+        await hook.rerender({ innerVisible: true });
         expect(fakeDocument.activeElement).toBe(innerOption);
 
-        act(() => {
+        await act(() => {
             fakeDocument.dispatch('keydown', {
                 key: 'Escape',
                 preventDefault: jest.fn()
@@ -149,10 +149,10 @@ describe('useModalFocusManagement', () => {
         expect(innerClose).toHaveBeenCalledTimes(1);
         expect(outerClose).not.toHaveBeenCalled();
 
-        hook.rerender({ innerVisible: false });
+        await hook.rerender({ innerVisible: false });
         expect(fakeDocument.activeElement).toBe(outerSelectorTrigger);
 
-        act(() => {
+        await act(() => {
             fakeDocument.dispatch('keydown', {
                 key: 'Escape',
                 preventDefault: jest.fn()
@@ -160,6 +160,6 @@ describe('useModalFocusManagement', () => {
         });
         expect(outerClose).toHaveBeenCalledTimes(1);
 
-        hook.unmount();
+        await hook.unmount();
     });
 });

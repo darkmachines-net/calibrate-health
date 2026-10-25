@@ -25,8 +25,8 @@ const day: ActivityDay = {
 };
 
 describe('ActivitySummaryCard', () => {
-    it('leads with observed activity and labels device burn without implying a target adjustment', () => {
-        const screen = render(<ActivitySummaryCard day={day} isToday={false} />);
+    it('leads with observed activity and labels device burn without implying a target adjustment', async () => {
+        const screen = await render(<ActivitySummaryCard day={day} isToday={false} />);
 
         expect(screen.getByText('Steps')).toBeTruthy();
         expect(screen.getByText('Active calories')).toBeTruthy();
@@ -38,12 +38,12 @@ describe('ActivitySummaryCard', () => {
         expect(screen.queryByText(/calorie target/i)).toBeNull();
     });
 
-    it('uses a concise empty state and keeps delayed sync wording factual', () => {
-        const emptyScreen = render(<ActivitySummaryCard day={undefined} isToday />);
+    it('uses a concise empty state and keeps delayed sync wording factual', async () => {
+        const emptyScreen = await render(<ActivitySummaryCard day={undefined} isToday />);
         expect(emptyScreen.getByText('No imported activity for this day')).toBeTruthy();
         expect(emptyScreen.getByText(/take a little time to deliver today/)).toBeTruthy();
 
-        const delayedScreen = render(<ActivitySummaryCard day={day} isToday />);
+        const delayedScreen = await render(<ActivitySummaryCard day={day} isToday />);
         expect(delayedScreen.getByText(/has not refreshed recently/)).toBeTruthy();
         expect(delayedScreen.getByText(/connected apps may still be syncing/)).toBeTruthy();
     });

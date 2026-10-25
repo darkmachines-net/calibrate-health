@@ -23,15 +23,15 @@ describe('ClientDiagnosticsRuntime', () => {
         mockRegisterClientDiagnosticReporter.mockReturnValue(jest.fn());
     });
 
-    it('waits for auth hydration before binding diagnostics to the confirmed server', () => {
+    it('waits for auth hydration before binding diagnostics to the confirmed server', async () => {
         const reportClientDiagnostic = jest.fn();
         mockUseAuth.mockReturnValue(authState(true, reportClientDiagnostic));
-        const view = render(<ClientDiagnosticsRuntime />);
+        const view = await render(<ClientDiagnosticsRuntime />);
 
         expect(mockRegisterClientDiagnosticReporter).not.toHaveBeenCalled();
 
         mockUseAuth.mockReturnValue(authState(false, reportClientDiagnostic));
-        view.rerender(<ClientDiagnosticsRuntime />);
+        await view.rerender(<ClientDiagnosticsRuntime />);
 
         expect(mockRegisterClientDiagnosticReporter).toHaveBeenCalledTimes(1);
         const reporter = mockRegisterClientDiagnosticReporter.mock.calls[0][0];

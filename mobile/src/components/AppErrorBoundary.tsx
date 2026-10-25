@@ -121,7 +121,7 @@ export class AppErrorBoundary extends React.Component<AppErrorBoundaryProps, App
                     accessibilityLiveRegion="assertive"
                     accessibilityLabel="Calibrate encountered an unexpected error"
                 >
-                    <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+                    <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} />
                     <View style={styles.card}>
                         <View style={styles.brandRow}>
                             <View

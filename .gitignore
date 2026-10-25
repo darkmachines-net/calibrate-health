@@ -9,6 +9,8 @@ backend/prisma/*.db-shm
 backend/prisma/*.db-wal
 mobile/.expo
 mobile/android
+# Short checkout-local CMake staging for Windows native builds.
+/.cache/cxx/
 mobile/dist
 mobile/modules/wear-pairing/android/build/
 .codex-screenshots/

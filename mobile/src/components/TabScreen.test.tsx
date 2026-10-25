@@ -10,8 +10,8 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 describe('TabScreen', () => {
-    it('does not duplicate the bottom inset already owned by the tab bar', () => {
-        const view = render(
+    it('does not duplicate the bottom inset already owned by the tab bar', async () => {
+        const view = await render(
             <TabScreen testID="tab-screen">
                 <AppText>Progress</AppText>
             </TabScreen>
@@ -21,8 +21,8 @@ describe('TabScreen', () => {
         expect(contentStyle.paddingBottom).toBe(16);
     });
 
-    it('reserves clearance only when the route has a FAB', () => {
-        const view = render(
+    it('reserves clearance only when the route has a FAB', async () => {
+        const view = await render(
             <TabScreen testID="tab-screen" reserveFab>
                 <AppText>Food log</AppText>
             </TabScreen>

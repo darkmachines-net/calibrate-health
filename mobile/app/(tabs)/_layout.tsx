@@ -12,7 +12,7 @@ import {
     type StyleProp,
     type ViewStyle
 } from 'react-native';
-import { Redirect, router, Tabs, usePathname, type Href } from 'expo-router';
+import { Redirect, router, Tabs, useCanGoBack, usePathname, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InAppNotification } from '@calibrate/api-client';
@@ -65,7 +65,9 @@ import {
 import { radius, spacing, useAppTheme, type AppTheme, type AppThemeColors } from '../../src/theme';
 
 const HIDDEN_TAB_OPTIONS = {
-    href: null
+    // SDK 58 redirects away from href:null routes; hide only the settings tab button.
+    tabBarButton: () => null,
+    tabBarItemStyle: { display: 'none' }
 } as const;
 
 const TAB_BAR_CONTENT_HEIGHT = 56; // Keeps the UIKit icon, label, and built-in item padding from clipping.
@@ -160,6 +162,7 @@ const NavigationPressable: React.FC<NavigationPressableProps> = ({
 
 /** Guards authenticated tab access and composes responsive navigation, account actions, and global notices. */
 export default function TabsLayout() {
+    const routerCanGoBack = useCanGoBack();
     const { api, user, isLoading } = useAuth();
     const hasFullAccess = hasFullAccountAccess(user);
     const queryClient = useQueryClient();
@@ -172,13 +175,13 @@ export default function TabsLayout() {
     const initialBrowserHistoryLength = React.useRef(
         Platform.OS === 'web' && typeof window !== 'undefined' ? window.history.length : 0
     );
-    const routerCanGoBack = router.canGoBack();
     const browserCanGoBack = Platform.OS === 'web'
         && typeof window !== 'undefined'
         && hasBrowserHistorySinceMount(initialBrowserHistoryLength.current, window.history.length);
     const canNavigateBack = routerCanGoBack || browserCanGoBack;
     const activeRoute = getRouteByPath(pathname);
     const usesNavigationRail = width >= NAVIGATION_RAIL_BREAKPOINT;
+    const activeTabColor = usesNavigationRail ? theme.colors.onPrimaryContainer : theme.colors.primary;
     const usesWebNavigationRail = Platform.OS === 'web' && usesNavigationRail;
     const [webNavigationRailWidth, setWebNavigationRailWidth] = React.useState(WEB_NAVIGATION_RAIL_WIDTH);
     const logDateNavigation = useLogDateNavigation();
@@ -345,9 +348,7 @@ export default function TabsLayout() {
                             tabBarPosition: usesNavigationRail ? 'left' : 'bottom',
                             tabBarVariant: usesNavigationRail ? 'material' : 'uikit',
                             tabBarLabelPosition: 'below-icon',
-                            tabBarActiveTintColor: usesNavigationRail
-                                ? theme.colors.onPrimaryContainer
-                                : theme.colors.primary,
+                            tabBarActiveTintColor: activeTabColor,
                             tabBarInactiveTintColor: theme.colors.muted,
                             tabBarActiveBackgroundColor: usesNavigationRail ? theme.colors.selectionContainer : undefined,
                             tabBarHideOnKeyboard: true,
@@ -417,7 +418,7 @@ export default function TabsLayout() {
                                 ),
                                 title: 'Today',
                                 headerTitle: 'Today',
-                                tabBarIcon: ({ color, size }) => <Ionicons name="today-outline" color={color} size={size} />
+                                tabBarIcon: ({ focused, size }) => <Ionicons name="today-outline" color={focused ? activeTabColor : theme.colors.muted} size={size} />
                             }}
                         />
                         <Tabs.Screen
@@ -428,7 +429,7 @@ export default function TabsLayout() {
                                 ),
                                 title: 'Progress',
                                 headerTitle: 'Progress',
-                                tabBarIcon: ({ color, size }) => <Ionicons name="analytics-outline" color={color} size={size} />
+                                tabBarIcon: ({ focused, size }) => <Ionicons name="analytics-outline" color={focused ? activeTabColor : theme.colors.muted} size={size} />
                             }}
                         />
                         <Tabs.Screen
@@ -503,7 +504,7 @@ const TabHeader: React.FC<{
     isTodayRoute: boolean;
     summaryBackground: boolean;
 }> = ({ topInset, leftInset, rightInset, fontScale, title, backAction, unreadCount, offlineChangeCount, hasFailedOfflineChanges, profileImageUrl, onOpenNotifications, colors, styles, desktop, isTodayRoute, summaryBackground }) => {
-    const headerRef = React.useRef<View>(null);
+    const headerRef = React.useRef<React.ComponentRef<typeof View>>(null);
     const [webTextExpanded, setWebTextExpanded] = React.useState(false);
     const expanded = fontScale >= HEADER_EXPANDED_FONT_SCALE || webTextExpanded;
     const readTitleScale = React.useCallback(() => {
