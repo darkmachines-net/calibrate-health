@@ -56,6 +56,8 @@ jobs:
       wear: ${{ steps.decision.outputs.wear }}
       native_runtime: ${{ steps.decision.outputs.native_runtime }}
       native_package: ${{ steps.decision.outputs.native_package }}
+      native_android: ${{ steps.decision.outputs.native_package == 'true' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.native_android == 'true') }}
+      native_ios: ${{ steps.decision.outputs.native_package == 'true' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.native_ios == 'true') }}
       web_release: ${{ steps.decision.outputs.web_release }}
       native_release: ${{ steps.decision.outputs.native_release }}
       native_upgrade: ${{ steps.decision.outputs.native_upgrade }}
@@ -77,115 +79,21 @@ jobs:
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
-      - name: Detect affected build surfaces
+      - name: Checkout complete PR history for affected checks
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select affected PR inputs
         if: inputs.release_sha == '' && github.event_name == 'pull_request'
         id: filter
-        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
-        with:
-          filters: |
-            release_config:
-              - '.github/native-release-tag-allowed-signers'
-              - '.github/native-play-attestation-trusted-workflow-shas'
-              - '.github/release-image-attestation-trusted-workflow-shas'
-              - 'tools/eas-cli/**'
-              - '.github/workflows/**'
-              - 'backend/package.json'
-              - 'backend/package-lock.json'
-              - 'deploy/**'
-              - 'backend/openapi/**'
-              - 'quality/README.md'
-              - 'mobile/app.config.js'
-              - 'mobile/app.json'
-              - 'mobile/eas.json'
-              - 'mobile/package.json'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'packages/api-client/src/generated/**'
-              - 'playwright.ux.config.ts'
-              - 'quality/**'
-              - 'scripts/**'
-              - 'shared/client-diagnostic-versions.json'
-              - 'shared/release.json'
-              - 'wear/**'
-            backend:
-              - 'backend/**'
-              - 'shared/**'
-            web:
-              - 'e2e/expo-web/fixtures.ts'
-              - 'e2e/expo-web/release-smoke.spec.ts'
-              - 'mobile/app/**'
-              - 'mobile/assets/**'
-              - 'mobile/public/**'
-              - 'mobile/src/**'
-              - 'mobile/app.config.js'
-              - 'mobile/app.json'
-              - 'mobile/babel.config.js'
-              - 'mobile/index.js'
-              - 'mobile/metro.config.js'
-              - 'mobile/modules/**'
-              - 'mobile/package.json'
-              - 'mobile/tsconfig.json'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'packages/api-client/**'
-              - 'playwright.expo-web.config.ts'
-              - 'scripts/expo-cli-environment.mjs'
-              - 'scripts/expo-web-build.mjs'
-              - 'scripts/expo-web-playwright.mjs'
-              - 'scripts/expo-web-release.mjs'
-              - 'scripts/expo-web-release.test.mjs'
-              - 'scripts/expo-web-static-server.mjs'
-              - 'scripts/expo-web-static-server.test.mjs'
-              - 'shared/**'
-            wear:
-              - 'wear/**'
-            native_runtime:
-              - 'mobile/app/**'
-              - 'mobile/assets/**'
-              - 'mobile/src/**'
-              - 'mobile/app.config.js'
-              - 'mobile/app.json'
-              - 'mobile/babel.config.js'
-              - 'mobile/index.js'
-              - 'mobile/metro.config.js'
-              - 'mobile/modules/**'
-              - 'mobile/package.json'
-              - 'package-lock.json'
-              - 'packages/api-client/**'
-              - 'scripts/xcode-uuid-compatibility.test.mjs'
-              - 'shared/**'
-            native_package:
-              - 'mobile/fingerprint.config.js'
-              - 'mobile/app.config.js'
-              - 'mobile/app.json'
-              - 'mobile/eas.json'
-              - 'mobile/assets/**'
-              - 'mobile/modules/**'
-              - 'mobile/package.json'
-              - 'mobile/plugins/**'
-              - 'package-lock.json'
-      - name: Detect changes outside generated release mirrors
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
-        id: release_mirror_filter
-        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
-        with:
-          predicate-quantifier: every
-          filters: |
-            non_release_mirror:
-              - '**'
-              - '!backend/package-lock.json'
-              - '!backend/package.json'
-              - '!backend/openapi/v1.yaml'
-              - '!package-lock.json'
-              - '!package.json'
-              - '!packages/api-client/src/generated/v1.ts'
-              - '!shared/client-diagnostic-versions.json'
-              - '!shared/release.json'
-              - '!mobile/package.json'
-              - '!mobile/app.json'
-              - '!mobile/modules/wear-pairing/package.json'
-              - '!mobile/modules/wear-pairing/android/build.gradle'
-              - '!wear/app/build.gradle.kts'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
 
       - name: Validate manual native upgrade baseline
         if: github.event_name == 'workflow_dispatch' && inputs.run_native_upgrade
@@ -206,12 +114,12 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REF: ${{ github.head_ref }}
           RELEASE_CONFIG_CHANGED: ${{ steps.filter.outputs.release_config == 'true' }}
-          BACKEND_CHANGED: ${{ steps.filter.outputs.backend == 'true' }}
+          BACKEND_CHANGED: ${{ steps.filter.outputs.backend_build == 'true' }}
           WEB_CHANGED: ${{ steps.filter.outputs.web == 'true' }}
           WEAR_CHANGED: ${{ steps.filter.outputs.wear == 'true' }}
           NATIVE_RUNTIME_CHANGED: ${{ steps.filter.outputs.native_runtime == 'true' }}
           NATIVE_PACKAGE_CHANGED: ${{ steps.filter.outputs.native_package == 'true' }}
-          NON_RELEASE_MIRROR_CHANGED: ${{ steps.release_mirror_filter.outputs.non_release_mirror == 'true' }}
+          NON_RELEASE_MIRROR_CHANGED: ${{ steps.filter.outputs.non_release_mirror == 'true' }}
           MANUAL_VALIDATION_SCOPE: ${{ inputs.validation_scope || 'configuration-only' }}
           MANUAL_NATIVE_UPGRADE: ${{ inputs.run_native_upgrade || false }}
         run: |
@@ -372,9 +280,19 @@ jobs:
           npm.cmd run build:expo-web
           npm.cmd run test:expo-web:release
 
+      - name: Share the validated web export
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-web-export
+          path: mobile/dist
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   web-critical-smoke:
     name: Web Critical Smoke
-    needs: changes
+    needs: [changes, expo-web-build]
     if: needs.changes.outputs.web == 'true'
     runs-on: windows-latest
     timeout-minutes: 10
@@ -401,8 +319,15 @@ jobs:
       - name: Install pinned Playwright Chromium
         run: node node_modules/@playwright/test/cli.js install chromium
 
+      - name: Download the validated web export
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-web-export
+          path: mobile/dist
+
       - name: Exercise critical production Web journeys on desktop and phone
-        run: npm.cmd run test:expo-web:smoke
+        # Playwright owns the static server; calling its CLI avoids exporting a second time.
+        run: node node_modules/@playwright/test/cli.js test --config=playwright.expo-web.config.ts --project=desktop-chrome --project=android-phone-chrome e2e/expo-web/release-smoke.spec.ts
 
   exported-web-e2e:
     name: Full Exported Web and PWA End-to-End
@@ -551,7 +476,7 @@ jobs:
   mobile-build:
     name: Mobile Build
     needs: changes
-    if: needs.changes.outputs.native_package == 'true'
+    if: needs.changes.outputs.native_android == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -595,9 +520,6 @@ jobs:
       - name: Install deps
         run: npm ci --no-audit --fund=false
 
-      - name: Type-check mobile
-        run: npm --prefix mobile run typecheck
-
       - name: Prebuild Android
         working-directory: mobile
         run: npx expo prebuild --platform android --no-install
@@ -628,7 +550,7 @@ jobs:
   ios-build:
     name: iOS Build
     needs: changes
-    if: needs.changes.outputs.native_package == 'true'
+    if: needs.changes.outputs.native_ios == 'true'
     runs-on: macos-latest
     timeout-minutes: 35
 
@@ -652,9 +574,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --include=dev --no-audit --fund=false
-
-      - name: Type-check mobile
-        run: npm --prefix mobile run typecheck
 
       - name: Prebuild iOS
         run: npm --prefix mobile run prebuild:ios

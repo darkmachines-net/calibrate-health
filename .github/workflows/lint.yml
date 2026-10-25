@@ -22,12 +22,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Classify Lint Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      eslint: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.eslint == 'true' }}
+      kotlin: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.kotlin == 'true' }}
+      type_backend: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_backend == 'true' }}
+      type_shared: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_shared == 'true' }}
+      type_api: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_api == 'true' }}
+      type_mobile: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_mobile == 'true' }}
+      dead_code: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.dead_code == 'true' }}
+    steps:
+      - name: Checkout complete PR history for affected checks
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select affected PR inputs
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        id: filter
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
+
   eslint:
+    needs: changes
+    if: always()
     name: ESLint (zero warnings)${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
+      - name: Require successful input classification
+        if: needs.changes.result != 'success'
+        run: exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -44,35 +79,47 @@ jobs:
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Setup Node
+        if: needs.changes.outputs.eslint == 'true' || needs.changes.outputs.kotlin == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
           cache: npm
 
       - name: Install workspace deps
+        if: needs.changes.outputs.eslint == 'true'
         run: npm ci --no-audit --fund=false
 
       - name: Verify lint enforcement
+        if: needs.changes.outputs.eslint == 'true'
         run: npm run test:lint
 
       - name: Lint with zero warnings
+        if: needs.changes.outputs.eslint == 'true'
         run: npm run lint:eslint
 
       - name: Setup Java for Kotlin documentation lint
+        if: needs.changes.outputs.kotlin == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
       - name: Lint Kotlin documentation
+        if: needs.changes.outputs.kotlin == 'true'
         run: npm run lint:kotlin
 
   typecheck:
+    needs: changes
+    if: always()
     name: Backend, Shared, API Client, and Mobile Typecheck${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
+      - name: Require successful input classification
+        if: needs.changes.result != 'success'
+        run: exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -88,6 +135,7 @@ jobs:
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Setup Node
+        if: needs.changes.outputs.type_backend == 'true' || needs.changes.outputs.type_shared == 'true' || needs.changes.outputs.type_api == 'true' || needs.changes.outputs.type_mobile == 'true' || needs.changes.outputs.dead_code == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
@@ -97,13 +145,25 @@ jobs:
             backend/package-lock.json
 
       - name: Install workspace deps
+        if: needs.changes.outputs.type_backend == 'true' || needs.changes.outputs.type_shared == 'true' || needs.changes.outputs.type_api == 'true' || needs.changes.outputs.type_mobile == 'true' || needs.changes.outputs.dead_code == 'true'
         run: npm ci --no-audit --fund=false
 
       - name: Install backend deps
+        if: needs.changes.outputs.type_backend == 'true' || needs.changes.outputs.dead_code == 'true'
         run: npm ci --prefix backend --no-audit --fund=false
 
-      - name: Type-check all TypeScript surfaces
-        run: npm run typecheck
+      - name: Type-check affected TypeScript surfaces
+        env:
+          CHECK_BACKEND: ${{ needs.changes.outputs.type_backend }}
+          CHECK_SHARED: ${{ needs.changes.outputs.type_shared }}
+          CHECK_API: ${{ needs.changes.outputs.type_api }}
+          CHECK_MOBILE: ${{ needs.changes.outputs.type_mobile }}
+        run: |
+          if [[ "$CHECK_BACKEND" == true ]]; then npm run lint:backend; fi
+          if [[ "$CHECK_SHARED" == true ]]; then npm run lint:shared; fi
+          if [[ "$CHECK_API" == true ]]; then npm run lint:api-client; fi
+          if [[ "$CHECK_MOBILE" == true ]]; then npm run lint:mobile; fi
 
       - name: Check for dead code
+        if: needs.changes.outputs.dead_code == 'true'
         run: npm run test:dead-code

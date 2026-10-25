@@ -5,6 +5,50 @@ job selection. [Quality](../../quality/README.md) owns validation policy. Requir
 lint/type/test checks report results on every PR, including README-only changes.
 Ordinary feature PRs leave canonical release versions unchanged.
 
+## Pull-request check selection
+
+[`scripts/ci-changes.mjs`](../../scripts/ci-changes.mjs) owns the shared selection
+policy. Classifiers use the complete merge-base-to-head Git diff, including deleted
+files and both sides of renames. They require no dependency installation and print
+their decisions in the Actions summary. A missing Git baseline fails classification;
+an unreadable dependency graph conservatively selects native compilation.
+
+| Checks | PR inputs |
+| --- | --- |
+| ESLint and dead-code checks | Authored JS/TS, dependency/configuration and workflow changes |
+| Kotlin lint | Kotlin sources, Gradle wrapper and the isolated lint tool |
+| Type checking | Affected backend, shared, API client and mobile surfaces |
+| Release configuration/tooling tests | Release manifests, API contracts, workflow/tooling, deployment and quality policy inputs |
+| Backend tests/build | Backend/shared changes; test-only changes skip the build |
+| Mobile tests and API contract | Mobile/shared/API changes; API generator installation and contract checks run only for contract/dependency inputs |
+| Web export and critical smoke | Web runtime, assets, dependencies and build/smoke configuration; smoke reuses the exact exported artifact |
+| Android/iOS Metro bundles | Native JavaScript, shared code, dependencies and bundler configuration |
+| Android/iOS compilation | Native modules/plugins, app configuration, Gradle locks/wrapper, packaged icons, patches, install hooks and changed mobile dependency graph; platform-specific inputs select only that compiler |
+| Wear build/JVM tests | Watch sources and build configuration |
+| Production image smoke/OS scan | Production backend/web inputs and Docker configuration |
+| Populated database upgrade | Prisma, database integration code and upgrade/backup tooling |
+| Historical upgrade/rollback | Migration files and rollback tooling |
+
+Documentation does not select application checks. JS/TS unit-test-only changes retain
+their test/lint checks without rebuilding packages or the production image. Web-only
+modules skip native bundles, and native-only modules skip web/image checks.
+Root tooling-only lockfile updates do not compile native apps when the mobile
+production graph is unchanged. Dependency identity includes resolved versions,
+integrity, peers, workspace links and hoisting. Changes within that graph remain
+conservative: a package may contain native code or affect prebuild even when its name
+does not identify it as native. This is CI selection, not an OTA compatibility proof.
+
+Editing a workflow selects its checks; editing the classifier selects all affected
+lanes. Workflows remain triggered for every PR so required check names report a
+result even when their work is irrelevant. Manual validation scopes and canonical
+release-candidate checks retain their existing full-validation rules. Exhaustive
+browser/UX suites, emulators and package-upgrade rehearsals remain manual; dependency
+audits remain scheduled/manual.
+
+Validate selection with `node --test scripts/ci-changes.test.mjs` and workflow/release
+contracts with `npm run test:release`. Add representative inclusion and exclusion
+cases when adding an input surface.
+
 ## Cut release
 
 Run **Cut release** from protected `master`. Selection compares separate successful

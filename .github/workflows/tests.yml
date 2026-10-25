@@ -32,6 +32,8 @@ jobs:
     outputs:
       backend: ${{ steps.decision.outputs.backend }}
       mobile: ${{ steps.decision.outputs.mobile }}
+      api: ${{ steps.decision.outputs.api }}
+      api_contract: ${{ steps.decision.outputs.api_contract }}
 
     steps:
       - name: Checkout release candidate for identity verification
@@ -50,39 +52,34 @@ jobs:
           WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: node scripts/release-ci-gate.mjs --verify-inputs
 
-      - name: Detect affected test surfaces
+      - name: Checkout complete PR history for affected checks
+        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select affected PR inputs
         if: inputs.release_sha == '' && github.event_name == 'pull_request'
         id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            backend:
-              - '.github/workflows/tests.yml'
-              - 'scripts/ci-test-gate*'
-              - 'backend/**'
-              - 'backend/openapi/v1.yaml'
-              - 'backend/test/fixtures/weight-trend-v2-tuning-report.json'
-              - 'shared/**'
-            mobile:
-              - '.github/workflows/tests.yml'
-              - 'scripts/ci-test-gate*'
-              - 'backend/package.json'
-              - 'backend/package-lock.json'
-              - 'backend/openapi/v1.yaml'
-              - 'mobile/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'packages/api-client/**'
-              - 'shared/**'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs
 
       - name: Select test surfaces
         id: decision
         shell: bash
         env:
           BACKEND_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true' }}
+          API_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.api == 'true' }}
+          API_CONTRACT_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.api_contract == 'true' }}
           MOBILE_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.mobile == 'true' }}
         run: |
           echo "backend=${BACKEND_CHANGED}" >> "${GITHUB_OUTPUT}"
+          echo "api=${API_CHANGED}" >> "${GITHUB_OUTPUT}"
+          echo "api_contract=${API_CONTRACT_CHANGED}" >> "${GITHUB_OUTPUT}"
           echo "mobile=${MOBILE_CHANGED}" >> "${GITHUB_OUTPUT}"
 
   backend-tests:
@@ -140,7 +137,7 @@ jobs:
   mobile-tests:
     name: Mobile Tests${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
     needs: changes
-    if: needs.changes.outputs.mobile == 'true'
+    if: needs.changes.outputs.mobile == 'true' || needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -163,15 +160,19 @@ jobs:
         run: npm ci --no-audit --fund=false
 
       - name: Install API generator deps
+        if: needs.changes.outputs.api_contract == 'true'
         run: npm ci --prefix backend --no-audit --fund=false
 
       - name: Validate API contract
+        if: needs.changes.outputs.api_contract == 'true'
         run: npm run api:contract:check
 
       - name: Run API client tests
+        if: needs.changes.outputs.api == 'true'
         run: npm run test:api-client
 
       - name: Run mobile tests
+        if: needs.changes.outputs.mobile == 'true'
         run: npm --prefix mobile test
 
   required-tests:

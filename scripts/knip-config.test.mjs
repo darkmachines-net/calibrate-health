@@ -1,4 +1,4 @@
-/** @file Regression coverage for knip config: Knip is pinned and dead-code scripts never auto-fix. */
+/** @file Guards Knip's package boundaries, non-mutating checks and ordering after affected TypeScript validation. */
 
 /** Verify dynamically loaded release/config entrypoints remain covered by dead-code analysis. */
 import assert from 'node:assert/strict';
@@ -53,7 +53,7 @@ test('Knip keeps blocking rules and generated/config boundaries explicit', () =>
 });
 
 test('pull-request lint blocks on dead-code checks after typecheck', () => {
-  const typecheckIndex = lintWorkflow.indexOf('name: Type-check all TypeScript surfaces');
+  const typecheckIndex = lintWorkflow.indexOf('name: Type-check affected TypeScript surfaces');
   const deadCodeIndex = lintWorkflow.indexOf('name: Check for dead code');
   assert.ok(typecheckIndex >= 0, 'lint workflow must run typecheck');
   assert.ok(deadCodeIndex > typecheckIndex, 'dead-code checks must follow typecheck');
