@@ -96,6 +96,14 @@ command builds use ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
 ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
 strings. WireGuard configuration retains its DEPLOY_* names in the deployment guide.
 
+Keep the EAS production public variables aligned with
+`profiles.production.publicEnvironment` in `release.config.json`. The environment
+job rejects conflicting remote values before reserving versions or starting builds.
+`npm run release -- validate` checks the local configuration; `npm run release --
+plan --profile production` also reads EAS and checks those values. A committed
+configuration correction requires a new dispatch after merge because a job retry
+keeps the original source and configuration.
+
 This migration starts fresh release history. It imports no old plans, receipts,
 pending requests or runtime baselines and requires a new native installation before
 OTA. The configured floors are server 0.40.3, mobile 0.2.9 and paired code 18. Existing
