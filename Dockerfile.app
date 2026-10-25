@@ -3,6 +3,7 @@
 # Multi-stage production image:
 # - Builds Expo web + backend (TypeScript) and runs the backend server.
 # - Includes Prisma CLI + migrations so deployments can run `prisma migrate deploy` inside the container.
+# - Retains the repository license and required notice in the runtime image.
 
 # Pin the multi-platform base digest so release rebuilds do not silently change underneath a tag.
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS base
@@ -45,6 +46,8 @@ ENV FRONTEND_DIST_DIR=/app/web/dist
 
 WORKDIR /app
 
+COPY LICENSE NOTICE ./
+COPY backend/LICENSE ./backend/LICENSE
 COPY --from=build /app/backend/package.json /app/backend/package.json
 COPY --from=runtime-deps /app/backend/node_modules /app/backend/node_modules
 # `npm ci --omit=dev` installs @prisma/client but does not generate its schema-specific runtime.

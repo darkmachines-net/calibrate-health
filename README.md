@@ -10,6 +10,26 @@ use; self-hosting remains available as an Advanced option for operators who want
 
 Note: calibrate is not medical advice.
 
+## License
+
+Calibrate is developed in public and made available under the [PolyForm Shield License 1.0.0](LICENSE),
+except where separate terms are stated. See [NOTICE](NOTICE) for the copyright holder, required notice,
+third-party license boundaries, and reservation of trademark rights.
+
+You may use, study, modify, and redistribute the software for purposes permitted by the license,
+including personal self-hosting and noncompeting commercial work. The license restricts using the
+software to provide competing products or services, including renamed apps, hosted services, and
+free offerings. Its full terms, including the new-product and discontinued-product provisions, govern
+what is permitted.
+
+Shield does not generally require you to publish your source code or modifications. Redistributions
+must include the license text or its URL and the `Required Notice:` line in [NOTICE](NOTICE). Uses
+outside the license require separate permission from the relevant copyright holder. Dependencies
+and third-party material retain their own licenses and attribution requirements.
+
+Previously published versions retain their original licenses; this change does not revoke earlier
+Apache 2.0 or other license grants. The current source is available under Shield's competition restrictions.
+
 ## Features
 
 - Multi-user accounts (email/password)
