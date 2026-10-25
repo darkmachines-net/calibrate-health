@@ -76,7 +76,7 @@ test('Expo config embeds a project-scoped update URL, runtime, and local-build c
     config: { name: 'calibrate', extra: { router: { origin: false } } }
   });
 
-  assert.deepEqual(result.runtimeVersion, { policy: 'fingerprint' });
+  assert.equal(result.runtimeVersion, require('./release-version.json').version.split('.')[0]);
   assert.equal(result.updates.url, 'https://u.expo.dev/01234567-89ab-4def-8123-456789abcdef');
   assert.equal(result.updates.requestHeaders['expo-channel-name'], 'internal');
   assert.equal(result.extra.eas.projectId, '01234567-89ab-4def-8123-456789abcdef');

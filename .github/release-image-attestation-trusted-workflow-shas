@@ -1,8 +1,0 @@
-# Current protected-master code automatically trusts its own signer revision, an
-# ancestor with byte-identical security-critical image tooling, and the exact
-# post-hardening parent of the canonical Cut release commit. Use one directive per
-# exceptional historical signer whose critical tooling changed:
-#   allow 0123456789abcdef0123456789abcdef01234567
-# Use `revoke SHA` to deny any signer, including an otherwise automatic Cut parent
-# or byte-identical ancestor. A revision may appear only once; revocation wins by
-# construction because conflicting directives are rejected.

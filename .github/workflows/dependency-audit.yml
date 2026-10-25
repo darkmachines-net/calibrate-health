@@ -23,16 +23,12 @@ jobs:
         include:
           - workspace: Root and Mobile
             directory: .
-            node: '22.13.0'
+            node: '22.14.0'
             audit_args: '--omit=dev'
           - workspace: Backend
             directory: backend
             node: '20'
             audit_args: '--omit=dev'
-          - workspace: Locked EAS CLI
-            directory: tools/eas-cli
-            node: '22.14.0'
-            audit_args: ''
 
     steps:
       - name: Checkout

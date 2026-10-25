@@ -10,18 +10,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   DISTRIBUTION_URL_PROPERTY as NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL_PROPERTY,
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256,
-  NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL,
-  NATIVE_RELEASE_GRADLE_VERSION,
   NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256,
   nativeReleaseGradleContract
 } from '../mobile/plugins/nativeReleaseGradleWrapper.js';
-import { resolveExpoUpdateBuildConfig, writeNativeOtaBaseline } from './native-ota-contract.mjs';
+import { resolveExpoUpdateBuildConfig } from './expo-runtime.mjs';
+import { NATIVE_TOOLCHAIN } from './native-toolchain.mjs';
 import {
   NATIVE_RELEASE_APPLICATION_ID,
   NATIVE_RELEASE_ARTIFACT_CONTRACTS
 } from './native-release-evidence.mjs';
 
-export const REQUIRED_SIGNING_ENV = Object.freeze([
+const REQUIRED_SIGNING_ENV = Object.freeze([
   'CALIBRATE_ANDROID_SIGNING_STORE_FILE',
   'CALIBRATE_ANDROID_SIGNING_STORE_PASSWORD',
   'CALIBRATE_ANDROID_SIGNING_KEY_ALIAS',
@@ -33,16 +32,14 @@ const repositoryRoot = path.resolve(scriptDirectory, '..');
 
 // Release lint can exceed the generated project's 512 MiB metaspace cap.
 export const RELEASE_GRADLE_JVM_ARGS = '-Xmx4096m -XX:MaxMetaspaceSize=1536m -Dfile.encoding=UTF-8';
-export const NATIVE_RELEASE_BUILD_PROVENANCE_SCHEMA_VERSION = 1;
+const NATIVE_RELEASE_BUILD_PROVENANCE_SCHEMA_VERSION = 1;
 export const NATIVE_RELEASE_BUILD_PROVENANCE_PATH = 'build/native-release-provenance.json';
-export const NATIVE_RELEASE_GRADLE_INTEGRITY_MANIFEST_PATH =
+const NATIVE_RELEASE_GRADLE_INTEGRITY_MANIFEST_PATH =
   'mobile/gradle/native-release/integrity.json';
-export const NATIVE_RELEASE_KEYSTORE_FILENAME = 'calibrate-android-upload.keystore';
+const NATIVE_RELEASE_KEYSTORE_FILENAME = 'calibrate-android-upload.keystore';
 export {
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL_PROPERTY,
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256,
-  NATIVE_RELEASE_GRADLE_DISTRIBUTION_URL,
-  NATIVE_RELEASE_GRADLE_VERSION,
   NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256
 };
 
@@ -128,8 +125,8 @@ export function createNativeReleaseBuildProvenance(root, sourceCommit) {
   };
 }
 
-/** Returns provenance schema and identity errors without mutating the supplied record. */
-export function validateNativeReleaseBuildProvenance(provenance, options = {}) {
+/** Reject source or native-input drift in retained build evidence. */
+function validateNativeReleaseBuildProvenance(provenance, options = {}) {
   const errors = [];
   if (!exactFields(provenance, PROVENANCE_FIELDS)) errors.push('Build provenance fields are invalid.');
   if (provenance?.schemaVersion !== NATIVE_RELEASE_BUILD_PROVENANCE_SCHEMA_VERSION) {
@@ -196,7 +193,7 @@ export function readNativeReleaseBuildProvenance(root, options = {}) {
   } catch {
     throw new Error(
       `Native release build provenance is missing or invalid at ${relativePath}. ` +
-      'Run npm run native:build -- --credentials-file <external-file> from clean candidate C.'
+      'Use the protected Release workflow to prepare and sign an immutable build commit.'
     );
   }
   const errors = validateNativeReleaseBuildProvenance(provenance, options);
@@ -654,8 +651,8 @@ export function prepareNativeReleaseGradleExecution(builds, environment = proces
   return builds.map((build) => removeDistributionCache(environment, { ...options, label: build.label }));
 }
 
-/** Verifies wrapper and locked dependency state for every requested native build. */
-export function assertNativeReleaseGradleInputs(builds, options = {}) {
+/** Fail before signing when prepared Gradle inputs have changed. */
+function assertNativeReleaseGradleInputs(builds, options = {}) {
   const assertWrapper = options.assertWrapper ?? assertNativeReleaseGradleWrapper;
   const assertDependencyState = options.assertDependencyState ??
     assertNativeReleaseGradleDependencyState;
@@ -753,6 +750,7 @@ function prepareGradle() {
   });
   if (prebuildResult.error) throw prebuildResult.error;
   if (prebuildResult.status !== 0) process.exit(prebuildResult.status ?? 1);
+  configureWindowsCmake(repositoryRoot, process.env);
 
   const builds = nativeReleaseGradleCommands();
   for (const build of builds) {
@@ -766,6 +764,25 @@ function prepareGradle() {
     'Credential-free phone prebuild and phone/Wear Gradle integrity verification completed. ' +
     `Removed pinned Gradle distribution caches: ${removedDistributionCache.join(', ')}.`
   );
+}
+
+/** Keep generated Windows CMake/Ninja inputs on the validated native toolchain after prebuild. */
+function configureWindowsCmake(root, environment, { platform = process.platform, execute = execFileSync } = {}) {
+  if (platform !== 'win32') return;
+  const sdk = environment.ANDROID_HOME || environment.ANDROID_SDK_ROOT;
+  if (!sdk) throw new Error('Set ANDROID_HOME through npm run native:setup.');
+  const directory = path.join(sdk, 'cmake', NATIVE_TOOLCHAIN.cmake);
+  const inspect = (file, args) => execute(file, args, { env: nativeReleaseCredentialFreeEnvironment(environment),
+    encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const cmake = inspect(path.join(directory, 'bin/cmake.exe'), ['--version']);
+  const ninja = inspect(path.join(directory, 'bin/ninja.exe'), ['--version']).match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!cmake.includes(`cmake version ${NATIVE_TOOLCHAIN.cmake}`) || !ninja || Number(ninja[1]) < 1
+    || Number(ninja[1]) === 1 && Number(ninja[2]) < 12) throw new Error('Install the configured CMake toolchain and Ninja 1.12 or newer.');
+  const file = path.join(root, 'mobile/android/local.properties');
+  const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const lines = previous.split(/\r?\n/).filter(line => !/^\s*cmake\.dir\s*[=:]/.test(line));
+  const escaped = directory.replaceAll('\\', '/').replace(/[^\x20-\x7e]/g, character => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
+  fs.writeFileSync(file, `${lines.join('\n').trimEnd()}\ncmake.dir=${escaped}\n`);
 }
 
 /** Execute the requested build-tool operation through the injected runner. */
@@ -804,12 +821,6 @@ function run() {
     assertNativeReleaseArtifacts(build);
   }
 
-  const otaBaseline = writeNativeOtaBaseline({ root: repositoryRoot, environment, commit: sourceCommit });
-  if (otaBaseline) {
-    console.log(`Recorded OTA compatibility baseline at ${otaBaseline.output}`);
-  } else {
-    console.log('Expo OTA is disabled for this build because EXPO_PUBLIC_EAS_PROJECT_ID was not set.');
-  }
   const provenance = createNativeReleaseBuildProvenance(repositoryRoot, sourceCommit);
   const output = writeNativeReleaseBuildProvenance(repositoryRoot, provenance);
   console.log(`Recorded candidate-bound native release provenance at ${output}.`);

@@ -1,25 +1,24 @@
-/** @file Resolve managed Expo runtimes for native builds and credential-free OTA exports, rejecting incomplete SDK discovery. */
+/** @file Resolve and verify the explicit major runtime used by native application build checks. */
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { readZipEntry } from './zip-entry.mjs';
+import { execFileSync } from 'node:child_process';
+import { resolveNativeReleaseDeviceTooling } from './native-release-devices.mjs';
 
-/** Return the resolved fingerprint only when the SDK discovers the required Android modules; reject incomplete graphs and non-fingerprint policies. */
+/** Validate Calibrate's public Expo build inputs before Android generation or compilation. */
+export function resolveExpoUpdateBuildConfig(environment, fallbackProjectId = null) {
+  const projectId = environment.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || fallbackProjectId || null;
+  const channel = environment.EXPO_UPDATES_CHANNEL?.trim() || 'internal';
+  if (projectId !== null && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(projectId)) throw new Error('EXPO_PUBLIC_EAS_PROJECT_ID must be an Expo project UUID.');
+  if (!/^[a-z0-9][a-z0-9._-]*$/i.test(channel)) throw new Error('Invalid EXPO_UPDATES_CHANNEL.');
+  return { projectId, channel };
+}
+
+/** Require the current explicit major-only runtime policy. */
 export function validateRuntimeResolution(value) {
-  if (!/^[a-f0-9]{40,64}$/.test(value.runtimeVersion ?? '')) throw new Error('Expo must resolve a fingerprint runtime.');
-  const sources = value.fingerprintSources ?? [];
-  const expo = JSON.parse(sources.find((source) => source.id === 'expoAutolinkingConfig:android')?.contents ?? '{}');
-  const native = JSON.parse(sources.find((source) => source.id === 'rncoreAutolinkingConfig:android')?.contents ?? '{}');
-  for (const name of ['expo-updates', '@calibrate/wear-pairing']) {
-    if (!expo.modules?.some((module) => module.packageName === name)) throw new Error(`Incomplete Expo native discovery: ${name}.`);
-  }
-  // SDK 58 normalizes React Native dependency maps into arrays of named modules.
-  const healthConnect = Array.isArray(native)
-    ? native.find((module) => module?.name === 'react-native-health-connect')
-    : undefined;
-  if (!healthConnect?.platforms?.android) throw new Error('Incomplete React Native module discovery.');
+  if (!/^(0|[1-9][0-9]*)$/.test(value.runtimeVersion ?? '')) throw new Error('Expo must resolve a major-only runtime.');
   return value.runtimeVersion;
 }
 
@@ -41,12 +40,29 @@ export function resolveExpoRuntime(root, { environment = process.env, execute = 
   return validateRuntimeResolution(value);
 }
 
-/** Compare embedded runtime bytes against the independently resolved source runtime. */
-export function verifyEmbeddedRuntime(file, member, runtime) {
-  const embedded = readZipEntry(file, member).toString('utf8').trim();
-  if (embedded !== runtime) {
-    throw new Error(`${path.basename(file)} runtime ${embedded} differs from source fingerprint ${runtime}. Refusing native publication.`);
-  }
+/** Capture the public configuration evaluated with the exact same inputs as runtime resolution. */
+export function resolveExpoPublicConfig(root, { environment = process.env, execute = spawnSync } = {}) {
+  const require = createRequire(path.join(root, 'mobile/package.json'));
+  const env = { ...environment, NODE_ENV: 'production', EXPO_NO_DOTENV: '1', EXPO_NO_METRO_WORKSPACE_ROOT: '1' };
+  for (const key of Object.keys(env)) if (/^(EXPO_TOKEN|GITHUB_TOKEN|GH_TOKEN|DEPLOY_|CALIBRATE_ANDROID_|GOOGLE_|PLAY_)/.test(key)) delete env[key];
+  const cli = path.join(path.dirname(require.resolve('expo/package.json')), 'bin/cli');
+  const result = execute(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd: path.join(root, 'mobile'), env, encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
+  if (result.error || result.status !== 0) throw new Error('Public Expo configuration could not be resolved.');
+  return JSON.parse(result.stdout);
+}
+
+/** Check the actual compiled runtime resource in a debug APK produced by application CI. */
+export function verifyEmbeddedRuntime(file, _member, runtime, environment = process.env) {
+  const tools = resolveNativeReleaseDeviceTooling(environment);
+  const resources = execFileSync(tools.aapt, ['dump', '--values', 'resources', file], { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
+  validateEmbeddedRuntimeResources(resources, runtime);
+}
+
+/** Read resource values, not the earlier resource-spec index, and reject inconsistent localized values. */
+export function validateEmbeddedRuntimeResources(resources, runtime) {
+  const values = [...resources.matchAll(/^\s*resource\s+\S+\s+[^:\s]+:string\/expo_runtime_version:[^\r\n]*\r?\n\s*\(string8?\)\s+"([^"]*)"/gm)].map(match => match[1]);
+  if (!values.length || values.some(value => value !== runtime)) throw new Error('Built APK runtime differs from the source major.');
 }
 
 /** Capture a clean runtime or verify a built APK and post-build source against that capture. */

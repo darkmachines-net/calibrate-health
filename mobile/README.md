@@ -39,8 +39,9 @@ npm --prefix mobile test
 ```
 
 CI prebuilds and compiles both Android and iOS so native config drift is caught before release work.
-The [local native workflow](../scripts/README.md#local-native-workflow) owns signed
-phone/Wear builds, credentials, installation, Play submission and OTA. Wear changes
+The [local native workflow](../scripts/README.md#local-native-workflow) owns Android
+tooling; the [Release workflow](../.github/workflows/README.md#release) owns protected
+phone/Wear builds, signing, Play submission and major-runtime OTA. Wear changes
 require a new package.
 
 ## Browser and module boundaries

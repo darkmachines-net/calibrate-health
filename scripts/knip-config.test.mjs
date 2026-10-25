@@ -1,6 +1,4 @@
-/** @file Guards Knip's package boundaries, non-mutating checks and ordering after affected TypeScript validation. */
-
-/** Verify dynamically loaded release/config entrypoints remain covered by dead-code analysis. */
+/** @file Guards Knip package boundaries, dynamic release entrypoints and ordering after affected TypeScript validation. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,6 +34,7 @@ test('dynamic workflow, plugin, scenario, and Playwright entry points stay disco
   assert.deepEqual(rootConfig.playwright.config, ['playwright.expo-web.config.ts', 'playwright.ux.config.ts']);
   assert.ok(rootConfig.entry.includes('.codex/local-environment.setup.mjs'));
   assert.ok(rootConfig.entry.includes('scripts/reset-test-user-onboarding.mjs'));
+  assert.ok(rootConfig.entry.includes('scripts/release-hooks.mjs'));
   assert.deepEqual(knipConfig.workspaces.mobile.entry, [
     'plugins/withHealthConnect.js',
     'plugins/withPinnedGradleWrapper.js',

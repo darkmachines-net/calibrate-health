@@ -1,16 +1,6 @@
 name: Database Upgrade
 
 on:
-  workflow_call:
-    inputs:
-      release_sha:
-        description: Exact canonical release candidate; validated by Cut release
-        required: true
-        type: string
-      source_sha:
-        description: Exact protected source and workflow commit
-        required: true
-        type: string
   pull_request:
   workflow_dispatch:
 
@@ -18,12 +8,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: database-upgrade-${{ inputs.release_sha && format('candidate-{0}-{1}', github.run_id, github.run_attempt) || github.event.pull_request.number || github.ref }}
+  group: database-upgrade-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   changes:
-    name: Classify Database Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Classify Database Inputs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -34,32 +24,16 @@ jobs:
       migrations: ${{ steps.decision.outputs.migrations }}
 
     steps:
-      - name: Checkout release candidate for identity verification
-        if: inputs.release_sha != ''
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.release_sha }}
-          fetch-depth: 2
-          persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
-
       - name: Checkout complete PR history for affected checks
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select affected PR inputs
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -70,14 +44,14 @@ jobs:
         id: decision
         shell: bash
         env:
-          DATABASE_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.database == 'true' }}
-          MIGRATIONS_CHANGED: ${{ inputs.release_sha == '' && (github.event_name != 'pull_request' || steps.filter.outputs.migrations == 'true') }}
+          DATABASE_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.database == 'true' }}
+          MIGRATIONS_CHANGED: ${{ (github.event_name != 'pull_request' || steps.filter.outputs.migrations == 'true') }}
         run: |
           echo "database=${DATABASE_CHANGED}" >> "${GITHUB_OUTPUT}"
           echo "migrations=${MIGRATIONS_CHANGED}" >> "${GITHUB_OUTPUT}"
 
   populated-upgrade:
-    name: Populated Postgres Upgrade${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Populated Postgres Upgrade
     needs: changes
     if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
@@ -104,7 +78,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -145,7 +119,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4

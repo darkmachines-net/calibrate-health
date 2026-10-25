@@ -48,7 +48,7 @@ unexplained layout, focus, contrast, clipping, or stale-state regression.
 
 ## Optional GitHub Actions run
 
-Pull requests and **Cut release** do not run the full UX suite automatically. When a visual or
+Pull requests and **Release** do not run the full UX suite automatically. When a visual or
 interaction change warrants the cost, manually dispatch **Builds** with the `web` or
 `web-and-native` validation scope. That dispatch runs the full exported-Web, data-state,
 accessibility, and visual suites on the repository-pinned Playwright browser.

@@ -26,3 +26,4 @@ build/native-release-provenance.json
 # Local internal release evidence contains no credentials.
 build/native-local-internal.json
 build/native-internal-validation/
+.release/

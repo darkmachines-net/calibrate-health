@@ -2,7 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -211,44 +211,7 @@ function inspectNativeGit(environment, capture) {
     detail: 'Install Git for Windows and ensure git is on PATH. Reopen the terminal and rerun npm run native:setup.' };
 }
 
-function easInstallState(root) {
-  const directory = path.join(root, 'tools/eas-cli');
-  const hash = createHash('sha256');
-  for (const file of ['package.json', 'package-lock.json']) hash.update(fs.readFileSync(path.join(directory, file)));
-  hash.update(process.versions.node + ':' + process.platform + ':' + process.arch);
-  return {
-    directory, digest: hash.digest('hex'),
-    entry: path.join(directory, 'node_modules/eas-cli/bin/run'),
-    stamp: path.join(directory, 'node_modules/.calibrate-native-eas-install')
-  };
-}
-
-/** Reports whether the EAS installation and lock/runtime cache stamp match the reviewed tool inputs. */
-export function inspectNativeEasDependency(root) {
-  try {
-    const state = easInstallState(root);
-    if (fs.existsSync(state.entry) && fs.readFileSync(state.stamp, 'utf8') === state.digest) {
-      return { name: 'EAS CLI', ok: true, detail: 'Locked dependency cache hit' };
-    }
-  } catch { /* Missing or stale install is repaired by native setup. */ }
-  return { name: 'EAS CLI', ok: false, detail: 'Missing entry or changed lockfile/runtime. Run npm run native:setup.' };
-}
-
-/** Reuses a matching EAS dependency cache or installs the reviewed lockfile without application credentials. */
-export function ensureNativeEasDependency(root, npmCli, environment, run = runSetupCommand, log = console.log) {
-  if (inspectNativeEasDependency(root).ok) {
-    log('[native-setup] EAS CLI dependency cache hit.');
-    return;
-  }
-  const state = easInstallState(root);
-  log('[native-setup] EAS CLI dependency cache miss; installing the reviewed lockfile.');
-  fs.rmSync(state.stamp, { force: true });
-  run(process.execPath, [npmCli, 'ci', '--prefix', state.directory, '--include=dev', '--no-audit', '--fund=false'], environment, { root });
-  if (!fs.existsSync(state.entry)) throw new Error('EAS CLI installation did not create its entry point.');
-  fs.writeFileSync(state.stamp, state.digest);
-}
-
-/** Reports missing host prerequisites needed by native setup without modifying them. */
+/** Inspect application dependencies needed by the local Android development tools. */
 export function inspectNativeHostDependencies(root) {
   const missing = ['node_modules/expo/package.json', 'shared/dist/cjs/releaseCompatibility.js']
     .filter((file) => !fs.existsSync(path.join(root, file)));
@@ -262,7 +225,7 @@ export async function setupNative(argv = [], options = {}) {
   const log = options.log ?? console.log;
   if (args.help) { log(HELP); return { ok: true }; }
   if ((options.platform ?? process.platform) !== 'win32' || (options.arch ?? process.arch) !== 'x64') {
-    throw new Error('Automatic native setup currently supports Windows x64. See scripts/README.md#play-onboarding.');
+    throw new Error('Automatic native setup currently supports Windows x64. See scripts/README.md#local-native-workflow.');
   }
   assertNativeNodeVersion(options.nodeVersion);
   const root = options.root ?? ROOT;
@@ -287,7 +250,6 @@ export async function setupNative(argv = [], options = {}) {
   const install = options.installArchive ?? installNativeArchive;
   const download = options.download ?? downloadNativeTool;
   const hostCheck = options.hostCheck ?? inspectNativeHostDependencies;
-  const easCheck = options.easCheck ?? inspectNativeEasDependency;
   const gitCheck = inspectNativeGit(environment, capture);
   if (!args.check && !gitCheck.ok) throw new Error(gitCheck.detail);
 
@@ -333,11 +295,10 @@ export async function setupNative(argv = [], options = {}) {
       const npmCli = inherited.npm_execpath || path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
       if (!fs.existsSync(npmCli)) throw new Error('Cannot locate npm-cli.js. Run setup through npm run native:setup.');
       run(process.execPath, [npmCli, '--prefix', path.join(root, 'shared'), 'run', 'build'], environment, { root });
-      (options.ensureEas ?? ensureNativeEasDependency)(root, npmCli, environment, run, log);
     }
   }
   const checks = [gitCheck, ...inspect(environment)];
-  if (!args.skipDeps) checks.push(hostCheck(root), easCheck(root));
+  if (!args.skipDeps) checks.push(hostCheck(root));
   const ok = checks.every((check) => check.ok);
   const values = Object.fromEntries(NATIVE_ENVIRONMENT_KEYS.map((key) => [key, environment[key]]));
   for (const check of checks) log('[native-setup] ' + (check.ok ? 'OK ' : 'MISSING ') + check.name + ': ' +

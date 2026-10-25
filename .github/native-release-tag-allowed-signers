@@ -1,3 +1,0 @@
-# Native release onboarding must replace this comment-only placeholder with one or more reviewed SSH public keys:
-# calibrate-native-release ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
-# Workflows read this trust set from current protected master so key revocation also applies to reruns.

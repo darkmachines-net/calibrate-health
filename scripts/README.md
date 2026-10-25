@@ -5,7 +5,7 @@ are the supported entry points. Tests, linting, builds and Prisma run on the hos
 
 ## Development
 
-Prerequisites are Node.js `22.13+`, `24.3+`, or `26+`, npm, Docker Desktop and
+Prerequisites are Node.js `22.14+`, `24.3+`, or `26+`, npm, Docker Desktop and
 Docker Compose `2.22+`. `npm run dev` starts Docker Desktop on Windows/macOS if
 installed but stopped. It installs missing host dependencies, creates an isolated
 Compose project, builds the development image, starts Postgres, applies migrations,
@@ -56,131 +56,33 @@ inherited by arbitrary new checkouts outside that setup path.
 
 ## Local native workflow
 
-`native.mjs` is the entry point for local paired Android phone/Wear packages. Build
-once, then install or submit those retained artifacts:
+`npm.cmd run native:setup` provisions the pinned Android development tools and host
+dependencies on Windows x64. Add `-- --check` for read-only prerequisite inspection.
+Development builds and Metro commands are documented beside [mobile](../mobile/README.md).
 
-| Command | Behavior |
-| --- | --- |
-| `npm.cmd run native:configure` | Download EAS signing and assigned Play credentials to external user storage |
-| `npm.cmd run native:setup` | Install/check pinned Android tools and host dependencies on Windows x64 |
-| `npm.cmd run native:setup -- --check` | Report prerequisites without changes |
-| `npm.cmd run native:build` | Credential-free prebuild, signing, and verification of phone/Wear APKs and AABs |
-| `npm.cmd run native:install` | Verify/reuse the retained APKs, install and read back device versions |
-| `npm.cmd run native:submit` | Verify/reuse the retained AABs, upload to internal tracks and read back acceptance |
-| `npm.cmd run ota:publish -- --message "Tested update"` | Publish compatible phone JavaScript/assets to the installed baseline's Expo channel |
+Protected releases use the shared [Release workflow](../.github/workflows/README.md#release).
+`npm run release -- validate` and `npm run release -- plan --profile production`
+are read-only checks. Local release, credential-download, submission, OTA publication
+and retained-artifact recovery commands have been removed.
 
-Use `npm.cmd run <script> -- --help` for options. Install and OTA are separate optional
-operations; after onboarding and a clean committed candidate with unused codes, build
-followed by submit is sufficient for local internal distribution. Build does not
-allocate versions or run all application tests. Run relevant checks before distributing.
-
-The fixed local profile uses `net.darkmachines.healthtracker`, the private
-`https://calibratehealth.darkmachines.net` origin, Expo channel `internal`, and Play
-tracks `internal` / `wear:internal`. Devices need WireGuard access. The linked Expo project is
-`@calibrate-health/calibrate-health-app`; configuration validates its exact project ID.
-[Protected store releases](../.github/workflows/README.md#native-store-releases) use a
-fresh higher pair and independent provenance; local uploads cannot be adopted there.
-
-### Credentials and tools
-
-Configure uses the locked EAS CLI in `tools/eas-cli` for authentication and initial
-build credential setup, then downloads the default signing key and the Play submission
-key assigned to this exact project/package. The FCM key is a different assignment.
-Keep the internal EAS credential adapter verified when upgrading that CLI. Configure
-does not upload keys, authenticate to Google, or establish Play permissions.
-
-Downloads use a fresh external credentials workspace. Windows settings at
-`%LOCALAPPDATA%\calibrate-health\native.json` contain only absolute file paths;
-credentials remain in protected `eas-android-*` directories beside it. Other hosts
-use `$XDG_CONFIG_HOME/calibrate-health` or `~/.config/calibrate-health`. Invalid or
-cancelled downloads preserve the previous configuration. A successful signing-only
-download clears stale Play settings when no submission key is assigned. Refresh both
-with another configure run after rotation. Retained credential snapshots need protected
-backups and must never enter Git. `--service-account-file` is an optional local override.
-
-Build strips inherited signing/Play credentials and reads the selected external signing
-file only after prebuild. Install, setup and OTA do not open configured Play keys.
-One-run `native:build -- --credentials-file <file>` and
-`native:submit -- --service-account-file <file>` override saved paths.
-
-Windows setup requires Node and Git, installs checksum-pinned JDK/SDK/bundletool/NDK/CMake,
-and saves user-level `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `BUNDLETOOL_JAR`.
-Current-shell values win. SDK licenses are interactive unless `--accept-licenses` is
-supplied; `--skip-deps` handles tools only. Keep strict Gradle locks/checksums enabled.
-Phone SDK 58 builds use Gradle 9.4.1 and Android SDK/build-tools 37; Wear retains
-Gradle 8.14.3 and SDK/build-tools 36. Expo prebuild restores the reviewed phone
-wrapper, dependency locks and artifact checksums.
-The phone wrapper is restored by the Expo plugin; Wear has its own pinned toolchain.
+`release-inputs.mjs` classifies application source inputs; `release-metadata.mjs`
+maintains canonical metadata mirrors; `release-hooks.mjs` supplies application
+inspection, stamping, paired Gradle builds and artifact assertions. Selection,
+reservations, provider calls and persistence remain in the pinned toolkit.
 
 ### Versions, artifacts and installation
 
-Before reusing already-uploaded codes, run
-`node scripts/native-internal-release.mjs prepare --bump patch`, review the synchronized
-metadata and commit it with the intended source. The local helper does not query Play
-or create authoritative native tags. Phone codes are odd, Wear codes even, globally
-unique within the package. Compatible OTA-only changes need no native bump.
+The protected command builder uses `native-release-build.mjs` for credential-free
+prebuild and paired signed compilation. It retains phone/Wear APKs and AABs with
+source, manifest and hash provenance. `native-artifact-checks.mjs` and
+`native-runtime-checks.mjs` verify those outputs before publication. Native versions
+and odd/even codes come from the shared planner; ordinary feature PRs do not allocate
+them. The mobile major is the Expo runtime.
 
-Build requires a clean committed source and records all four artifacts:
-
-| Artifact | Path |
-| --- | --- |
-| Phone APK | `mobile/android/app/build/outputs/apk/release/app-release.apk` |
-| Phone AAB | `mobile/android/app/build/outputs/bundle/release/app-release.aab` |
-| Wear APK | `wear/app/build/outputs/apk/release/app-release.apk` |
-| Wear AAB | `wear/app/build/outputs/bundle/release/app-release.aab` |
-
-Retain `build/native-release-provenance.json`, `build/native-local-internal.json`, and
-`mobile/android/app/build/outputs/calibrate-ota-baseline.json` with those outputs.
-Install/submit reject changed source, bytes, identity, versions or configuration.
-Manual Console uploads use the printed `local-p@<full-commit>` and `local-w@<full-commit>`
-release names and must expose each exact singleton code as completed.
-
-Installation discovers both devices or accepts `--phone-serial` and `--watch-serial`.
-It uses `adb install -r`, rejects downgrades, launches unless `--no-launch`, and verifies
-installed versions. Signer mismatch needs explicit replacement consent;
-`--replace-incompatible` authorizes uninstall and local-data loss. Play may sign
-installed APKs with a different key from the upload key, so use Play updates after
-that migration rather than expecting local upload-key APKs to replace them.
-
-## Play onboarding
-
-Create the Play app for the exact package, enable Wear under the same listing, enroll
-both form factors in Play App Signing and configure internal testers/opt-in links.
-The first upload binds the package. Keep the registered upload key; replacing it is
-a separate rotation. Finish Console-required content, health, privacy and deletion
-declarations from the [current implementation](../mobile/src/legal/README.md), not a
-saved worksheet. A private WireGuard backend is not accessible to public reviewers.
-
-For local API submission, enable Google Play Android Developer API and grant a service
-account access only to this app with read app information and testing-track release
-permissions. Assign its JSON in EAS under this package's **Play Store Submissions**
-credential, then rerun configure. Do not grant local testing credentials production
-permission. Organization key-creation policy may require an organization administrator;
-project ownership alone does not override it.
-
-Before submission coordinate other Console/API writers and inspect Publishing overview:
-an API edit can include unrelated pending Console changes. The public submit command
-prints a reminder and supplies the internal acknowledgement without another prompt.
-It uploads only the verified pair to `internal` / `wear:internal` and reads back versions/hashes;
-it does not promote to closed testing or production. After distribution, exercise
-pairing, foreground/background sync, reconnect, permissions and in-place Play updates
-using synthetic data. Keep actual release evidence with the release record.
-
-## OTA
-
-`npm.cmd run ota:publish -- --dry-run --message "Tested update"` resolves the source
-fingerprint and validates channel/EAS environment configuration without publishing.
-Omitting `--dry-run` publishes. The last local build record supplies targeting defaults;
-`--baseline <file>` selects another retained record. Without one, provide the configured
-Expo project, channel and server origin. Only matching runtimes receive the update;
-publication may precede installation or Play acceptance of that native runtime.
-Older appVersion installations need a new native binary to migrate.
-
-Authenticate with the locked EAS CLI, or `EXPO_TOKEN` and `--non-interactive`.
-The baseline's internal channel uses EAS preview; explicit channel/environment inputs
-must satisfy the configured targeting contract. Native inputs require matching native
-packages; OTA never updates Wear. Publication proves Expo availability, while device
-download and full close/reopen establish application.
+`native-release-devices.mjs` remains a diagnostic worker for explicit targets and
+verified artifacts. Its `--help` documents device inspection and optional physical
+evidence. [Quality](../quality/README.md#optional-physical-phone-and-watch-protocol)
+owns the device protocol. Device evidence does not authorize publication.
 
 ## Diagnostics and validation
 

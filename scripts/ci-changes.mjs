@@ -142,7 +142,7 @@ export function classifyChanges(paths, { readBase, readHead } = {}) {
     source(/^backend\/src\/(config\/database(?:Utils)?\.ts$|observability\.ts$|routes\/(goals|metrics|user|imports)\.ts$|services\/(calorie|goal|watch|clientOperation|sync|import|loseItImport|metricProgress|materializedWeightTrend|weightTrend)|utils\/(date|goal|units))/) ||
     any(/^(deploy\/backup\/|scripts\/postgres-.*\.mjs$|shared\/(weightTrend|goal|calorie).*\.ts$)/);
   return {
-    release_config: selectionChanged || files.some(file => RELEASE_MIRRORS.has(file)) || any(/^(\.github\/|tools\/eas-cli\/|deploy\/|quality\/|scripts\/|wear\/)/) ||
+    release_config: selectionChanged || has('release.config.json') || files.some(file => RELEASE_MIRRORS.has(file)) || any(/^(\.github\/|deploy\/|quality\/|scripts\/|wear\/)/) ||
       api || expoConfig || has('mobile/eas.json') || any(/^shared\/(release|client-diagnostic-versions)\.json$/) || has('playwright.ux.config.ts'),
     backend_build: backendBuild || workflow('builds'),
     backend: any(/^backend\//) || any(/^shared\//) || workflow('tests'),

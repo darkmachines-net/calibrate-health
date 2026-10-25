@@ -146,8 +146,7 @@ exist.
 
 For automatic redeployment after image publication, see [deployment over WireGuard](self-hosted/README.md).
 The configured CI target keeps its existing Compose image (`latest`), pulls and upgrades only `app`, and requires a
-successful application health check before OTA publication in the end-to-end release flow. Manual **Publish Expo OTA
-Update** remains a client-only action. Actions call the shared homelab deployment webhook; host configuration and
+successful application health check before OTA publication in the end-to-end release flow. `npm run release -- plan --operation ota` remains a client-only operation. Actions call the shared homelab deployment webhook; host configuration and
 Compose execution are owned by darkmachines. This repository needs only the GitHub environment configuration.
 
 ## Encrypted automated backups

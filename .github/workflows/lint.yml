@@ -1,16 +1,7 @@
+# Check authored source for lint warnings and TypeScript errors before merge.
 name: Lint
 
 on:
-  workflow_call:
-    inputs:
-      release_sha:
-        description: Exact canonical release candidate; validated by Cut release
-        required: true
-        type: string
-      source_sha:
-        description: Exact protected source and workflow commit
-        required: true
-        type: string
   pull_request:
   workflow_dispatch:
 
@@ -18,33 +9,33 @@ permissions:
   contents: read
 
 concurrency:
-  group: lint-${{ inputs.release_sha && format('candidate-{0}-{1}', github.run_id, github.run_attempt) || github.event.pull_request.number || github.ref }}
+  group: lint-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   changes:
-    name: Classify Lint Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Classify Lint Inputs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      eslint: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.eslint == 'true' }}
-      kotlin: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.kotlin == 'true' }}
-      type_backend: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_backend == 'true' }}
-      type_shared: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_shared == 'true' }}
-      type_api: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_api == 'true' }}
-      type_mobile: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_mobile == 'true' }}
-      dead_code: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.dead_code == 'true' }}
+      eslint: ${{ github.event_name != 'pull_request' || steps.filter.outputs.eslint == 'true' }}
+      kotlin: ${{ github.event_name != 'pull_request' || steps.filter.outputs.kotlin == 'true' }}
+      type_backend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_backend == 'true' }}
+      type_shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_shared == 'true' }}
+      type_api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_api == 'true' }}
+      type_mobile: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_mobile == 'true' }}
+      dead_code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.dead_code == 'true' }}
     steps:
       - name: Checkout complete PR history for affected checks
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select affected PR inputs
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -54,7 +45,7 @@ jobs:
   eslint:
     needs: changes
     if: always()
-    name: ESLint (zero warnings)${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: ESLint (zero warnings)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -66,23 +57,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
           persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Setup Node
         if: needs.changes.outputs.eslint == 'true' || needs.changes.outputs.kotlin == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
+          node-version: 22.14.0
           cache: npm
 
       - name: Install workspace deps
@@ -111,7 +94,7 @@ jobs:
   typecheck:
     needs: changes
     if: always()
-    name: Backend, Shared, API Client, and Mobile Typecheck${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Backend, Shared, API Client, and Mobile Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -123,22 +106,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
 
       - name: Setup Node
         if: needs.changes.outputs.type_backend == 'true' || needs.changes.outputs.type_shared == 'true' || needs.changes.outputs.type_api == 'true' || needs.changes.outputs.type_mobile == 'true' || needs.changes.outputs.dead_code == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
+          node-version: 22.14.0
           cache: npm
           cache-dependency-path: |
             package-lock.json

@@ -512,7 +512,7 @@ export async function buildCheckout(label, checkout, tooling, environment, runne
   });
   await runner({
     command: process.execPath,
-    args: [path.join(checkout, 'scripts', 'release-config.mjs'), 'check'],
+    args: [path.join(checkout, 'scripts', 'release-metadata.mjs'), 'check'],
     cwd: checkout,
     env: environment,
     label: `verify ${label} release mirrors`
@@ -798,7 +798,7 @@ export async function executeUpgradeInstallSequence(options) {
   };
 }
 
-/** Normalizes raw rehearsal observations into hosted upgrade evidence tied to the exact candidate source. */
+/** Verify current paired-device rehearsal facts before producing hosted upgrade evidence. */
 export function createHostedUpgradeEvidence(rawEvidence, sourceCommit) {
   const hosted = createStartedHostedNativeEvidence('upgrade', sourceCommit);
   const plan = rawEvidence?.plan;
@@ -848,9 +848,9 @@ export function createHostedUpgradeEvidence(rawEvidence, sourceCommit) {
   );
   const processAlive = roles.every((role) => rawEvidence?.install?.crashEvidence?.[role]?.processAlive === true);
   const crashClean = roles.every((role) => rawEvidence?.install?.crashEvidence?.[role]?.clean === true);
-  // Older retained evidence used one code for both roles. New plans record each role explicitly.
+  // Each device role must have an explicit planned code bound to its installed artifact.
   const plannedCode = (stage, role) => role === 'wear'
-    ? plan?.[stage]?.wearVersionCode ?? plan?.[stage]?.versionCode
+    ? plan?.[stage]?.wearVersionCode
     : plan?.[stage]?.versionCode;
   const versionAdvanced = roles.every((role) => {
     const baselineCode = plannedCode('baseline', role);

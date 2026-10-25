@@ -1,0 +1,14 @@
+# All release paths run through one immutable shared workflow from the protected default branch.
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      profile: { description: Configured release destination, type: choice, required: true, options: [production] }
+      rebuild: { description: Force a new native build, type: boolean, default: false }
+permissions: { contents: read }
+jobs:
+  release:
+    permissions: { contents: write, deployments: write, packages: write }
+    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@534bedddee9946582a3d07a757beecbaf7bc2bf5
+    with: { profile: '${{ inputs.profile }}', rebuild: '${{ inputs.rebuild }}' }
+    secrets: inherit

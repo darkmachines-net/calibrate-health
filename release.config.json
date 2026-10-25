@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 3,
+  "repository": "darkmachines-net/calibrate-health",
+  "defaultBranch": "master",
+  "profiles": {
+    "production": {
+      "environment": "production",
+      "channel": "production",
+      "easProfile": "production",
+      "submit": true,
+      "approvalEnvironment": "production",
+      "signingEnvironment": "native-release-signing",
+      "submitEnvironment": "play-internal",
+      "deployEnvironment": "self-hosted-testing",
+      "publicEnvironment": {
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+        "EXPO_UPDATES_CHANNEL": "production",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "install": [
+    [
+      "npm",
+      "ci"
+    ],
+    [
+      "npm",
+      "ci",
+      "--prefix",
+      "backend"
+    ]
+  ],
+  "metadataFiles": [
+    "shared/release.json",
+    "shared/client-diagnostic-versions.json",
+    "package.json",
+    "package-lock.json",
+    "backend/package.json",
+    "backend/package-lock.json",
+    "backend/openapi/v1.yaml",
+    "packages/api-client/src/generated/v1.ts",
+    "mobile/package.json",
+    "mobile/app.json",
+    "mobile/release-version.json",
+    "mobile/modules/wear-pairing/package.json",
+    "mobile/modules/wear-pairing/android/build.gradle",
+    "wear/app/build.gradle.kts"
+  ],
+  "hooks": {
+    "inspect": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ],
+    "prepare": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ],
+    "validate": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ],
+    "verify": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ],
+    "buildPrepare": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ],
+    "build": [
+      "node",
+      "scripts/release-hooks.mjs"
+    ]
+  },
+  "mobile": {
+    "directory": "mobile",
+    "versionFloor": "0.2.9",
+    "inputs": [
+      "mobile",
+      "shared",
+      "packages",
+      "package-lock.json"
+    ],
+    "builder": "command",
+    "projectId": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+    "owner": "calibrate-health",
+    "slug": "calibrate-health-app",
+    "pairCodeFloor": 18,
+    "targets": [
+      {
+        "id": "phone",
+        "platform": "android",
+        "applicationId": "net.darkmachines.healthtracker",
+        "submitProfile": "phone"
+      },
+      {
+        "id": "wear",
+        "platform": "android",
+        "applicationId": "net.darkmachines.healthtracker",
+        "submitProfile": "wear"
+      }
+    ]
+  },
+  "server": {
+    "versionFloor": "0.40.3",
+    "inputs": [
+      "backend",
+      "shared",
+      "packages",
+      "mobile",
+      "package-lock.json",
+      "Dockerfile.app"
+    ],
+    "image": "ghcr.io/mchartier/calibratehealth",
+    "dockerfile": "Dockerfile.app",
+    "platforms": [
+      "linux/amd64"
+    ],
+    "metadataOnNative": true,
+    "smoke": {
+      "port": 3000,
+      "healthPath": "/api/v1/readyz",
+      "services": {
+        "postgres": {
+          "image": "postgres:16-alpine",
+          "environment": {
+            "POSTGRES_USER": "release_ci",
+            "POSTGRES_PASSWORD": "release_ci",
+            "POSTGRES_DB": "release_ci"
+          }
+        }
+      },
+      "environment": {
+        "DATABASE_URL": "postgresql://release_ci:release_ci@postgres:5432/release_ci?schema=public",
+        "SESSION_SECRET": "disposable-release-smoke-secret-at-least-32",
+        "PUBLIC_APP_ORIGIN": "http://127.0.0.1:3000",
+        "MIGRATION_MAX_ATTEMPTS": "10"
+      }
+    },
+    "deployment": {
+      "service": "calibratehealth",
+      "path": "/deploy/calibratehealth"
+    }
+  }
+}

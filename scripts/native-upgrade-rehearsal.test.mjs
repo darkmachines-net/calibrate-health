@@ -139,7 +139,7 @@ test('build sequence runs release mirror validation after prebuild and before Gr
       }
       if (request.label === 'verify candidate release mirrors') {
         assert.deepEqual(request.args, [
-          path.join('C:', 'owned-temp', 'candidate', 'scripts', 'release-config.mjs'),
+          path.join('C:', 'owned-temp', 'candidate', 'scripts', 'release-metadata.mjs'),
           'check'
         ]);
       }
@@ -560,8 +560,8 @@ test('hosted package upgrade evidence reconstructs only candidate-bound allowlis
       }
     }
   };
-  // Retained legacy evidence remains readable, but new plans bind both installed roles and artifacts.
-  assert.equal(createHostedUpgradeEvidence(raw, candidateCommit).status, 'passed');
+  // Old single-code evidence cannot authorize current paired-device validation.
+  assert.throws(() => createHostedUpgradeEvidence(raw, candidateCommit), /requires every checkpoint/);
   raw.plan = {
     ...raw.plan,
     baseline: { ...raw.plan.baseline, versionCode: 1000001, wearVersionCode: 1000002 },

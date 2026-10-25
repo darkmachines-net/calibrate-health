@@ -1,16 +1,6 @@
 name: Production Container Scan
 
 on:
-  workflow_call:
-    inputs:
-      release_sha:
-        description: Exact canonical release candidate; validated by Cut release
-        required: true
-        type: string
-      source_sha:
-        description: Exact protected source and workflow commit
-        required: true
-        type: string
   pull_request:
   workflow_dispatch:
   schedule:
@@ -20,12 +10,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: container-scan-${{ inputs.release_sha && format('candidate-{0}-{1}', github.run_id, github.run_attempt) || github.event.pull_request.number || github.ref }}
+  group: container-scan-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   changes:
-    name: Classify Production Image Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Classify Production Image Inputs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -35,32 +25,16 @@ jobs:
       scan: ${{ steps.decision.outputs.scan }}
 
     steps:
-      - name: Checkout release candidate for identity verification
-        if: inputs.release_sha != ''
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.release_sha }}
-          fetch-depth: 2
-          persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
-
       - name: Checkout complete PR history for affected checks
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select affected PR inputs
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -71,11 +45,11 @@ jobs:
         id: decision
         shell: bash
         env:
-          IMAGE_CHANGED: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.image == 'true' }}
+          IMAGE_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.image == 'true' }}
         run: echo "scan=${IMAGE_CHANGED}" >> "${GITHUB_OUTPUT}"
 
   scan:
-    name: High and Critical Vulnerabilities${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: High and Critical Vulnerabilities
     needs: changes
     if: needs.changes.outputs.scan == 'true'
     runs-on: ubuntu-latest
@@ -100,7 +74,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Build production image
         run: docker build --file Dockerfile.app --tag calibrate:security-scan .
@@ -135,7 +109,7 @@ jobs:
           format: table
           scanners: vuln
           # Package advisories are maintenance findings; PRs still check the base OS.
-          vuln-type: ${{ (inputs.release_sha == '' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')) && 'os,library' || 'os' }}
+          vuln-type: ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')) && 'os,library' || 'os' }}
           severity: HIGH,CRITICAL
           ignore-unfixed: false
           exit-code: '1'

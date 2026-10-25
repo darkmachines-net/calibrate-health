@@ -5,11 +5,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import {
   downloadNativeTool, extractNativeArchive, installNativeArchive, NATIVE_ENVIRONMENT_KEYS,
-  nativeSetupEnvironment, parseNativeSetupArguments, setupNative, ensureNativeEasDependency, inspectNativeEasDependency
+  nativeSetupEnvironment, parseNativeSetupArguments, setupNative
 } from './native-setup.mjs';
 import {
   assertNativeNodeVersion, inspectNativeToolchain, NATIVE_SDK_PACKAGES, NATIVE_TOOLCHAIN, NATIVE_TOOL_DOWNLOADS
@@ -195,38 +196,7 @@ test('full setup delegates host installation to existing repo scripts before sav
   const commands = events.filter(([kind]) => kind === 'run').map(([, , args]) => args);
   assert.deepEqual(commands[1], [path.join(root, 'scripts/dev-env.mjs'), 'setup:host']);
   assert.deepEqual(commands[2], [npmCli, '--prefix', path.join(root, 'shared'), 'run', 'build']);
-  assert.equal(events.at(-2)[0], 'eas');
   assert.equal(events.at(-1)[0], 'save');
-});
-
-test('EAS setup caches the reviewed dependency graph and retries a failed install without a valid stamp', (t) => {
-  const root = temporaryDirectory(t);
-  const directory = path.join(root, 'tools/eas-cli');
-  const lock = path.join(directory, 'package-lock.json');
-  const entry = path.join(directory, 'node_modules/eas-cli/bin/run');
-  write(path.join(directory, 'package.json'), '{}');
-  write(lock, '{"lockfileVersion":3}');
-  const commands = [];
-  /** Execute the requested build-tool operation through the injected runner. */
-  const run = (_command, args, environment) => {
-    commands.push(args);
-    assert.equal(environment.EXPO_TOKEN, undefined);
-    write(entry);
-  };
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(inspectNativeEasDependency(root).ok, true);
-  assert.deepEqual(commands[0], ['npm-cli.js', 'ci', '--prefix', directory, '--include=dev', '--no-audit', '--fund=false']);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(commands.length, 1);
-  write(lock, '{"lockfileVersion":3,"packages":{}}');
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  assert.throws(() => ensureNativeEasDependency(root, 'npm-cli.js', {}, () => { throw new Error('offline'); }, () => {}), /offline/);
-  assert.equal(inspectNativeEasDependency(root).ok, false);
-  ensureNativeEasDependency(root, 'npm-cli.js', {}, run, () => {});
-  assert.equal(inspectNativeEasDependency(root).ok, true);
-  fs.rmSync(entry);
-  assert.equal(inspectNativeEasDependency(root).ok, false);
 });
 
 test('all missing toolchain components are reported together and tool stderr cannot leak secrets', (t) => {
@@ -303,9 +273,13 @@ test('archive extraction handles literal Windows paths and rejects entries outsi
   assert.equal(fs.existsSync(path.join(directory, 'escaped')), false);
 });
 
-test('local tool versions stay aligned with the protected workflow pins', () => {
-  const workflow = fs.readFileSync(new URL('../.github/workflows/native-build.yml', import.meta.url), 'utf8');
-  assert.ok(workflow.includes("ANDROID_BUILD_TOOLS_VERSION: '" + NATIVE_TOOLCHAIN.buildTools + "'"));
-  assert.ok(workflow.includes("BUNDLETOOL_VERSION: '" + NATIVE_TOOLCHAIN.bundletool + "'"));
-  assert.ok(workflow.includes('BUNDLETOOL_SHA256: ' + NATIVE_TOOL_DOWNLOADS.bundletool.sha256));
+test('local setup provides the shared artifact inspector alongside phone and Wear compiler tools', () => {
+  const require = createRequire(import.meta.url);
+  const shared = path.dirname(require.resolve('@mchartier/expo-release/package.json'));
+  const tools = fs.readFileSync(path.join(shared, 'bin/android-tools.mjs'), 'utf8');
+  const inspectorBuildTools = tools.match(/ANDROID_BUILD_TOOLS_VERSION=([\d.]+)/)?.[1];
+  // The shared inspector can retain Wear's reviewed tools while SDK 58 uses newer phone compilation tools.
+  assert.ok(Object.values(NATIVE_SDK_PACKAGES).includes('build-tools;' + inspectorBuildTools));
+  assert.ok(tools.includes("const version = '" + NATIVE_TOOLCHAIN.bundletool + "'"));
+  assert.ok(tools.includes(NATIVE_TOOL_DOWNLOADS.bundletool.sha256));
 });
