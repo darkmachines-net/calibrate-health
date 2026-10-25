@@ -41,7 +41,8 @@
         "EXPO_UPDATES_CHANNEL": "beta",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
         "NODE_ENV": "production"
-      }
+      },
+      "autoIncrement": false
     },
     "production": {
       "channel": "production",
@@ -58,7 +59,8 @@
         "EXPO_UPDATES_CHANNEL": "production",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
         "NODE_ENV": "production"
-      }
+      },
+      "autoIncrement": false
     },
     "ios-simulator": {
       "extends": "development",
@@ -90,6 +92,18 @@
       "android": {
         "track": "wear:production",
         "releaseStatus": "draft"
+      }
+    },
+    "ios-beta": {
+      "ios": {
+        "ascAppId": "6826924944",
+        "bundleIdentifier": "app.calibratehealth.mobile"
+      }
+    },
+    "ios-production": {
+      "ios": {
+        "ascAppId": "6826924944",
+        "bundleIdentifier": "app.calibratehealth.mobile"
       }
     }
   }

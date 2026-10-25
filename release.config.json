@@ -21,7 +21,8 @@
       },
       "submitProfiles": {
         "phone": "phone-beta",
-        "wear": "wear-beta"
+        "wear": "wear-beta",
+        "ios": "ios-beta"
       }
     },
     "production": {
@@ -42,7 +43,8 @@
       },
       "submitProfiles": {
         "phone": "phone-production",
-        "wear": "wear-production"
+        "wear": "wear-production",
+        "ios": "ios-production"
       }
     }
   },
@@ -126,6 +128,13 @@
         "platform": "android",
         "applicationId": "net.darkmachines.healthtracker",
         "submitProfile": "wear"
+      },
+      {
+        "id": "ios",
+        "platform": "ios",
+        "applicationId": "app.calibratehealth.mobile",
+        "builder": "eas",
+        "buildNumberFloor": 0
       }
     ]
   },

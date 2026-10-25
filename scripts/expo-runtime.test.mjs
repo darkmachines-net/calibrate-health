@@ -1,11 +1,16 @@
-/** @file Verify major-only runtime resolution, compiled APK resources and version-independent native fingerprints. */
+/** @file Verify beta-default release inputs, major runtimes, APK resources and version-independent fingerprints. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { validateRuntimeResolution, validateEmbeddedRuntimeResources } from './expo-runtime.mjs';
+import { resolveExpoUpdateBuildConfig, validateRuntimeResolution, validateEmbeddedRuntimeResources } from './expo-runtime.mjs';
+
+test('native release inputs default to beta and preserve explicit production selection', () => {
+  assert.equal(resolveExpoUpdateBuildConfig({}).channel,'beta');
+  assert.equal(resolveExpoUpdateBuildConfig({EXPO_UPDATES_CHANNEL:'production'}).channel,'production');
+});
 
 test('runtime resolution accepts only the explicit major policy', () => {
   assert.equal(validateRuntimeResolution({ runtimeVersion: '2' }), '2');
