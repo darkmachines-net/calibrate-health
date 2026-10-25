@@ -73,8 +73,8 @@ Prerequisites, environment settings, worktree behavior and commands live in the
 [development tools guide](scripts/README.md#development).
 
 Use the [Expo guide](mobile/README.md#development) for native development and the
-[local native workflow](scripts/README.md#local-native-workflow) for signed builds,
-installation, Play submission and OTA. [Validation policy](quality/README.md) explains
+[local native workflow](scripts/README.md#local-native-workflow) for Android tooling
+and the [Release workflow](.github/workflows/README.md#release) for protected publication. [Validation policy](quality/README.md) explains
 which checks establish which kinds of evidence.
 
 ## Advanced self-hosting

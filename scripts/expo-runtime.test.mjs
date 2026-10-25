@@ -1,4 +1,4 @@
-/** Fail closed when SDK discovery returns an incomplete native graph rather than a reliable fingerprint. */
+/** @file Verify major-only runtime resolution, compiled APK resources and version-independent native fingerprints. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

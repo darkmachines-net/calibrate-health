@@ -80,9 +80,8 @@ parameters. The job verifies current protected-master workflow authority before 
 2. Configure the master-only environment above.
 3. After merge, review and run the shared release plan to publish the first image containing the built-in healthcheck and execute the
    image/deploy/OTA sequence. Confirm the deployment job succeeds before approving production OTA.
-4. Once `latest` includes that healthcheck, **Deploy self-hosted server** from `master` with no inputs independently
-   tests or retries the webhook. It performs a real upgrade and may briefly restart `app`. Use **Publish prepared
-   release** for recovery of a prepared end-to-end release.
+4. Inspect deployment health and the application after the authorized Release dispatch.
+   A later retry starts a fresh dispatch; inspect uncertain webhook outcomes first.
 
 The client allows 15 seconds to connect and 780 seconds for the complete POST. The service and reverse proxy must
 allow synchronous completion within that window. The darkmachines service bounds pull/start/health commands to
@@ -93,14 +92,14 @@ The Actions job allows 20 minutes for setup, deployment, and cleanup. Runs use c
 On failure, inspect homelab deployer logs and application health before rerunning. If a pull/start command is interrupted,
 the deployer may return HTTP 409 with `deployment_requires_reconciliation` on subsequent attempts. Follow its rollout
 guide to reconcile Docker state before restarting the controller and retrying; rerunning Actions alone cannot clear it.
-A standalone deployment does not resume a blocked release; rerun that release's failed jobs to continue to OTA.
+The shared toolkit retains confirmed success baselines for later dispatches.
 The runner removes its temporary tunnel and key on success or failure, with a separate workflow cleanup step for
 cancellation. Server peers and firewall rules are managed outside this repository.
 
 ## Validation
 
-`npm run test:deploy` checks authentication arguments, private routing, HTTP/result validation, bounded requests,
-no automatic retries, and cleanup using mocked commands. Compose tests still cover the repo's self-hosting templates.
-`npm run test:release` checks image/deploy/OTA ordering, production approval, secret forwarding, and client-only OTA.
-The homelab service owns the Docker deployment tests. These checks do not contact the private server; complete the
-live workflow rollout above.
+`npm run test:deploy` covers the repository Compose templates. Webhook authentication,
+routing, response validation and cleanup tests belong to the pinned shared toolkit.
+`npm run test:release` validates the application configuration and artifact contracts.
+These checks do not contact the private server; live deployment requires the authorized
+Release workflow and homelab health verification.

@@ -3,7 +3,7 @@ import { trackedIdentity } from '@mchartier/expo-release';
 const IGNORED = /(^|\/)(__tests__|__mocks__|fixtures|e2e|docs)(\/|$)|(^|\/)src\/(test|androidTest)\/|\.(test|spec)\.[^/]+$|(^|\/)(README[^/]*|AGENTS\.md)$/i;
 const SERVER_FILES = /^(backend\/|shared\/|packages\/|mobile\/|Dockerfile\.app$|\.dockerignore$|package(?:-lock)?\.json$|scripts\/expo-(?:cli-environment|web-build|web-release)\.mjs$)/;
 const PHONE_FILES = /^(mobile\/|shared\/|packages\/api-client\/|package(?:-lock)?\.json$)/;
-const VERSION_MIRRORS = /^(shared\/(release|client-diagnostic-versions)\.json|docs\/openapi\/v1\.yaml|packages\/api-client\/src\/generated\/v1\.ts)$|(^|\/)package(?:-lock)?\.json$/;
+const VERSION_MIRRORS = /^(shared\/(release|client-diagnostic-versions)\.json|backend\/openapi\/v1\.yaml|packages\/api-client\/src\/generated\/v1\.ts)$|(^|\/)package(?:-lock)?\.json$/;
 
 /** Release mirrors change versions without changing the application inputs they describe. */
 function applicationContent(file, text) {
@@ -30,7 +30,7 @@ function applicationContent(file, text) {
     }
     return JSON.stringify(value);
   }
-  if (file === 'docs/openapi/v1.yaml' || file === 'packages/api-client/src/generated/v1.ts') {
+  if (file === 'backend/openapi/v1.yaml' || file === 'packages/api-client/src/generated/v1.ts') {
     return text.replace(/(version: ?)["']?\d+\.\d+\.\d+["']?/g, '$1<version>');
   }
   return text;

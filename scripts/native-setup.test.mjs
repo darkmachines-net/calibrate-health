@@ -273,11 +273,13 @@ test('archive extraction handles literal Windows paths and rejects entries outsi
   assert.equal(fs.existsSync(path.join(directory, 'escaped')), false);
 });
 
-test('local artifact inspection uses the shared worker tool versions', () => {
+test('local setup provides the shared artifact inspector alongside phone and Wear compiler tools', () => {
   const require = createRequire(import.meta.url);
   const shared = path.dirname(require.resolve('@mchartier/expo-release/package.json'));
   const tools = fs.readFileSync(path.join(shared, 'bin/android-tools.mjs'), 'utf8');
-  assert.ok(tools.includes('ANDROID_BUILD_TOOLS_VERSION=' + NATIVE_TOOLCHAIN.buildTools));
+  const inspectorBuildTools = tools.match(/ANDROID_BUILD_TOOLS_VERSION=([\d.]+)/)?.[1];
+  // The shared inspector can retain Wear's reviewed tools while SDK 58 uses newer phone compilation tools.
+  assert.ok(Object.values(NATIVE_SDK_PACKAGES).includes('build-tools;' + inspectorBuildTools));
   assert.ok(tools.includes("const version = '" + NATIVE_TOOLCHAIN.bundletool + "'"));
   assert.ok(tools.includes(NATIVE_TOOL_DOWNLOADS.bundletool.sha256));
 });

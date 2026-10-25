@@ -53,32 +53,16 @@ jobs:
       native_upgrade: ${{ steps.decision.outputs.native_upgrade }}
 
     steps:
-      - name: Checkout release candidate for identity verification
-        if: inputs.release_sha != ''
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.release_sha }}
-          fetch-depth: 2
-          persist-credentials: false
-
-      - name: Verify explicit release candidate
-        if: inputs.release_sha != ''
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
-          WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: node scripts/release-ci-gate.mjs --verify-inputs
-
       - name: Checkout complete PR history for affected checks
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select affected PR inputs
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -101,14 +85,12 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          HEAD_REF: ${{ github.head_ref }}
           RELEASE_CONFIG_CHANGED: ${{ steps.filter.outputs.release_config == 'true' }}
           BACKEND_CHANGED: ${{ steps.filter.outputs.backend_build == 'true' }}
           WEB_CHANGED: ${{ steps.filter.outputs.web == 'true' }}
           WEAR_CHANGED: ${{ steps.filter.outputs.wear == 'true' }}
           NATIVE_RUNTIME_CHANGED: ${{ steps.filter.outputs.native_runtime == 'true' }}
           NATIVE_PACKAGE_CHANGED: ${{ steps.filter.outputs.native_package == 'true' }}
-          NON_RELEASE_MIRROR_CHANGED: ${{ steps.filter.outputs.non_release_mirror == 'true' }}
           MANUAL_VALIDATION_SCOPE: ${{ inputs.validation_scope || 'configuration-only' }}
           MANUAL_NATIVE_UPGRADE: ${{ inputs.run_native_upgrade || false }}
         run: |
@@ -155,15 +137,11 @@ jobs:
             fi
           else
             release_config=${RELEASE_CONFIG_CHANGED}
-            if [[ ( "${HEAD_REF}" == release/v* || "${HEAD_REF}" == release/expo-* ) && "${NON_RELEASE_MIRROR_CHANGED}" != "true" ]]; then
-              echo "Generated version-only release PR: platform build fan-out is intentionally suppressed."
-            else
-              backend=${BACKEND_CHANGED}
-              web=${WEB_CHANGED}
-              wear=${WEAR_CHANGED}
-              native_runtime=${NATIVE_RUNTIME_CHANGED}
-              native_package=${NATIVE_PACKAGE_CHANGED}
-            fi
+            backend=${BACKEND_CHANGED}
+            web=${WEB_CHANGED}
+            wear=${WEAR_CHANGED}
+            native_runtime=${NATIVE_RUNTIME_CHANGED}
+            native_package=${NATIVE_PACKAGE_CHANGED}
           fi
 
           echo "release_config=${release_config}" >> "${GITHUB_OUTPUT}"

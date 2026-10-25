@@ -42,7 +42,7 @@ test('legacy duplicate codes, release tags and missing iOS diagnostics are rejec
   for(const message of ['must be odd','globally unique','native-vMAJOR.MINOR.PATCH'])assert.ok(errors.some(error=>error.includes(message)));
   const diagnostics=JSON.parse(fs.readFileSync(path.join(root,'shared/client-diagnostic-versions.json')));
   delete diagnostics.supported_versions.ios;
-  const invalid=validateClientDiagnosticVersionContract(manifest,diagnostics,fs.readFileSync(path.join(root,'docs/openapi/v1.yaml'),'utf8'));
+  const invalid=validateClientDiagnosticVersionContract(manifest,diagnostics,fs.readFileSync(path.join(root,'backend/openapi/v1.yaml'),'utf8'));
   assert.ok(invalid.some(error=>error.includes('must define exactly')));
 });
 
@@ -64,6 +64,16 @@ test('the real Expo SDK ignores stamped versions but retains native compatibilit
     'require(process.argv[1]).createFingerprintAsync(process.cwd(),{platforms:[process.argv[2]],silent:true}).then(x=>console.log(JSON.stringify(x)))',sdk,platform],
     {cwd:app,env:{...env,EAS_BUILD_PLATFORM:platform},encoding:'utf8',windowsHide:true,maxBuffer:32*1024*1024}));
   const before=Object.fromEntries(platforms.map(p=>[p,fingerprint(p)]));
+  // SDK 58 normalizes React Native autolinking into named module arrays.
+  for (const [platform, value] of Object.entries(before)) {
+    const expo = JSON.parse(value.sources.find(source => source.id === 'expoAutolinkingConfig:' + platform)?.contents ?? '{}');
+    const native = JSON.parse(value.sources.find(source => source.id === 'rncoreAutolinkingConfig:' + platform)?.contents ?? '[]');
+    for (const name of ['expo-updates', '@calibrate/wear-pairing']) {
+      assert.ok(expo.modules?.some(module => module.packageName === name), name + ' must contribute to native compatibility');
+    }
+    assert.ok(native.some(module => module.name === 'react-native-health-connect' && module.platforms?.android),
+      'Health Connect Android discovery must contribute to native compatibility');
+  }
   const originals=new Map(config.metadataFiles.map(file=>[file,fs.readFileSync(path.join(root,file))]));
   try {
     stamp(root,allocation);

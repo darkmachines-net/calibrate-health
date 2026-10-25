@@ -152,7 +152,6 @@ function restorePhoneGradleDependencyState(projectRoot, platformProjectRoot) {
 module.exports = {
   DISTRIBUTION_URL_PROPERTY,
   NATIVE_RELEASE_GRADLE_DISTRIBUTION_SHA256,
-  NATIVE_RELEASE_GRADLE_VERSION,
   NATIVE_RELEASE_GRADLE_WRAPPER_JAR_SHA256,
   nativeReleaseGradleContract,
   injectNativeDependencyLocking,

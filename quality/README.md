@@ -16,18 +16,14 @@ tests the ESLint enforcement.
 release target; generated bridges and callbacks make it an incomplete risk signal.
 
 PR workflows select affected builds/tests, production-image smoke/OS scanning and
-database upgrades. Migration changes additionally select rollback rehearsal. Canonical
-version-only candidates suppress platform build fan-out; Cut release reuses exact
-candidate lint/tests/configuration/OS scan/upgrade jobs as described in
+database upgrades. Migration changes additionally select rollback rehearsal. The shared Release workflow owns publication validation as described in
 [workflows](../.github/workflows/README.md). Dependency audits and full image library
 scans are scheduled/manual maintenance, not package advisory gates on ordinary PRs.
 
 Manual Builds scopes `web`, `native`, `web-and-native`, or `configuration-only` expose
 full browser/data-state/UX, Android/Wear emulator and optional same-signer upgrade
 diagnostics. An upgrade baseline must be an exact full lowercase source SHA. Artifacts
-are short-lived diagnostics, not release receipts. Optional Release Confidence checks
-an exact candidate's configuration/contracts/audit without authorizing publication.
-Performance timing is local/field diagnostic work, not a shared-runner release signal.
+are short-lived diagnostics, not release receipts. Performance timing is local/field diagnostic work, not a shared-runner release signal.
 
 `risk-evidence.json` maps concrete tests and commands to six areas: auth/isolation,
 offline reconciliation, schema/portability, domain math, sensitive diagnostics/config,
@@ -44,7 +40,7 @@ signer. Capture explicit transient physical Samsung handset/watch ADB targets; n
 retain serials, personal/health data, credentials, absolute paths, raw adb/logcat or
 private Console links. A changed source makes earlier evidence historical.
 
-Use `npm run native:build`, then
+Obtain the exact paired artifacts and provenance from the protected build, then use
 `node scripts/native-release-devices.mjs --skip-build --candidate <full-sha> --phone-serial <target> --watch-serial <target> --evidence-observation <external-file>`.
 Evidence mode requires `BUNDLETOOL_JAR`, exact source/manifest/provenance/hash matches,
 physical handset/watch class, lower same-signer installed versions, and `adb install -r`.

@@ -40,7 +40,7 @@
     "package-lock.json",
     "backend/package.json",
     "backend/package-lock.json",
-    "docs/openapi/v1.yaml",
+    "backend/openapi/v1.yaml",
     "packages/api-client/src/generated/v1.ts",
     "mobile/package.json",
     "mobile/app.json",

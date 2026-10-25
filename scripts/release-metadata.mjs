@@ -20,7 +20,7 @@ export const SERVER_RELEASE_FILE_PATHS = Object.freeze({
   rootLock: 'package-lock.json',
   backendPackage: 'backend/package.json',
   backendLock: 'backend/package-lock.json',
-  openApi: 'docs/openapi/v1.yaml',
+  openApi: 'backend/openapi/v1.yaml',
   generatedApi: 'packages/api-client/src/generated/v1.ts'
 });
 
@@ -325,7 +325,7 @@ export async function checkRepository(root = REPOSITORY_ROOT) {
     readFile(path.join(root, 'wear', 'app', 'build.gradle.kts'), 'utf8'),
     readFile(path.join(root, 'mobile', 'modules', 'wear-pairing', 'android', 'build.gradle'), 'utf8'),
     readJson(path.join(root, 'shared', 'client-diagnostic-versions.json')),
-    readFile(path.join(root, 'docs', 'openapi', 'v1.yaml'), 'utf8'),
+    readFile(path.join(root, SERVER_RELEASE_FILE_PATHS.openApi), 'utf8'),
     readFile(path.join(root, 'packages', 'api-client', 'src', 'generated', 'v1.ts'), 'utf8')
   ]);
   errors.push(...validateClientDiagnosticVersionContract(manifest, diagnosticVersions, openApiSource));
@@ -437,7 +437,7 @@ export const NATIVE_RELEASE_FILE_PATHS = Object.freeze({
   "pairingPackage": "mobile/modules/wear-pairing/package.json",
   "pairingGradle": "mobile/modules/wear-pairing/android/build.gradle",
   "wearGradle": "wear/app/build.gradle.kts",
-  "openApi": "docs/openapi/v1.yaml",
+  "openApi": "backend/openapi/v1.yaml",
   "generatedApi": "packages/api-client/src/generated/v1.ts"
 });
 

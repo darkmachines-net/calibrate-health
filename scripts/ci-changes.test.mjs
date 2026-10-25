@@ -102,6 +102,7 @@ test('OpenAPI and database changes retain their specific integration checks', ()
 });
 
 test('workflow and selector changes exercise the checks they control', () => {
+  assert.equal(classifyChanges(['release.config.json']).release_config, true);
   const builds = classifyChanges(['.github/workflows/builds.yml']);
   for (const key of ['backend_build', 'web', 'wear', 'native_runtime', 'native_package']) assert.equal(builds[key], true, key);
   const lint = classifyChanges(['.github/workflows/lint.yml']);

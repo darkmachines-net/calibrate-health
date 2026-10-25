@@ -419,6 +419,7 @@ function formatFingerprint(value) {
   return value.toUpperCase().match(/.{1,2}/g)?.join(':') ?? value;
 }
 
+/** Inspect canonical or explicitly retained artifacts against phone/watch versions and the signing contract. */
 export async function inspectNativeReleaseArtifactSet(root, tooling, runner, retainedFiles = {}) {
   const manifestContent = fs.readFileSync(path.join(root, 'shared', 'release.json'));
   const manifest = JSON.parse(manifestContent.toString('utf8'));

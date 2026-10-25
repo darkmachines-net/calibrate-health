@@ -225,7 +225,7 @@ export async function setupNative(argv = [], options = {}) {
   const log = options.log ?? console.log;
   if (args.help) { log(HELP); return { ok: true }; }
   if ((options.platform ?? process.platform) !== 'win32' || (options.arch ?? process.arch) !== 'x64') {
-    throw new Error('Automatic native setup currently supports Windows x64. See scripts/README.md#play-onboarding.');
+    throw new Error('Automatic native setup currently supports Windows x64. See scripts/README.md#local-native-workflow.');
   }
   assertNativeNodeVersion(options.nodeVersion);
   const root = options.root ?? ROOT;

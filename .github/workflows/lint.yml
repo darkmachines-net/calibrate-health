@@ -14,28 +14,28 @@ concurrency:
 
 jobs:
   changes:
-    name: Classify Lint Inputs${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Classify Lint Inputs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      eslint: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.eslint == 'true' }}
-      kotlin: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.kotlin == 'true' }}
-      type_backend: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_backend == 'true' }}
-      type_shared: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_shared == 'true' }}
-      type_api: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_api == 'true' }}
-      type_mobile: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.type_mobile == 'true' }}
-      dead_code: ${{ inputs.release_sha != '' || github.event_name != 'pull_request' || steps.filter.outputs.dead_code == 'true' }}
+      eslint: ${{ github.event_name != 'pull_request' || steps.filter.outputs.eslint == 'true' }}
+      kotlin: ${{ github.event_name != 'pull_request' || steps.filter.outputs.kotlin == 'true' }}
+      type_backend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_backend == 'true' }}
+      type_shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_shared == 'true' }}
+      type_api: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_api == 'true' }}
+      type_mobile: ${{ github.event_name != 'pull_request' || steps.filter.outputs.type_mobile == 'true' }}
+      dead_code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.dead_code == 'true' }}
     steps:
       - name: Checkout complete PR history for affected checks
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Select affected PR inputs
-        if: inputs.release_sha == '' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         id: filter
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -45,7 +45,7 @@ jobs:
   eslint:
     needs: changes
     if: always()
-    name: ESLint (zero warnings)${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: ESLint (zero warnings)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -94,7 +94,7 @@ jobs:
   typecheck:
     needs: changes
     if: always()
-    name: Backend, Shared, API Client, and Mobile Typecheck${{ inputs.release_sha && format(' [{0}]', inputs.release_sha) || '' }}
+    name: Backend, Shared, API Client, and Mobile Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
