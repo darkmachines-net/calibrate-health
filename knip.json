@@ -43,7 +43,7 @@
         "test/**/*.js",
         "*.{js,cjs}"
       ],
-      "ignoreDependencies": ["@babel/runtime!", "abort-controller", "regenerator-runtime", "uuid", "whatwg-fetch"]
+      "ignoreDependencies": ["@babel/runtime!", "abort-controller", "regenerator-runtime", "whatwg-fetch"]
     },
     "shared": {
       "entry": ["calibrationScenarios.ts"],

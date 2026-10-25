@@ -1,4 +1,4 @@
-/** @file Resolve the same managed Expo runtime for native builds and credential-free OTA exports. */
+/** @file Resolve managed Expo runtimes for native builds and credential-free OTA exports, rejecting incomplete SDK discovery. */
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { readZipEntry } from './zip-entry.mjs';
 
-/** Autolinking errors can produce a hash of an empty graph; such a hash is not a usable runtime. */
+/** Return the resolved fingerprint only when the SDK discovers the required Android modules; reject incomplete graphs and non-fingerprint policies. */
 export function validateRuntimeResolution(value) {
   if (!/^[a-f0-9]{40,64}$/.test(value.runtimeVersion ?? '')) throw new Error('Expo must resolve a fingerprint runtime.');
   const sources = value.fingerprintSources ?? [];
@@ -15,7 +15,11 @@ export function validateRuntimeResolution(value) {
   for (const name of ['expo-updates', '@calibrate/wear-pairing']) {
     if (!expo.modules?.some((module) => module.packageName === name)) throw new Error(`Incomplete Expo native discovery: ${name}.`);
   }
-  if (!native['react-native-health-connect']) throw new Error('Incomplete React Native module discovery.');
+  // SDK 58 normalizes React Native dependency maps into arrays of named modules.
+  const healthConnect = Array.isArray(native)
+    ? native.find((module) => module?.name === 'react-native-health-connect')
+    : undefined;
+  if (!healthConnect?.platforms?.android) throw new Error('Incomplete React Native module discovery.');
   return value.runtimeVersion;
 }
 
