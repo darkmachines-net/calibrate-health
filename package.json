@@ -20,7 +20,7 @@
     "dev:expo": "node scripts/expo-native-dev.mjs",
     "dev:calibration-lab": "npm --prefix shared run build && node scripts/calibration-lab.mjs",
     "capture:calibration-lab": "node scripts/calibration-lab-screenshots.mjs",
-    "preview": "node scripts/preview.mjs",
+    "preview": "expo-release preview",
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "db:migrate": "node scripts/dev-stack.mjs db:migrate",
     "db:migrate:dev": "node scripts/dev-stack.mjs db:migrate",
@@ -103,7 +103,9 @@
     "knip": "knip",
     "knip:production": "knip --production --exclude exports,types",
     "test:dead-code": "node --test scripts/knip-config.test.mjs && npm run knip && npm run knip:production",
-    "lint:kotlin": "node scripts/kotlin-lint.mjs"
+    "lint:kotlin": "node scripts/kotlin-lint.mjs",
+    "dev:native": "expo-release dev",
+    "preview:web": "node scripts/preview.mjs"
   },
   "keywords": [],
   "author": "",
@@ -112,7 +114,7 @@
     "node": "^22.14.0 || ^24.3.0 || >=26.0.0"
   },
   "devDependencies": {
-    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#2fdd2113d71dbc2720e67dac55b8928a6d58974c",
+    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#4112ce687e22180066b255a4d6ae9b4e0c8d4b2f",
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "^1.61.1",

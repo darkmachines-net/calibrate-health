@@ -3,6 +3,27 @@
   "repository": "darkmachines-net/calibrate-health",
   "defaultBranch": "master",
   "profiles": {
+    "beta": {
+      "environment": "preview",
+      "channel": "beta",
+      "easProfile": "beta",
+      "submit": true,
+      "approvalEnvironment": "preview",
+      "signingEnvironment": "native-release-signing",
+      "submitEnvironment": "play-internal",
+      "deployEnvironment": "self-hosted-testing",
+      "publicEnvironment": {
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+        "EXPO_UPDATES_CHANNEL": "beta",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "NODE_ENV": "production"
+      },
+      "submitProfiles": {
+        "phone": "phone-beta",
+        "wear": "wear-beta"
+      }
+    },
     "production": {
       "environment": "production",
       "channel": "production",
@@ -10,7 +31,7 @@
       "submit": true,
       "approvalEnvironment": "production",
       "signingEnvironment": "native-release-signing",
-      "submitEnvironment": "play-internal",
+      "submitEnvironment": "play-production",
       "deployEnvironment": "self-hosted-testing",
       "publicEnvironment": {
         "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
@@ -18,6 +39,10 @@
         "EXPO_UPDATES_CHANNEL": "production",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
         "NODE_ENV": "production"
+      },
+      "submitProfiles": {
+        "phone": "phone-production",
+        "wear": "wear-production"
       }
     }
   },
@@ -143,6 +168,23 @@
     "deployment": {
       "service": "calibratehealth",
       "path": "/deploy/calibratehealth"
+    }
+  },
+  "development": {
+    "easProfile": "development",
+    "environment": "preview",
+    "approvalEnvironment": "preview",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "publicEnvironment": {
+      "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+      "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+      "EXPO_UPDATES_CHANNEL": "beta",
+      "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+      "NODE_ENV": "production",
+      "EXPO_RELEASE_VARIANT": "development"
     }
   }
 }

@@ -57,7 +57,7 @@ test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () =>
     microphonePermission: false
   });
   assert.deepEqual(easConfig.build['ios-simulator'], {
-    extends: 'internal',
+    extends: 'development',
     ios: { simulator: true }
   });
   assert.equal(packageConfig.scripts['prebuild:ios'], 'expo prebuild --platform ios --no-install');
@@ -71,14 +71,14 @@ test('Expo config leaves updates disabled when no EAS project is configured', ()
 
 test('Expo config embeds a project-scoped update URL, runtime, and local-build channel', () => {
   process.env.EXPO_PUBLIC_EAS_PROJECT_ID = '01234567-89ab-4def-8123-456789abcdef';
-  process.env.EXPO_UPDATES_CHANNEL = 'internal';
+  process.env.EXPO_UPDATES_CHANNEL = 'beta';
   const result = createExpoConfig({
     config: { name: 'calibrate', extra: { router: { origin: false } } }
   });
 
   assert.equal(result.runtimeVersion, require('./release-version.json').version.split('.')[0]);
   assert.equal(result.updates.url, 'https://u.expo.dev/01234567-89ab-4def-8123-456789abcdef');
-  assert.equal(result.updates.requestHeaders['expo-channel-name'], 'internal');
+  assert.equal(result.updates.requestHeaders['expo-channel-name'], 'beta');
   assert.equal(result.extra.eas.projectId, '01234567-89ab-4def-8123-456789abcdef');
   assert.deepEqual(result.extra.router, { origin: false });
 });

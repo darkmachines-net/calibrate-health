@@ -1,0 +1,14 @@
+# Manually build a custom development client or publish an isolated hosted preview through the shared toolkit.
+name: Development
+on:
+  workflow_dispatch:
+    inputs:
+      operation: { description: Build a dev client or publish a hosted preview, type: choice, options: [build, update], default: build, required: true }
+      platform: { description: Phone platform, type: choice, options: [android, ios], default: android, required: true }
+      source: { description: Optional full source commit SHA in this repository; blank uses the dispatch commit, type: string, default: '' }
+permissions: { contents: read }
+jobs:
+  development:
+    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@4112ce687e22180066b255a4d6ae9b4e0c8d4b2f
+    with: { operation: '${{ inputs.operation }}', platform: '${{ inputs.platform }}', source: '${{ inputs.source }}' }
+    secrets: inherit
