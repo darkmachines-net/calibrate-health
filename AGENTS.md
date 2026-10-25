@@ -268,7 +268,7 @@ UI code style:
 - Keep package, lockfile and workflow pins at one reviewed full toolkit SHA. Use the toolkit pin updater; never copy lifecycle code.
 - Preserve Calibrate's paired odd/even codes, application/signing identities, artifact checks, diagnostic server dependency and protected environments.
 - Expo runtime is the shared mobile major. Version metadata must not change native fingerprints; changed native compatibility requires a new major.
-- Preserve reservation tags and current-run evidence. An unknown provider outcome blocks another request; inspect and resolve through provider/GitHub tooling.
+- Preserve reservation tags and current-run evidence. Failed or uncertain prior attempts must not block a fresh release. Keep same-run duplicate protection and confirmed success baselines; redundant delivery after a lost acknowledgement is an accepted tradeoff.
 
 ## Git And PR Workflow
 
