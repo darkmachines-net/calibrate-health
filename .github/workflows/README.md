@@ -68,10 +68,16 @@ health before dependent client publication. Production retains its environment
 approval. The [deployment guide](../../deploy/self-hosted/README.md) owns private
 routing, webhook configuration and health semantics.
 
-Failed or interrupted attempts permit a fresh dispatch. Only confirmed successes
-advance baselines. Same-run duplicates remain prohibited; a lost acknowledgement may
-cause redundant work in a later release. There are no candidate/version PRs, retained
-artifact commands, promotion commands or historical recovery runners.
+Use **Re-run failed jobs** after correcting a failure. Retries keep the original plan,
+versions and completed artifacts, reuse accepted EAS builds, and skip confirmed
+publications, deployments and submissions. Phone/Wear builds still require both
+verified artifacts; a successful phone submission is not repeated if Wear fails.
+Only confirmed successes advance baselines. Duplicate requests remain prohibited
+within an attempt; an unrecorded acknowledgement may cause redundant work on a later
+retry or fresh dispatch. See the [toolkit retry contract](https://github.com/darkmachines-net/expo-release-template/blob/main/.github/workflows/README.md#immutable-evidence-and-job-retries).
+Existing runs retain their original toolkit pin, so these changes require a new
+dispatch after the pin update. There are no candidate/version PRs, retained artifact
+commands, promotion commands or historical recovery runners.
 
 ## Provider configuration and cutover
 
