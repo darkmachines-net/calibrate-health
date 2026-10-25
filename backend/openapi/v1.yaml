@@ -2922,10 +2922,10 @@ components:
           pattern: '^(?:[a-fA-F0-9]{16,64}|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5][a-fA-F0-9]{3}-[89aAbB][a-fA-F0-9]{3}-[a-fA-F0-9]{12})$'
       allOf:
         - oneOf:
-            - properties: { platform: { const: web }, version: { enum: [0.40.3, 0.40.2] } }
-            - properties: { platform: { const: android_phone }, version: { enum: [0.2.9, 0.2.8, 0.2.7, 0.2.6, 0.2.5, 0.2.4, 0.2.3, 0.2.2, 0.2.1, 0.1.0] } }
-            - properties: { platform: { const: ios }, version: { enum: [0.2.9, 0.2.8, 0.2.7, 0.2.6] } }
-            - properties: { platform: { const: wear_os }, version: { enum: [0.2.9, 0.2.8, 0.2.7, 0.2.6, 0.2.5, 0.2.3, 0.2.2, 0.2.1, 0.2.0] } }
+            - properties: { platform: { const: web }, version: { enum: [0.40.4, 0.40.3] } }
+            - properties: { platform: { const: android_phone }, version: { enum: [1.0.0, 0.2.9, 0.2.8, 0.2.7, 0.2.6, 0.2.5, 0.2.4, 0.2.3, 0.2.2, 0.2.1, 0.1.0] } }
+            - properties: { platform: { const: ios }, version: { enum: [1.0.0, 0.2.9, 0.2.8, 0.2.7, 0.2.6] } }
+            - properties: { platform: { const: wear_os }, version: { enum: [1.0.0, 0.2.9, 0.2.8, 0.2.7, 0.2.6, 0.2.5, 0.2.3, 0.2.2, 0.2.1, 0.2.0] } }
         - oneOf:
             - properties:
                 event: { const: client_failure }

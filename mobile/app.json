@@ -4,7 +4,7 @@
     "slug": "calibrate-health-app",
     "owner": "calibrate-health",
     "scheme": "calibrate",
-    "version": "0.2.9",
+    "version": "1.0.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
@@ -18,7 +18,7 @@
     ],
     "android": {
       "package": "net.darkmachines.healthtracker",
-      "versionCode": 17,
+      "versionCode": 19,
       "allowBackup": false,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
@@ -55,7 +55,7 @@
     },
     "ios": {
       "bundleIdentifier": "app.calibratehealth.mobile",
-      "buildNumber": "17",
+      "buildNumber": "19",
       "supportsTablet": true,
       "requireFullScreen": false,
       "icon": "./assets/icon-ios.png",
@@ -136,7 +136,7 @@
     ],
     "extra": {
       "calibrate": {
-        "nativeReleaseTag": "native-v0.2.9"
+        "nativeReleaseTag": "native-v1.0.0"
       },
       "router": {
         "origin": false

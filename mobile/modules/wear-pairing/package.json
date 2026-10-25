@@ -1,7 +1,7 @@
 {
   "name": "@calibrate/wear-pairing",
   "license": "SEE LICENSE IN LICENSE",
-  "version": "0.2.9",
+  "version": "1.0.0",
   "private": true,
   "main": "index.ts",
   "peerDependencies": {
