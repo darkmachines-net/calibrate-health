@@ -1,4 +1,4 @@
-/** @file ESLint policy for authored JavaScript/TypeScript: correctness, React hooks, and required source documentation. */
+/** @file ESLint policy for authored JavaScript/TypeScript: correctness, React hooks, file overviews, and descriptive API comments. */
 
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
@@ -23,6 +23,11 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_', ignoreRestSiblings: true }],
       'jsdoc/require-file-overview': 'error',
+      'jsdoc/require-description': ['error', {
+        // File overviews use their @file text; function documentation needs its own descriptive body.
+        exemptedBy: ['inheritdoc', 'file'],
+        contexts: ['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'TSDeclareFunction', 'TSMethodSignature'],
+      }],
       'jsdoc/require-jsdoc': ['error', {
         publicOnly: true,
         enableFixer: false,

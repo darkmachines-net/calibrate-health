@@ -15,6 +15,7 @@ const {
   MCP_OAUTH_REGISTRATION_RATE_LIMIT_MAX
 } = require('../src/mcp/oauth');
 
+/** Run one check against an ephemeral loopback server and close its listener even when the check fails. */
 async function withServer(run, overrides = {}) {
   const app = createCalibrateMcpHttpApp({
     publicUrl: new URL('https://calibratehealth.app/mcp'),

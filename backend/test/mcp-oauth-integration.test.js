@@ -12,6 +12,7 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 const { createCalibrateMcpHttpApp } = require('../src/mcp/server');
 const { McpOAuthError } = require('../src/services/mcpOAuth');
 
+/** Model resource-bound OAuth grants, one-use codes, refresh rotation, and revocation without stored credentials. */
 function createInMemoryOAuthService(resource) {
   const clients = new Map();
   const requests = new Map();

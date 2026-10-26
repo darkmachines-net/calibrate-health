@@ -13,11 +13,13 @@ const CHART_FRAME_GUTTERS = 26;
 // A slightly shorter phone plot leaves the goal and chat actions within the initial overview.
 const NARROW_CHART_HEIGHT = 180;
 
+/** Choose plot dimensions from the host viewport while reserving readable labels and panel gutters. */
 function geometry() {
   const panelGutters = window.innerWidth <= NARROW_BREAKPOINT ? NARROW_PANEL_GUTTERS : WIDE_PANEL_GUTTERS;
   return { ...CHART, height: window.innerWidth <= NARROW_BREAKPOINT ? NARROW_CHART_HEIGHT : CHART.height, width: Math.max(200, Math.min(CHART.width, window.innerWidth - panelGutters - CHART_FRAME_GUTTERS)) };
 }
 
+/** Map validated inclusive calendar bounds and measurement bounds to SVG coordinates, including single-day ranges. */
 function scales(range: ProgressRange, minimum: number, maximum: number) {
   const chart = geometry();
   const start = Date.parse(range.start_date);
@@ -29,6 +31,7 @@ function scales(range: ProgressRange, minimum: number, maximum: number) {
   };
 }
 
+/** Wrap trusted chart primitives in labeled axes; escape the unit label before interpolating it into markup. */
 function frame(range: ProgressRange, minimum: number, maximum: number, unit: string, content: string): string {
   const chart = geometry();
   const { y } = scales(range, minimum, maximum);

@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 export const PROGRESS_APP_URI = 'ui://calibrate/progress-explorer.html';
 const PROGRESS_APP_MIME_TYPE = 'text/html;profile=mcp-app';
 
-/** Return a self-contained App resource with no network permissions; account data arrives only over the host bridge. */
+/** Read the built offline App resource; reject if the bundle is missing or unreadable. No account data is embedded. */
 export async function readProgressAppResource() {
   // tsc nests server files under dist/backend/src; ts-node executes the source tree directly.
   const candidates = [

@@ -170,6 +170,7 @@ export function isCalibrateMcpPath(path: string): boolean {
     path === '/.well-known/oauth-protected-resource/mcp';
 }
 
+/** Reject invalid or wrong-resource tokens as unauthenticated; propagate unexpected verification failures. */
 async function resolveAccessToken(
   token: string,
   resource: string,
@@ -184,6 +185,7 @@ async function resolveAccessToken(
   }
 }
 
+/** Register the authenticated account's permitted read tools and App resource on a stateless per-request server. */
 function buildCalibrateMcpServer(
   access: McpOAuthAccessInfo,
   progressReaders: ProgressReaders
@@ -313,6 +315,7 @@ function analysisResult(value: ProgressExplorerSnapshot | ProgressComparisonSnap
   return { content: [{ type: 'text' as const, text: JSON.stringify(summary) }], structuredContent: value };
 }
 
+/** Serialize a successful read for text and structured clients, or return a tool error for a missing account. */
 function resultOrNotFound(value: Record<string, unknown> | null) {
   if (!value) {
     return {
@@ -327,6 +330,7 @@ function resultOrNotFound(value: Record<string, unknown> | null) {
   };
 }
 
+/** Extract a bearer credential from the authorization header without accepting other authentication schemes. */
 function bearerToken(header: string | undefined): string | undefined {
   const match = header?.match(/^Bearer\s+([^\s]+)$/i);
   return match?.[1];

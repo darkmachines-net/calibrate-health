@@ -23,11 +23,13 @@ let activeView: View = 'weight';
 // Preserve disclosures through host updates and loading renders without expanding the default view.
 const openDetails = new Set<string>();
 
+/** Announce host operations and failures through the live region without replacing the current data view. */
 function setStatus(text: string, error = false): void {
   status.textContent = text;
   status.classList.toggle('error', error);
 }
 
+/** Merge partial host theme/display updates with retained state; fall back to the system theme before connection. */
 function applyTheme(context?: Partial<McpUiHostContext>): void {
   if (context?.displayMode) expanded = context.displayMode === 'fullscreen';
   const retainedTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
@@ -54,10 +56,12 @@ function applyTheme(context?: Partial<McpUiHostContext>): void {
   if (expand) expand.textContent = expanded ? 'Exit expanded view' : 'Expand view';
 }
 
+/** Render escaped summary text; callers supply already formatted values and optional evidence context. */
 function metric(title: string, value: string, detail?: string): string {
   return `<div class="metric"><span>${e(title)}</span><strong>${e(value)}</strong>${detail ? `<small>${e(detail)}</small>` : ''}</div>`;
 }
 
+/** Show actual-current goal context beside historical data, omitting percentage progress for maintenance. */
 function goalSection(data: ProgressExplorerSnapshot): string {
   const goal = data.current_goal;
   if (!data.granted_sections.weight) return '<section class="goal"><h2>Your goal</h2><p class="notice">Weight and goal access was not granted for this connection.</p></section>';
@@ -69,6 +73,7 @@ function goalSection(data: ProgressExplorerSnapshot): string {
   return `<section class="goal" aria-label="Current goal"><div class="goal-line"><span>Current goal</span><strong>${number(goal.target_weight, 1)} ${goal.weight_unit}</strong><span>${e(caption)}</span></div>${progress}</section>`;
 }
 
+/** Render selected-period observations and model evidence separately, with an explicit stale-evidence notice. */
 function weightSection(data: ProgressExplorerSnapshot): string {
   if (!data.weight) return '<section><h2>Weight history</h2><p class="notice">Weight access is not available for this connection.</p></section>';
   const weight = data.weight;
@@ -101,10 +106,12 @@ function weightDetails(data: ProgressExplorerSnapshot): string {
   return `${details}<p>Raw points are scale observations. The line and shaded interval are model estimates; historical points outside the model window remain observations only.</p><div class="metrics">${metric('Latest modeled weight', trend.latest_trend ? `${number(trend.latest_trend.weight, 1)} ${weight.weight_unit}` : 'Unavailable', modelLabel)}${metric(paceLabel, currentRate ? `${number(rate.estimate, 2)} ${rate.unit}` : 'Unavailable', currentRate ? `95% interval ${number(rate.lower, 2)} to ${number(rate.upper, 2)}` : 'Needs fresh, sufficient evidence')}</div>`;
 }
 
+/** Display server-aggregated COMPLETE-day averages with their sample counts and escaped group labels. */
 function patterns(title: string, groups: ProgressFoodGroup[]): string {
   return `<div><h3>${e(title)}</h3>${groups.map((group) => `<div class="pattern"><span>${e(label(group.key))}<br><small>${group.complete_day_count} complete days</small></span><strong>${number(group.average_daily_calories_kcal)}${group.average_daily_calories_kcal === null ? '' : ' kcal'}</strong></div>`).join('')}</div>`;
 }
 
+/** Present COMPLETE-day intake and saved-target coverage; defer logging and meal detail to disclosures. */
 function foodSection(data: ProgressExplorerSnapshot): string {
   if (!data.food) return '<section><h2>Food and patterns</h2><p class="notice">Food access is not available for this connection.</p></section>';
   const food = data.food;
@@ -116,12 +123,14 @@ function foodSection(data: ProgressExplorerSnapshot): string {
     <details id="food-patterns"><summary>Weekday and meal patterns</summary><div class="pattern-list">${patterns('Weekday averages', food.patterns.weekdays)}${patterns('Week parts', food.patterns.week_parts)}${patterns('Meal-period averages', food.patterns.meal_periods)}</div><p class="range-details">Complete-day averages describe logged calories, not cause and effect.</p></details></section>`;
 }
 
+/** Summarize one comparison period with its exact dates and denominators; unavailable evidence stays explicit. */
 function periodSummary(period: ProgressPeriodSummary, title: string): string {
   const food = period.food?.summary;
   const weight = period.weight;
   return `<div><h3>${e(title)}</h3><small>${period.range.start_date} through ${period.range.end_date}</small><div class="metrics">${metric('Average intake', food?.average_daily_calories_kcal == null ? 'Unavailable' : `${number(food.average_daily_calories_kcal)} kcal/day`, food ? `${food.complete_day_count} complete days` : 'Food access unavailable')}${metric('Observed weight change', weight?.period_summary.raw_weight_change == null ? 'Unavailable' : `${number(weight.period_summary.raw_weight_change, 2)} ${weight.weight_unit}`, weight ? `${weight.period_summary.observation_count} observations` : 'Weight access unavailable')}</div></div>`;
 }
 
+/** Render both fetched periods without inventing results before a successful comparison request. */
 function renderComparison(): string {
   if (!comparison) return '';
   return `<div class="comparison-grid">${periodSummary(comparison.first, 'Selected period')}${periodSummary(comparison.second, 'Comparison period')}</div>
@@ -136,6 +145,7 @@ function selectedView(data: ProgressExplorerSnapshot, disabled: string): string 
     <div id="comparison-result">${comparison ? renderComparison() : '<p class="comparison-empty muted">See intake and weight change side by side for two periods.</p>'}</div></section>`;
 }
 
+/** Offer two view-specific questions, disabling comparison prompts until evidence has been loaded. */
 function chatPrompts(): string {
   const prompts = {
     weight: [['Goal progress', 'How am I progressing toward my goal?'], ['Discuss trend', 'Help me understand my weight trend and the uncertainty around it.']],
@@ -145,6 +155,7 @@ function chatPrompts(): string {
   return prompts[activeView].map(([title, question], index) => `<button id="chat-${index}" class="question" data-question="${e(question)}"${busy || sending || (activeView === 'compare' && !comparison) ? ' disabled' : ''}>${e(title)}</button>`).join('');
 }
 
+/** Rebuild the selected view from retained state, restore disclosure state, and bind only its visible workflow. */
 function render(): void {
   if (!snapshot) return;
   const data = snapshot;
@@ -175,10 +186,12 @@ function render(): void {
   bindControls();
 }
 
+/** Resolve an element guaranteed by the current template; callers must guard controls belonging to other views. */
 function input<T extends HTMLElement = HTMLInputElement>(id: string): T {
   return document.getElementById(id) as T;
 }
 
+/** Wire user gestures to local view changes and host operations; rendering alone never sends a chat message. */
 function bindControls(): void {
   for (const button of content.querySelectorAll<HTMLButtonElement>('[data-question]')) {
     button.addEventListener('click', () => { void ask(button.dataset.question!, button.id); });
@@ -242,6 +255,7 @@ function bindControls(): void {
   });
 }
 
+/** Accept the supported host snapshot envelope, reset comparisons, and retain the prior view on invalid input. */
 function acceptSnapshot(value: unknown): boolean {
   if (!value || typeof value !== 'object' || !('schema_version' in value) || value.schema_version !== 1 || !('range' in value) || !('granted_sections' in value)) return false;
   const initial = !snapshot;
@@ -254,12 +268,14 @@ function acceptSnapshot(value: unknown): boolean {
   return true;
 }
 
+/** Restore keyboard position after a render, falling back to the period selector when a button becomes disabled. */
 function restoreControlFocus(id: string): void {
   const target = document.getElementById(id);
   if (target instanceof HTMLButtonElement && target.disabled) input<HTMLSelectElement>('period').focus();
   else target?.focus();
 }
 
+/** Fetch a validated range through the host; ignore superseded replies and keep the previous snapshot on failure. */
 async function refresh(range: ProgressRange, focusId = 'refresh'): Promise<void> {
   if (busy || sending) return;
   const sequence = ++requestSequence;
@@ -276,6 +292,7 @@ async function refresh(range: ProgressRange, focusId = 'refresh'): Promise<void>
   }
 }
 
+/** Compare a validated range with the selected period; serialize requests and preserve evidence after failures. */
 async function compare(range: ProgressRange): Promise<void> {
   if (busy || sending) return;
   const sequence = ++requestSequence;
@@ -297,6 +314,7 @@ async function compare(range: ProgressRange): Promise<void> {
   }
 }
 
+/** Send one contextual user question through the host; prevent duplicate sends and offer copyable text on failure. */
 async function ask(question: string, focusId: string): Promise<void> {
   if (!snapshot || sending || busy) return;
   const comparisonRange = activeView === 'compare' ? comparison?.second.range : undefined;

@@ -1,4 +1,4 @@
-/** @file Regression coverage for eslint config: authored JavaScript and TypeScript surfaces receive correctness checks. */
+/** @file Regression coverage for authored-source linting, required file/API documentation, and nonempty function descriptions. */
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -122,4 +122,19 @@ test('documented exports pass while private implementation helpers remain option
     }
   `, { filePath: 'shared/probe.ts' });
   assert.deepEqual(result.messages, []);
+});
+
+test('function documentation requires descriptive text, not empty blocks or tags alone', async () => {
+  for (const declaration of [
+    '/** */ export function read() { return 1; }',
+    '/** @returns {number} */ export const read = () => 1;',
+    'export class Reader { /** @returns {number} */ read() { return 1; } }',
+    'export interface Reader { /** @returns {number} */ read(): number; }',
+    '/** @returns {number} */ export declare function read(): number;',
+  ]) {
+    const [result] = await eslint.lintText('/** @file Empty documentation fixture. */\nconsole.log("fixture");\n' + declaration, {
+      filePath: 'shared/documentation-probe.ts',
+    });
+    assert.ok(result.messages.some(message => message.ruleId === 'jsdoc/require-description'), declaration);
+  }
 });

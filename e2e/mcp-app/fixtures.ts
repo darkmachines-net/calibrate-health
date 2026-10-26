@@ -34,7 +34,7 @@ export function progressFixture(): ProgressExplorerSnapshot {
 
 type HostOptions = { theme?: 'light' | 'dark'; messaging?: boolean; rejectMessage?: boolean; messageDelay?: number; expand?: boolean; failTools?: boolean; snapshot?: ProgressExplorerSnapshot };
 
-/** Install a real iframe and minimal protocol host; all tool and message traffic remains in the page. */
+/** Replace the test page with the built App and a synthetic host; options simulate capability/error states without account access. */
 export async function installHost(page: Page, options: HostOptions = {}) {
   const html = readFileSync(resolve('backend/dist/mcp-app/progress.html'), 'utf8');
   await page.setContent('<!doctype html><html lang="en"><head><title>MCP App test host</title></head><body style="margin:0"><iframe title="Calibrate progress" style="display:block;width:100%;height:600px;border:0"></iframe></body></html>');

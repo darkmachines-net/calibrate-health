@@ -21,7 +21,7 @@ export function shiftDate(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * MS_PER_DAY).toISOString().slice(0, 10);
 }
 
-/** Validate the paired inclusive range supported by all exploration tools, including older historical periods. */
+/** Return a valid inclusive range or throw a user-facing error for invalid, reversed, oversized, or future dates. */
 export function readRange(start: string, end: string, today: string): ProgressRange {
   for (const date of [start, end]) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(`${date}T00:00:00Z`)) ||

@@ -36,13 +36,17 @@ export type McpComparisonOptions = Omit<McpAnalysisOptions, keyof ProgressRangeI
   second: Required<ProgressRangeInput>;
 };
 
+/** Serialize database date-only UTC values without applying the server's local timezone. */
 const dateKey = (date: Date): string => date.toISOString().slice(0, 10);
+/** Bound reported aggregate precision without altering stored measurements. */
 const round = (value: number): number => Math.round(value * 100) / 100;
+/** Preserve missing evidence as null when an aggregate has no contributing days. */
 const average = (total: number, count: number): number | null => count ? round(total / count) : null;
+/** Compare second minus first only when both periods supply numeric evidence. */
 const difference = (first: number | null | undefined, second: number | null | undefined): number | null =>
   typeof first === 'number' && typeof second === 'number' ? round(second - first) : null;
 
-/** Reuse a caller transaction; otherwise hold one consistent read snapshot for every returned section. */
+/** Open a repeatable-read snapshot when supported, otherwise read through the caller's existing transaction handle. */
 function withSnapshot<T>(database: MutationDatabase, read: (tx: MutationDatabase) => Promise<T>): Promise<T> {
   if ('$transaction' in database) {
     return database.$transaction(tx => read(tx), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
@@ -156,6 +160,7 @@ async function readWeight(userId: number, range: ProgressRange, now: Date, db: M
 
 /** History bounds expose dates only, and never query a dataset outside the granted sections. */
 async function readHistory(userId: number, today: Date, sections: ProgressSections, db: MutationDatabase) {
+  /** Include explicit food-day records as history even when no food entries exist on that date. */
   const readFoodBound = async (order: 'asc' | 'desc'): Promise<string | null> => {
     const [log, day] = await Promise.all([
       db.foodLog.findFirst({ where: { user_id: userId, local_date: { lte: today } }, orderBy: { local_date: order }, select: { local_date: true } }),
@@ -164,10 +169,12 @@ async function readHistory(userId: number, today: Date, sections: ProgressSectio
     const dates = [log?.local_date, day?.local_date].filter((date): date is Date => date instanceof Date).map(dateKey).sort();
     return (order === 'asc' ? dates[0] : dates[dates.length - 1]) ?? null;
   };
+  /** Read one account-scoped weight boundary while excluding future observations. */
   const readWeightBound = async (order: 'asc' | 'desc'): Promise<string | null> => {
     const metric = await db.bodyMetric.findFirst({ where: { user_id: userId, date: { lte: today } }, orderBy: { date: order }, select: { date: true } });
     return metric ? dateKey(metric.date) : null;
   };
+  /** Pair earliest/latest reads, retaining null dates when a permitted dataset is empty. */
   const bounds = async (read: (order: 'asc' | 'desc') => Promise<string | null>): Promise<ProgressHistory> => {
     const [first_date, last_date] = await Promise.all([read('asc'), read('desc')]);
     return { first_date, last_date };
@@ -185,7 +192,11 @@ async function readPeriod(userId: number, range: ProgressRange, now: Date, secti
   return { range, food, weight };
 }
 
-/** Read the App's complete chart/analysis snapshot without names, identifiers, or mutations; unauthorized sections are null. */
+/**
+ * Read historical chart evidence for the authenticated user and granted sections without mutations or identifiers.
+ * Return null for an unavailable account; reject invalid ranges or storage failures for the MCP boundary to handle.
+ * Goal and plan context use actual now even when the selected period is historical.
+ */
 export async function getProgressSummary(userId: number, options: McpAnalysisOptions): Promise<ProgressExplorerSnapshot | null> {
   const now = options.now ?? new Date();
   return withSnapshot(options.database ?? prisma, async db => {
@@ -212,7 +223,11 @@ function compactPeriod(period: Awaited<ReturnType<typeof readPeriod>>): Progress
   return { range: period.range, food, weight };
 }
 
-/** Compare periods sequentially within one snapshot; differences are second minus first and preserve missing evidence. */
+/**
+ * Compare validated periods sequentially in one read snapshot for the authenticated user and granted sections.
+ * Differences are second minus first, retaining null evidence. Return null for an unavailable account;
+ * reject invalid bounds or storage failures without changing health data.
+ */
 export async function compareProgressPeriods(userId: number, options: McpComparisonOptions): Promise<ProgressComparisonSnapshot | null> {
   const now = options.now ?? new Date();
   return withSnapshot(options.database ?? prisma, async db => {

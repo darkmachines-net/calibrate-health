@@ -25,7 +25,7 @@ function parseRangeDate(value: string, field: string): Date {
   }
 }
 
-/** Reject malformed or future dates instead of normalizing a caller's historical selection. */
+/** Resolve a date-only UTC value, defaulting to the account's local today; throw McpProgressRangeError for invalid/future input. */
 export function resolveMcpEndDate(value: string | undefined, timezone: string, now: Date): Date {
   const today = getSafeUtcTodayDateOnlyInTimeZone(timezone, now);
   if (value === undefined) return today;
@@ -34,7 +34,7 @@ export function resolveMcpEndDate(value: string | undefined, timezone: string, n
   return date;
 }
 
-/** Resolve paired inclusive dates, defaulting to ninety local days; retained history has no age cutoff. */
+/** Resolve paired inclusive dates or ninety local days by default; throw McpProgressRangeError outside 1-365 days or for invalid bounds. */
 export function resolveMcpProgressRange(input: ProgressRangeInput, timezone: string, now: Date): ProgressRange {
   if ((input.start_date === undefined) !== (input.end_date === undefined)) {
     throw new McpProgressRangeError('Supply both start_date and end_date, or neither.');

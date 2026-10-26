@@ -6,7 +6,7 @@ import { build } from 'esbuild-wasm';
 
 const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Bundle browser-only dependencies and inline assets; never embeds account data or runtime credentials. */
+/** Build and return the offline HTML path without embedding account data; reject unreadable sources or bundling/write failures. */
 export async function buildProgressApp() {
   const source = resolve(backendRoot, 'src/mcp/ui');
   const result = await build({

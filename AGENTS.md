@@ -299,12 +299,19 @@ UI code style:
   module architecture, invariants and supported commands in a module-scope `README.md`.
   Keep each fact in one owning module; link to it elsewhere instead of duplicating it.
   Group related implementation into a cohesive subdirectory when that clarifies ownership.
+- Every new code submodule must include its own `README.md` covering its responsibility,
+  entrypoints, data/security boundaries, and supported development/validation commands.
+  Link it from the nearest owning README; do not duplicate the parent module's contract.
+  Asset-only folders and generated/vendor output do not need separate READMEs.
 - When adding or updating an authored code file, add or update its file-level
   documentation comment to explain its responsibility and important boundaries.
 - When adding or updating a public/exported function or method, add or update its
   documentation comment with the behavioral contract, meaningful inputs/results,
   side effects, failure semantics and constraints as applicable. Do not merely
   restate the name or repeat TypeScript types. Document non-obvious private helpers too.
+  Review new or modified named helpers as part of the same change, including UI lifecycle,
+  request sequencing, error handling, and test-harness behavior. Inline callbacks do not
+  need repetitive comments when the enclosing function already explains their purpose.
 - Authored JavaScript/TypeScript uses JSDoc `@file` overviews and JSDoc on exported
   functions/public methods; Kotlin uses KDoc. Keep generated/vendor output excluded
   and update its generator or owning module documentation instead.
@@ -313,6 +320,9 @@ UI code style:
   [tool project](tools/kotlin-lint/README.md) does not require an Android SDK.
   Use the existing JSDoc ESLint and Detekt rules; never add bespoke documentation scanners,
   disable the rules to avoid writing comments, or use empty boilerplate comments.
+  Keep `jsdoc/require-file-overview`, `jsdoc/require-jsdoc` (public APIs), and
+  `jsdoc/require-description` enabled as errors. Exercise missing comments and empty/tag-only
+  descriptions in `scripts/eslint-config.test.mjs`; README coverage remains a review check.
 - Executable contracts/fixtures (OpenAPI, schemas, reviewed test snapshots) belong
   with their consumers and are distinct from generated documentation.
   Do not change already-applied SQL migration bytes to add comments; document their

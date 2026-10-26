@@ -54,26 +54,15 @@ nutrition macros are not exposed.
 
 ## App UI and development
 
-The isolated TypeScript/SVG App lives in `ui/`; `progressTypes.ts` is its pure JSON contract with the
-server. The opening tool links an HTML MCP Apps resource and declares global sidebar and conversation
+The [isolated TypeScript/SVG App](ui/README.md) owns view state, charts, host messaging, and its
+build workflow; `progressTypes.ts` is its pure JSON contract with the server.
+The opening tool links an HTML MCP Apps resource and declares global sidebar and conversation
 entrypoints through `openai/ui` metadata. A local installation needs its MCP server running for the
 host to discover those launchers. Data tools remain useful in clients without
 UI, and panel refreshes call them through the host bridge without opening additional panels.
-Question buttons immediately send the selected dates, comparison, and focus into the current host
-conversation. Hosts without message support show selectable question text instead.
-The default weight view shows one chart and the current goal. Intake and comparison are separate
-views, each with at most two chat prompts. Preset periods apply immediately; custom dates, trend
-evidence, and logging patterns use disclosures so secondary information does not fill the initial view.
-
-All data and messages pass through the MCP Apps SDK bridge. The iframe receives no OAuth credentials,
-makes no direct API calls, stores no health data locally, and renders untrusted labels as text.
-It has no logging/editing controls or independent chat backend. User units/timezone and host theme
-are retained; charts include textual summaries and distinguish incomplete data from observations.
-
-The backend-owned `build-mcp-app.mjs` bundles SDK, code, and styles into `backend/dist/mcp-app`.
-Normal backend build/test and development commands prepare this resource; the production image's
-existing backend-dist copy includes it. No additional port or service is needed. Backend dependencies
-are sufficient to build it; the Expo runtime is not included in the iframe.
+The production image's backend-dist copy includes the offline resource; it needs no extra
+service, port, or Expo runtime. `appResource.ts` resolves the built HTML for source and compiled
+server execution and supplies the restrictive MCP App content-security policy.
 
 From the repository root:
 
@@ -85,9 +74,8 @@ npm run test:mcp-app
 node scripts/calibrate-plugin.mjs check
 ```
 
-The browser suite uses synthetic data and a mock host bridge, including message delivery, range changes,
-scope/error states, and narrow/theme layouts. It requires the root Playwright Chromium installation
-prepared by `npm run setup`. MCP browser/plugin tests are selected PR checks and run in `ci:local`.
+The [browser harness](../../../e2e/mcp-app/README.md) documents synthetic fixtures, protocol coverage,
+and its limits. MCP browser/plugin tests are selected PR checks and run in `ci:local`.
 
 ## OAuth contract
 

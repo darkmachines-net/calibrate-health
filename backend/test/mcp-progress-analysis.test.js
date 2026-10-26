@@ -7,6 +7,7 @@ const { getProgressSummary, compareProgressPeriods } = require('../src/services/
 const { getRecentFoodLogs, getWeightTrend } = require('../src/services/mcpProgress');
 const { resolveMcpProgressRange } = require('../src/services/mcpProgressRange');
 
+/** Keep fixture dates independent of the host timezone, matching Prisma date-only values. */
 const day = value => new Date(`${value}T00:00:00.000Z`);
 const now = new Date('2026-08-20T18:00:00.000Z');
 const both = { food: true, weight: true };
@@ -35,7 +36,9 @@ function fixture(overrides = {}) {
   ].map((row, index) => ({ ...row, id: index + 1, user_id: 7, origin: 'USER', completed_at: day('2023-01-06'),
     updated_at: day('2023-01-06'), comparison_captured_at: row.status === 'COMPLETE' ? day('2023-01-06') : null }));
   const calls = [];
+  /** Record collection access while enforcing account predicates on every fixture query. */
   const readers = (rows, key, name) => {
+    /** Apply the production readers' inclusive date filters and ordering to synthetic rows. */
     const selectRows = args => {
       assert.equal(args.where.user_id, 7);
       const bounds = args.where[key];

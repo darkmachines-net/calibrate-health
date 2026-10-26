@@ -419,6 +419,7 @@ function sanitizeClientName(value: string | undefined): string {
   return normalized || 'Codex';
 }
 
+/** Explain the historical read access on the consent screen without implying permission to change health data. */
 function scopeDescription(scope: string): string {
   if (scope === MCP_FOOD_READ_SCOPE) {
     return 'Food history, completion status, calorie and meal patterns, saved daily targets, current calorie target, configured deficit, and profile-estimated TDEE';
