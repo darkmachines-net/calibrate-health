@@ -1,4 +1,4 @@
-/** @file Regression coverage for native release build: native release environment enforces one complete signing identity and a production origin. */
+/** @file Regression coverage for native signing, reviewed Gradle dependency state, and release artifact contracts. */
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -404,7 +404,10 @@ test('tracked phone and Wear dependency state is complete and hash-reviewed', ()
     'utf8'
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.platforms.phone.files.length, 27);
+  assert.equal(manifest.platforms.phone.files.length, 31);
+  for (const module of ['expo-dev-client', 'expo-dev-launcher', 'expo-dev-menu', 'expo-dev-menu-interface']) {
+    assert.ok(manifest.platforms.phone.files.some((file) => file.path === `gradle/dependency-locks/${module}.lockfile`));
+  }
   assert.ok(manifest.platforms.phone.files.some((file) => file.path.endsWith('expo-dom-webview.lockfile')));
   assert.equal(manifest.platforms.wear.files.length, 3);
 
