@@ -1,0 +1,14 @@
+# Pair development clients with compatible hosted previews through the shared toolkit.
+name: Development
+on:
+  workflow_dispatch:
+    inputs:
+      operation: { description: Build a dev client with its preview or publish an update, type: choice, options: [build, update], default: build, required: true }
+      platform: { description: Phone platform, type: choice, options: [android, ios], default: android, required: true }
+      source: { description: Optional pushed branch name or full commit SHA; blank uses the master dispatch commit, type: string, default: '' }
+permissions: { contents: read }
+jobs:
+  development:
+    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@528d5cd05a88d82247109d0599c3fce9eaf3e9f3
+    with: { operation: '${{ inputs.operation }}', platform: '${{ inputs.platform }}', source: '${{ inputs.source }}' }
+    secrets: inherit

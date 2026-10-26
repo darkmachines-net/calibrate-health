@@ -270,7 +270,7 @@ export function validateManifest(manifest) {
     errors.push('server.api.supported must include server.api.current.');
   }
 
-  const requiredChannels = ['debug', 'internal', 'production'];
+  const requiredChannels = ['debug', 'beta', 'production'];
   for (const channel of requiredChannels) {
     if (!manifest?.android?.channels?.[channel]) errors.push(`android.channels.${channel} is required.`);
   }
@@ -393,7 +393,7 @@ export async function checkRepository(root = REPOSITORY_ROOT) {
   assertMatch(errors, 'Wear pairing module version', pairingVersion, manifest.android.mobile.version_name);
   assertMatch(errors, 'Wear pairing module versionCode', pairingVersionCode, manifest.android.mobile.version_code);
 
-  for (const channel of ['internal', 'production']) {
+  for (const channel of ['beta', 'production']) {
     const profile = manifest.android.channels[channel].mobile_eas_profile;
     if (!easConfig.build?.[profile]) {
       errors.push(`mobile/eas.json is missing the ${profile} profile for ${channel}.`);

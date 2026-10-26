@@ -5,20 +5,42 @@
     "requireCommit": true
   },
   "build": {
-    "internal": {
-      "channel": "internal",
+    "development": {
+      "developmentClient": true,
       "distribution": "internal",
+      "environment": "preview",
+      "autoIncrement": false,
+      "credentialsSource": "remote",
+      "env": {
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+        "EXPO_UPDATES_CHANNEL": "beta",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "NODE_ENV": "production",
+        "EXPO_RELEASE_VARIANT": "development"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
+    "beta": {
+      "channel": "beta",
+      "distribution": "store",
       "environment": "preview",
       "credentialsSource": "remote",
       "node": "22.14.0",
       "android": {
-        "buildType": "apk"
-      }
-    },
-    "ios-simulator": {
-      "extends": "internal",
-      "ios": {
-        "simulator": true
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+        "EXPO_UPDATES_CHANNEL": "beta",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "NODE_ENV": "production"
       }
     },
     "production": {
@@ -29,20 +51,45 @@
       "node": "22.14.0",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
+        "EXPO_UPDATES_CHANNEL": "production",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "NODE_ENV": "production"
+      }
+    },
+    "ios-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
       }
     }
   },
   "submit": {
-    "phone": {
+    "phone-beta": {
       "android": {
         "track": "internal",
         "releaseStatus": "completed"
       }
     },
-    "wear": {
+    "wear-beta": {
       "android": {
         "track": "wear:internal",
         "releaseStatus": "completed"
+      }
+    },
+    "phone-production": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "draft"
+      }
+    },
+    "wear-production": {
+      "android": {
+        "track": "wear:production",
+        "releaseStatus": "draft"
       }
     }
   }

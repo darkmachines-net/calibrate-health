@@ -3,12 +3,12 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      profile: { description: Configured release destination, type: choice, required: true, options: [production] }
+      profile: { description: 'beta: testers; production: public channel and store draft', type: choice, required: true, options: [beta, production], default: beta }
       rebuild: { description: Force a new native build, type: boolean, default: false }
 permissions: { contents: read }
 jobs:
   release:
     permissions: { contents: write, deployments: write, packages: write }
-    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@2fdd2113d71dbc2720e67dac55b8928a6d58974c
+    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@528d5cd05a88d82247109d0599c3fce9eaf3e9f3
     with: { profile: '${{ inputs.profile }}', rebuild: '${{ inputs.rebuild }}' }
     secrets: inherit

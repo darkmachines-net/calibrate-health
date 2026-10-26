@@ -9,7 +9,7 @@
         },
         {
           "path": "gradle/dependency-locks/app.lockfile",
-          "sha256": "b6d0e87779e7e731dab6411cbd7691514aad9650284bd4a7cd3f97a9d5e43022"
+          "sha256": "f9b391df96fdceb7b357a414f5f8fb4dc22d3de57a9d1c2bd1d1eeed5e8c74f6"
         },
         {
           "path": "gradle/dependency-locks/calibrate-wear-pairing.lockfile",
@@ -18,6 +18,22 @@
         {
           "path": "gradle/dependency-locks/expo-constants.lockfile",
           "sha256": "f98c5d7d58c55be6b70da683fac3ac0589d8536d721424a729bc5fc8b353d56e"
+        },
+        {
+          "path": "gradle/dependency-locks/expo-dev-client.lockfile",
+          "sha256": "60ffd8307b831f0489b9d82d7319edf61938bb87849ae91b5676a6f6692dd6b2"
+        },
+        {
+          "path": "gradle/dependency-locks/expo-dev-launcher.lockfile",
+          "sha256": "04eec2c1f2a9f99339cf3ee89f170691932992c8186c79ffd60427ea04df8a81"
+        },
+        {
+          "path": "gradle/dependency-locks/expo-dev-menu-interface.lockfile",
+          "sha256": "4b30c26980ea0a5f5430412fdd7618f7f7604077f7f64b10f3b949392e18b75b"
+        },
+        {
+          "path": "gradle/dependency-locks/expo-dev-menu.lockfile",
+          "sha256": "db8cbdf15d47546d19417a84dac92b15a9aae6f650d2cc498607605c287dba30"
         },
         {
           "path": "gradle/dependency-locks/expo-dom-webview.lockfile",
@@ -57,7 +73,7 @@
         },
         {
           "path": "gradle/dependency-locks/expo.lockfile",
-          "sha256": "bf072c1ae008b79ed06ae63894953e68012ab31b664013dc53ea62858bf150be"
+          "sha256": "b94f2371f180e443a09d0c7215c08626a3cec284ad7d2b9a75ef547c21dc1408"
         },
         {
           "path": "gradle/dependency-locks/react-native-async-storage_async-storage.lockfile",
@@ -105,7 +121,7 @@
         },
         {
           "path": "gradle/verification-metadata.xml",
-          "sha256": "d792a90de50f9b08c5eeb06e91a272f914a5b8c4a44965d9f900b5fdc1cf01c3"
+          "sha256": "1848475c9aa2d83d7f6016f631a9dfa03867c2515e9b3b3e83997253277b2725"
         },
         {
           "path": "settings-gradle.lockfile",

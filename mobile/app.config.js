@@ -1,7 +1,7 @@
 /** @file app config: Add EAS Update configuration only when a project ID is supplied. This keeps normal web development usable while making release builds explicit and reproducible. */
 
 /** Resolve the native Expo project, update channel, and automatic runtime compatibility. */
-const { runtimeVersion } = require('@mchartier/expo-release/expo');
+const { runtimeVersion, developmentConfig } = require('@mchartier/expo-release/expo');
 const release = require('./release-version.json');
 const PROJECT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHANNEL_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
@@ -17,12 +17,12 @@ function createExpoConfig({ config }) {
     throw new Error('EXPO_PUBLIC_EAS_PROJECT_ID must be an Expo project UUID.');
   }
 
-  const channel = process.env.EXPO_UPDATES_CHANNEL?.trim() || 'internal';
+  const channel = process.env.EXPO_UPDATES_CHANNEL?.trim() || 'beta';
   if (!CHANNEL_PATTERN.test(channel)) {
     throw new Error('EXPO_UPDATES_CHANNEL must contain only letters, numbers, dots, dashes, or underscores.');
   }
 
-  return {
+  return developmentConfig({
     ...config,
     version: release.version,
     runtimeVersion: runtimeVersion(release.version),
@@ -42,7 +42,7 @@ function createExpoConfig({ config }) {
         projectId
       }
     }
-  };
+  });
 }
 
 module.exports = createExpoConfig;

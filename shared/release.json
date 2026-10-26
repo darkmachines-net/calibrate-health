@@ -27,8 +27,8 @@
       "debug": {
         "wear_build_type": "debug"
       },
-      "internal": {
-        "mobile_eas_profile": "internal",
+      "beta": {
+        "mobile_eas_profile": "beta",
         "wear_build_type": "internal"
       },
       "production": {

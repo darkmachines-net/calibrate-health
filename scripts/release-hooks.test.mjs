@@ -88,6 +88,12 @@ test('configured identity, approval environments and destinations remain explici
   const eas=JSON.parse(fs.readFileSync(path.join(root,'mobile/eas.json')));
   assert.equal(eas.cli.version,'25.3.0');
   assert.deepEqual(config.mobile.targets.map(t=>t.id),['phone','wear']);
-  assert.equal(eas.submit.phone.android.track,'internal');assert.equal(eas.submit.wear.android.track,'wear:internal');
+  for (const [profile, tracks] of Object.entries({ beta: ['internal', 'wear:internal'], production: ['production', 'wear:production'] })) {
+    assert.equal(eas.build[profile].channel, profile);
+    for (const [index, target] of ['phone', 'wear'].entries()) {
+      const submit = config.profiles[profile].submitProfiles[target];
+      assert.equal(eas.submit[submit].android.track, tracks[index]);
+    }
+  }
   assert.equal(config.server.metadataOnNative,true);
 });
