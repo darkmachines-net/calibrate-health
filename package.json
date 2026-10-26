@@ -68,6 +68,7 @@
     "weight-trend:tuning-report:check": "npm --prefix backend run weight-trend:tuning-report:check",
     "test:api-client": "npm --prefix packages/api-client test",
     "test:mobile": "npm --prefix mobile test",
+    "test:mcp-app": "npm --prefix backend run build:mcp-app && playwright test --config=playwright.mcp-app.config.ts",
     "test:web:e2e": "node scripts/expo-web-playwright.mjs",
     "test:expo-web:release": "node --test scripts/expo-web-release.test.mjs scripts/expo-web-static-server.test.mjs",
     "test:expo-web:e2e": "npm run test:web:e2e",

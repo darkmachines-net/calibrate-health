@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "rootDir": "..",
+    "noEmit": true
+  },
+  "include": ["src/mcp/ui/**/*.ts", "src/mcp/progressTypes.ts", "../shared/designTokens.ts"],
+  "exclude": ["node_modules", "dist"]
+}

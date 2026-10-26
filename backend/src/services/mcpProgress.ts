@@ -1,12 +1,13 @@
-/** @file Read-only MCP progress views derived from the authenticated account and its local-day boundaries. */
+/** @file Read-only account-local food and weight detail windows with historical endpoints and separate actual-current plan context. */
 
 import { Prisma, type MealPeriod } from '@prisma/client';
 import prisma from '../config/database';
 import {
   addUtcDays,
-  getSafeUtcTodayDateOnlyInTimeZone,
-  isValidIanaTimeZone
+  isValidIanaTimeZone,
+  MS_PER_DAY
 } from '../utils/date';
+import { resolveMcpEndDate } from './mcpProgressRange';
 import { gramsToWeight, type WeightUnit } from '../utils/units';
 import {
   buildStoredCaloriePlanningSnapshot,
@@ -153,6 +154,7 @@ export type WeightTrendSnapshot = {
 
 export type McpProgressOptions = {
   days?: number;
+  end_date?: string;
   now?: Date;
   database?: McpProgressDatabase;
 };
@@ -188,7 +190,8 @@ function goalDirection(dailyDeficit: number): 'weight_loss' | 'weight_gain' | 'm
   return 'maintenance';
 }
 
-function buildCalorieTargetContext(snapshot: StoredCaloriePlanningSnapshot | null): CalorieTargetContext {
+/** Serialize only current planning values; never use this context as a historical daily target. */
+export function buildCalorieTargetContext(snapshot: StoredCaloriePlanningSnapshot | null): CalorieTargetContext {
   if (!snapshot) {
     return {
       as_of_date: null,
@@ -230,6 +233,7 @@ function supportsRepeatableRead(database: McpProgressDatabase): database is type
 /**
  * Return recent food entries grouped by the account's local day.
  *
+ * Optional end_date selects a historical window without changing the actual-current plan context.
  * Every day carries its canonical tracking resolution. Consumers must use only COMPLETE days
  * for progress averages; open, incomplete, paused, and pre-tracking days remain visible context.
  */
@@ -247,7 +251,7 @@ export async function getRecentFoodLogs(
     });
     if (!user) return null;
     const timezone = normalizeTimeZone(user.timezone);
-    const endDate = getSafeUtcTodayDateOnlyInTimeZone(timezone, now);
+    const endDate = resolveMcpEndDate(options.end_date, timezone, now);
     const startDate = addUtcDays(endDate, -(requestedDays - 1));
     const [effectiveDays, logs, planningSnapshot] = await Promise.all([
       getEffectiveFoodDayRange(userId, startDate, endDate, now, snapshotDatabase),
@@ -325,7 +329,7 @@ export async function getRecentFoodLogs(
     calorie_target_context: buildCalorieTargetContext(planningSnapshot),
     interpretation_notes: [
       'Only COMPLETE days are representative for calorie-intake progress analysis.',
-      'The calorie target context is the current plan as of the snapshot date, not a historical target for every returned day.',
+      'The calorie target context is the actual current plan at its own as_of_date, not a historical target for every returned day.',
       'Profile-estimated TDEE is not inferred from food or weight observations.'
     ]
   };
@@ -350,7 +354,8 @@ function resolveFreshness(daysSinceLatest: number | null): WeightTrendFreshness 
 
 /**
  * Return raw weights and the canonical bounded trend model in the account's preferred unit.
- * Future observations are excluded and long display ranges do not expand the model horizon.
+ * end_date anchors historical evidence; current goal/plan context still uses actual now.
+ * Later observations are excluded and long display ranges do not expand the model horizon.
  */
 export async function getWeightTrend(
   userId: number,
@@ -367,7 +372,7 @@ export async function getWeightTrend(
     if (!user) return null;
     const timezone = normalizeTimeZone(user.timezone);
     const weightUnit: WeightUnit = user.weight_unit === 'LB' ? 'LB' : 'KG';
-    const asOfDate = getSafeUtcTodayDateOnlyInTimeZone(timezone, now);
+    const asOfDate = resolveMcpEndDate(options.end_date, timezone, now);
     const displayStartDate = addUtcDays(asOfDate, -(requestedDays - 1));
     const [latestMetric, planningSnapshot] = await Promise.all([
       snapshotDatabase.bodyMetric.findFirst({
@@ -454,7 +459,7 @@ export async function getWeightTrend(
   const latestPoint = trendResult.points[trendResult.points.length - 1] ?? null;
   const latestObservationDate = latestPoint?.date ?? latestEligibleMetric?.date ?? null;
   const daysSinceLatest = latestObservationDate
-    ? Math.max(0, Math.round((asOfDate.getTime() - latestObservationDate.getTime()) / (24 * 60 * 60 * 1_000)))
+    ? Math.max(0, Math.round((asOfDate.getTime() - latestObservationDate.getTime()) / MS_PER_DAY))
     : null;
   const freshness = resolveFreshness(daysSinceLatest);
   const hasCurrentRate = latestPoint !== null &&
@@ -526,6 +531,7 @@ export async function getWeightTrend(
     calorie_target_context: buildCalorieTargetContext(planningSnapshot),
     interpretation_notes: [
       'Raw weights are measurements; trend and confidence fields are model estimates, not additional measurements.',
+      'Trend freshness and pace are evaluated at the selected end date; goal and calorie context describe the actual current plan.',
       'A null weekly rate means the evidence is insufficient or too old for a current pace estimate.',
       'Short-term weight changes can reflect hydration and other normal variation.',
       'Profile-estimated TDEE remains separate from the observed weight trend and is not replaced by it.'

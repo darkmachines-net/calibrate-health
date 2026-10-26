@@ -90,7 +90,9 @@ OAuth, and discovery paths to the app; no extra port or sidecar is required.
 
 OAuth uses dynamic public-client registration, authorization code with S256 PKCE, rotating refresh tokens, and
 revocable user grants. Apply the included Prisma migration before enabling the endpoint. See `../backend/src/mcp/README.md` for the
-tool data contract, discovery routes, local testing, privacy boundaries, and the tracked Codex plugin.
+tool data contract, progress App, discovery routes, local testing, privacy boundaries, and the tracked Codex plugin.
+The App bundle ships inside the backend image. Deploy that image before publishing its compatible plugin
+revision in a marketplace; the explorer adds no database migration or separate UI service.
 
 ### Split frontend and API origins
 

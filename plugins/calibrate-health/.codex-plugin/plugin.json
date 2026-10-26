@@ -1,29 +1,32 @@
 {
   "name": "calibrate-health",
-  "version": "1.0.0",
-  "description": "Discuss recent food logs, calorie adherence, weight observations, and modeled progress from a private Calibrate account.",
+  "version": "1.1.0",
+  "description": "Explore historical progress and start conversations about goals, calorie patterns, and weight trends from a private Calibrate account.",
   "author": {
     "name": "MChartier",
     "url": "https://github.com/MChartier"
   },
   "homepage": "https://calibratehealth.app",
   "repository": "https://github.com/MChartier/calibrate-health",
-  "license": "Apache-2.0",
+  "license": "PolyForm-Shield-1.0.0",
   "keywords": ["calorie-tracking", "food-log", "weight-trend", "health", "mcp"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Calibrate",
-    "shortDescription": "Discuss food logs and weight trends",
-    "longDescription": "Connect to your private Calibrate account with OAuth, then discuss recent food-log completeness, calorie adherence, raw scale observations, modeled weight trend, uncertainty, and goal progress.",
+    "shortDescription": "Explore progress and chat with your data",
+    "longDescription": "Connect to your private Calibrate account with OAuth, then explore historical weight and calorie charts, compare periods, see your current goal, and start conversations about patterns and progress. Read-only analysis complements logging in the Calibrate app.",
     "developerName": "MChartier",
     "category": "Productivity",
     "capabilities": ["Interactive", "Read"],
     "defaultPrompt": [
-      "Analyze my recent food logs and weight trend.",
-      "Am I making progress toward my weight goal?",
-      "Discuss my calorie adherence over the last two weeks."
+      "Open my Calibrate progress explorer.",
+      "How am I progressing toward my weight goal?",
+      "Compare my progress this month with last month.",
+      "How do my weekday and weekend calorie patterns compare?"
     ],
     "brandColor": "#2E7D32",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
     "websiteURL": "https://calibratehealth.app",
     "privacyPolicyURL": "https://calibratehealth.app/privacy",
     "termsOfServiceURL": "https://calibratehealth.app/terms"

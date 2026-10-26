@@ -1,13 +1,13 @@
 interface:
   display_name: "Calibrate Progress"
-  short_description: "Discuss logged food and weight trends"
+  short_description: "Explore progress and chat with your health data"
   brand_color: "#2E7D32"
-  default_prompt: "Use $calibrate-progress to analyze my recent food logs and weight trend."
+  default_prompt: "Use $calibrate-progress to open my progress explorer and help me understand my progress toward my goal."
 dependencies:
   tools:
     - type: "mcp"
       value: "calibrate"
-      description: "Private Calibrate food-log and weight-trend service"
+      description: "Private read-only Calibrate progress explorer and historical analysis service"
       transport: "streamable_http"
       url: "https://calibratehealth.darkmachines.net/mcp"
 policy:

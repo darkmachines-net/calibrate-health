@@ -65,6 +65,12 @@ services:
           path: ./backend/src
           target: /workspace/backend/src
         - action: sync
+          path: ./backend/scripts/build-mcp-app.mjs
+          target: /workspace/backend/scripts/build-mcp-app.mjs
+        - action: sync
+          path: ./backend/scripts/dev-mcp-server.mjs
+          target: /workspace/backend/scripts/dev-mcp-server.mjs
+        - action: sync
           path: ./shared
           target: /workspace/shared
         - action: rebuild

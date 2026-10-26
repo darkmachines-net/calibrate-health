@@ -1,4 +1,4 @@
-/** @file Guards Knip package boundaries, dynamic release entrypoints and ordering after affected TypeScript validation. */
+/** @file Guards Knip package/browser boundaries, dynamic release entrypoints and ordering after affected TypeScript validation. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,10 +31,11 @@ test('Knip models every package boundary in the repository', () => {
 test('dynamic workflow, plugin, scenario, and Playwright entry points stay discoverable', () => {
   const rootConfig = knipConfig.workspaces['.'];
   assert.equal(rootConfig['github-actions'], true);
-  assert.deepEqual(rootConfig.playwright.config, ['playwright.expo-web.config.ts', 'playwright.ux.config.ts']);
+  assert.deepEqual(rootConfig.playwright.config, ['playwright.expo-web.config.ts', 'playwright.ux.config.ts', 'playwright.mcp-app.config.ts']);
   assert.ok(rootConfig.entry.includes('.codex/local-environment.setup.mjs'));
   assert.ok(rootConfig.entry.includes('scripts/reset-test-user-onboarding.mjs'));
   assert.ok(rootConfig.entry.includes('scripts/release-hooks.mjs'));
+  assert.ok(knipConfig.workspaces.backend.entry.includes('src/mcp/ui/main.ts!'));
   assert.deepEqual(knipConfig.workspaces.mobile.entry, [
     'plugins/withHealthConnect.js',
     'plugins/withPinnedGradleWrapper.js',

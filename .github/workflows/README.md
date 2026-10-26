@@ -20,6 +20,7 @@ an unreadable dependency graph conservatively selects native compilation.
 | Type checking | Affected backend, shared, API client and mobile surfaces |
 | Release configuration/tooling tests | Release manifests, API contracts, workflow/tooling, deployment and quality policy inputs |
 | Backend tests/build | Backend/shared changes; test-only changes skip the build |
+| MCP App/plugin tests | MCP server/data/UI, browser harness, plugin package (including its skill), and associated build/dependency inputs |
 | Mobile tests and API contract | Mobile/shared/API changes; API generator installation and contract checks run only for contract/dependency inputs |
 | Web export and critical smoke | Web runtime, assets, dependencies and build/smoke configuration; smoke reuses the exact exported artifact |
 | Android/iOS Metro bundles | Native JavaScript, shared code, dependencies and bundler configuration |
@@ -29,7 +30,8 @@ an unreadable dependency graph conservatively selects native compilation.
 | Populated database upgrade | Prisma, database integration code and upgrade/backup tooling |
 | Historical upgrade/rollback | Migration files and rollback tooling |
 
-Documentation does not select application checks. JS/TS unit-test-only changes retain
+Documentation does not select application checks, except executable plugin skill instructions select
+the MCP package checks. JS/TS unit-test-only changes retain
 their test/lint checks without rebuilding packages or the production image. Web-only
 modules skip native bundles, and native-only modules skip web/image checks.
 Root tooling-only lockfile updates do not compile native apps when the mobile

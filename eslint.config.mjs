@@ -56,7 +56,7 @@ export default defineConfig([
     rules: { 'no-unused-vars': 'off' },
   },
   {
-    files: ['mobile/**/*.{js,ts,tsx}', 'e2e/**/*.{ts,tsx}'],
+    files: ['mobile/**/*.{js,ts,tsx}', 'e2e/**/*.{ts,tsx}', 'backend/src/mcp/ui/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser, __DEV__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },

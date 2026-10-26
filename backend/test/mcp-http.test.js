@@ -1,11 +1,15 @@
-/** @file Regression coverage for mcp http: MCP discovery advertises the exact resource and public PKCE authorization server. */
+/** @file MCP HTTP discovery, OAuth limits, scoped dispatch, and sidebar/conversation App metadata regressions. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/client/streamableHttp.js');
 
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 
 const { createCalibrateMcpHttpApp } = require('../src/mcp/server');
+const { PROGRESS_APP_URI } = require('../src/mcp/appResource');
+const { McpProgressRangeError } = require('../src/services/mcpProgressRange');
 const {
   MCP_OAUTH_AUTHORIZATION_RATE_LIMIT_MAX,
   MCP_OAUTH_REGISTRATION_RATE_LIMIT_MAX
@@ -50,6 +54,75 @@ test('MCP discovery advertises the exact resource and public PKCE authorization 
     assert.equal(metadata.token_endpoint, 'https://calibratehealth.app/token');
     assert.deepEqual(metadata.code_challenge_methods_supported, ['S256']);
     assert.deepEqual(metadata.token_endpoint_auth_methods_supported, ['none']);
+  });
+});
+
+test('exploration dispatch derives identity/scopes from OAuth and exposes useful text plus App metadata', async () => {
+  for (const scope of ['calibrate:food:read', 'calibrate:weight:read']) {
+    const calls = [];
+    const sections = { food: scope === 'calibrate:food:read', weight: scope === 'calibrate:weight:read' };
+    const snapshot = { schema_version: 1, as_of_date: '2026-08-20', timezone: 'America/Los_Angeles',
+      range: { start_date: '2023-01-01', end_date: '2023-01-03', day_count: 3 }, granted_sections: sections,
+      available_history: { food: null, weight: null }, current_goal: null, current_calorie_plan: {},
+      food: null, weight: null, interpretation_notes: ['Only COMPLETE days count.'] };
+    await withServer(async baseUrl => {
+      const client = new Client({ name: 'scoped-analysis-test', version: '1.0.0' });
+      try {
+        await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
+          requestInit: { headers: { Authorization: 'Bearer scoped-token' } }
+        }));
+        const { tools } = await client.listTools();
+        assert.equal(tools.some(tool => tool.name === 'get_recent_food_logs'), sections.food);
+        assert.equal(tools.some(tool => tool.name === 'get_weight_trend'), sections.weight);
+        const opener = tools.find(tool => tool.name === 'open_progress_explorer');
+        assert.equal(opener._meta.ui.resourceUri, PROGRESS_APP_URI);
+        assert.deepEqual(opener._meta['openai/ui'].entrypoints, [{ type: 'global' }, { type: 'thread' }]);
+        assert.equal(tools.find(tool => tool.name === 'get_progress_summary')._meta['openai/ui'], undefined);
+        assert.equal(opener.annotations.readOnlyHint, true);
+        assert.equal(opener.annotations.destructiveHint, false);
+        const { resources } = await client.listResources();
+        assert.equal(resources.find(resource => resource.uri === PROGRESS_APP_URI).mimeType, 'text/html;profile=mcp-app');
+        const result = await client.callTool({ name: 'open_progress_explorer', arguments: { start_date: '2023-01-01', end_date: '2023-01-03' } });
+        assert.deepEqual(result.structuredContent.granted_sections, sections);
+        assert.equal(JSON.parse(result.content[0].text).range.day_count, 3);
+        assert.deepEqual(calls, [{ userId: 7, options: { start_date: '2023-01-01', end_date: '2023-01-03', sections } }]);
+        const forged = await client.callTool({ name: 'get_progress_summary', arguments: { user_id: 99 } });
+        assert.equal(forged.isError, true);
+        assert.equal(calls.length, 1);
+      } finally {
+        await client.close();
+      }
+    }, {
+      oauthService: { verifyAccessToken: async () => ({ userId: 7, resource: 'https://calibratehealth.app/mcp', scopes: [scope] }) },
+      progressReaders: { getProgressSummary: async (userId, options) => { calls.push({ userId, options }); return snapshot; } }
+    });
+  }
+});
+
+test('tool errors expose actionable ranges while sanitizing storage failures before SDK serialization', async () => {
+  await withServer(async baseUrl => {
+    const client = new Client({ name: 'analysis-error-test', version: '1.0.0' });
+    try {
+      await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
+        requestInit: { headers: { Authorization: 'Bearer scoped-token' } }
+      }));
+      const invalid = await client.callTool({ name: 'get_progress_summary', arguments: { start_date: '2023-01-01' } });
+      assert.equal(invalid.isError, true);
+      assert.equal(invalid.structuredContent.error, 'invalid_range');
+      assert.match(invalid.content[0].text, /both/);
+      const unavailable = await client.callTool({ name: 'get_progress_summary', arguments: {} });
+      assert.equal(unavailable.isError, true);
+      assert.equal(unavailable.structuredContent.error, 'temporarily_unavailable');
+      assert.doesNotMatch(JSON.stringify(unavailable), /database-password|postgresql/);
+    } finally {
+      await client.close();
+    }
+  }, {
+    oauthService: { verifyAccessToken: async () => ({ userId: 7, resource: 'https://calibratehealth.app/mcp', scopes: ['calibrate:food:read'] }) },
+    progressReaders: { getProgressSummary: async (_userId, options) => {
+      if (options.start_date) throw new McpProgressRangeError('Supply both start_date and end_date, or neither.');
+      throw new Error('postgresql://user:database-password@private-host/database');
+    } }
   });
 });
 

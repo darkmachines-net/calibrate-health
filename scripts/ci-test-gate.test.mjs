@@ -5,11 +5,12 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { verifyRequiredTests } from './ci-test-gate.mjs';
 
-function results(backend = 'true', mobile = 'true', api = 'false') {
+function results(backend = 'true', mobile = 'true', api = 'false', mcp = 'true') {
   return {
-    changes: { result: 'success', outputs: { backend, mobile, api } },
+    changes: { result: 'success', outputs: { backend, mobile, api, mcp } },
     'backend-tests': { result: backend === 'true' ? 'success' : 'skipped' },
     'mobile-tests': { result: mobile === 'true' || api === 'true' ? 'success' : 'skipped' },
+    'mcp-tests': { result: mcp === 'true' ? 'success' : 'skipped' },
   };
 }
 
@@ -31,6 +32,13 @@ test('API-only changes require the combined mobile/API job even when mobile unit
   assert.throws(() => verifyRequiredTests(needs), /Missing test selection for api/);
 });
 
+test('an explicitly unselected MCP suite may skip, but a selected browser suite may not', () => {
+  assert.doesNotThrow(() => verifyRequiredTests(results('false', 'false', 'false', 'false')));
+  const needs = results('false', 'false', 'false', 'true');
+  needs['mcp-tests'].result = 'skipped';
+  assert.throws(() => verifyRequiredTests(needs), /mcp tests/);
+});
+
 test('a failed or absent classifier never authorizes a merge', () => {
   for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
     const needs = results();
@@ -41,7 +49,7 @@ test('a failed or absent classifier never authorizes a merge', () => {
 });
 
 test('selected test failures, cancellation, skips and missing results block a merge', () => {
-  for (const surface of ['backend', 'mobile']) {
+  for (const surface of ['backend', 'mobile', 'mcp']) {
     for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
       const needs = results();
       needs[`${surface}-tests`].result = result;
@@ -61,13 +69,13 @@ test('unselected suites cannot hide a failure or missing result', () => {
   }
 });
 
-test('the PR test gate always waits for the classifier and both suites', () => {
+test('the PR test gate always waits for the classifier and all selected suites', () => {
   const workflow = readFileSync(new URL('../.github/workflows/tests.yml', import.meta.url), 'utf8');
   assert.match(workflow, /\n {2}pull_request:/);
   const gate = workflow.split(/\n {2}required-tests:/)[1];
   assert.ok(gate);
   assert.match(gate, /\n {4}if: always\(\)/);
-  assert.match(gate, /needs: \[changes, backend-tests, mobile-tests\]/);
+  assert.match(gate, /needs: \[changes, backend-tests, mobile-tests, mcp-tests\]/);
   assert.doesNotMatch(gate, /continue-on-error/);
   assert.match(gate, /TEST_JOB_RESULTS: \$\{\{ toJSON\(needs\) \}\}/);
   assert.match(gate, /run: node scripts\/ci-test-gate.mjs/);

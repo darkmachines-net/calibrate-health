@@ -44,6 +44,9 @@ The backend can create seeded data on demand when the database is ready. Use
 application belong to [Prisma](../backend/prisma/README.md); native Metro development
 belongs to [mobile](../mobile/README.md#development). `npm run ci:local` runs the
 repository's host CI sequence; [quality](../quality/README.md) owns validation policy.
+The read-only [MCP explorer](../backend/src/mcp/README.md#app-ui-and-development) has an independent
+`npm run test:mcp-app` browser suite. Its [plugin package](../plugins/calibrate-health/README.md)
+owns marketplace validation and publication commands; both are included in local CI.
 
 Explicit `FOOD_DATA_PROVIDER` wins. Without it, local development chooses FatSecret
 when both credentials exist, otherwise USDA with the supplied key or api.data.gov's
