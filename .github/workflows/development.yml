@@ -5,10 +5,10 @@ on:
     inputs:
       operation: { description: Build a dev client or publish a hosted preview, type: choice, options: [build, update], default: build, required: true }
       platform: { description: Phone platform, type: choice, options: [android, ios], default: android, required: true }
-      source: { description: Optional full source commit SHA in this repository; blank uses the dispatch commit, type: string, default: '' }
+      source: { description: Optional pushed branch name or full commit SHA; blank uses the master dispatch commit, type: string, default: '' }
 permissions: { contents: read }
 jobs:
   development:
-    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@4112ce687e22180066b255a4d6ae9b4e0c8d4b2f
+    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@815199833882111632ce1b3e953e7f322e46ccab
     with: { operation: '${{ inputs.operation }}', platform: '${{ inputs.platform }}', source: '${{ inputs.source }}' }
     secrets: inherit
