@@ -1,4 +1,4 @@
-/** @file Calibrate application input boundaries and version-mirror normalization; selection and orchestration live in the toolkit. */
+/** @file Calibrate server and platform bundle boundaries with version-mirror normalization; orchestration stays shared. */
 import { trackedIdentity } from '@mchartier/expo-release';
 const IGNORED = /(^|\/)(__tests__|__mocks__|fixtures|e2e|docs)(\/|$)|(^|\/)src\/(test|androidTest)\/|\.(test|spec)\.[^/]+$|(^|\/)(README[^/]*|AGENTS\.md)$/i;
 const SERVER_FILES = /^(backend\/|shared\/|packages\/|mobile\/|Dockerfile\.app$|\.dockerignore$|package(?:-lock)?\.json$|scripts\/expo-(?:cli-environment|web-build|web-release)\.mjs$)/;
@@ -43,16 +43,17 @@ function affectsComponent(file, component) {
     return SERVER_FILES.test(file) && !/\.(native|android|ios)\.[^/]+$/.test(file)
       && !/^mobile\/(android|ios|gradle|plugins|modules)\//.test(file);
   }
-  if (component === 'ota') {
+  if (component === 'ota' || component === 'ios') {
     if (file === 'shared/client-diagnostic-versions.json') return false;
-    return PHONE_FILES.test(file) && !/\.web\.[^/]+$/.test(file)
+    const otherPlatform = component === 'ios' ? /\.android\.[^/]+$/ : /\.ios\.[^/]+$/;
+    return PHONE_FILES.test(file) && !/\.web\.[^/]+$/.test(file) && !otherPlatform.test(file)
       && !/^mobile\/(public|android|ios|gradle)\//.test(file);
   }
   throw new Error(`Unknown component: ${component}`);
 }
 
 
-/** Hash Calibrate's server, OTA or Wear inputs using the shared tracked-source reader. */
+/** Hash server, Android OTA, iOS OTA or Wear inputs with platform-specific bundle boundaries. */
 export function applicationIdentity(root, source, component) {
   return trackedIdentity(root, source, {
     include: file => component === 'wear' ? file.startsWith('wear/') && !IGNORED.test(file) : affectsComponent(file, component),

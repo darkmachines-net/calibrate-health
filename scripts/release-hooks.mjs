@@ -1,4 +1,4 @@
-/** @file Calibrate metadata transformations, paired Gradle builder and application artifact assertions. */
+/** @file Calibrate Android/iOS metadata and bundle identities, paired Gradle builder and Android artifact assertions. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -11,7 +11,7 @@ import { readNativeReleaseBuildProvenance } from './native-release-build.mjs';
 import { verifyNativeArtifacts } from './native-artifact-checks.mjs';
 import { inspectBundleRuntime } from './native-runtime-checks.mjs';
 
-/** Transform only metadata mirrors using the shared planner's allocated versions. */
+/** Stamp allocated metadata, including the reserved phone code as the iOS build number. */
 export function stamp(root, plan) {
   const transform = (files, update) => {
     const current = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, fs.readFileSync(path.join(root, file), 'utf8')]));
@@ -31,7 +31,7 @@ function run(root, script, args = [], env = process.env) {
 /** Perform only application operations; selection, reservations and provider requests stay shared. */
 export async function applicationHook({ root, action, source, plan, target, directory, baseUrl }) {
   if (action === 'inspect') return { server: applicationIdentity(root, source, 'server'),
-    js: { android: applicationIdentity(root, source, 'ota') }, extraNative: hash({ wear: applicationIdentity(root, source, 'wear'),
+    js: { android: applicationIdentity(root, source, 'ota'), ios: applicationIdentity(root, source, 'ios') }, extraNative: hash({ wear: applicationIdentity(root, source, 'wear'),
       builder: trackedIdentity(root, source, { include: file => ['scripts/native-release-build.mjs', 'scripts/native-toolchain.mjs'].includes(file) }) }) };
   if (action === 'prepare') { stamp(root, plan); return {}; }
   if (action === 'validate') {

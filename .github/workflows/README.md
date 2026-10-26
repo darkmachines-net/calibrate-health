@@ -50,21 +50,25 @@ cases when adding an input surface.
 
 ## Release
 
-Run **Release** from protected master with the beta or production profile. The immutable
+Run **Release** from protected master with beta (the default) or production. The immutable
 shared workflow and package pin in release.yml and package.json own server, native
 and current-runtime OTA selection, version allocation, provider requests and success
 baselines. release.config.json owns Calibrate's metadata, paired builder, deployment
 and destination configuration. Ordinary PRs leave version mirrors unchanged.
 
-Native compatibility changes select a new mobile major and phone/Wear build pair.
+Native compatibility changes select a new mobile major, phone/Wear build pair and iOS EAS build.
 Phone codes are odd, Wear codes even, and reservations remain consumed. Expo's runtime
 is the mobile major; version stamping does not alter native fingerprints. JavaScript
 updates use the current runtime. Native diagnostic identity can also select a server
 release. The paired builder verifies application IDs, signing, embedded origins,
-runtime/channel and artifact hashes. Phone submission precedes Wear submission.
+runtime/channel and artifact hashes. Phone submission precedes Wear, then iOS.
+The shared EAS worker verifies the iOS build identity and submits to TestFlight for
+`app.calibratehealth.mobile`, App Store Connect app `6826924944`. The iOS build number
+is the reserved phone code; automatic build-number increments stay disabled.
 
 Selected server changes publish the image and require completed webhook deployment
-health before dependent client publication. Production retains its environment
+health before dependent client publication. Beta uses Android testing tracks,
+TestFlight and beta OTA without a manual release approval. Production retains its environment
 approval. The [deployment guide](../../deploy/self-hosted/README.md) owns private
 routing, webhook configuration and health semantics.
 
@@ -89,12 +93,17 @@ Keep the existing Expo project, app/store IDs, signing identity and
 access for the transferred repository before dispatch.
 
 The production profile uses production approval, native-release-signing,
-play-production and self-hosted-testing environments. Beta uses preview and play-internal instead. Create their protections before
-dispatch and restrict protected operations to master. Configure EXPO_TOKEN and the
+play-production and self-hosted-testing environments. Beta uses preview and play-internal instead.
+Keep preview, native-release-signing, play-internal and self-hosted-testing free of
+reviewer, wait-timer and custom approval gates while retaining existing branch restrictions.
+Preserve production approvals and restrict release operations to master. Configure EXPO_TOKEN and the
 existing assigned Play credential for the phone-beta, wear-beta, phone-production and wear-production submit profiles. Paired
 command builds use ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
 ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
 strings. WireGuard configuration retains its DEPLOY_* names in the deployment guide.
+EAS also needs the existing iOS distribution certificate, provisioning profile and
+assigned App Store Connect submission key. The ios-beta and ios-production submit
+profiles both upload to TestFlight; App Store public release remains a separate provider action.
 
 Keep the EAS production public variables aligned with
 `profiles.production.publicEnvironment` in `release.config.json`. The environment
@@ -128,4 +137,10 @@ Dispatch **Development** from **master**. In **Source**, enter a pushed branch n
 
 **Development → update** publishes a preview for an existing compatible client. After installation, `npm run preview -- --platform android` (or ios) exports your current working copy, including uncommitted changes, to an isolated preview branch and prints its dashboard/QR link. EAS CLI 25.3.0 and EAS login are required. `npm run dev:native` starts local Metro with the same development identity. The previous backend/web preview command remains available as `npm run preview:web`. See the [shared development contract](https://github.com/darkmachines-net/expo-release-template/blob/main/src/consumer/README.md#development-previews) for the single source of preview behavior and compatibility rules.
 
-Beta and production have separate persistent OTA channels. Beta submits the existing phone/Wear pair to internal and wear:internal; production uses production and wear:production drafts, with the existing play-production credential environment. Beta and development use the existing preview approval environment. Protect it for the intended testers before running hosted previews. Public store release still requires provider review/completion. Calibrate's store pipeline remains Android phone/Wear; an iOS development client does not add a TestFlight store-release target. Validate paired watch integration in beta, since the development phone has a distinct application ID.
+Beta and production have separate persistent OTA channels and successful baselines,
+with shared version/code reservations and the current private server. Beta submits
+the phone/Wear pair to internal and wear:internal; production uses production and
+wear:production drafts through play-production. Both store profiles build iOS for
+TestFlight. Development uses the ungated preview environment but does not enter the
+store pipeline. Public store release still requires provider review/completion.
+Validate paired watch integration in beta, since the development phone has a distinct application ID.

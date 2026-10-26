@@ -264,10 +264,12 @@ UI code style:
 ## Release Versioning
 
 - Ordinary PRs leave release versions unchanged. One protected Release workflow selects server, native and OTA paths and stamps tagged build commits.
-- Use npm run release -- validate or plan --profile production for read-only checks. There are no local release wrappers or recovery CLI.
+- Use npm run release -- validate or plan --profile beta for read-only checks. There are no local release wrappers or recovery CLI.
 - Keep package, lockfile and workflow pins at one reviewed full toolkit SHA. Use the toolkit pin updater; never copy lifecycle code.
 - Preserve Calibrate's paired odd/even codes, application/signing identities, artifact checks, diagnostic server dependency and protected environments.
-- Expo runtime is the shared mobile major. Version metadata must not change native fingerprints; changed native compatibility requires a new major.
+- Release defaults to beta; production is opt-in. Keep preview, native-release-signing, play-internal and self-hosted-testing free of reviewer/wait/custom approval gates while preserving master restrictions and separate production approvals. Each channel retains its own successful baselines and shares global version/code reservations and the current private server.
+- Build the Android phone/Wear pair through the application builder and iOS through the shared EAS worker. Stamp iOS buildNumber with the reserved phone code, retain store signing, and submit to the configured App Store Connect app for TestFlight. Keep lifecycle/provider operations in the toolkit.
+- Store-release Expo runtime is the shared mobile major. Version metadata must not change native fingerprints; changed native compatibility requires a new major. Development clients use separate application IDs and fingerprint-compatible previews, outside release reservations and store submission.
 - Preserve reservation tags and current-run evidence. Failed or uncertain prior attempts must not block a fresh release. Reuse confirmed operations on job retries, keep duplicate protection within each attempt and confirmed success baselines; redundant delivery after a lost acknowledgement is an accepted tradeoff.
 
 ## Git And PR Workflow

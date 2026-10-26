@@ -1,4 +1,4 @@
-/** @file Resolve and verify the explicit major runtime used by native application build checks. */
+/** @file Resolve beta-default build inputs and verify the explicit major runtime used by store-native checks. */
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,10 +7,10 @@ import { spawnSync } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
 import { resolveNativeReleaseDeviceTooling } from './native-release-devices.mjs';
 
-/** Validate Calibrate's public Expo build inputs before Android generation or compilation. */
+/** Validate public Expo build inputs before Android generation; unspecified channels follow the beta default. */
 export function resolveExpoUpdateBuildConfig(environment, fallbackProjectId = null) {
   const projectId = environment.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || fallbackProjectId || null;
-  const channel = environment.EXPO_UPDATES_CHANNEL?.trim() || 'internal';
+  const channel = environment.EXPO_UPDATES_CHANNEL?.trim() || 'beta';
   if (projectId !== null && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(projectId)) throw new Error('EXPO_PUBLIC_EAS_PROJECT_ID must be an Expo project UUID.');
   if (!/^[a-z0-9][a-z0-9._-]*$/i.test(channel)) throw new Error('Invalid EXPO_UPDATES_CHANNEL.');
   return { projectId, channel };

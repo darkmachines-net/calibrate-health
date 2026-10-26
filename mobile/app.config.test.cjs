@@ -1,4 +1,4 @@
-/** @file Regression coverage for app config: static Expo config supports iPhone, iPad, and iOS Simulator builds. */
+/** @file Verify Expo platform config and isolated beta/store build targets for Android testing and iOS TestFlight. */
 
 /** Regression coverage for app.config and its failure boundaries. */
 const assert = require('node:assert/strict');
@@ -21,18 +21,38 @@ function pluginOptions(name) {
 
 const originalProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 const originalChannel = process.env.EXPO_UPDATES_CHANNEL;
+const originalVariant = process.env.EXPO_RELEASE_VARIANT;
 
 test.afterEach(() => {
   if (originalProjectId === undefined) delete process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
   else process.env.EXPO_PUBLIC_EAS_PROJECT_ID = originalProjectId;
   if (originalChannel === undefined) delete process.env.EXPO_UPDATES_CHANNEL;
   else process.env.EXPO_UPDATES_CHANNEL = originalChannel;
+  if (originalVariant === undefined) delete process.env.EXPO_RELEASE_VARIANT;
+  else process.env.EXPO_RELEASE_VARIANT = originalVariant;
+});
+
+test('development installs remain separate from beta store clients and persistent OTA channels', () => {
+  process.env.EXPO_RELEASE_VARIANT = 'development';
+  process.env.EXPO_UPDATES_CHANNEL = 'beta';
+  const development = createExpoConfig({ config: appConfig.expo });
+  assert.equal(development.android.package,'net.darkmachines.healthtracker.development');
+  assert.equal(development.ios.bundleIdentifier,'app.calibratehealth.mobile.development');
+  assert.deepEqual(development.runtimeVersion,{ policy: 'fingerprint' });
+  assert.equal(development.updates.requestHeaders['expo-channel-name'],undefined);
+  delete process.env.EXPO_RELEASE_VARIANT;
+  const beta = createExpoConfig({ config: appConfig.expo });
+  assert.equal(beta.android.package,appConfig.expo.android.package);
+  assert.equal(beta.ios.bundleIdentifier,appConfig.expo.ios.bundleIdentifier);
+  assert.equal(beta.updates.requestHeaders['expo-channel-name'],'beta');
+  assert.equal(beta.runtimeVersion,require('./release-version.json').version.split('.')[0]);
 });
 
 test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () => {
   assert.deepEqual(appConfig.expo.ios, {
     bundleIdentifier: 'app.calibratehealth.mobile',
     buildNumber: String(releaseConfig.android.mobile.version_code),
+    config: { usesNonExemptEncryption: false },
     supportsTablet: true,
     requireFullScreen: false,
     icon: './assets/icon-ios.png',
@@ -61,6 +81,24 @@ test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () =>
     ios: { simulator: true }
   });
   assert.equal(packageConfig.scripts['prebuild:ios'], 'expo prebuild --platform ios --no-install');
+});
+
+test('beta native profiles use store signing for TestFlight and Android testing with private-server OTA', () => {
+  const beta = easConfig.build.beta;
+  assert.equal(beta.distribution, 'store', 'TestFlight requires store signing, not ad hoc distribution');
+  assert.equal(beta.android.buildType, 'app-bundle');
+  assert.equal(beta.environment, 'preview');
+  assert.equal(beta.channel, 'beta');
+  assert.equal(beta.autoIncrement, false);
+  assert.equal(easConfig.build.production.autoIncrement, false);
+  assert.equal(beta.env.EXPO_UPDATES_CHANNEL, 'beta');
+  assert.equal(beta.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.darkmachines.net');
+  assert.equal(easConfig.submit['phone-beta'].android.track, 'internal');
+  assert.equal(easConfig.submit['wear-beta'].android.track, 'wear:internal');
+  assert.equal(easConfig.submit['ios-beta'].ios.bundleIdentifier, appConfig.expo.ios.bundleIdentifier);
+  assert.equal(easConfig.submit['ios-beta'].ios.ascAppId, '6826924944');
+  assert.equal(easConfig.build.production.env.EXPO_UPDATES_CHANNEL, 'production');
+  assert.equal(easConfig.build.production.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.darkmachines.net');
 });
 
 test('Expo config leaves updates disabled when no EAS project is configured', () => {
@@ -96,6 +134,6 @@ test('Expo config rejects malformed project IDs and channel names', () => {
   assert.throws(() => createExpoConfig({ config: {} }), /project UUID/);
 
   process.env.EXPO_PUBLIC_EAS_PROJECT_ID = '01234567-89ab-4def-8123-456789abcdef';
-  process.env.EXPO_UPDATES_CHANNEL = 'internal channel';
+  process.env.EXPO_UPDATES_CHANNEL = 'beta channel';
   assert.throws(() => createExpoConfig({ config: {} }), /EXPO_UPDATES_CHANNEL/);
 });
