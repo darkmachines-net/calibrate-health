@@ -1,4 +1,4 @@
-/** @file Add Food Sheet: Selects the compact add-food composition below the shared tablet breakpoint. */
+/** @file Adaptive food search and logging sheet; selected-food controls share one scroller above the keyboard. */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, Linking, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -140,7 +140,7 @@ function appendSection(rows: FoodBrowseRow[], title: string, items: FoodBrowseRo
     rows.push({ kind: 'header', key: `header:${title}`, title }, ...items);
 }
 
-/** Coordinates food search, serving selection, and idempotent logging within the adaptive add-food sheet. */
+/** Coordinates food search and idempotent logging, keeping selected-food controls in the sheet's shared scroller. */
 export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     visible,
     date,
