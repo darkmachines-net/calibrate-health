@@ -17,7 +17,8 @@ jest.mock('../hooks/useReducedMotionPreference', () => ({
 }));
 
 jest.mock('../hooks/useVisualViewportHeight', () => ({
-    useVisualViewportHeight: () => 720
+    useVisualViewportHeight: () => 720,
+    useVisualViewportOffsetTop: () => 0
 }));
 
 jest.mock('react-native-safe-area-context', () => ({

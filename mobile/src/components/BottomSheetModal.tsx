@@ -1,4 +1,4 @@
-/** @file Cross-platform modal sheet layout, focus isolation, stacked-dialog accessibility, and dismissal behavior. */
+/** @file Cross-platform modal sheets bounded by the unobscured viewport, with focus isolation and guarded dismissal. */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,7 +22,7 @@ import {
 } from '../layout/adaptiveLayout';
 import { type AppTheme, useAppTheme } from '../theme';
 import { useReducedMotionPreference } from '../hooks/useReducedMotionPreference';
-import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight';
+import { useVisualViewportHeight, useVisualViewportOffsetTop } from '../hooks/useVisualViewportHeight';
 import { useModalFocusManagement, type ModalFocusableTarget } from '../hooks/useModalFocusManagement';
 import { getKeyboardAvoidingBehavior } from '../utils/keyboard';
 import { AppIconButton } from './AppIconButton';
@@ -174,6 +174,7 @@ export function resolveSheetEntranceOffset(viewportHeight: number, isDialog: boo
 
 /**
  * Presents as a mobile bottom sheet or a bounded dialog on larger viewports.
+ * Web placement follows the visible viewport when a keyboard resizes or pans it.
  * Keep it to a short contextual task, picker, preview, or confirmation; use a
  * registered route for browsable, multi-section, or independently managed work.
  */
@@ -205,6 +206,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const reduceMotion = useReducedMotionPreference();
     const visualViewportHeight = useVisualViewportHeight();
+    const visualViewportOffsetTop = useVisualViewportOffsetTop();
     const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
     const [shouldRender, setShouldRender] = useState(visible);
     const [presentationReady, setPresentationReady] = useState(false);
@@ -389,7 +391,10 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                     isDialog && { paddingVertical: dialogVerticalInset },
                     webSafeAreaPadding(isDialog ? theme.spacing.lg : 0),
                     visualViewportHeight !== undefined && styles.webViewportRoot,
-                    visualViewportHeight !== undefined && { height: visualViewportHeight }
+                    visualViewportHeight !== undefined && {
+                        height: visualViewportHeight,
+                        top: visualViewportOffsetTop ?? 0
+                    }
                 ]}
             >
                 <Pressable

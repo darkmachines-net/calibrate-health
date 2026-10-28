@@ -1,4 +1,4 @@
-/** @file Keyboard Aware Scroll View: Shared form scroller that reveals focused inputs plus the content that explains or acts on their current value. */
+/** @file Reveals focused form fields and their actions without dismissing the web keyboard during automatic scrolling. */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,13 +22,14 @@ const WEB_KEYBOARD_OVERLAY_THRESHOLD = 80; // Ignores small visual-viewport chan
 
 /**
  * Shared form scroller that reveals focused inputs plus the content that
- * explains or acts on their current value.
+ * explains or acts on their current value. Native drags dismiss the keyboard;
+ * web scrolling preserves focus because browsers also scroll during keyboard reveal.
  */
 export const KeyboardAwareScrollView: React.FC<KeyboardAwareScrollViewProps> = ({
     automaticallyAdjustKeyboardInsets,
     contentContainerStyle,
     keyboardContextHeight = DEFAULT_KEYBOARD_CONTEXT_HEIGHT,
-    keyboardDismissMode = 'on-drag',
+    keyboardDismissMode = Platform.OS === 'web' ? 'none' : 'on-drag',
     keyboardShouldPersistTaps = 'handled',
     onContentSizeChange,
     onFocus,
@@ -105,6 +106,7 @@ export const KeyboardAwareScrollView: React.FC<KeyboardAwareScrollViewProps> = (
                 automaticallyAdjustKeyboardInsets ?? Platform.OS === 'ios'
             }
             contentContainerStyle={[contentContainerStyle, keyboardContentStyle]}
+            // React Native Web blurs on every scroll for "on-drag", including our automatic reveal.
             keyboardDismissMode={keyboardDismissMode}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
             onContentSizeChange={(width, height) => {
