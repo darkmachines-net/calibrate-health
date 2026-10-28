@@ -3,9 +3,10 @@
   "version": "0.40.3",
   "scripts": {
     "prebuild": "npm run prisma:generate",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.mcp-app.json && npm run build:mcp-app",
+    "build:mcp-app": "node scripts/build-mcp-app.mjs",
     "pretypecheck": "npm run prisma:generate",
-    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc -p tsconfig.mcp-app.json",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
@@ -16,15 +17,15 @@
     "prisma:generate": "prisma generate",
     "start": "node dist/backend/src/index.js",
     "start:prod": "bash scripts/start-prod.sh",
-    "pretest": "npm run prisma:generate",
+    "pretest": "npm run prisma:generate && npm run build:mcp-app",
     "test": "node -r ts-node/register --test",
     "test:weight-trend-lab": "node -r ts-node/register --test test/weight-trend-benchmark.test.js test/weight-trend-governance.test.js",
     "weight-trend:tuning-report": "node -r ts-node/register scripts/weight-trend-tuning-report.js",
     "weight-trend:tuning-report:check": "node -r ts-node/register scripts/weight-trend-tuning-report.js --check",
     "performance:regression": "node -r ts-node/register scripts/performance-regression.js",
-    "pretest:coverage": "npm run prisma:generate",
+    "pretest:coverage": "npm run prisma:generate && npm run build:mcp-app",
     "test:coverage": "c8 node -r ts-node/register --test",
-    "dev": "nodemon --watch src --watch ../shared --ext ts,json --exec ts-node src/index.ts"
+    "dev": "nodemon --watch src --watch scripts/build-mcp-app.mjs --watch scripts/dev-mcp-server.mjs --watch ../shared --ext ts,json,html,css,mjs --exec node scripts/dev-mcp-server.mjs"
   },
   "keywords": [],
   "author": "",
@@ -55,6 +56,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.3",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/express-session": "^1.18.2",
@@ -65,6 +67,7 @@
     "@types/pg": "^8.15.4",
     "@types/web-push": "^3.6.4",
     "c8": "^12.0.0",
+    "esbuild-wasm": "0.28.1",
     "nodemon": "^3.1.11",
     "openapi-typescript": "^7.13.0",
     "ts-node": "^10.9.2",

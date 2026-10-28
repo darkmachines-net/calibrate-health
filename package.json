@@ -68,6 +68,7 @@
     "weight-trend:tuning-report:check": "npm --prefix backend run weight-trend:tuning-report:check",
     "test:api-client": "npm --prefix packages/api-client test",
     "test:mobile": "npm --prefix mobile test",
+    "test:mcp-app": "npm --prefix backend run build:mcp-app && playwright test --config=playwright.mcp-app.config.ts",
     "test:web:e2e": "node scripts/expo-web-playwright.mjs",
     "test:expo-web:release": "node --test scripts/expo-web-release.test.mjs scripts/expo-web-static-server.test.mjs",
     "test:expo-web:e2e": "npm run test:web:e2e",
@@ -126,6 +127,7 @@
     "knip": "6.29.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.72.0",
-    "eslint-plugin-jsdoc": "63.3.3"
+    "eslint-plugin-jsdoc": "63.3.3",
+    "yaml": "2.9.0"
   }
 }

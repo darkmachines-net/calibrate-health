@@ -31,6 +31,20 @@ test('ordinary app source bundles native JavaScript without compiling phone pack
   assert.equal(selected.type_backend, false);
 });
 
+test('MCP browser, data and plugin inputs select their independent integration suite', () => {
+  for (const file of ['backend/src/mcp/ui/main.ts', 'backend/src/services/mcpProgressAnalysis.ts',
+    'backend/scripts/build-mcp-app.mjs', 'backend/scripts/dev-mcp-server.mjs', 'e2e/mcp-app/progress.spec.ts', 'playwright.mcp-app.config.ts',
+    'plugins/calibrate-health/.codex-plugin/plugin.json', 'plugins/calibrate-health/skills/calibrate-progress/SKILL.md',
+    'scripts/calibrate-plugin.mjs', 'backend/package-lock.json', 'shared/designTokens.ts',
+    'backend/tsconfig.mcp-app.json', 'LICENSE', 'NOTICE']) {
+    assert.equal(classifyChanges([file]).mcp, true, file);
+  }
+  assert.equal(classifyChanges(['backend/tsconfig.mcp-app.json']).type_backend, true);
+  for (const file of ['backend/src/routes/food.ts', 'mobile/src/components/AppCard.tsx', 'README.md']) {
+    assert.equal(classifyChanges([file]).mcp, false, file);
+  }
+});
+
 test('platform-specific source selects its runtime, and backend source never selects phone builds', () => {
   assert.equal(classifyChanges(['mobile/src/platform/network.web.ts']).native_runtime, false);
   assert.equal(classifyChanges(['mobile/src/platform/network.native.ts']).web, false);

@@ -25,6 +25,7 @@ jobs:
       mobile: ${{ steps.decision.outputs.mobile }}
       api: ${{ steps.decision.outputs.api }}
       api_contract: ${{ steps.decision.outputs.api_contract }}
+      mcp: ${{ steps.decision.outputs.mcp }}
 
     steps:
       - name: Checkout complete PR history for affected checks
@@ -51,11 +52,13 @@ jobs:
           API_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.api == 'true' }}
           API_CONTRACT_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.api_contract == 'true' }}
           MOBILE_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.mobile == 'true' }}
+          MCP_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.mcp == 'true' }}
         run: |
           echo "backend=${BACKEND_CHANGED}" >> "${GITHUB_OUTPUT}"
           echo "api=${API_CHANGED}" >> "${GITHUB_OUTPUT}"
           echo "api_contract=${API_CONTRACT_CHANGED}" >> "${GITHUB_OUTPUT}"
           echo "mobile=${MOBILE_CHANGED}" >> "${GITHUB_OUTPUT}"
+          echo "mcp=${MCP_CHANGED}" >> "${GITHUB_OUTPUT}"
 
   backend-tests:
     name: Backend Tests
@@ -150,9 +153,46 @@ jobs:
         if: needs.changes.outputs.mobile == 'true'
         run: npm --prefix mobile test
 
+  mcp-tests:
+    name: MCP App and Plugin Tests
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install host and App build dependencies
+        run: |
+          npm ci --no-audit --fund=false
+          npm ci --prefix backend --no-audit --fund=false
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate plugin package and publication checks
+        run: |
+          node scripts/calibrate-plugin.mjs check
+          node --test scripts/calibrate-plugin.test.mjs
+
+      - name: Test progress App in its host bridge
+        run: npm run test:mcp-app
+
   required-tests:
     name: Required Tests
-    needs: [changes, backend-tests, mobile-tests]
+    needs: [changes, backend-tests, mobile-tests, mcp-tests]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

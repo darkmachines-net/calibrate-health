@@ -434,6 +434,7 @@ async function runDatabaseCommand(command, args = []) {
   run("npm", ["--prefix", "backend", "run", command, ...(args.length ? ["--", ...args] : [])]);
 }
 
+/** Run the repository's host validation sequence, including the isolated MCP browser and plugin contracts. */
 async function ci() {
   await setupHost();
   await timed("Lint with zero warnings", () => {
@@ -466,6 +467,11 @@ async function ci() {
     run("npm", ["--prefix", "packages/api-client", "run", "typecheck"])
   );
   await timed("Run backend tests", () => run("npm", ["--prefix", "backend", "test"]));
+  await timed("Validate MCP App and plugin", () => {
+    run("node", ["scripts/calibrate-plugin.mjs", "check"]);
+    run("node", ["--test", "scripts/calibrate-plugin.test.mjs"]);
+    run("npm", ["run", "test:mcp-app"]);
+  });
   await timed("Run mobile tests", () =>
     run("npm", ["--prefix", "mobile", "test", "--", "--runInBand"])
   );

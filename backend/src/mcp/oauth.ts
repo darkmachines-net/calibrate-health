@@ -1,4 +1,4 @@
-/** @file oauth: Mount resource-bound discovery, registration, consent and token routes on the supplied Express app. */
+/** @file Resource-bound OAuth discovery and consent for read-only historical progress and pattern exploration. */
 
 import express, { type Express, type Request, type RequestHandler, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
@@ -419,12 +419,13 @@ function sanitizeClientName(value: string | undefined): string {
   return normalized || 'Codex';
 }
 
+/** Explain the historical read access on the consent screen without implying permission to change health data. */
 function scopeDescription(scope: string): string {
   if (scope === MCP_FOOD_READ_SCOPE) {
-    return 'Recent food logs, food-day status, calorie target, configured deficit, and profile-estimated TDEE';
+    return 'Food history, completion status, calorie and meal patterns, saved daily targets, current calorie target, configured deficit, and profile-estimated TDEE';
   }
   if (scope === MCP_WEIGHT_READ_SCOPE) {
-    return 'Recent weight measurements, trend uncertainty, goal, calorie target, configured deficit, and profile-estimated TDEE';
+    return 'Weight history, period comparisons, trend uncertainty, current goal, calorie target, configured deficit, and profile-estimated TDEE';
   }
   return scope;
 }

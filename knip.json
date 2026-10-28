@@ -33,23 +33,25 @@
       "playwright": {
         "config": [
           "playwright.expo-web.config.ts",
-          "playwright.ux.config.ts"
+          "playwright.ux.config.ts",
+          "playwright.mcp-app.config.ts"
         ]
       }
     },
     "backend": {
       "entry": [
         "src/index.ts!",
+        "src/mcp/ui/main.ts!",
         "prisma.config.ts",
         "prisma/seed.ts",
-        "scripts/*.js",
+        "scripts/*.{js,mjs}",
         "test/**/*.test.js"
       ],
       "project": [
         "src/**/*.ts!",
         "prisma/**/*.prisma",
         "prisma/**/*.ts",
-        "scripts/**/*.js",
+        "scripts/**/*.{js,mjs}",
         "test/**/*.js"
       ],
       "ignoreDependencies": [

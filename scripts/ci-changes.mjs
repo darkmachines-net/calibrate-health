@@ -110,7 +110,7 @@ export function classifyChanges(paths, { readBase, readHead } = {}) {
   const backendDependencies = any(/^backend\/(package(?:-lock)?\.json|\.npmrc)$/);
   const shared = source(/^shared\//);
   const backendBuild = source(/^backend\/(src|prisma|scripts)\//) ||
-    any(/^backend\/(prisma\.config\.ts|tsconfig(?:\.build)?\.json)$/) || backendDependencies || shared;
+    any(/^backend\/(prisma\.config\.ts|tsconfig(?:\.build|\.mcp-app)?\.json)$/) || backendDependencies || shared;
   const client = source(/^packages\/api-client\//);
   const mobileSource = file => /^(mobile\/(app|src|assets|modules)\/|packages\/api-client\/|shared\/)/.test(file);
   const webSource = runtime.some(file => mobileSource(file) &&
@@ -141,6 +141,11 @@ export function classifyChanges(paths, { readBase, readHead } = {}) {
   const database = any(/^backend\/(prisma\/|prisma\.config\.ts$|tsconfig(?:\.build)?\.json$)/) || backendDependencies ||
     source(/^backend\/src\/(config\/database(?:Utils)?\.ts$|observability\.ts$|routes\/(goals|metrics|user|imports)\.ts$|services\/(calorie|goal|watch|clientOperation|sync|import|loseItImport|metricProgress|materializedWeightTrend|weightTrend)|utils\/(date|goal|units))/) ||
     any(/^(deploy\/backup\/|scripts\/postgres-.*\.mjs$|shared\/(weightTrend|goal|calorie).*\.ts$)/);
+  // The isolated App has a browser bridge and installable package outside Expo's test surface.
+  const mcp = paths.some(file => /^plugins\/calibrate-health\//.test(file)) ||
+    any(/^(backend\/src\/mcp\/|backend\/src\/services\/mcpProgress|backend\/scripts\/(build-mcp-app|dev-mcp-server)|backend\/test\/mcp-|e2e\/mcp-app\/|playwright\.mcp-app\.config\.ts$|scripts\/calibrate-plugin)/) ||
+    backendDependencies || workspace || has('backend/tsconfig.mcp-app.json') || has('shared/designTokens.ts') ||
+    has('LICENSE') || has('NOTICE') || workflow('tests');
   return {
     release_config: selectionChanged || has('release.config.json') || files.some(file => RELEASE_MIRRORS.has(file)) || any(/^(\.github\/|deploy\/|quality\/|scripts\/|wear\/)/) ||
       api || expoConfig || has('mobile/eas.json') || any(/^shared\/(release|client-diagnostic-versions)\.json$/) || has('playwright.ux.config.ts'),
@@ -149,6 +154,7 @@ export function classifyChanges(paths, { readBase, readHead } = {}) {
     mobile: any(/^mobile\//) || client || shared || workspace || workflow('tests'),
     api: api || workflow('tests'),
     api_contract: apiContract || workflow('tests'),
+    mcp,
     web: webBuild || workflow('builds') || any(/^(e2e\/expo-web\/(fixtures\.ts|release-smoke\.spec\.ts)|playwright\.expo-web\.config\.ts)$/) ||
       any(/^scripts\/expo-web-(playwright|static-server|release).*\.mjs$/),
     wear: any(/^wear\//) || workflow('builds'),

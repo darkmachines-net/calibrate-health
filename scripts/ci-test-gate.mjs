@@ -1,4 +1,4 @@
-/** @file Enforces selected backend and combined mobile/API test jobs before allowing a PR merge. */
+/** @file Enforces selected backend, mobile/API, and MCP App/plugin test jobs before allowing a PR merge. */
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,10 +7,10 @@ import { pathToFileURL } from 'node:url';
 export function verifyRequiredTests(needs) {
   if (needs?.changes?.result !== 'success') throw new Error('Test classification did not succeed.');
   const outputs = needs.changes.outputs ?? {};
-  for (const surface of ['backend', 'mobile', 'api']) {
+  for (const surface of ['backend', 'mobile', 'api', 'mcp']) {
     if (!['true', 'false'].includes(outputs[surface])) throw new Error(`Missing test selection for ${surface}.`);
   }
-  for (const surface of ['backend', 'mobile']) {
+  for (const surface of ['backend', 'mobile', 'mcp']) {
     const selected = outputs[surface] === 'true' || (surface === 'mobile' && outputs.api === 'true');
     const result = needs[`${surface}-tests`]?.result;
     if (result !== 'success' && !(!selected && result === 'skipped')) {

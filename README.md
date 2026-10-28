@@ -42,7 +42,7 @@ Apache 2.0 or other license grants. The current source is available under Shield
 - Weight logging + trend visualization
 - Goal projection from a steady deficit
 - Observational Health Connect activity that never automatically changes the calorie target
-- Read-only MCP access to recent food logs and weight trends through revocable OAuth connections
+- Read-only MCP progress explorer with historical comparisons and contextual chat actions through revocable OAuth connections
 
 #### FatSecret terms + attribution
 

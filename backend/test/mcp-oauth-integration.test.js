@@ -12,6 +12,7 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 const { createCalibrateMcpHttpApp } = require('../src/mcp/server');
 const { McpOAuthError } = require('../src/services/mcpOAuth');
 
+/** Model resource-bound OAuth grants, one-use codes, refresh rotation, and revocation without stored credentials. */
 function createInMemoryOAuthService(resource) {
   const clients = new Map();
   const requests = new Map();
@@ -225,8 +226,11 @@ test('remote MCP completes DCR, PKCE approval, tool use, refresh rotation, repla
     await client.connect(transport);
     const tools = await client.listTools();
     assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), [
+      'compare_progress_periods',
+      'get_progress_summary',
       'get_recent_food_logs',
-      'get_weight_trend'
+      'get_weight_trend',
+      'open_progress_explorer'
     ]);
     const food = await client.callTool({ name: 'get_recent_food_logs', arguments: { days: 7 } });
     assert.equal(food.structuredContent.requested_days, 7);

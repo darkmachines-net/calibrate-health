@@ -1,4 +1,4 @@
-# MCP transport and OAuth
+# MCP progress explorer and OAuth
 
 Calibrate exposes a read-only, stateless Streamable HTTP MCP endpoint at `/mcp`. The official
 hosted resource is `https://calibratehealth.app/mcp`; Advanced self-hosts can opt in with their own
@@ -9,16 +9,73 @@ public HTTPS origin. The tracked Codex plugin is under [plugins/calibrate-health
 The MCP server derives the account only from the OAuth bearer token. Tool arguments never accept a
 user or account ID.
 
+- `open_progress_explorer` opens the MCP App with a 90-day overview by default. Paired optional
+  `start_date` and `end_date` select any retained historical window of up to 365 inclusive local days.
+- `get_progress_summary` returns the same data without opening another panel. Summaries include
+  available-history bounds, current goal/plan, daily chart data, food coverage, and meal/weekday patterns.
+- `compare_progress_periods` accepts `first` and `second` objects containing explicit date bounds,
+  each up to 365 days. It returns normalized summaries, evidence counts, and second-minus-first differences.
 - `get_recent_food_logs` returns 1-31 user-local calendar days, sanitized food entries, per-day
   tracking status and totals, COMPLETE-day averages, and current calorie-target context.
 - `get_weight_trend` returns 7-365 user-local calendar days of raw weight observations, the bounded
   Calibrate trend and 95% confidence interval, evidence/freshness, a nullable weekly rate, current
   goal context, and current calorie-target context.
 
+The two existing tools retain their defaults and accept optional `end_date` for older history.
+There is no age cutoff: use adjacent windows for longer analyses and combine sums/counts instead of
+averaging averages. Invalid, reversed, future-ending, or oversized ranges fail explicitly.
+
 Food-provider IDs, barcodes, user IDs, email, date of birth, sex, height, avatar, body-fat fields,
 and credentials are omitted. Only COMPLETE food days are representative. The MCP preserves the
 product rule that calories-out is the profile-estimated TDEE; food and weight observations never
 replace it.
+
+## Analysis boundaries
+
+Only COMPLETE days enter intake averages and meal/weekday patterns. Missing meals on a COMPLETE
+day contribute zero to that meal's average; missing or unfinished days never imply zero intake.
+Every aggregate includes its sample count. Historical intake-versus-target comparisons use only
+saved canonical daily comparisons, with a separate denominator for days having valid targets.
+Missing historical targets stay null; the current plan does not backfill them.
+
+The current goal and plan are read using actual current time, even when the selected window is old.
+Maintenance has no completion percentage or projection date. Weight-change summaries use actual
+first/last in-range observations and report their dates. Modeled pace describes the selected period
+end, not average pace over the range. The canonical model retains its bounded active/warmup horizon;
+older observations are visible without fabricated trend values. See the
+[domain services](../services/README.md#weight-trend-and-calibration) for model ownership.
+
+Related reads share a repeatable-read snapshot. MCP analysis never materializes trends, captures
+daily plans, or changes health data. Independently granted food/weight scopes control which history
+and analysis sections are queried and returned. Food permission includes the existing derived calorie
+plan and canonical tracking status, whose internal readers can use weight inputs; it does not expose
+weight observations, weight-history bounds, modeled weight, or goal progress. Activity, body fat, and
+nutrition macros are not exposed.
+
+## App UI and development
+
+The [isolated TypeScript/SVG App](ui/README.md) owns view state, charts, host messaging, and its
+build workflow; `progressTypes.ts` is its pure JSON contract with the server.
+The opening tool links an HTML MCP Apps resource and declares global sidebar and conversation
+entrypoints through `openai/ui` metadata. A local installation needs its MCP server running for the
+host to discover those launchers. Data tools remain useful in clients without
+UI, and panel refreshes call them through the host bridge without opening additional panels.
+The production image's backend-dist copy includes the offline resource; it needs no extra
+service, port, or Expo runtime. `appResource.ts` resolves the built HTML for source and compiled
+server execution and supplies the restrictive MCP App content-security policy.
+
+From the repository root:
+
+```sh
+npm --prefix backend run typecheck
+npm --prefix backend test
+npm --prefix backend run build
+npm run test:mcp-app
+node scripts/calibrate-plugin.mjs check
+```
+
+The [browser harness](../../../e2e/mcp-app/README.md) documents synthetic fixtures, protocol coverage,
+and its limits. MCP browser/plugin tests are selected PR checks and run in `ci:local`.
 
 ## OAuth contract
 
@@ -34,8 +91,8 @@ is rechecked on approval and use; the official hosted service requires current e
 
 Scopes:
 
-- `calibrate:food:read` - recent food logs and completion status plus current calorie-target, configured-deficit, and profile-estimated-TDEE context.
-- `calibrate:weight:read` - recent weight observations and trend uncertainty plus current goal and calorie-plan context.
+- `calibrate:food:read` - food history, completion status and patterns plus current calorie-target, configured-deficit, and profile-estimated-TDEE context.
+- `calibrate:weight:read` - weight history and trend uncertainty plus current goal and calorie-plan context.
 
 Discovery and protocol routes:
 
@@ -100,7 +157,9 @@ The plugin MCP declaration uses remote OAuth and contains no secret:
 }
 ```
 
-The tracked plugin currently targets the Dark Machines self-hosted instance. Install it from a
-personal or team marketplace, choose **Authenticate**, complete the Calibrate consent page, and
-start a new task so Codex loads the installed skill and MCP dependency. For a different hosted
-origin, update both `.mcp.json` and the skill dependency URL before installing.
+The tracked plugin targets the Dark Machines self-hosted instance. Its
+[package README](../../../plugins/calibrate-health/README.md) owns marketplace registration,
+installation, authentication, and publication checks. Deploy the compatible server before publishing
+the immutable plugin revision to the existing DarkMachines marketplace. The App is delivered by the
+server; it is not copied into the plugin cache. For a different hosted origin, update both
+`.mcp.json` and the skill dependency URL before installing.
