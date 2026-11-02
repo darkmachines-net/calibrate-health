@@ -1,4 +1,4 @@
-/** @file Regression coverage for native signing, reviewed Gradle dependency state, and release artifact contracts. */
+/** @file Guard paired signing, release origins and complete checksum-bound Gradle state, including development modules. */
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -404,9 +404,13 @@ test('tracked phone and Wear dependency state is complete and hash-reviewed', ()
     'utf8'
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.platforms.phone.files.length, 31);
+  const lockDirectory = fileURLToPath(new URL('../mobile/gradle/native-release/phone/gradle/dependency-locks/', import.meta.url));
+  assert.deepEqual(
+    manifest.platforms.phone.files.map(file => file.path).filter(file => file.startsWith('gradle/dependency-locks/')).sort(),
+    fs.readdirSync(lockDirectory).map(file => `gradle/dependency-locks/${file}`).sort()
+  );
   for (const module of ['expo-dev-client', 'expo-dev-launcher', 'expo-dev-menu', 'expo-dev-menu-interface']) {
-    assert.ok(manifest.platforms.phone.files.some((file) => file.path === `gradle/dependency-locks/${module}.lockfile`));
+    assert.ok(manifest.platforms.phone.files.some(file => file.path === `gradle/dependency-locks/${module}.lockfile`));
   }
   assert.ok(manifest.platforms.phone.files.some((file) => file.path.endsWith('expo-dom-webview.lockfile')));
   assert.equal(manifest.platforms.wear.files.length, 3);

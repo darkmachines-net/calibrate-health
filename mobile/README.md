@@ -11,9 +11,12 @@ Start the API/database with `npm run dev`; the
 [development tools guide](../scripts/README.md#development) owns prerequisites,
 worktree setup and seeded/manual authentication.
 
-- `npm run dev:expo -- --platform android` starts the native Expo dev-client server for an Android emulator;
-  use `npm run dev:expo -- --platform ios` for iOS Simulator. Keep `npm run dev` running in another terminal.
-- Build/install with `npm --prefix mobile run android` or, on macOS, `npm --prefix mobile run ios`.
+- `npm run dev:native -- --platform android` starts Metro for the separate Calibrate Dev app;
+  use `--platform ios` for iOS Simulator. `dev:expo` remains an alias. Keep `npm run dev` running separately.
+  Add `--port 8082 --host <LAN-IPv4> --clear` when selecting a Metro port and advertised host.
+- For local build/install, set `EXPO_RELEASE_VARIANT=development` before running
+  `npm --prefix mobile run android` or, on macOS, `npm --prefix mobile run ios`.
+  Use the same public environment/native inputs as Metro or the hosted preview.
 - Android emulators reach the host at `10.0.2.2`; iOS Simulator uses `127.0.0.1`.
 - For Expo Go on a physical Android or iOS phone, start Expo with a LAN-reachable backend URL:
   Use an Expo Go build supporting SDK 58. Health Connect, Wear pairing, and remote push require a custom development build.
@@ -22,6 +25,23 @@ worktree setup and seeded/manual authentication.
   session for `test@calibratehealth.app` when no stored session can be restored.
 - Official builds default to `https://calibratehealth.app`.
 - A stored self-hosted server remains selected across restarts; choosing a custom server is an Advanced sign-in option.
+
+`npm run preview -- --platform android` (or `ios`) publishes a hosted preview of the
+working copy, including uncommitted edits, using EAS CLI 25.3.0 and an authenticated
+Expo account. Open the returned dashboard link and scan its development-build QR code
+with a compatible Calibrate Dev installation. Metro is not required. Each invocation
+creates an isolated preview branch and leaves the development/beta/production channels
+unchanged. `npm run preview:web` retains the local backend plus web-export preview.
+
+The shared toolkit owns development names, schemes, separate application IDs and
+fingerprint runtimes. `index.js` checks the installed native runtime before loading
+Router in a development client, including minified hosted previews. A mismatch shows
+rebuild/reopen instructions without importing app features. Restart Metro and reopen
+the project through its development link after native changes; Fast Refresh does not
+refresh the manifest. Web and release builds retain normal Router startup, and release
+OTA continues using the shared mobile major. Final release-mode and Wear-pairing
+validation belongs in beta. See [workflow setup](../.github/workflows/README.md#development-previews)
+for hosted builds, EAS environment values and device registration.
 
 ## Architecture
 

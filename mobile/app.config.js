@@ -1,4 +1,4 @@
-/** @file app config: Add EAS Update configuration only when a project ID is supplied. This keeps normal web development usable while making release builds explicit and reproducible. */
+/** @file Resolve release updates and separate fingerprint-based development clients without changing store identities. */
 
 /** Resolve the native Expo project, update channel, and automatic runtime compatibility. */
 const { runtimeVersion, developmentConfig } = require('@mchartier/expo-release/expo');
@@ -8,11 +8,11 @@ const CHANNEL_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
 /**
  * Add EAS Update configuration only when a project ID is supplied. This keeps
- * normal web development usable while making release builds explicit and reproducible.
+ * normal web development usable. The shared helper owns development identity and runtime isolation.
  */
 function createExpoConfig({ config }) {
   const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || config.extra?.eas?.projectId;
-  if (!projectId) return config;
+  if (!projectId) return developmentConfig(config);
   if (!PROJECT_ID_PATTERN.test(projectId)) {
     throw new Error('EXPO_PUBLIC_EAS_PROJECT_ID must be an Expo project UUID.');
   }

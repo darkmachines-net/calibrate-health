@@ -1,4 +1,4 @@
-/** @file Regression coverage for release Entry: Android release entry. */
+/** @file Keep the native entry local to mobile while preserving Router registration for store releases. */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,6 +11,6 @@ describe('Android release entry', () => {
         const entrySource = fs.readFileSync(path.resolve(__dirname, '../../index.js'), 'utf8');
 
         expect(packageJson.main).toBe('index.js');
-        expect(entrySource).toContain("import 'expo-router/entry';");
+        expect(entrySource).toContain("require('expo-router/entry');");
     });
 });

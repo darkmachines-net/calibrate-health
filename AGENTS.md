@@ -87,8 +87,10 @@ Primary workflows:
 - Windows Android build setup: `npm run native:setup` (add `-- --check` for a read-only prerequisite check)
 - Prepare the worktree stack: `npm run dev:setup`
 - Local dev server: `npm run dev`
-- Native Expo dev-client bundler: `npm run dev:expo` (with the Compose stack
+- Native Expo dev-client bundler: `npm run dev:native` (`dev:expo` remains an alias, with the Compose stack
   running separately)
+- Hosted development preview: `npm run preview -- --platform android` (publishes the working copy; iOS is also supported).
+- Local web preview: `npm run preview:web`.
 - Local dev without seeded-user auto-login: `npm run dev:manual-auth`
 - Inspect the current stack: `npm run dev:status`
 - Reset test-user onboarding: `npm run dev:reset-test-user-onboarding`
@@ -263,9 +265,9 @@ UI code style:
 
 ## Release Versioning
 
-- Ordinary PRs leave release versions unchanged. One protected Release workflow selects server, native and OTA paths and stamps tagged build commits.
+- Ordinary PRs leave release versions unchanged. Master pushes prepare Android/iOS development previews, then require beta approval before the shared Release workflow selects server, paired Android, iOS/TestFlight and OTA delivery. Production delivery remains manual.
 - Use npm run release -- validate or plan --profile beta for read-only checks. There are no local release wrappers or recovery CLI.
-- Keep package, lockfile and workflow pins at one reviewed full toolkit SHA. Use the toolkit pin updater; never copy lifecycle code.
+- Keep package, lockfile and Release/Development workflow pins at one reviewed full toolkit SHA. Use the toolkit pin updater; never copy lifecycle code.
 - Preserve Calibrate's paired odd/even codes, application/signing identities, artifact checks, diagnostic server dependency and protected environments.
 - Release defaults to beta; production is opt-in. Keep preview, native-release-signing, play-internal and self-hosted-testing free of reviewer/wait/custom approval gates while preserving master restrictions and separate production approvals. Each channel retains its own successful baselines and shares global version/code reservations and the current private server.
 - Build the Android phone/Wear pair through the application builder and iOS through the shared EAS worker. Stamp iOS buildNumber with the reserved phone code, retain store signing, and submit to the configured App Store Connect app for TestFlight. Keep lifecycle/provider operations in the toolkit.

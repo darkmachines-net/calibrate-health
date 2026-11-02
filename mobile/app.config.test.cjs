@@ -1,4 +1,4 @@
-/** @file Verify Expo platform config and isolated beta/store build targets for Android testing and iOS TestFlight. */
+/** @file Check release identities, isolated development clients and invalid Expo update inputs. */
 
 /** Regression coverage for app.config and its failure boundaries. */
 const assert = require('node:assert/strict');
@@ -30,22 +30,6 @@ test.afterEach(() => {
   else process.env.EXPO_UPDATES_CHANNEL = originalChannel;
   if (originalVariant === undefined) delete process.env.EXPO_RELEASE_VARIANT;
   else process.env.EXPO_RELEASE_VARIANT = originalVariant;
-});
-
-test('development installs remain separate from beta store clients and persistent OTA channels', () => {
-  process.env.EXPO_RELEASE_VARIANT = 'development';
-  process.env.EXPO_UPDATES_CHANNEL = 'beta';
-  const development = createExpoConfig({ config: appConfig.expo });
-  assert.equal(development.android.package,'net.darkmachines.healthtracker.development');
-  assert.equal(development.ios.bundleIdentifier,'app.calibratehealth.mobile.development');
-  assert.deepEqual(development.runtimeVersion,{ policy: 'fingerprint' });
-  assert.equal(development.updates.requestHeaders['expo-channel-name'],undefined);
-  delete process.env.EXPO_RELEASE_VARIANT;
-  const beta = createExpoConfig({ config: appConfig.expo });
-  assert.equal(beta.android.package,appConfig.expo.android.package);
-  assert.equal(beta.ios.bundleIdentifier,appConfig.expo.ios.bundleIdentifier);
-  assert.equal(beta.updates.requestHeaders['expo-channel-name'],'beta');
-  assert.equal(beta.runtimeVersion,require('./release-version.json').version.split('.')[0]);
 });
 
 test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () => {
@@ -136,4 +120,33 @@ test('Expo config rejects malformed project IDs and channel names', () => {
   process.env.EXPO_PUBLIC_EAS_PROJECT_ID = '01234567-89ab-4def-8123-456789abcdef';
   process.env.EXPO_UPDATES_CHANNEL = 'beta channel';
   assert.throws(() => createExpoConfig({ config: {} }), /EXPO_UPDATES_CHANNEL/);
+});
+
+test('development clients isolate native identity, links and update runtime from store builds', () => {
+  process.env.EXPO_RELEASE_VARIANT = 'development';
+  process.env.EXPO_UPDATES_CHANNEL = 'beta';
+  const result = createExpoConfig({ config: appConfig.expo });
+  assert.equal(result.name, 'Calibrate Dev');
+  assert.equal(result.scheme, 'calibrate-health-app-dev');
+  assert.equal(result.android.package, 'net.darkmachines.healthtracker.development');
+  assert.equal(result.ios.bundleIdentifier, 'app.calibratehealth.mobile.development');
+  assert.deepEqual(result.android.intentFilters, []);
+  assert.deepEqual(result.ios.associatedDomains, []);
+  assert.deepEqual(result.runtimeVersion, { policy: 'fingerprint' });
+  assert.equal(result.updates.requestHeaders['expo-channel-name'], undefined);
+  assert.deepEqual(result.plugins.at(-1), ['expo-dev-client', { launchMode: 'launcher' }]);
+  assert.equal(appConfig.expo.android.package, 'net.darkmachines.healthtracker');
+  assert.ok(appConfig.expo.android.intentFilters.length);
+});
+
+test('beta and production retain store identity and use their declared update channels', () => {
+  delete process.env.EXPO_RELEASE_VARIANT;
+  for (const channel of ['beta', 'production']) {
+    process.env.EXPO_UPDATES_CHANNEL = channel;
+    const result = createExpoConfig({ config: appConfig.expo });
+    assert.equal(result.android.package, appConfig.expo.android.package);
+    assert.equal(result.ios.bundleIdentifier, appConfig.expo.ios.bundleIdentifier);
+    assert.equal(result.updates.requestHeaders['expo-channel-name'], channel);
+    assert.equal(result.runtimeVersion, require('./release-version.json').version.split('.')[0]);
+  }
 });

@@ -136,6 +136,11 @@
         "builder": "eas",
         "buildNumberFloor": 0
       }
+    ],
+    "publicVariables": [
+      "EXPO_PUBLIC_CALIBRATE_SERVER_URL",
+      "EXPO_UPDATES_CHANNEL",
+      "NODE_ENV"
     ]
   },
   "server": {
@@ -180,6 +185,8 @@
     }
   },
   "development": {
+    "channel": "development",
+    "promotionEnvironment": "production",
     "easProfile": "development",
     "environment": "preview",
     "approvalEnvironment": "preview",
@@ -188,12 +195,9 @@
       "ios"
     ],
     "publicEnvironment": {
-      "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+      "EXPO_RELEASE_VARIANT": "development",
       "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
-      "EXPO_UPDATES_CHANNEL": "beta",
-      "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
-      "NODE_ENV": "production",
-      "EXPO_RELEASE_VARIANT": "development"
+      "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
     }
   }
 }

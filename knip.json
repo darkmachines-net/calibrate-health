@@ -23,11 +23,9 @@
       "ignoreDependencies": [
         "@expo/config-plugins",
         "@expo/fingerprint",
-        "react",
         "react-dom",
         "react-native-safe-area-context",
-        "expo-updates",
-        "expo"
+        "expo-updates"
       ],
       "github-actions": true,
       "playwright": {
