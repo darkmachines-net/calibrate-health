@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "profile": "single-user-pre-release",
   "protocolPath": "quality/README.md",
   "releaseManifestPath": "shared/release.json",
@@ -9,66 +9,27 @@
     "native"
   ],
   "policy": {
-    "pullRequestChecks": "affected-only",
+    "pullRequestChecks": "lint-build-test",
     "externalReleaseApproval": "owner-discretion",
     "retainedEvidenceRequired": false
   },
   "automaticRequirements": [
     {
-      "id": "affected-builds",
-      "title": "Compile and bundle only affected application surfaces",
+      "id": "pull-request-checks",
+      "title": "Lint, type-check, build and test every pull request",
       "releaseScopes": [
         "server-web",
         "ota",
         "native"
       ],
-      "trigger": "affected-pull-request",
+      "trigger": "pull-request",
       "workflowPaths": [
-        ".github/workflows/builds.yml"
+        ".github/workflows/ci.yml"
       ],
       "jobIds": [
-        "release-config",
-        "backend-build",
-        "expo-web-build",
-        "web-critical-smoke",
-        "native-metro-bundle",
-        "mobile-build",
-        "ios-build",
-        "wear-build"
-      ]
-    },
-    {
-      "id": "affected-tests-and-typecheck",
-      "title": "Run unit tests and type checks for affected code",
-      "releaseScopes": [
-        "server-web",
-        "ota",
-        "native"
-      ],
-      "trigger": "affected-pull-request",
-      "workflowPaths": [
-        ".github/workflows/tests.yml",
-        ".github/workflows/lint.yml"
-      ],
-      "jobIds": [
-        "backend-tests",
-        "mobile-tests",
-        "typecheck"
-      ]
-    },
-    {
-      "id": "migration-safety",
-      "title": "Exercise populated upgrades and rollback only when database migrations change",
-      "releaseScopes": [
-        "server-web"
-      ],
-      "trigger": "migration-change",
-      "workflowPaths": [
-        ".github/workflows/database-upgrade.yml"
-      ],
-      "jobIds": [
-        "populated-upgrade",
-        "release-upgrade-rollback"
+        "lint",
+        "build",
+        "tests"
       ]
     },
     {
@@ -89,18 +50,16 @@
     },
     {
       "id": "production-container",
-      "title": "Validate production containers for affected pull requests and releases",
+      "title": "Scan production containers during scheduled or manual maintenance",
       "releaseScopes": [
         "server-web"
       ],
-      "trigger": "affected-pull-request-and-release",
+      "trigger": "schedule-and-manual",
       "workflowPaths": [
-        ".github/workflows/container-scan.yml",
-        ".github/workflows/release.yml"
+        ".github/workflows/container-scan.yml"
       ],
       "jobIds": [
-        "scan",
-        "release"
+        "scan"
       ]
     },
     {
@@ -146,6 +105,31 @@
         "android-emulator-e2e",
         "wear-release-emulator-smoke",
         "native-package-upgrade"
+      ]
+    },
+    {
+      "id": "native-compilation",
+      "title": "Optional Android phone, iOS Simulator and Wear compilation",
+      "releaseScopes": [
+        "native"
+      ],
+      "workflowPath": ".github/workflows/builds.yml",
+      "jobIds": [
+        "mobile-build",
+        "ios-build",
+        "wear-build"
+      ]
+    },
+    {
+      "id": "migration-safety",
+      "title": "Optional populated database upgrades and historical rollback rehearsal",
+      "releaseScopes": [
+        "server-web"
+      ],
+      "workflowPath": ".github/workflows/database-upgrade.yml",
+      "jobIds": [
+        "populated-upgrade",
+        "release-upgrade-rollback"
       ]
     }
   ]

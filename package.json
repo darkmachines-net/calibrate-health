@@ -46,7 +46,7 @@
     "release:check": "expo-release validate",
     "release:check:container": "node scripts/postgres-backup-restore-smoke.mjs && node scripts/release-metadata.mjs check && node scripts/release-acceptance.mjs verify",
     "release:check:production": "node scripts/postgres-backup-restore-smoke.mjs && node scripts/release-metadata.mjs check && node scripts/release-acceptance.mjs verify",
-    "test:release": "node --test scripts/ci-changes.test.mjs scripts/release-hooks.test.mjs scripts/release-acceptance.test.mjs scripts/ux-gates.test.mjs",
+    "test:release": "node --test scripts/ci-workflow.test.mjs scripts/release-hooks.test.mjs scripts/release-acceptance.test.mjs scripts/ux-gates.test.mjs",
     "test:dev-script": "node --test scripts/dev-config.test.mjs scripts/dev-stack.test.mjs scripts/expo-native-dev.test.mjs scripts/docker-runtime.test.mjs scripts/calibration-lab.test.mjs",
     "test:native-release": "node --test mobile/app.config.test.cjs mobile/index.test.cjs scripts/native-release-build.test.mjs scripts/native-release-devices.test.mjs scripts/native-release-evidence.test.mjs scripts/android-e2e.test.mjs scripts/hosted-android-e2e.test.mjs scripts/hosted-native-evidence.test.mjs scripts/hosted-native-emulators.test.mjs scripts/native-upgrade-rehearsal.test.mjs scripts/wear-build-task-guard.test.mjs scripts/native-setup.test.mjs scripts/expo-runtime.test.mjs scripts/native-runtime-checks.test.mjs",
     "test:mobile-build-tools": "node --test scripts/xcode-uuid-compatibility.test.mjs",

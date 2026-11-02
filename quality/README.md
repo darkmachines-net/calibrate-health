@@ -1,7 +1,7 @@
 # Validation policy and diagnostic manifests
 
-The repository uses a **single-user pre-release** policy: path-targeted checks protect
-affected code, and the owner chooses additional confidence work for a distribution.
+The repository uses a **single-user pre-release** policy: three PR checks cover
+lint, build and tests, and the owner chooses additional confidence work for a distribution.
 `release-acceptance-plan.json` describes capabilities and workflow/job references,
 not outcomes or permission to launch. `npm run release:acceptance` validates it.
 There is no evidence-only commit, receipt ledger or extra external-launch gate.
@@ -15,14 +15,14 @@ tests the ESLint enforcement.
 `npm run test:coverage` gathers c8/Jest diagnostics. Global line coverage is not a
 release target; generated bridges and callbacks make it an incomplete risk signal.
 
-PR workflows select affected builds/tests, production-image smoke/OS scanning and
-database upgrades. Migration changes additionally select rollback rehearsal. The shared Release workflow owns publication validation as described in
-[workflows](../.github/workflows/README.md). Dependency audits and full image library
-scans are scheduled/manual maintenance, not package advisory gates on ordinary PRs.
+PRs run the Lint, Build and Tests checks described in [workflows](../.github/workflows/README.md).
+Fresh database migrations and critical browser smoke stay in Tests; populated upgrades
+and rollback rehearsals are manual. Dependency audits and production-image scans are
+scheduled/manual maintenance. The shared Release workflow owns publication validation.
 
-Manual Builds scopes `web`, `native`, `web-and-native`, or `configuration-only` expose
-full browser/data-state/UX, Android/Wear emulator and optional same-signer upgrade
-diagnostics. An upgrade baseline must be an exact full lowercase source SHA. Artifacts
+Manual Extended Validation scopes `web`, `native`, `web-and-native`, or `configuration-only`
+expose full browser/data-state/UX checks, Android/iOS/Wear compilation, emulator runs
+and optional same-signer upgrade diagnostics. An upgrade baseline must be an exact full lowercase source SHA. Artifacts
 are short-lived diagnostics, not release receipts. Performance timing is local/field diagnostic work, not a shared-runner release signal.
 
 `risk-evidence.json` maps concrete tests and commands to six areas: auth/isolation,

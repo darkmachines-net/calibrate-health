@@ -89,6 +89,10 @@ owns the device protocol. Device evidence does not authorize publication.
 
 ## Diagnostics and validation
 
+`node --test scripts/ci-workflow.test.mjs` verifies the three required PR checks and
+Build-to-Tests artifact reuse. The [workflow guide](../.github/workflows/README.md#pull-request-checks)
+owns hosted check names and optional diagnostics; `ci:local` also runs broader local integration checks.
+
 `npm run test:dead-code` runs comprehensive Knip plus its production graph. Generated
 clients and genuine dynamic Expo/Metro entries are configured explicitly. Review
 findings before deleting code; do not run Knip `--fix`. Production excludes export/type

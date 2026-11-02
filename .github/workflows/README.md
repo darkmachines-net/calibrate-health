@@ -2,51 +2,36 @@
 
 YAML and the corresponding workers under `scripts/` own inputs, permissions and
 job selection. [Quality](../../quality/README.md) owns validation policy. Required
-lint/type/test checks report results on every PR, including README-only changes.
+lint/build/test checks report results on every PR, including README-only changes.
 Ordinary feature PRs leave canonical release versions unchanged.
 
-## Pull-request check selection
+## Pull-request checks
 
-[`scripts/ci-changes.mjs`](../../scripts/ci-changes.mjs) owns the shared selection
-policy. Classifiers use the complete merge-base-to-head Git diff, including deleted
-files and both sides of renames. They require no dependency installation and print
-their decisions in the Actions summary. A missing Git baseline fails classification;
-an unreadable dependency graph conservatively selects native compilation.
+One **Check** workflow reports three stable required checks on every PR, matching
+Little Say's workflow shape. There are no path-classification, matrix or aggregation
+jobs in the PR checks list.
 
-| Checks | PR inputs |
+| Check | Responsibility |
 | --- | --- |
-| ESLint and dead-code checks | Authored JS/TS, dependency/configuration and workflow changes |
-| Kotlin lint | Kotlin sources, Gradle wrapper and the isolated lint tool |
-| Type checking | Affected backend, shared, API client and mobile surfaces |
-| Release configuration/tooling tests | Release manifests, API contracts, workflow/tooling, deployment and quality policy inputs |
-| Backend tests/build | Backend/shared changes; test-only changes skip the build |
-| Mobile tests and API contract | Mobile/shared/API changes; API generator installation and contract checks run only for contract/dependency inputs |
-| Web export and critical smoke | Web runtime, assets, dependencies and build/smoke configuration; smoke reuses the exact exported artifact |
-| Android/iOS Metro bundles | Native JavaScript, shared code, dependencies and bundler configuration |
-| Android/iOS compilation | Native modules/plugins, app configuration, Gradle locks/wrapper, packaged icons, patches, install hooks and changed mobile dependency graph; platform-specific inputs select only that compiler |
-| Wear build/JVM tests | Watch sources and build configuration |
-| Production image smoke/OS scan | Production backend/web inputs and Docker configuration |
-| Populated database upgrade | Prisma, database integration code and upgrade/backup tooling |
-| Historical upgrade/rollback | Migration files and rollback tooling |
+| Lint | ESLint with zero warnings, documentation rule tests and Kotlin lint |
+| Build | All TypeScript surfaces, dead-code and API contract checks, backend/web builds and Android/iOS JavaScript exports |
+| Tests | Release/tooling contracts, fresh Postgres migrations, backend/API/mobile tests and critical desktop/phone browser smoke |
 
-Documentation does not select application checks. JS/TS unit-test-only changes retain
-their test/lint checks without rebuilding packages or the production image. Web-only
-modules skip native bundles, and native-only modules skip web/image checks.
-Root tooling-only lockfile updates do not compile native apps when the mobile
-production graph is unchanged. Dependency identity includes resolved versions,
-integrity, peers, workspace links and hoisting. Changes within that graph remain
-conservative: a package may contain native code or affect prebuild even when its name
-does not identify it as native. This is CI selection, not an OTA compatibility proof.
+Build uploads the production backend/web output once; Tests restores it and exercises
+the same web export. Failures stop their job. Build must succeed before Tests starts,
+and all three names are required by the default-branch ruleset. Keep those rule names
+in sync when renaming jobs. PR checks run against GitHub's proposed merge commit.
+Older runs on a PR retain their old check names; a new commit uses this layout.
 
-Editing a workflow selects its checks; editing the classifier selects all affected
-lanes. Workflows remain triggered for every PR so required check names report a
-result even when their work is irrelevant. Manual validation scopes retain their existing full-validation rules. Exhaustive
-browser/UX suites, emulators and package-upgrade rehearsals remain manual; dependency
-audits remain scheduled/manual.
+**Extended Validation** is manual: choose web, native, web-and-native or
+configuration-only for full browser/data-state/UX checks, Android/iOS/Wear compilation,
+emulator checks and optional same-signer upgrade rehearsal. **Database Upgrade** is
+manual. **Production Container Scan** and **Dependency Audit** are scheduled/manual
+maintenance. These workflows do not add checks to ordinary PRs. The shared Release
+workflow still owns signed build and delivery validation.
 
-Validate selection with `node --test scripts/ci-changes.test.mjs` and workflow/release
-contracts with `npm run test:release`. Add representative inclusion and exclusion
-cases when adding an input surface.
+Validate workflow contracts with `node --test scripts/ci-workflow.test.mjs` and
+`npm run test:release`. [Quality](../../quality/README.md) owns the supported diagnostics.
 
 ## Release
 

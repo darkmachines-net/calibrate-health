@@ -1,11 +1,11 @@
-/** @file Release-scope classification and validation of the repository-owned acceptance plan. */
+/** @file Validate the three PR checks and optional release diagnostics declared by the repository acceptance plan. */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION = 4;
+export const RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION = 5;
 export const RELEASE_ACCEPTANCE_PLAN_PATH = 'quality/release-acceptance-plan.json';
 export const RELEASE_ACCEPTANCE_SCOPES = Object.freeze(['server-web', 'ota', 'native']);
 
@@ -41,10 +41,8 @@ const MANUAL_FIELDS = Object.freeze([
   'jobIds',
 ]);
 const AUTOMATIC_TRIGGERS = new Set([
-  'affected-pull-request',
-  'migration-change',
+  'pull-request',
   'schedule-and-manual',
-  'affected-pull-request-and-release',
   'release',
 ]);
 const RETIRED_FIELDS = new Set([
@@ -195,7 +193,7 @@ export function requirementsForReleaseScopes(plan, releaseScopes) {
     .filter((item) => item.releaseScopes?.some((scope) => normalized.includes(scope)));
 }
 
-/** Validates the current acceptance schema, referenced inputs, requirements, and retained evidence. */
+/** Validate current policy and referenced workflow jobs; reject stale schemas, missing checks and retired evidence fields. */
 export function validateReleaseAcceptancePlan(plan, options = {}) {
   const context = {
     root: options.repositoryRoot ?? repositoryRoot,
@@ -230,8 +228,8 @@ export function validateReleaseAcceptancePlan(plan, options = {}) {
   );
 
   hasExactFields(plan?.policy, POLICY_FIELDS, 'Release acceptance policy', errors);
-  if (plan?.policy?.pullRequestChecks !== 'affected-only') {
-    errors.push('Release acceptance policy pullRequestChecks must be affected-only.');
+  if (plan?.policy?.pullRequestChecks !== 'lint-build-test') {
+    errors.push('Release acceptance policy pullRequestChecks must be lint-build-test.');
   }
   if (plan?.policy?.externalReleaseApproval !== 'owner-discretion') {
     errors.push('Release acceptance policy externalReleaseApproval must be owner-discretion.');

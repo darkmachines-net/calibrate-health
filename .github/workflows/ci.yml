@@ -1,0 +1,147 @@
+# Keep pull requests to three checks; platform compilation and operational rehearsals are dispatched separately.
+name: Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Lint, Build and Tests are the stable required-check names in the default-branch ruleset.
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci --no-audit --fund=false
+      - run: npm run test:lint
+      - run: npm run lint:eslint
+      - run: npm run lint:kotlin
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_NO_METRO_WORKSPACE_ROOT: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - name: Install workspace and backend dependencies
+        run: |
+          npm ci --no-audit --fund=false
+          npm ci --prefix backend --no-audit --fund=false
+      - run: npm run typecheck
+      - run: npm run test:dead-code
+      - run: npm run api:contract:check
+      - run: npm --prefix backend run build
+      - run: npm run build:expo-web
+      - name: Export Android and iOS JavaScript
+        working-directory: mobile
+        env:
+          NODE_ENV: production
+          NODE_PATH: ${{ github.workspace }}/mobile/node_modules
+        run: |
+          node ../node_modules/expo/bin/cli export --platform android --output-dir "${RUNNER_TEMP}/calibrate-android-export"
+          node ../node_modules/expo/bin/cli export --platform ios --output-dir "${RUNNER_TEMP}/calibrate-ios-export"
+      - name: Share production builds with Tests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-build
+          path: |
+            backend/dist/
+            mobile/dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  tests:
+    name: Tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: '1'
+      DATABASE_URL: postgresql://calibrate_ci:calibrate_ci@localhost:5432/calibrate_ci?schema=public
+      CALIBRATE_AUTH_TEST_DATABASE_URL: postgresql://calibrate_ci:calibrate_ci@localhost:5432/calibrate_ci
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: calibrate_ci
+          POSTGRES_PASSWORD: calibrate_ci
+          POSTGRES_DB: calibrate_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U calibrate_ci -d calibrate_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - name: Install workspace and backend dependencies
+        run: |
+          npm ci --no-audit --fund=false
+          npm ci --prefix backend --no-audit --fund=false
+      - name: Restore production builds
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-build
+          path: .
+      - name: Validate release and tooling contracts
+        run: |
+          npm run release:check
+          npm run test:release
+          npm run test:operations
+          npm run test:native-release
+          npm run test:mobile-build-tools
+          npm run test:wear:emulator:unit
+          npm run test:deploy
+      - name: Verify fresh database migrations
+        run: npm --prefix backend run db:migrate
+      - name: Run backend, API client and mobile tests
+        run: npm test
+      - run: npm run test:expo-web:release
+      - name: Install pinned Playwright Chromium
+        run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Exercise critical desktop and phone journeys against the Build artifact
+        # The direct CLI reuses the downloaded export instead of rebuilding it.
+        run: node node_modules/@playwright/test/cli.js test --config=playwright.expo-web.config.ts --project=desktop-chrome --project=android-phone-chrome e2e/expo-web/release-smoke.spec.ts

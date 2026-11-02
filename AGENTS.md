@@ -127,6 +127,11 @@ Environment conventions:
 
 Choose validation proportional to the change, and report what ran.
 
+PR CI reports three required checks: Lint, Build and Tests in `.github/workflows/ci.yml`.
+Keep those names aligned with the default-branch ruleset. Platform compilation,
+database rehearsals and operational scans belong to the optional workflows documented
+in `.github/workflows/README.md`; do not add separate PR classification or aggregation jobs.
+
 Common checks:
 
 - Full local CI: `npm run ci:local`

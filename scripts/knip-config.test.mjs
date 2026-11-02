@@ -1,4 +1,4 @@
-/** @file Guards Knip package boundaries, dynamic release entrypoints and ordering after affected TypeScript validation. */
+/** @file Guards Knip package boundaries, dynamic release entrypoints and ordering after TypeScript validation in the consolidated Build check. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
 const knipConfig = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'knip.json'), 'utf8'));
-const lintWorkflow = fs.readFileSync(path.join(repositoryRoot, '.github', 'workflows', 'lint.yml'), 'utf8');
+const buildWorkflow = fs.readFileSync(path.join(repositoryRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
 
 test('Knip is pinned and dead-code scripts never auto-fix', () => {
   assert.equal(packageJson.devDependencies.knip, '6.29.0');
@@ -51,12 +51,12 @@ test('Knip keeps blocking rules and generated/config boundaries explicit', () =>
   assert.deepEqual(knipConfig.workspaces.backend.prisma, { config: [] });
 });
 
-test('pull-request lint blocks on dead-code checks after typecheck', () => {
-  const typecheckIndex = lintWorkflow.indexOf('name: Type-check affected TypeScript surfaces');
-  const deadCodeIndex = lintWorkflow.indexOf('name: Check for dead code');
-  assert.ok(typecheckIndex >= 0, 'lint workflow must run typecheck');
+test('the Build check blocks on dead-code checks after typecheck', () => {
+  const typecheckIndex = buildWorkflow.indexOf('run: npm run typecheck');
+  const deadCodeIndex = buildWorkflow.indexOf('run: npm run test:dead-code');
+  assert.ok(typecheckIndex >= 0, 'Build must run typecheck');
   assert.ok(deadCodeIndex > typecheckIndex, 'dead-code checks must follow typecheck');
-  const deadCodeStep = lintWorkflow.slice(deadCodeIndex);
+  const deadCodeStep = buildWorkflow.slice(deadCodeIndex);
   assert.match(deadCodeStep, /run: npm run test:dead-code/);
   assert.doesNotMatch(deadCodeStep, /continue-on-error/);
 });
