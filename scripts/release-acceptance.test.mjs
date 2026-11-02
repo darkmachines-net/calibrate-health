@@ -1,4 +1,4 @@
-/** @file Regression coverage for release acceptance: repository plan encodes the lean single-user pre-release policy. */
+/** @file Guard required PR checks, optional diagnostics and rejection of stale release acceptance contracts. */
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -30,7 +30,7 @@ test('repository plan encodes the lean single-user pre-release policy', () => {
   assert.equal(repositoryPlan.schemaVersion, RELEASE_ACCEPTANCE_PLAN_SCHEMA_VERSION);
   assert.equal(repositoryPlan.profile, 'single-user-pre-release');
   assert.deepEqual(repositoryPlan.releaseScopes, RELEASE_ACCEPTANCE_SCOPES);
-  assert.equal(repositoryPlan.policy.pullRequestChecks, 'affected-only');
+  assert.equal(repositoryPlan.policy.pullRequestChecks, 'lint-build-test');
   assert.equal(repositoryPlan.policy.externalReleaseApproval, 'owner-discretion');
   assert.equal(repositoryPlan.policy.retainedEvidenceRequired, false);
   assert.ok(result.automatic.length > 0);
@@ -88,7 +88,7 @@ test('plan binds every named job to an existing workflow', () => {
   assert.ok(result.errors.some((error) => error.includes('missing-job')));
 });
 
-test('manual capabilities in mixed workflows are dispatch-only', () => {
+test('optional capabilities remain outside pull-request checks', () => {
   const manualBuildJobs = repositoryPlan.manualCapabilities
     .filter((capability) => capability.workflowPath.endsWith('/builds.yml'))
     .flatMap((capability) => capability.jobIds);

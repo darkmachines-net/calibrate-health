@@ -1,4 +1,4 @@
-/** @file Metro bundler configuration for shared workspace sources and Expo platform resolution. */
+/** @file Metro resolution for workspace sources, hoisted runtimes and the shared development startup gate. */
 
 const path = require('node:path');
 const fs = require('node:fs');
@@ -9,6 +9,7 @@ const workspaceRoot = path.resolve(projectRoot, '..');
 const apiClientRoot = path.resolve(workspaceRoot, 'packages/api-client');
 const sharedRoot = path.resolve(workspaceRoot, 'shared');
 const hoistedRuntimeModules = [
+  '@mchartier/expo-release',
   '@babel/runtime',
   '@expo/image-utils',
   '@expo/vector-icons',
@@ -116,6 +117,7 @@ const hoistedRuntimeModules = [
   'whatwg-url-without-unicode',
   'yargs'
 ];
+/** Locate a runtime dependency without making unrelated workspace packages Metro watch roots. */
 function resolveWorkspaceModuleRoot(moduleName) {
   const modulePathParts = moduleName.split('/');
   const mobileModuleRoot = path.resolve(projectRoot, 'node_modules', ...modulePathParts);

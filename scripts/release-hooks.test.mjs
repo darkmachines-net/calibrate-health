@@ -1,4 +1,4 @@
-/** @file Paired Android/iOS metadata, stable fingerprints, separate development identities and beta/production destinations. */
+/** @file Guard metadata-only stamping, native compatibility and isolated development/beta/store destinations. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,6 +11,7 @@ import { stamp } from './release-hooks.mjs';
 import { applicationIdentity } from './release-inputs.mjs';
 import { checkRepository, validateManifest, validateClientDiagnosticVersionContract } from './release-metadata.mjs';
 import { sourceEnvironment } from '@mchartier/expo-release';
+import { parse as parseYaml } from 'yaml';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const config=JSON.parse(fs.readFileSync(path.join(root,'release.config.json')));
 const allocation={server:true,native:true,bump:'major',versions:{server:'0.99.0',mobile:'1.0.0'},pair:[101,102]};
@@ -135,4 +136,65 @@ test('platform-specific bundle edits select only their platform while shared edi
   assert.equal(ios[0],initial[0]);assert.notEqual(ios[1],initial[1]);
   assert.notEqual(android[0],ios[0]);assert.equal(android[1],ios[1]);
   assert.notEqual(shared[0],android[0]);assert.notEqual(shared[1],android[1]);
+});
+
+test('beta promotion and public-store delivery preserve paired reservations and separate submission tracks', () => {
+  const eas = JSON.parse(fs.readFileSync(path.join(root, 'mobile/eas.json')));
+  assert.deepEqual(Object.keys(config.profiles), ['beta', 'production']);
+  assert.deepEqual(config.mobile.targets.map(target => target.platform), ['android', 'android', 'ios']);
+  assert.equal(config.mobile.builder, 'command');
+  assert.equal(eas.cli.appVersionSource, 'local');
+  for (const profile of ['beta', 'production']) {
+    const destination = config.profiles[profile];
+    const build = eas.build[destination.easProfile];
+    assert.equal(destination.channel, profile);
+    assert.equal(build.channel, profile);
+    assert.equal(build.autoIncrement, false);
+    assert.deepEqual(build.env, destination.publicEnvironment);
+    for (const target of config.mobile.targets.filter(target => target.platform === 'android')) {
+      const submission = eas.submit[destination.submitProfiles[target.id]].android;
+      const track = profile === 'beta' ? 'internal' : 'production';
+      assert.equal(submission.track, target.id === 'wear' ? `wear:${track}` : track);
+      assert.equal(submission.releaseStatus, profile === 'beta' ? 'completed' : 'draft');
+    }
+  }
+  assert.equal(config.development.channel, 'development');
+  assert.equal(config.development.promotionEnvironment, 'production');
+  assert.equal(config.development.approvalEnvironment, 'preview');
+  assert.equal(config.profiles.production.submitEnvironment, 'play-production');
+  assert.notEqual(config.development.approvalEnvironment, config.development.promotionEnvironment);
+  assert.deepEqual(config.development.platforms, ['android', 'ios']);
+  const development = eas.build[config.development.easProfile];
+  assert.equal(development.developmentClient, true);
+  assert.equal(development.distribution, 'internal');
+  assert.equal(development.autoIncrement, false);
+  assert.equal(development.channel, undefined);
+  assert.equal(development.extends, undefined);
+  assert.deepEqual(development.env, config.development.publicEnvironment);
+});
+
+test('both workflow callers and the installed package remain pinned to one immutable toolkit commit', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
+  const pin = pkg.devDependencies['@mchartier/expo-release'].split('#')[1];
+  assert.match(pin, /^[a-f0-9]{40}$/);
+  assert.ok(lock.packages['node_modules/@mchartier/expo-release'].resolved.endsWith(`#${pin}`));
+  for (const name of ['release', 'development']) {
+    const workflow = fs.readFileSync(path.join(root, `.github/workflows/${name}.yml`), 'utf8');
+    assert.ok(workflow.includes(`darkmachines-net/expo-release-template/.github/workflows/${name}.yml@${pin}`));
+    const parsed = parseYaml(workflow);
+    const inputs = parsed.on.workflow_dispatch.inputs;
+    for (const input of Object.values(inputs)) {
+      assert.ok(Object.keys(input).every(key => ['description', 'type', 'options', 'default', 'required'].includes(key)));
+    }
+    if (name === 'release') {
+      assert.deepEqual(parsed.on.push.branches, [config.defaultBranch]);
+      assert.deepEqual(inputs.profile.options, ['beta', 'production']);
+      assert.equal(parsed.jobs.release.with.profile, "${{ inputs.profile || 'beta' }}");
+    } else {
+      assert.equal(parsed.on.push, undefined);
+      assert.deepEqual(inputs.platform.options, config.development.platforms);
+      assert.equal(parsed.jobs.development.with.source, '${{ inputs.source }}');
+    }
+  }
 });

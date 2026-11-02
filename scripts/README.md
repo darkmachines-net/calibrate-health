@@ -62,8 +62,11 @@ Development builds and Metro commands are documented beside [mobile](../mobile/R
 
 Protected releases use the shared [Release workflow](../.github/workflows/README.md#release).
 `npm run release -- validate` and `npm run release -- plan --profile production`
-are read-only checks. Local release, credential-download, submission, OTA publication
-and retained-artifact recovery commands have been removed.
+are read-only checks; use `--profile beta` to inspect the internal destination.
+`npm run preview` publishes an isolated development preview, while `preview:web`
+retains the local web preview. `dev:native` and `dev:expo` use the shared toolkit's
+Metro launcher with this worktree's API. Store release, credential-download,
+submission and retained-artifact recovery remain owned by the shared workflows.
 
 `release-inputs.mjs` classifies application source inputs; `release-metadata.mjs`
 maintains canonical metadata mirrors; `release-hooks.mjs` supplies application
@@ -85,6 +88,10 @@ evidence. [Quality](../quality/README.md#optional-physical-phone-and-watch-proto
 owns the device protocol. Device evidence does not authorize publication.
 
 ## Diagnostics and validation
+
+`node --test scripts/ci-workflow.test.mjs` verifies the three required PR checks and
+Build-to-Tests artifact reuse. The [workflow guide](../.github/workflows/README.md#pull-request-checks)
+owns hosted check names and optional diagnostics; `ci:local` also runs broader local integration checks.
 
 `npm run test:dead-code` runs comprehensive Knip plus its production graph. Generated
 clients and genuine dynamic Expo/Metro entries are configured explicitly. Review

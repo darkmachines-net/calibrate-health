@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-/** @file Native Expo development bundler startup with validated platform and worktree backend configuration. */
+/** @file Start the shared isolated Expo development client against the current worktree backend. */
 
 import { spawnSync } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { developmentServer } from "@mchartier/expo-release/development";
 import { createExpoCliEnvironment } from "./expo-cli-environment.mjs";
 import { readDotenv, resolveDevConfig } from "./dev-config.mjs";
 
@@ -12,11 +12,22 @@ const NATIVE_PLATFORMS = new Set(["android", "ios"]);
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultRepoRoot = path.resolve(path.dirname(scriptPath), "..");
 
-/** Parses the native Expo platform option and rejects unsupported or unknown arguments. */
+/** Parse the simulator backend and shared Metro connection options; the toolkit validates ports and LAN hosts. */
 export function parseExpoNativeDevArgs(argv) {
   let platform = "android";
+  const connection = {};
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index];
+    if (option === "--clear" || option === "--web") {
+      connection[option.slice(2)] = true;
+      continue;
+    }
+    if (option === "--port" || option === "--host") {
+      const value = argv[++index]?.trim();
+      if (!value || value.startsWith("--")) throw new Error(`${option} requires a value.`);
+      connection[option.slice(2)] = value;
+      continue;
+    }
     if (option !== "--platform" && option !== "-p") {
       throw new Error(`Unknown native Expo option: ${option}`);
     }
@@ -27,7 +38,7 @@ export function parseExpoNativeDevArgs(argv) {
     platform = value;
     index += 1;
   }
-  return { platform };
+  return { platform, ...connection };
 }
 
 /**
@@ -57,29 +68,9 @@ export function resolveExpoNativeBackendUrl({
   );
 }
 
-/**
- * Resolve npm's JavaScript CLI so Windows does not need a shell wrapper.
- */
-function resolveNpmCommand() {
-  const inheritedNpmCli = process.env.npm_execpath;
-  const installedNpmCli = path.join(
-    path.dirname(process.execPath),
-    "node_modules",
-    "npm",
-    "bin",
-    "npm-cli.js"
-  );
-  const npmCli =
-    inheritedNpmCli || (fs.existsSync(installedNpmCli) ? installedNpmCli : "");
-  if (!npmCli) {
-    throw new Error("Unable to locate npm. Run this command through `npm run dev:expo`.");
-  }
-  return { command: process.execPath, args: [npmCli] };
-}
-
-/** Resolves the worktree backend and starts the platform-specific Expo development client workflow. */
+/** Resolve the local API and start Metro with the toolkit's development identity and credential-free environment. */
 export async function main() {
-  const { platform } = parseExpoNativeDevArgs(process.argv.slice(2));
+  const { platform, ...connection } = parseExpoNativeDevArgs(process.argv.slice(2));
   const repoRoot = path.resolve(process.env.CODEX_WORKTREE_PATH || defaultRepoRoot);
   const config = await resolveDevConfig({ workspacePath: repoRoot });
   const backendUrl = resolveExpoNativeBackendUrl({
@@ -87,20 +78,20 @@ export async function main() {
     backendPort: config.backendPort,
     platform,
   });
-  const npm = resolveNpmCommand();
+  const server = developmentServer(repoRoot, {
+    ...connection,
+    publicEnvironment: { EXPO_PUBLIC_CALIBRATE_SERVER_URL: backendUrl },
+  });
 
   console.log(`[expo-native:${platform}] API: ${backendUrl}`);
   console.log(`[expo-native:${platform}] Start \`npm run dev\` separately if the Compose stack is not running.`);
 
   const result = spawnSync(
-    npm.command,
-    [...npm.args, "--prefix", "mobile", "run", "dev"],
+    server.command,
+    server.args,
     {
-      cwd: repoRoot,
-      env: createExpoCliEnvironment(repoRoot, {
-        ...process.env,
-        EXPO_PUBLIC_CALIBRATE_SERVER_URL: backendUrl,
-      }),
+      cwd: server.cwd,
+      env: createExpoCliEnvironment(repoRoot, server.env),
       stdio: "inherit",
       shell: false,
     }

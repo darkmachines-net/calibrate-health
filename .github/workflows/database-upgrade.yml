@@ -1,7 +1,7 @@
+# Optional populated upgrade and historical rollback rehearsals.
 name: Database Upgrade
 
 on:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -12,48 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Classify Database Inputs
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      database: ${{ steps.decision.outputs.database }}
-      migrations: ${{ steps.decision.outputs.migrations }}
-
-    steps:
-      - name: Checkout complete PR history for affected checks
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Select affected PR inputs
-        if: github.event_name == 'pull_request'
-        id: filter
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/ci-changes.mjs
-
-      - name: Select database execution
-        id: decision
-        shell: bash
-        env:
-          DATABASE_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.database == 'true' }}
-          MIGRATIONS_CHANGED: ${{ (github.event_name != 'pull_request' || steps.filter.outputs.migrations == 'true') }}
-        run: |
-          echo "database=${DATABASE_CHANGED}" >> "${GITHUB_OUTPUT}"
-          echo "migrations=${MIGRATIONS_CHANGED}" >> "${GITHUB_OUTPUT}"
-
   populated-upgrade:
     name: Populated Postgres Upgrade
-    needs: changes
-    if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     services:
@@ -106,8 +66,6 @@ jobs:
 
   release-upgrade-rollback:
     name: v0.14.0 Upgrade and Encrypted Rollback
-    needs: changes
-    if: needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

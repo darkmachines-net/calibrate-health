@@ -1,11 +1,11 @@
-name: Builds
+# Optional browser, native compilation and device diagnostics; ordinary PRs use Check.
+name: Extended Validation
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       validation_scope:
-        description: Expensive release validation to run in addition to the normal build checks.
+        description: Optional platform builds and release validation to run.
         required: true
         default: web
         type: choice
@@ -32,132 +32,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Classify Build Inputs
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      release_config: ${{ steps.decision.outputs.release_config }}
-      backend: ${{ steps.decision.outputs.backend }}
-      web: ${{ steps.decision.outputs.web }}
-      wear: ${{ steps.decision.outputs.wear }}
-      native_runtime: ${{ steps.decision.outputs.native_runtime }}
-      native_package: ${{ steps.decision.outputs.native_package }}
-      native_android: ${{ steps.decision.outputs.native_package == 'true' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.native_android == 'true') }}
-      native_ios: ${{ steps.decision.outputs.native_package == 'true' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.native_ios == 'true') }}
-      web_release: ${{ steps.decision.outputs.web_release }}
-      native_release: ${{ steps.decision.outputs.native_release }}
-      native_upgrade: ${{ steps.decision.outputs.native_upgrade }}
-
-    steps:
-      - name: Checkout complete PR history for affected checks
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Select affected PR inputs
-        if: github.event_name == 'pull_request'
-        id: filter
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/ci-changes.mjs
-
-      - name: Validate manual native upgrade baseline
-        if: github.event_name == 'workflow_dispatch' && inputs.run_native_upgrade
-        shell: bash
-        env:
-          NATIVE_UPGRADE_BASELINE: ${{ inputs.native_upgrade_baseline }}
-        run: |
-          if [[ ! "${NATIVE_UPGRADE_BASELINE}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "native_upgrade_baseline must be a lowercase full Git SHA." >&2
-            exit 1
-          fi
-
-      - name: Select build surfaces
-        id: decision
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          RELEASE_CONFIG_CHANGED: ${{ steps.filter.outputs.release_config == 'true' }}
-          BACKEND_CHANGED: ${{ steps.filter.outputs.backend_build == 'true' }}
-          WEB_CHANGED: ${{ steps.filter.outputs.web == 'true' }}
-          WEAR_CHANGED: ${{ steps.filter.outputs.wear == 'true' }}
-          NATIVE_RUNTIME_CHANGED: ${{ steps.filter.outputs.native_runtime == 'true' }}
-          NATIVE_PACKAGE_CHANGED: ${{ steps.filter.outputs.native_package == 'true' }}
-          MANUAL_VALIDATION_SCOPE: ${{ inputs.validation_scope || 'configuration-only' }}
-          MANUAL_NATIVE_UPGRADE: ${{ inputs.run_native_upgrade || false }}
-        run: |
-          release_config=false
-          backend=false
-          web=false
-          wear=false
-          native_runtime=false
-          native_package=false
-          web_release=false
-          native_release=false
-          native_upgrade=false
-
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
-            release_config=true
-            case "${MANUAL_VALIDATION_SCOPE}" in
-              web)
-                web=true
-                web_release=true
-                ;;
-              native)
-                wear=true
-                native_runtime=true
-                native_package=true
-                native_release=true
-                ;;
-              web-and-native)
-                web=true
-                wear=true
-                native_runtime=true
-                native_package=true
-                web_release=true
-                native_release=true
-                ;;
-              configuration-only)
-                ;;
-              *)
-                echo "Unknown manual validation scope: ${MANUAL_VALIDATION_SCOPE}" >&2
-                exit 1
-                ;;
-            esac
-            if [[ "${MANUAL_NATIVE_UPGRADE}" == "true" ]]; then
-              native_upgrade=true
-            fi
-          else
-            release_config=${RELEASE_CONFIG_CHANGED}
-            backend=${BACKEND_CHANGED}
-            web=${WEB_CHANGED}
-            wear=${WEAR_CHANGED}
-            native_runtime=${NATIVE_RUNTIME_CHANGED}
-            native_package=${NATIVE_PACKAGE_CHANGED}
-          fi
-
-          echo "release_config=${release_config}" >> "${GITHUB_OUTPUT}"
-          echo "backend=${backend}" >> "${GITHUB_OUTPUT}"
-          echo "web=${web}" >> "${GITHUB_OUTPUT}"
-          echo "wear=${wear}" >> "${GITHUB_OUTPUT}"
-          echo "native_runtime=${native_runtime}" >> "${GITHUB_OUTPUT}"
-          echo "native_package=${native_package}" >> "${GITHUB_OUTPUT}"
-          echo "web_release=${web_release}" >> "${GITHUB_OUTPUT}"
-          echo "native_release=${native_release}" >> "${GITHUB_OUTPUT}"
-          echo "native_upgrade=${native_upgrade}" >> "${GITHUB_OUTPUT}"
-
   release-config:
     name: Release Configuration
-    needs: changes
-    if: needs.changes.outputs.release_config == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -187,117 +63,9 @@ jobs:
           npm run test:wear:emulator:unit
           npm run test:deploy
 
-  backend-build:
-    name: Backend Build
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install deps
-        run: npm ci --no-audit --fund=false
-
-      - name: Build backend
-        run: npm run build
-
-  expo-web-build:
-    name: Expo Web Build
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Setup reviewed bundle Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.14.0
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install deps
-        run: npm.cmd ci --no-audit --fund=false
-
-      - name: Build and validate Expo web
-        run: |
-          npm.cmd run build:expo-web
-          npm.cmd run test:expo-web:release
-
-      - name: Share the validated web export
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-web-export
-          path: mobile/dist
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-          overwrite: true
-
-  web-critical-smoke:
-    name: Web Critical Smoke
-    needs: [changes, expo-web-build]
-    if: needs.changes.outputs.web == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 10
-
-    env:
-      CI: "1"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.14.0
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        run: npm.cmd ci --no-audit --fund=false
-
-      - name: Install pinned Playwright Chromium
-        run: node node_modules/@playwright/test/cli.js install chromium
-
-      - name: Download the validated web export
-        uses: actions/download-artifact@v4
-        with:
-          name: pr-web-export
-          path: mobile/dist
-
-      - name: Exercise critical production Web journeys on desktop and phone
-        # Playwright owns the static server; calling its CLI avoids exporting a second time.
-        run: node node_modules/@playwright/test/cli.js test --config=playwright.expo-web.config.ts --project=desktop-chrome --project=android-phone-chrome e2e/expo-web/release-smoke.spec.ts
-
   exported-web-e2e:
     name: Full Exported Web and PWA End-to-End
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.web_release == 'true'
+    if: inputs.validation_scope == 'web' || inputs.validation_scope == 'web-and-native'
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -324,8 +92,7 @@ jobs:
         run: npm.cmd run test:expo-web
   data-state-acceptance:
     name: Six-State Data-Backed Route Acceptance
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.web_release == 'true'
+    if: inputs.validation_scope == 'web' || inputs.validation_scope == 'web-and-native'
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -354,8 +121,7 @@ jobs:
         run: npm.cmd run test:data-states
   ux-regression:
     name: UX Accessibility and Visual Regression
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.web_release == 'true'
+    if: inputs.validation_scope == 'web' || inputs.validation_scope == 'web-and-native'
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -399,8 +165,7 @@ jobs:
 
   native-metro-bundle:
     name: ${{ matrix.platform }} Runtime Bundle
-    needs: changes
-    if: needs.changes.outputs.native_runtime == 'true' || needs.changes.outputs.native_package == 'true'
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -440,8 +205,7 @@ jobs:
 
   mobile-build:
     name: Mobile Build
-    needs: changes
-    if: needs.changes.outputs.native_android == 'true'
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -503,7 +267,6 @@ jobs:
         run: node scripts/expo-runtime.mjs . "${RUNNER_TEMP}/clean-runtime.json" mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Share Android debug APK with emulator E2E
-        if: needs.changes.outputs.native_release == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk-${{ github.event.pull_request.head.sha || github.sha }}
@@ -514,8 +277,7 @@ jobs:
 
   ios-build:
     name: iOS Build
-    needs: changes
-    if: needs.changes.outputs.native_ios == 'true'
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: macos-latest
     timeout-minutes: 35
 
@@ -563,8 +325,7 @@ jobs:
 
   wear-build:
     name: Wear Build and JVM Tests
-    needs: changes
-    if: needs.changes.outputs.wear == 'true'
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -613,8 +374,8 @@ jobs:
 
   android-emulator-e2e:
     name: Android Emulator End-to-End
-    needs: [changes, mobile-build]
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.native_release == 'true'
+    needs: mobile-build
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -754,8 +515,7 @@ jobs:
 
   wear-release-emulator-smoke:
     name: Wear Release Emulator Smoke
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.native_release == 'true'
+    if: inputs.validation_scope == 'native' || inputs.validation_scope == 'web-and-native'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -874,8 +634,7 @@ jobs:
 
   native-package-upgrade:
     name: Native Two-Emulator Package Upgrade
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' && needs.changes.outputs.native_upgrade == 'true'
+    if: inputs.run_native_upgrade
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -886,6 +645,16 @@ jobs:
       NATIVE_UPGRADE_BASELINE: ${{ github.event.pull_request.base.sha || inputs.native_upgrade_baseline }}
 
     steps:
+      - name: Validate manual native upgrade baseline
+        shell: bash
+        env:
+          NATIVE_UPGRADE_BASELINE: ${{ inputs.native_upgrade_baseline }}
+        run: |
+          if [[ ! "${NATIVE_UPGRADE_BASELINE}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "native_upgrade_baseline must be a lowercase full Git SHA." >&2
+            exit 1
+          fi
+
       - name: Checkout exact pull-request candidate with baseline history
         uses: actions/checkout@v4
         with:

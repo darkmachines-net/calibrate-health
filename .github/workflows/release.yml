@@ -1,14 +1,17 @@
-# Release retries use the pinned workflow's immutable receipts and bounded reads from the protected default branch.
+# Prepare development candidates on master, approve beta delivery, and keep public-store delivery manual.
 name: Release
+run-name: ${{ inputs.profile == 'production' && 'Public-store release' || 'Development preview and approved beta release' }}
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
-      profile: { description: 'beta: testers; production: public channel and store draft', type: choice, required: true, options: [beta, production], default: beta }
+      profile: { description: 'beta: Play internal testing and TestFlight; production: Play drafts and TestFlight', type: choice, required: true, options: [beta, production], default: beta }
       rebuild: { description: Force a new native build, type: boolean, default: false }
 permissions: { contents: read }
 jobs:
   release:
-    permissions: { contents: write, deployments: write, packages: write }
-    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@3f2a9d5e2cb360e1f85e5378c746fd5a3d8175ac
-    with: { profile: '${{ inputs.profile }}', rebuild: '${{ inputs.rebuild }}' }
+    permissions: { contents: write, deployments: write, packages: write, id-token: write }
+    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@0f01668db158ca22729e45980e162fa601900da2
+    with: { profile: '${{ inputs.profile || ''beta'' }}', rebuild: '${{ inputs.rebuild || false }}' }
     secrets: inherit

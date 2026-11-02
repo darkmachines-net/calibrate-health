@@ -144,7 +144,7 @@
           "npmScript": "db:migrate",
           "scriptCommand": "node scripts/dev-stack.mjs db:migrate",
           "paths": [
-            ".github/workflows/tests.yml",
+            ".github/workflows/ci.yml",
             "backend/prisma/schema.prisma"
           ],
           "capabilities": ["fresh-migration"]

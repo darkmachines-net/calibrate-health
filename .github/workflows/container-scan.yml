@@ -1,7 +1,7 @@
+# Scheduled and manual production-image maintenance.
 name: Production Container Scan
 
 on:
-  pull_request:
   workflow_dispatch:
   schedule:
     - cron: '15 14 * * 1'
@@ -14,44 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Classify Production Image Inputs
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      scan: ${{ steps.decision.outputs.scan }}
-
-    steps:
-      - name: Checkout complete PR history for affected checks
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Select affected PR inputs
-        if: github.event_name == 'pull_request'
-        id: filter
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/ci-changes.mjs
-
-      - name: Select scan execution
-        id: decision
-        shell: bash
-        env:
-          IMAGE_CHANGED: ${{ github.event_name != 'pull_request' || steps.filter.outputs.image == 'true' }}
-        run: echo "scan=${IMAGE_CHANGED}" >> "${GITHUB_OUTPUT}"
-
   scan:
     name: High and Critical Vulnerabilities
-    needs: changes
-    if: needs.changes.outputs.scan == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -108,8 +72,8 @@ jobs:
           image-ref: calibrate:security-scan
           format: table
           scanners: vuln
-          # Package advisories are maintenance findings; PRs still check the base OS.
-          vuln-type: ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')) && 'os,library' || 'os' }}
+          # Scheduled and manual maintenance covers both OS and library advisories.
+          vuln-type: os,library
           severity: HIGH,CRITICAL
           ignore-unfixed: false
           exit-code: '1'

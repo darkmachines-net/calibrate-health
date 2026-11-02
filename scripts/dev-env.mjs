@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** @file Host dependency caching, Prisma tasks, and local CI command orchestration for the current worktree. */
+/** @file Host dependency caching, Prisma tasks, and local validation, including the shared PR workflow contract. */
 
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -434,11 +434,11 @@ async function runDatabaseCommand(command, args = []) {
   run("npm", ["--prefix", "backend", "run", command, ...(args.length ? ["--", ...args] : [])]);
 }
 
+/** Run host validation and optional integration diagnostics against this worktree; failures stop the sequence. */
 async function ci() {
   await setupHost();
   await timed("Lint with zero warnings", () => {
     run("npm", ["run", "test:lint"]);
-    run("node", ["--test", "scripts/ci-test-gate.test.mjs"]);
     run("npm", ["run", "lint:eslint"]);
     run("npm", ["run", "lint:kotlin"]);
   });
