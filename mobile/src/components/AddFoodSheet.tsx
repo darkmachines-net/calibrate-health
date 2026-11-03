@@ -1,4 +1,4 @@
-/** @file Add Food Sheet: Selects the compact add-food composition below the shared tablet breakpoint. */
+/** @file Adaptive food search and logging sheet; selected-food controls share one scroller above the keyboard. */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, Linking, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -140,7 +140,7 @@ function appendSection(rows: FoodBrowseRow[], title: string, items: FoodBrowseRo
     rows.push({ kind: 'header', key: `header:${title}`, title }, ...items);
 }
 
-/** Coordinates food search, serving selection, and idempotent logging within the adaptive add-food sheet. */
+/** Coordinates food search and idempotent logging, keeping selected-food controls in the sheet's shared scroller. */
 export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     visible,
     date,
@@ -473,12 +473,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             ? getProviderAttribution(selection.item.source ?? undefined, providerData?.attribution)
             : null;
         return (
-            <KeyboardAwareScrollView
-                style={styles.flex}
-                contentContainerStyle={styles.editorContent}
-                revealFocusedInputOnFocus
-                keyboardShouldPersistTaps="handled"
-            >
+            <View style={styles.editorContent}>
                 {selectionAttribution && renderProviderAttribution(selectionAttribution)}
                 <FoodSelectionEditor
                     selection={selection}
@@ -492,7 +487,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                     }}
                     onSubmit={(request) => logFood.mutate(request)}
                 />
-            </KeyboardAwareScrollView>
+            </View>
         );
     }
 
@@ -739,7 +734,9 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             maxHeight={ADD_FOOD_SHEET_HEIGHT}
             size="wide"
             showCloseButton
-            scrollable={false}
+            // Scroll the selected editor together with its controls in short viewports.
+            scrollable={Boolean(selection)}
+            revealFocusedInputOnFocus={Boolean(selection)}
             dismissDisabled={logFood.isPending}
             isDirty={hasUnsavedDraft}
             confirmDismiss={confirmDiscardChanges}
