@@ -1,4 +1,4 @@
-/** @file Purpose-bound verification and recovery token hashing, expiry, issuance, and consumption. */
+/** @file Route account email actions to Firebase or purpose-bound local tokens, never mixing credential authorities. */
 
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
@@ -7,6 +7,7 @@ import prisma from '../config/database';
 import { MS_PER_DAY, MS_PER_MINUTE } from '../utils/time';
 import { deliverAccountEmail } from './accountEmail';
 import { getAccountAccess, type AccountAccess } from './accountAccess';
+import { firebaseAuthority } from './firebaseAuthority';
 
 const TOKEN_BYTES = 32;
 export const EMAIL_VERIFICATION_TTL_MS = MS_PER_DAY;
@@ -59,6 +60,8 @@ async function invalidateIssuedToken(
 
 /** Create and deliver a verification link, invalidating the credential if delivery fails. */
 export async function sendEmailVerification(userId: number): Promise<boolean> {
+  const authority = firebaseAuthority();
+  if (authority) return authority.sendEmail(userId, 'VERIFY_EMAIL');
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, email_verified_at: true }
@@ -77,6 +80,8 @@ export async function sendEmailVerification(userId: number): Promise<boolean> {
 
 /** Create a recovery link only for known accounts; callers always return a generic response. */
 export async function sendPasswordReset(userId: number, email: string): Promise<boolean> {
+  const authority = firebaseAuthority();
+  if (authority) return authority.sendEmail(userId, 'PASSWORD_RESET');
   const token = await issueAccountActionToken(userId, AccountTokenPurpose.PASSWORD_RESET);
   const delivered = await deliverAccountEmail({
     kind: 'password_reset',
@@ -94,6 +99,11 @@ export async function confirmEmailVerification(
   token: string,
   now = new Date()
 ): Promise<AccountAccess | null> {
+  const authority = firebaseAuthority();
+  if (authority) {
+    const userId = await authority.confirmEmail(token);
+    return userId ? getAccountAccess(userId) : null;
+  }
   const tokenHash = hashAccountToken(AccountTokenPurpose.EMAIL_VERIFICATION, token);
   try {
     const userId = await prisma.$transaction(async (transaction) => {
@@ -138,6 +148,8 @@ export async function resetPasswordWithToken(
   newPassword: string,
   now = new Date()
 ): Promise<boolean> {
+  const authority = firebaseAuthority();
+  if (authority) return authority.resetPassword(token, newPassword);
   const tokenHash = hashAccountToken(AccountTokenPurpose.PASSWORD_RESET, token);
   const passwordHash = await bcrypt.hash(newPassword, 10);
   try {

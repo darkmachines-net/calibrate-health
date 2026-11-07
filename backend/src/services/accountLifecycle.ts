@@ -2,6 +2,7 @@
 
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
+import { firebaseAuthority } from './firebaseAuthority';
 
 export const ACCOUNT_EXPORT_FORMAT = 'calibrate-account-export';
 export const ACCOUNT_EXPORT_VERSION = 11;
@@ -537,8 +538,10 @@ export function serializeAccountExport(user: AccountExportRow, now = new Date())
   };
 }
 
-/** Delete the account root; database cascades revoke sessions and remove owned records atomically. */
+/** Delete provider identity and account data; Firebase uses durable intent so interrupted deletion remains revoked and retryable. */
 export async function deleteAccountData(userId: number): Promise<boolean> {
+  const authority = firebaseAuthority();
+  if (authority) return authority.deleteAccount(userId);
   const result = await prisma.user.deleteMany({ where: { id: userId } });
   return result.count > 0;
 }

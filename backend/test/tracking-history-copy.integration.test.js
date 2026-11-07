@@ -1,0 +1,72 @@
+/** @file Rehearse an atomic tracking-history restore with source writes, target conflicts, exact bigint preservation and credential retention. */
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
+const { Pool } = require('pg');
+const { TABLES, trackingSnapshotSql, copyTrackingSnapshot } = require('../scripts/tracking-history-copy');
+
+test('history copy restores data/onboarding without overwriting live production state or changing source credentials', { skip: process.env.CALIBRATE_FIREBASE_TEST_OWNED_DB !== 'true', timeout: 90000 }, async () => {
+  const url = new URL(process.env.CALIBRATE_AUTH_TEST_DATABASE_URL);
+  assert.equal(url.hostname, '127.0.0.1');
+  assert.equal(url.pathname, '/calibrate_test_firebase');
+  const pool = new Pool({ connectionString: url.toString() });
+  const client = await pool.connect();
+  process.env.DATABASE_URL = url.toString();
+  const options = { database: 'calibrate_test_firebase', projectId: 'demo-calibrate', installationId: 'synthetic', sourceId: 'account-copy', mappings: [{ userId: 41, uid: 'immutable-41' }] };
+  try {
+    assert.equal((await client.query("SELECT count(*)::int FROM pg_tables WHERE schemaname='public'")).rows[0].count, 0);
+    execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], { env: process.env, stdio: 'pipe', timeout: 45000 });
+    await client.query('CREATE SCHEMA history_source');
+    for (const table of ['User', ...TABLES]) await client.query(`CREATE TABLE history_source."${table}" (LIKE public."${table}" INCLUDING ALL)`);
+    await client.query(`INSERT INTO history_source."User" (id, email, password_hash, credential_security_version, onboarding_completed_at, timezone) VALUES (41, 'synthetic@example.invalid', 'retained-hash', 7, '2026-01-01', 'America/Los_Angeles');
+      INSERT INTO public."User" SELECT * FROM history_source."User";
+      UPDATE public."User" SET onboarding_completed_at=NULL;
+      INSERT INTO public."FirebaseIdentity" (user_id, installation_id, source_id, project_id, uid) VALUES (41, 'synthetic', 'account-copy', 'demo-calibrate', 'immutable-41');
+      INSERT INTO public."LegalAcceptance" (user_id, terms_version, privacy_version) VALUES (41, 'production-consent', 'production-consent');
+      INSERT INTO public."InAppNotification" (user_id, type, local_date, title, updated_at) VALUES (41, 'GENERIC', '2026-01-01', 'Production notice', now());
+      INSERT INTO history_source."Goal" (id, user_id, start_weight_grams, target_weight_grams) VALUES (101, 41, 90000, 80000);
+      INSERT INTO history_source."BodyMetric" (id, user_id, date, weight_grams) VALUES (201, 41, '2026-01-01', 90000);
+      INSERT INTO history_source."MyFood" (id, user_id, type, name, serving_size_quantity, serving_unit_label, calories_per_serving, updated_at) VALUES (301, 41, 'FOOD', 'Synthetic food', 1.25, 'serving', 123.45, now());
+      INSERT INTO history_source."FoodLog" (id, user_id, my_food_id, local_date, meal_period, name, calories) VALUES (401, 41, 301, '2026-01-01', 'BREAKFAST', 'Frozen synthetic snapshot', 123);
+      INSERT INTO history_source."ActivityRecord" (id, user_id, source_device_id, record_type, external_id, data_origin, client_record_version, source_updated_at, start_time, local_date, updated_at) VALUES (501, 41, 'synthetic-device', 'STEPS', 'record-1', 'synthetic', 9007199254740993, now(), now(), '2026-01-01', now());
+      INSERT INTO public."DailyCaloriePlan" (user_id, local_date, timezone, observed_at, calculation_version, inputs) VALUES (41, '2026-01-01', 'America/Los_Angeles', now(), 1, '{}');`);
+    const results = await client.query(trackingSnapshotSql('history_source'));
+    const snapshot = results.find(result => result.rows.length).rows[0].jsonb_build_object;
+    assert.match(snapshot.tables.ActivityRecord.rows, /9007199254740993/);
+    await client.query('INSERT INTO history_source."BodyMetric" (id, user_id, date, weight_grams) VALUES (202, 41, \'2026-01-02\', 89000)');
+    const dryRun = await copyTrackingSnapshot(client, snapshot, options);
+    assert.equal(dryRun.status, 'dry-run');
+    assert.equal((await client.query('SELECT count(*)::int AS n FROM "FoodLog"')).rows[0].n, 0);
+    assert.equal((await client.query('SELECT count(*)::int AS n FROM "DailyCaloriePlan"')).rows[0].n, 1, 'Dry run retains production placeholder');
+    await client.query('UPDATE "User" SET language=\'fr\' WHERE id=41');
+    await assert.rejects(copyTrackingSnapshot(client, snapshot, { ...options, apply: true }), /Profile changed/);
+    await client.query('UPDATE "User" SET language=\'en\' WHERE id=41');
+    await client.query('INSERT INTO "Goal" (id, user_id, start_weight_grams, target_weight_grams) VALUES (999, 41, 88000, 80000)');
+    await assert.rejects(copyTrackingSnapshot(client, snapshot, { ...options, apply: true }), /Existing production tracking data/);
+    await client.query('DELETE FROM "Goal" WHERE id=999');
+    const invalid = structuredClone(snapshot);
+    invalid.tables.FoodLog.rows = invalid.tables.FoodLog.rows.replace('"my_food_id": 301', '"my_food_id": 999');
+    await assert.rejects(copyTrackingSnapshot(client, invalid, { ...options, apply: true }), error => error.code === '23503');
+    assert.equal((await client.query('SELECT count(*)::int AS n FROM "Goal"')).rows[0].n, 0, 'A late insertion failure rolls all history back');
+    const result = await copyTrackingSnapshot(client, snapshot, { ...options, apply: true });
+    assert.equal(result.status, 'copied');
+    assert.equal(result.restoredOnboarding, 1);
+    assert.equal((await client.query('SELECT client_record_version::text AS value FROM "ActivityRecord"')).rows[0].value, '9007199254740993');
+    assert.equal((await client.query('SELECT count(*)::int AS n FROM "BodyMetric"')).rows[0].n, 1, 'Later source writes are not silently mixed into the snapshot');
+    assert.equal((await client.query('SELECT count(*)::int AS n FROM history_source."BodyMetric"')).rows[0].n, 2, 'Source remains unchanged');
+    const user = (await client.query('SELECT password_hash, credential_security_version, onboarding_completed_at FROM "User" WHERE id=41')).rows[0];
+    assert.equal(user.password_hash, 'retained-hash');
+    assert.equal(user.credential_security_version, 7);
+    assert.ok(user.onboarding_completed_at);
+    assert.equal((await client.query('SELECT terms_version FROM "LegalAcceptance"')).rows[0].terms_version, 'production-consent');
+    assert.equal((await client.query('SELECT title FROM "InAppNotification"')).rows[0].title, 'Production notice');
+    assert.equal((await copyTrackingSnapshot(client, snapshot, { ...options, apply: true })).status, 'already-copied');
+    const next = await client.query('INSERT INTO "MyFood" (user_id, type, name, serving_size_quantity, serving_unit_label, calories_per_serving, updated_at) VALUES (41, \'FOOD\', \'New production item\', 1, \'serving\', 100, now()) RETURNING id');
+    assert.ok(next.rows[0].id > 301);
+  } finally {
+    await client.query('ROLLBACK');
+    await client.query('DROP SCHEMA IF EXISTS history_source CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public');
+    client.release();
+    await pool.end();
+  }
+});

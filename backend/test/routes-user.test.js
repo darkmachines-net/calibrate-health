@@ -14,6 +14,9 @@ function stubModule(resolvedPath, exports) {
 function loadUserRouter({ prismaStub, bcryptStub, accountLifecycleStub, mcpOAuthStub }) {
   const dbPath = require.resolve('../src/config/database');
   const bcryptPath = require.resolve('bcryptjs');
+  const accountCredentialPath = require.resolve('../src/services/accountCredentials');
+  const previousAccountCredential = require.cache[accountCredentialPath];
+  delete require.cache[accountCredentialPath];
   const credentialPath = require.resolve('../src/services/credentialVerification');
   const previousCredential = require.cache[credentialPath];
   delete require.cache[credentialPath];
@@ -73,6 +76,8 @@ function loadUserRouter({ prismaStub, bcryptStub, accountLifecycleStub, mcpOAuth
 
   const loaded = require('../src/routes/user');
 
+  if (previousAccountCredential) require.cache[accountCredentialPath] = previousAccountCredential;
+  else delete require.cache[accountCredentialPath];
   if (previousCredential) require.cache[credentialPath] = previousCredential;
   else delete require.cache[credentialPath];
 

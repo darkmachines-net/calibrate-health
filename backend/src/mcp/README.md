@@ -68,6 +68,9 @@ The normal same-origin resource URL and allowed hostname derive from `PUBLIC_APP
 credential-free, and HTTPS in production/staging. It is the exact OAuth resource identifier, so
 reverse proxies must preserve `/mcp` and the OAuth routes on the same origin. `MCP_ALLOWED_HOSTS`
 optionally adds hostnames beyond the canonical resource hostname and loopback development hosts.
+When Firebase Hosting pins Cloud Run revisions, add the service's exact default `run.app`
+hostname here. Its revision-tag hosts are then accepted for that service only. Forwarded
+host headers never authorize a hostname or change the configured OAuth issuer/resource.
 
 For worktree development, set `MCP_ENABLED=true` in the repo-local `.env`; setup generates a local
 `MCP_PUBLIC_URL` using that worktree's backend port. Local HTTP is allowed only for loopback.

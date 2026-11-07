@@ -1,24 +1,32 @@
-/** @file Regression coverage for mcp http: MCP discovery advertises the exact resource and public PKCE authorization server. */
+/** @file MCP HTTP coverage for resource discovery, proxy host boundaries, authorization and persistence rate limits. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const http = require('node:http');
+const express = require('express');
 
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 
-const { createCalibrateMcpHttpApp } = require('../src/mcp/server');
+const { createCalibrateMcpHttpApp, isCalibrateMcpRequest } = require('../src/mcp/server');
 const {
   MCP_OAUTH_AUTHORIZATION_RATE_LIMIT_MAX,
   MCP_OAUTH_REGISTRATION_RATE_LIMIT_MAX
 } = require('../src/mcp/oauth');
 
 async function withServer(run, overrides = {}) {
-  const app = createCalibrateMcpHttpApp({
+  const mcp = createCalibrateMcpHttpApp({
     publicUrl: new URL('https://calibratehealth.app/mcp'),
     allowedHosts: ['127.0.0.1', 'calibratehealth.app'],
     trustedProxyHops: 0,
     oauthApprovalRateLimiter: (_request, _response, next) => next(),
     ...overrides
   });
+  const app = express();
+  app.use((request, response, next) => {
+    if (isCalibrateMcpRequest(request.path, request.method)) mcp(request, response, next);
+    else next();
+  });
+  app.get('/register', (_request, response) => response.type('html').send('<h1>Create account</h1>'));
   const server = await new Promise((resolve) => {
     const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
   });
@@ -30,6 +38,21 @@ async function withServer(run, overrides = {}) {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
 }
+
+test('the account registration page and OAuth client registration share a path without intercepting browser navigation', async () => {
+  await withServer(async (baseUrl) => {
+    for (const method of ['GET', 'HEAD']) {
+      const response = await fetch(`${baseUrl}/register`, { method });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('content-type'), /text\/html/);
+    }
+    const response = await fetch(`${baseUrl}/register`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+    });
+    assert.equal(response.status, 400);
+    assert.match(response.headers.get('content-type'), /application\/json/);
+  });
+});
 
 test('MCP discovery advertises the exact resource and public PKCE authorization server', async () => {
   await withServer(async (baseUrl) => {
@@ -51,6 +74,40 @@ test('MCP discovery advertises the exact resource and public PKCE authorization 
     assert.deepEqual(metadata.code_challenge_methods_supported, ['S256']);
     assert.deepEqual(metadata.token_endpoint_auth_methods_supported, ['none']);
   });
+});
+
+test('Hosting revision tags stay scoped to the configured Cloud Run service and cannot change the OAuth issuer', async () => {
+  const serviceHost = 'calibrate-api-example-uc.a.run.app';
+  await withServer(async (baseUrl) => {
+    // Node fetch replaces Host; raw HTTP is required to exercise the actual boundary.
+    const requestHost = (route, host, body) => new Promise((resolve, reject) => {
+      const request = http.request(`${baseUrl}${route}`, {
+        method: body ? 'POST' : 'GET',
+        headers: { host, 'x-forwarded-host': 'calibratehealth.app', 'content-type': 'application/json' }
+      }, (response) => {
+        let text = '';
+        response.on('data', (chunk) => { text += chunk; });
+        response.on('end', () => resolve({ status: response.statusCode, body: text }));
+      });
+      request.on('error', reject);
+      request.end(body);
+    });
+    for (const host of [serviceHost, `fh-0123456789abcdef---${serviceHost}`]) {
+      const response = await requestHost('/.well-known/oauth-authorization-server', host);
+      assert.equal(response.status, 200);
+      assert.equal(JSON.parse(response.body).issuer, 'https://calibratehealth.app/');
+    }
+    for (const host of [
+      'fh-release---another-service-example-uc.a.run.app',
+      `fh-release---${serviceHost}.attacker.example`,
+      `attacker.example@fh-release---${serviceHost}`,
+      `${'a'.repeat(64)}---${serviceHost}`,
+      'attacker.example'
+    ]) {
+      const response = await requestHost('/mcp', host, 'invalid JSON must not be parsed before host validation');
+      assert.equal(response.status, 403, host);
+    }
+  }, { allowedHosts: ['127.0.0.1', 'calibratehealth.app', serviceHost] });
 });
 
 test('unauthenticated MCP calls return a resource-metadata challenge and stateless method guidance', async () => {

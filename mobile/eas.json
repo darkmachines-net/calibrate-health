@@ -13,6 +13,7 @@
       "credentialsSource": "remote",
       "node": "22.14.0",
       "env": {
+        "EAS_BUILD_DISABLE_MAVEN_CACHE": "1",
         "EXPO_RELEASE_VARIANT": "development",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
@@ -34,7 +35,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
         "EXPO_UPDATES_CHANNEL": "beta",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
@@ -52,7 +53,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
         "EXPO_UPDATES_CHANNEL": "production",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",

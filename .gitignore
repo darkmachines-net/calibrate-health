@@ -27,3 +27,15 @@ build/native-release-provenance.json
 build/native-local-internal.json
 build/native-internal-validation/
 .release/
+
+# GCP state and local operator configuration may contain credentials.
+deploy/gcp/**/.terraform/
+deploy/gcp/**/terraform.tfstate*
+deploy/gcp/**/*.tfvars
+deploy/gcp/**/*.tfvars.json
+deploy/gcp/**/*.tfplan
+deploy/gcp/**/crash*.log
+deploy/gcp/backend.hcl
+deploy/gcp/firebase.generated.json
+deploy/gcp/.firebase/
+deploy/gcp/firebase-debug.log

@@ -175,7 +175,7 @@ export interface MigrationRunOptions {
 /**
  * Preparation engine for an exclusively held source/destination. The caller must prevent all
  * competing identity writers for the entire run; Firebase import has no create-only precondition.
- * No runtime/CLI apply adapter is shipped until that operator boundary is implemented and rehearsed.
+ * The operator adapter owns SQL locks and journal durability; its explicit freeze flag attests to external writer shutdown.
  */
 export async function runFirebaseMigration(plan: MigrationPlan, options: MigrationRunOptions): Promise<MigrationCheckpoint> {
   const size = options.batchSize ?? 100;

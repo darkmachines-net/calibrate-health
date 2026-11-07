@@ -95,6 +95,10 @@
     "test:db:backup-restore": "node scripts/postgres-backup-restore-smoke.mjs",
     "test:db:backup-restore:unit": "node --test scripts/postgres-backup-restore-smoke.test.mjs",
     "test:deploy": "node --test deploy/test/*.test.mjs",
+    "gcp:check": "node deploy/gcp/check.mjs",
+    "gcp:test:authentication": "node deploy/gcp/authentication-smoke.mjs",
+    "gcp:hosting:config": "node deploy/gcp/hosting-config.mjs",
+    "gcp:test:database": "npm --prefix backend run build && node deploy/gcp/database-smoke.mjs",
     "test:risk-evidence": "node --test scripts/verify-risk-evidence.test.mjs && node scripts/verify-risk-evidence.mjs",
     "deploy:config:check": "node deploy/scripts/validate-compose.mjs",
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:mobile",
@@ -114,7 +118,7 @@
     "node": "^22.14.0 || ^24.3.0 || >=26.0.0"
   },
   "devDependencies": {
-    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#0f01668db158ca22729e45980e162fa601900da2",
+    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#7bebb994427f2c7acced4f472764dfe5a4e9196d",
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "^1.61.1",

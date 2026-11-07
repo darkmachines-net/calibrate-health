@@ -3,6 +3,8 @@
 import crypto from 'node:crypto';
 import { MobileDevicePlatform } from '@prisma/client';
 import prisma from '../config/database';
+import { usesFirebaseAuthentication } from '../config/credentialProvider';
+import { firebaseSessionAllowed } from './firebaseAuthority';
 import { isProductionOrStagingEnv } from '../config/environment';
 import { isSupportedLanguage, SUPPORTED_LANGUAGES } from '../utils/language';
 import { MS_PER_MINUTE } from '../utils/time';
@@ -283,6 +285,12 @@ export async function exchangeWearPairingCredential(
     return pairingFailure(400, 'INVALID_PAIRING_REQUEST', 'Invalid Wear pairing exchange request');
   }
 
+  if (usesFirebaseAuthentication()) {
+    const owner = await prisma.wearPairingCredential.findUnique({ where: { token_hash: hashMobileToken(pairingToken) }, select: { user_id: true } });
+    if (!owner || !await firebaseSessionAllowed(owner.user_id)) {
+      return pairingFailure(401, 'INVALID_PAIRING_CREDENTIAL', 'Invalid Wear pairing credential');
+    }
+  }
   return prisma.$transaction(async (tx) => {
     const credential = await tx.wearPairingCredential.findUnique({
       where: { token_hash: hashMobileToken(pairingToken) }

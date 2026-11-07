@@ -42,6 +42,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.2",
+    "firebase-admin": "14.5.0",
     "helmet": "^8.2.0",
     "multer": "^2.2.0",
     "nodemailer": "^10.0.13",
@@ -90,11 +91,11 @@
     "exclude-after-remap": true
   },
   "overrides": {
-    "body-parser": "2.3.0",
+    "body-parser": "2.4.0",
     "deepmerge-ts": "8.0.1",
-    "fast-uri": "4.1.4",
+    "fast-uri": "4.2.3",
     "find-my-way": "9.7.0",
-    "ip-address": "10.4.0",
+    "ip-address": "10.7.6",
     "js-yaml": "4.3.2",
     "minimatch@10.2.5": {
       "brace-expansion": "5.0.9"
@@ -106,7 +107,8 @@
       ".": "$prisma",
       "mysql2": "3.24.3"
     },
-    "qs": "6.16.0",
+    "qs": "6.17.1",
+    "rimraf": "6.1.4",
     "valibot": "1.4.2",
     "mysql2": "3.24.3"
   }

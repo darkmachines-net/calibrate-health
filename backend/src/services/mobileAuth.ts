@@ -2,6 +2,8 @@
 
 import { MobileDevicePlatform } from '@prisma/client';
 import prisma from '../config/database';
+import { usesFirebaseAuthentication } from '../config/credentialProvider';
+import { firebaseSessionAllowed } from './firebaseAuthority';
 import {
   serializeUserForClient,
   USER_CLIENT_SELECT
@@ -102,6 +104,11 @@ export async function refreshMobileSession(refreshToken: string): Promise<Mobile
   });
 
   if (!existing) return null;
+
+  if (usesFirebaseAuthentication()) {
+    const owner = await prisma.mobileAuthSession.findUnique({ where: { id: existing.id }, select: { user_id: true } });
+    if (!owner || !await firebaseSessionAllowed(owner.user_id)) return null;
+  }
 
   const tokens = buildMobileTokenPair(now);
   // Claim the presented refresh token in one database write. Concurrent replays can read the

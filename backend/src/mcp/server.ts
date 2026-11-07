@@ -1,9 +1,9 @@
-/** @file server: Compose a stateless MCP resource with host checks, OAuth and account-derived read-only progress tools. */
+/** @file Compose a stateless MCP resource with exact/service-scoped host checks, OAuth and account-derived read-only tools. */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
+import { hostHeaderValidation } from '@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import type { Request, RequestHandler, Response } from 'express';
+import express, { type Request, type RequestHandler, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import type { McpConfiguration } from '../config/mcp';
@@ -47,9 +47,18 @@ export type CalibrateMcpHttpOptions = Pick<McpConfiguration, 'publicUrl' | 'allo
   };
 };
 
-/** Compose a stateless MCP resource with host checks, OAuth and account-derived read-only progress tools. */
+/** Compose MCP/OAuth routes, validating hosts before parsing bodies; allow revision tags only for explicitly trusted Cloud Run services. */
 export function createCalibrateMcpHttpApp(options: CalibrateMcpHttpOptions) {
-  const app = createMcpExpressApp({ allowedHosts: options.allowedHosts });
+  const app = express();
+  const validateExactHost = hostHeaderValidation(options.allowedHosts);
+  app.use((request, response, next) => {
+    if (isTrustedCloudRunTag(request.headers.host, options.allowedHosts)) {
+      next();
+      return;
+    }
+    validateExactHost(request, response, next);
+  });
+  app.use(express.json());
   if (options.trustedProxyHops > 0) {
     app.set('trust proxy', options.trustedProxyHops);
   }
@@ -146,8 +155,21 @@ export function createCalibrateMcpHttpApp(options: CalibrateMcpHttpOptions) {
   return app;
 }
 
-/** Identify MCP/OAuth-owned paths so the main server preserves their authentication and routing boundaries. */
-export function isCalibrateMcpPath(path: string): boolean {
+/** Firebase Hosting uses changing revision-tag hosts; trust only tags under an explicitly allowed service, never forwarding headers. */
+function isTrustedCloudRunTag(host: string | undefined, allowedHosts: string[]): boolean {
+  if (!host) return false;
+  return allowedHosts.some((allowed) => {
+    if (!allowed.endsWith('.run.app')) return false;
+    const suffix = `---${allowed}`;
+    if (!host.endsWith(suffix)) return false;
+    const tag = host.slice(0, -suffix.length);
+    return /^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(tag);
+  });
+}
+
+/** Identify protocol requests while leaving GET/HEAD /register to the browser's account-registration page. */
+export function isCalibrateMcpRequest(path: string, method: string): boolean {
+  if (path === '/register' && (method === 'GET' || method === 'HEAD')) return false;
   return path === '/mcp' ||
     path === '/authorize' ||
     path === '/token' ||

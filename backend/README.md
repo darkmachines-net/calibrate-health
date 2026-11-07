@@ -29,16 +29,43 @@ Account access is `full`, `email_verification_required`, or
 `legal_acceptance_required`. Restricted sessions retain verification, legal,
 support, export, deletion, and logout access. Registration records explicit consent
 to current legal versions; migrations never invent legal acceptance. Verification
-tokens last 24 hours and reset tokens 30 minutes; both are purpose-bound, single-use
+tokens in local mode last 24 hours and reset tokens 30 minutes; both are purpose-bound, single-use
 hashes. Request/resend routes return generic 202 responses to avoid enumeration.
-Reset revokes browser/native/Wear sessions and MCP grants. Password changes retain
-only the intended initiating session. [MCP](src/mcp/README.md) documents OAuth.
+Reset revokes browser/native/Wear sessions and MCP grants. Local password changes
+retain only the intended initiating session; Firebase password changes require a new
+sign-in on every device. [MCP](src/mcp/README.md) documents OAuth.
 
-Hosted email requires `CALIBRATE_HOSTED_SERVICE=true`, a canonical HTTPS
-`PUBLIC_APP_ORIGIN`, `EMAIL_DELIVERY_MODE=smtp`, and the `SMTP_*` settings in
-[.env.example](.env.example). Hosted registration fails closed when delivery is
-unavailable. Self-hosts may disable delivery and own their recovery arrangements.
+Hosted accounts require `CALIBRATE_HOSTED_SERVICE=true` and a canonical HTTPS
+`PUBLIC_APP_ORIGIN`. Local authentication uses `EMAIL_DELIVERY_MODE=smtp` and
+the `SMTP_*` settings in [.env.example](.env.example). Firebase authentication uses
+Firebase's hosted verification/reset messages and leaves SMTP delivery disabled.
+Hosted registration fails closed when delivery is unavailable. Local self-hosts
+may disable delivery and own their recovery arrangements.
 Never log tokens, request bodies, SMTP details, or raw provider/database errors.
+
+`AUTH_PROVIDER=firebase` selects [firebaseAuthority.ts](src/services/firebaseAuthority.ts)
+for registration, password checks, recovery, verification and deletion. Supply the
+project, API key and runtime service account described in [configuration](src/config/README.md).
+The server uses keyless Admin access; no Firebase token or refresh token reaches
+the browser/native clients. Existing cookies, opaque native tokens, Wear pairing
+and MCP flows retain their API contracts. New registrations receive a fresh UID;
+existing accounts require an immutable SQL mapping, never adoption by email.
+
+Before honoring existing credentials or issuing tokens, the server checks provider
+disablement, deletion, email/verification changes and token revocation time. Changes
+advance the SQL security generation and revoke all local credential families.
+Provider outages fail closed. Firebase's revocation timestamps have second precision;
+server-mediated password changes and resets additionally revoke local credentials
+explicitly. SQL row locks serialize reconciliation with verified session issuance.
+This adds a provider read to authenticated requests; measure latency and capacity
+before scaling. Retained local hashes never provide outage fallback.
+
+Firebase deletion first records durable intent and revokes local access. Provider
+deletion precedes SQL cascade; startup/minute maintenance retries unfinished deletion.
+Registration cleanup targets only the freshly allocated UID. An uncertain provider
+create with no SQL mapping requires operator inspection; never repair it by email linking.
+Use `npm run gcp:test:authentication` for isolated Auth Emulator/Postgres lifecycle
+checks. [GCP deployment](../deploy/gcp/README.md) owns cloud rehearsal and cutover.
 
 ## Portability and deletion
 

@@ -1,4 +1,4 @@
-/** @file Check release identities, isolated development clients and invalid Expo update inputs. */
+/** @file Check hosted release destinations, store identities, isolated development clients and invalid Expo update inputs. */
 
 /** Regression coverage for app.config and its failure boundaries. */
 const assert = require('node:assert/strict');
@@ -67,7 +67,7 @@ test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () =>
   assert.equal(packageConfig.scripts['prebuild:ios'], 'expo prebuild --platform ios --no-install');
 });
 
-test('beta native profiles use store signing for TestFlight and Android testing with private-server OTA', () => {
+test('beta native profiles use store signing for TestFlight and Android testing against the GCP server', () => {
   const beta = easConfig.build.beta;
   assert.equal(beta.distribution, 'store', 'TestFlight requires store signing, not ad hoc distribution');
   assert.equal(beta.android.buildType, 'app-bundle');
@@ -76,13 +76,13 @@ test('beta native profiles use store signing for TestFlight and Android testing 
   assert.equal(beta.autoIncrement, false);
   assert.equal(easConfig.build.production.autoIncrement, false);
   assert.equal(beta.env.EXPO_UPDATES_CHANNEL, 'beta');
-  assert.equal(beta.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.darkmachines.net');
+  assert.equal(beta.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.app');
   assert.equal(easConfig.submit['phone-beta'].android.track, 'internal');
   assert.equal(easConfig.submit['wear-beta'].android.track, 'wear:internal');
   assert.equal(easConfig.submit['ios-beta'].ios.bundleIdentifier, appConfig.expo.ios.bundleIdentifier);
   assert.equal(easConfig.submit['ios-beta'].ios.ascAppId, '6826924944');
   assert.equal(easConfig.build.production.env.EXPO_UPDATES_CHANNEL, 'production');
-  assert.equal(easConfig.build.production.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.darkmachines.net');
+  assert.equal(easConfig.build.production.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL, 'https://calibratehealth.app');
 });
 
 test('Expo config leaves updates disabled when no EAS project is configured', () => {

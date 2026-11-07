@@ -1,4 +1,4 @@
-/** @file Guard metadata-only stamping, native compatibility and isolated development/beta/store destinations. */
+/** @file Guard metadata stamping, native compatibility, GCP deployment and isolated development/beta/store destinations. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -86,8 +86,11 @@ test('the real Expo SDK ignores stamped versions but retains native compatibilit
 });
 
 test('configured identity, approval environments and destinations remain explicit', () => {
-  assert.equal(config.schemaVersion,3);assert.equal(config.server.deployment.service,'calibratehealth');
-  assert.ok(config.profiles.production.approvalEnvironment);assert.equal(config.profiles.production.deployEnvironment,'self-hosted-testing');
+  assert.equal(config.schemaVersion,3);
+  assert.deepEqual(config.server.deployment, { provider: 'gcp', project: 'calibrate-health', region: 'us-central1',
+    api: 'calibrate-api', migrationJob: 'calibrate-migrate', hostingSite: 'calibrate-health',
+    registry: 'us-central1-docker.pkg.dev/calibrate-health/application/server', origin: 'https://calibratehealth.app', readinessPath: '/api/v1/readyz' });
+  assert.ok(config.profiles.production.approvalEnvironment);assert.equal(config.profiles.production.deployEnvironment,'gcp-production');
   const eas=JSON.parse(fs.readFileSync(path.join(root,'mobile/eas.json')));
   assert.equal(eas.cli.version,'25.3.0');
   assert.deepEqual(config.mobile.targets.map(t=>t.id),['phone','wear','ios']);
@@ -100,10 +103,10 @@ test('configured identity, approval environments and destinations remain explici
     assert.equal(profile.channel,name);assert.equal(profile.easProfile,name);
     assert.equal(profile.signingEnvironment,'native-release-signing');
     assert.equal(profile.submitEnvironment,name === 'beta' ? 'play-internal' : 'play-production');
-    assert.equal(profile.deployEnvironment,'self-hosted-testing');assert.equal(profile.submit,true);
+    assert.equal(profile.deployEnvironment,'gcp-production');assert.equal(profile.submit,true);
     assert.equal(eas.build[name].environment,profile.environment);
     assert.equal(eas.build[name].distribution,'store');assert.equal(eas.build[name].autoIncrement,false);
-    assert.equal(profile.publicEnvironment.EXPO_PUBLIC_CALIBRATE_SERVER_URL,'https://calibratehealth.darkmachines.net');
+    assert.equal(profile.publicEnvironment.EXPO_PUBLIC_CALIBRATE_SERVER_URL,'https://calibratehealth.app');
     assert.equal(eas.submit[profile.submitProfiles.ios].ios.ascAppId,'6826924944');
     for (const target of ['phone','wear']) {
       const submit=eas.submit[profile.submitProfiles[target]].android;

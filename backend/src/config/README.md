@@ -78,8 +78,11 @@ and `../../test/database-pool.test.js`; no live database or cloud is needed.
 
 ## Other configuration boundaries
 
-[credentialProvider.ts](credentialProvider.ts) rejects every `AUTH_PROVIDER` except
-`local`; incidental Firebase variables do not activate hosted authentication.
+[credentialProvider.ts](credentialProvider.ts) defaults `AUTH_PROVIDER` to `local`;
+incidental Firebase variables never activate a different credential authority.
+Explicit `firebase` requires `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY` and
+`FIREBASE_SERVICE_ACCOUNT`, with keyless Admin credentials. Production and staging
+reject emulator configuration. [Account security](../../README.md) owns the runtime contract.
 [cors.ts](cors.ts) parses exact browser origins. [nativePush.ts](nativePush.ts),
 [emailDelivery.ts](emailDelivery.ts), and [mcp.ts](mcp.ts) validate optional capability
 configuration before routes use it. Secrets belong in the environment, never database rows.

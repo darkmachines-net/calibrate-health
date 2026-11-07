@@ -13,6 +13,10 @@ restore target. [deploy](../../deploy/README.md) owns the actual backup/restore 
 Migration 0029 deliberately revokes legacy web-push subscriptions whose session owner
 cannot be inferred; restoring the old image does not recreate those subscriptions.
 Identity-foundation mappings are metadata, never an implicit Firebase authority switch.
+Migration 0047 adds the last reconciled provider security stamp and durable deletion
+intent to those immutable mappings. Firebase runtime selection is explicit; it
+revokes local credential families when provider security changes. Retained bcrypt
+hashes cannot authenticate in Firebase mode.
 
 ## Disposable validation
 
