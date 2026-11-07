@@ -202,6 +202,7 @@
       "ios"
     ],
     "publicEnvironment": {
+      "EAS_BUILD_DISABLE_MAVEN_CACHE": "1",
       "EXPO_RELEASE_VARIANT": "development",
       "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
       "EXPO_NO_METRO_WORKSPACE_ROOT": "1"

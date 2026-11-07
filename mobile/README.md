@@ -43,6 +43,11 @@ OTA continues using the shared mobile major. Final release-mode and Wear-pairing
 validation belongs in beta. See [workflow setup](../.github/workflows/README.md#development-previews)
 for hosted builds, EAS environment values and device registration.
 
+Hosted Android development builds disable EAS's Maven cache injection with
+`EAS_BUILD_DISABLE_MAVEN_CACHE=1`. Its injected Artifactory plugin adds dependencies
+outside the reviewed Gradle verification metadata; direct repository downloads keep
+the existing strict dependency verification intact.
+
 ## Architecture
 
 - Auth uses `/auth/mobile/*` bearer-token endpoints and stores tokens in Expo SecureStore.
