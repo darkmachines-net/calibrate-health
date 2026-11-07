@@ -11,9 +11,9 @@
       "approvalEnvironment": "preview",
       "signingEnvironment": "native-release-signing",
       "submitEnvironment": "play-internal",
-      "deployEnvironment": "self-hosted-testing",
+      "deployEnvironment": "gcp-production",
       "publicEnvironment": {
-        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
         "EXPO_UPDATES_CHANNEL": "beta",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
@@ -33,9 +33,9 @@
       "approvalEnvironment": "production",
       "signingEnvironment": "native-release-signing",
       "submitEnvironment": "play-production",
-      "deployEnvironment": "self-hosted-testing",
+      "deployEnvironment": "gcp-production",
       "publicEnvironment": {
-        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.darkmachines.net",
+        "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
         "EXPO_UPDATES_CHANNEL": "production",
         "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
@@ -180,8 +180,15 @@
       }
     },
     "deployment": {
-      "service": "calibratehealth",
-      "path": "/deploy/calibratehealth"
+      "provider": "gcp",
+      "project": "calibrate-health",
+      "region": "us-central1",
+      "api": "calibrate-api",
+      "migrationJob": "calibrate-migrate",
+      "hostingSite": "calibrate-health",
+      "registry": "us-central1-docker.pkg.dev/calibrate-health/application/server",
+      "origin": "https://calibratehealth.app",
+      "readinessPath": "/api/v1/readyz"
     }
   },
   "development": {

@@ -1,6 +1,8 @@
-/** @file mcp OAuth: Database-backed OAuth 2.1 credential lifecycle for Calibrate's remote MCP server. */
+/** @file Database-backed MCP OAuth 2.1 lifecycle using the deployment's credential authority and SQL security generation. */
 
-import { verifyLocalPassword } from './credentialVerification';
+import { verifyAccountPassword } from './accountCredentials';
+import { firebaseSessionAllowed } from './firebaseAuthority';
+import { usesFirebaseAuthentication } from '../config/credentialProvider';
 import { createHash, randomBytes } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import prisma from '../config/database';
@@ -226,13 +228,17 @@ export class McpOAuthService {
       where: { email: { equals: email, mode: 'insensitive' } },
       select: APPROVAL_USER_SELECT
     }) : null;
-    const passwordWithinLimit = validateBcryptPasswordByteLength(input.password) === null;
-    const passwordMatches = await verifyLocalPassword(passwordWithinLimit ? input.password : '', user?.password_hash);
-    if (!user || !passwordWithinLimit || !passwordMatches) {
+    // Firebase-hosted recovery can set passwords beyond bcrypt's byte limit; only local hashes need that limit.
+    const passwordWithinLimit = usesFirebaseAuthentication() || validateBcryptPasswordByteLength(input.password) === null;
+    const version = await verifyAccountPassword(passwordWithinLimit ? input.password : '', user);
+    if (!user || !passwordWithinLimit || version === null) {
       await this.recordFailedApproval(requestHash, now);
       throw new McpOAuthError('invalid_credentials');
     }
-    if (serializeAccountAccess(user).state !== 'full') {
+    const accessUser = usesFirebaseAuthentication()
+      ? await this.database.user.findUnique({ where: { id: user.id }, select: ACCOUNT_ACCESS_SELECT })
+      : user;
+    if (!accessUser || serializeAccountAccess(accessUser).state !== 'full') {
       throw new McpOAuthError('account_access_required');
     }
 
@@ -242,8 +248,8 @@ export class McpOAuthService {
       // Serialize approval against password change/reset. Whichever transaction commits second
       // observes or deletes the other's authorization code, so an old password cannot mint access.
       const credentialStillCurrent = await tx.user.updateMany({
-        where: { id: user.id, credential_security_version: user.credential_security_version },
-        data: { credential_security_version: user.credential_security_version }
+        where: { id: user.id, credential_security_version: version },
+        data: { credential_security_version: version }
       });
       if (credentialStillCurrent.count !== 1) {
         await tx.mcpOAuthAuthorizationRequest.deleteMany({ where: { request_hash: requestHash } });
@@ -298,6 +304,7 @@ export class McpOAuthService {
     if (!code || code.client_id !== clientId || code.expires_at <= now) throw new McpOAuthError('invalid_grant');
     if (!redirectUri || redirectUri !== code.redirect_uri) throw new McpOAuthError('invalid_grant');
     if (!resource || resource !== code.resource) throw new McpOAuthError('invalid_target');
+    if (!await firebaseSessionAllowed(code.user_id)) throw new McpOAuthError('invalid_grant');
 
     const tokens = await this.database.$transaction(async (tx) => {
       const claimed = await tx.mcpOAuthAuthorizationCode.deleteMany({
@@ -337,6 +344,7 @@ export class McpOAuthService {
       throw new McpOAuthError('invalid_grant');
     }
     if (!resource || resource !== stored.grant.resource) throw new McpOAuthError('invalid_target');
+    if (!await firebaseSessionAllowed(stored.grant.user_id)) throw new McpOAuthError('invalid_grant');
     const scopes = requestedScopes?.length ? uniqueScopes(requestedScopes) : stored.scopes;
     if (scopes.some((scope) => !stored.scopes.includes(scope))) throw new McpOAuthError('invalid_scope');
     if (stored.used_at) {
@@ -388,6 +396,7 @@ export class McpOAuthService {
       serializeAccountAccess(stored.grant.user).state !== 'full') {
       throw new McpOAuthError('invalid_grant');
     }
+    if (!await firebaseSessionAllowed(stored.grant.user_id)) throw new McpOAuthError('invalid_grant');
     const touched = await this.database.mcpOAuthGrant.updateMany({
       where: { id: stored.grant_id, revoked_at: null },
       data: { last_used_at: now }

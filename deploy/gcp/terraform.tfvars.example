@@ -1,0 +1,33 @@
+# Replace these two placeholders with an existing Calibrate-owned project. Never use Little Say's project.
+project_id     = "REPLACE_WITH_CALIBRATE_PROJECT_ID"
+project_number = "REPLACE_WITH_CALIBRATE_PROJECT_NUMBER"
+region         = "us-central1"
+
+# Foundation-only default. Set an immutable registry digest to create the migration job.
+image         = ""
+serve         = false
+public_access = false
+public_origin = "https://calibratehealth.app"
+custom_domain = ""
+manage_dns    = false
+# Set manage_dns=true only with custom_domain and a reviewed source-zone inventory.
+# DNS record names are absolute with a trailing dot; TXT values include DNS quotes.
+dns_records = {}
+auth_provider = "firebase"
+
+# Optional while preparing foundations. Configure before public launch.
+alert_email     = ""
+billing_account = ""
+
+# Firebase owns verification/recovery email. SMTP settings apply only to auth_provider="local".
+application_environment = {
+  FOOD_DATA_PROVIDER = "openfoodfacts"
+  # SMTP_HOST     = "smtp.example.com"
+  # SMTP_PORT     = "587"
+  # SMTP_SECURE   = "false"
+  # SMTP_USERNAME = "provider-user"
+  # SMTP_FROM     = "Calibrate <noreply@calibratehealth.app>"
+}
+secret_versions = {
+  # SMTP_PASSWORD = "1"
+}

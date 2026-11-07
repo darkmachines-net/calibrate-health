@@ -12,6 +12,12 @@ test('existing local installations remain local even when unrelated Firebase env
 
 test('incomplete provider activation fails closed instead of silently using local credentials', () => {
   for (const AUTH_PROVIDER of ['firebase', 'typo']) {
-    assert.throws(() => validateCredentialProviderConfiguration({ AUTH_PROVIDER }), /must remain local/);
+    assert.throws(() => validateCredentialProviderConfiguration({ AUTH_PROVIDER }));
   }
+});
+
+test('Firebase requires an explicit project and rejects production emulator authority', () => {
+  const config = { AUTH_PROVIDER: 'firebase', FIREBASE_PROJECT_ID: 'synthetic-project', FIREBASE_API_KEY: 'synthetic-public-key', FIREBASE_SERVICE_ACCOUNT: 'auth@synthetic-project.iam.gserviceaccount.com' };
+  assert.doesNotThrow(() => validateCredentialProviderConfiguration(config));
+  for (const NODE_ENV of ['production', 'staging']) assert.throws(() => validateCredentialProviderConfiguration({ ...config, NODE_ENV, FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099' }), /forbidden/);
 });

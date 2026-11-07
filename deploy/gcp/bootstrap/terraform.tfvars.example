@@ -1,0 +1,4 @@
+# Existing project with billing linked by its owner; bootstrap does not create projects or attach billing.
+project_id     = "REPLACE_WITH_CALIBRATE_PROJECT_ID"
+project_number = "REPLACE_WITH_CALIBRATE_PROJECT_NUMBER"
+region         = "us-central1"

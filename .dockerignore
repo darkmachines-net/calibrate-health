@@ -13,3 +13,5 @@ mobile/android
 coverage
 **/*.log
 .release
+# Infrastructure state and operator credentials never belong in an application build context.
+deploy/gcp

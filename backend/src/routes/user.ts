@@ -1,6 +1,7 @@
 /** @file Account profile, preferences, avatar, password, connected apps, export, and deletion endpoints. */
 
-import { verifyLocalPassword } from '../services/credentialVerification';
+import { verifyAccountPassword } from '../services/accountCredentials';
+import { firebaseAuthority } from '../services/firebaseAuthority';
 import express from 'express';
 import prisma from '../config/database';
 import bcrypt from 'bcryptjs';
@@ -226,11 +227,18 @@ router.patch('/password', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isMatch = await verifyLocalPassword(parsed.currentPassword, dbUser.password_hash);
-    if (!isMatch) {
+    const version = await verifyAccountPassword(parsed.currentPassword, dbUser);
+    if (version === null) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
+    const authority = firebaseAuthority();
+    if (authority) {
+      await authority.changePassword(user.id, parsed.newPassword);
+      await destroyRequestSession(req);
+      clearSessionCookie(res);
+      return res.json({ message: 'Password updated. Sign in again.' });
+    }
     const password_hash = await bcrypt.hash(parsed.newPassword, 10);
     const revokedAt = new Date();
     await prisma.$transaction([
@@ -285,14 +293,14 @@ router.delete('/account', async (req, res) => {
   try {
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { password_hash: true }
+      select: { id: true, password_hash: true }
     });
     if (!dbUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const passwordMatches = await verifyLocalPassword(currentPassword, dbUser.password_hash);
-    if (!passwordMatches) {
+    const version = await verifyAccountPassword(currentPassword, { ...dbUser, id: user.id });
+    if (version === null) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 

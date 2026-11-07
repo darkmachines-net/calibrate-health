@@ -32,6 +32,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gcp-configuration:
+    name: GCP Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      # Uses mocked providers and disposable local state; no GCP/OIDC credentials or real plan/apply.
+      - run: node deploy/gcp/check.mjs
+
   release-config:
     name: Release Configuration
     runs-on: ubuntu-latest

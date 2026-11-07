@@ -1,8 +1,10 @@
-/** @file Express server startup, route mounting, session middleware, and process lifecycle. */
+/** @file Express startup, browser/MCP routing, account sessions, release-bound readiness, and process lifecycle. */
 
 import 'dotenv/config';
 import { markVerifiedBrowserLogin, serializeBrowserLoginUser } from './utils/browserLoginCredentials';
-import { verifyLocalPassword } from './services/credentialVerification';
+import { verifyAccountPassword } from './services/accountCredentials';
+import { enforceFirebaseSession } from './middleware/firebaseSession';
+import { startFirebaseAccountMaintenance } from './services/firebaseAuthority';
 
 import cors from 'cors';
 import express from 'express';
@@ -54,8 +56,9 @@ import {
   createClientDiagnosticsRateLimiter
 } from './middleware/security';
 import { startReminderScheduler } from './services/reminderScheduler';
-import { createCalibrateMcpHttpApp, isCalibrateMcpPath } from './mcp/server';
+import { createCalibrateMcpHttpApp, isCalibrateMcpRequest } from './mcp/server';
 import { checkDatabaseReadiness } from './services/readiness';
+import release from '../../shared/release.json';
 import { normalizeEmailCredential } from './utils/authCredentials';
 import { autoLoginTestUser } from './utils/devAuth';
 import { DEFAULT_SESSION_TTL_MS, PostgresSessionStore } from './utils/postgresSessionStore';
@@ -166,7 +169,7 @@ const bootstrap = async (): Promise<void> => {
   // MCP and its OAuth protocol endpoints own cross-origin policy and bearer auth. Mount them
   // before browser CORS and mobile bearer middleware so remote public clients can connect safely.
   app.use((req, res, next) => {
-    if (!mcpHttpApp || !isCalibrateMcpPath(req.path)) {
+    if (!mcpHttpApp || !isCalibrateMcpRequest(req.path, req.method)) {
       next();
       return;
     }
@@ -219,6 +222,7 @@ const bootstrap = async (): Promise<void> => {
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(authenticateMobileBearerToken);
+  app.use(enforceFirebaseSession);
   app.use(enforceNativeClientCompatibility);
   app.use(createBrowserMutationOriginGuard({
     trustedOrigins: allowedOriginSet,
@@ -242,14 +246,15 @@ const bootstrap = async (): Promise<void> => {
           orderBy: { id: 'asc' },
           select: { ...USER_CLIENT_SELECT, password_hash: true, credential_security_version: true },
         });
-        const isMatch = await verifyLocalPassword(password, user?.password_hash);
-        if (!user || !isMatch) {
+        const verifiedVersion = await verifyAccountPassword(password, user);
+        if (!user || verifiedVersion === null) {
           return done(null, false, { message: 'Invalid email or password' });
         }
 
         // Avoid keeping password hashes on req.user or in the session.
-        const { password_hash: _passwordHash, credential_security_version: version, ...safeUser } = user;
-        markVerifiedBrowserLogin(safeUser, user.id, version);
+        const safeUser = await prisma.user.findUnique({ where: { id: user.id }, select: USER_CLIENT_SELECT });
+        if (!safeUser) return done(null, false);
+        markVerifiedBrowserLogin(safeUser, user.id, verifiedVersion);
         return done(null, safeUser);
       } catch (err) {
         return done(err);
@@ -294,7 +299,12 @@ const bootstrap = async (): Promise<void> => {
 
   apiRouter.get('/readyz', async (_req, res) => {
     const ready = await checkDatabaseReadiness(() => pgPool.query('SELECT 1'));
-    res.status(ready ? 200 : 503).json({ ok: ready });
+    res.status(ready ? 200 : 503).json({
+      ok: ready,
+      status: ready ? 'ok' : 'unavailable',
+      version: release.server.version,
+      revision: process.env.K_REVISION ?? null
+    });
   });
 
   apiRouter.use('/client-config', clientConfigRoutes);
@@ -340,6 +350,7 @@ const bootstrap = async (): Promise<void> => {
       reminder_scheduler_enabled: true
     });
     startReminderScheduler();
+    startFirebaseAccountMaintenance();
   });
 };
 

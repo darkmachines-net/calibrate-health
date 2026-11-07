@@ -1,6 +1,9 @@
 /** @file Browser and native authentication routes, credential recovery, account sessions, and watch pairing exchange. */
 
-import { verifyLocalPassword } from '../services/credentialVerification';
+import { verifyAccountPassword } from '../services/accountCredentials';
+import { firebaseAuthority } from '../services/firebaseAuthority';
+import { usesFirebaseAuthentication } from '../config/credentialProvider';
+import { deleteAccountData } from '../services/accountLifecycle';
 import express from 'express';
 import { BrowserLoginRejected } from '../utils/browserLoginCredentials';
 import passport from 'passport';
@@ -123,7 +126,7 @@ router.post('/register', async (req, res) => {
             return res.status(400).json(invalidLegalResponse(legal.code));
         }
     }
-    if (emailConfig.hostedRequired && emailConfig.mode === EMAIL_DELIVERY_MODES.DISABLED) {
+    if (emailConfig.hostedRequired && !usesFirebaseAuthentication() && emailConfig.mode === EMAIL_DELIVERY_MODES.DISABLED) {
         return res.status(503).json({
             message: 'Account email delivery is temporarily unavailable.',
             code: 'EMAIL_DELIVERY_UNAVAILABLE',
@@ -141,9 +144,9 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: REGISTRATION_FAILED_MESSAGE });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
-        const newUser = await prisma.user.create({
+        const authority = firebaseAuthority();
+        const password_hash = authority ? '' : await bcrypt.hash(password, 10);
+        const newUser = authority ? await authority.register(email, password, emailConfig.hostedRequired) : await prisma.user.create({
             data: {
                 email,
                 password_hash,
@@ -161,7 +164,7 @@ router.post('/register', async (req, res) => {
         if (verificationRequired) {
             const delivered = await sendEmailVerification(newUser.id);
             if (!delivered) {
-                await prisma.user.delete({ where: { id: newUser.id } });
+                await deleteAccountData(newUser.id);
                 return res.status(503).json({
                     message: 'Account email delivery is temporarily unavailable.',
                     code: 'EMAIL_DELIVERY_UNAVAILABLE',
@@ -213,7 +216,7 @@ router.post('/mobile/register', async (req, res) => {
             return res.status(400).json(invalidLegalResponse(legal.code));
         }
     }
-    if (emailConfig.hostedRequired && emailConfig.mode === EMAIL_DELIVERY_MODES.DISABLED) {
+    if (emailConfig.hostedRequired && !usesFirebaseAuthentication() && emailConfig.mode === EMAIL_DELIVERY_MODES.DISABLED) {
         return res.status(503).json({
             message: 'Account email delivery is temporarily unavailable.',
             code: 'EMAIL_DELIVERY_UNAVAILABLE',
@@ -231,9 +234,9 @@ router.post('/mobile/register', async (req, res) => {
             return res.status(400).json({ message: REGISTRATION_FAILED_MESSAGE });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
-        const newUser = await prisma.user.create({
+        const authority = firebaseAuthority();
+        const password_hash = authority ? '' : await bcrypt.hash(password, 10);
+        const newUser = authority ? await authority.register(email, password, emailConfig.hostedRequired) : await prisma.user.create({
             data: {
                 email,
                 password_hash,
@@ -251,7 +254,7 @@ router.post('/mobile/register', async (req, res) => {
         if (verificationRequired) {
             const delivered = await sendEmailVerification(newUser.id);
             if (!delivered) {
-                await prisma.user.delete({ where: { id: newUser.id } });
+                await deleteAccountData(newUser.id);
                 return res.status(503).json({
                     message: 'Account email delivery is temporarily unavailable.',
                     code: 'EMAIL_DELIVERY_UNAVAILABLE',
@@ -435,14 +438,14 @@ router.post('/mobile/login', async (req, res) => {
             where: { email: { equals: email, mode: 'insensitive' } },
             select: { ...USER_CLIENT_SELECT, password_hash: true, credential_security_version: true }
         });
-        const isMatch = await verifyLocalPassword(password, user?.password_hash);
-        if (!user || !isMatch) {
+        const version = await verifyAccountPassword(password, user);
+        if (!user || version === null) {
             return res.status(401).json({ message: INVALID_LOGIN_MESSAGE });
         }
 
         const authPayload = await issueVerifiedMobileAuthPayload({
             userId: user.id,
-            credentialSecurityVersion: user.credential_security_version,
+            credentialSecurityVersion: version,
             device: device.device
         });
         if (!authPayload) {

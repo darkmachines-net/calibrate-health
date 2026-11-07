@@ -2,8 +2,12 @@
 
 The official service at `calibratehealth.app` is the default product experience. These portable Docker Compose files
 support Advanced self-hosting for operators responsible for their domain, database, email delivery, logs, backups,
-retention, and upgrades. They contain no cloud-provider-specific infrastructure. Choose one proxy file and
+retention, and upgrades. The Compose files contain no cloud-provider-specific infrastructure. Choose one proxy file and
 optionally add the Postgres and encrypted-backup overlays.
+
+The optional [GCP configuration](gcp/README.md) prepares Cloud Run, Cloud SQL, Secret Manager,
+Firebase Hosting, optional Firebase Authentication and release federation in a separate Calibrate project. It has its own bootstrap,
+credential-free validation and cutover prerequisites; the existing private-host release remains selected.
 
 The published `Dockerfile.app` image serves the Expo Router/React Native Web static export and the API from one
 origin. Expo documents, the service worker, and the install manifest are revalidated; hashed bundles use immutable
@@ -73,8 +77,9 @@ settings in `.env`. Keep `SMTP_PASSWORD` in the deployment secret store and out 
 logs, and diagnostics.
 
 Only the official `calibratehealth.app` deployment sets `CALIBRATE_HOSTED_SERVICE=true`.
-Registration then fails closed until complete provider-neutral SMTP configuration and delivery are
-available. See `../backend/README.md#authentication-and-account-isolation` for the endpoint and access-state contract.
+Registration then requires working account email: SMTP for local authentication, or Firebase's
+built-in messages when the [GCP module](gcp/README.md) selects Firebase Authentication.
+See `../backend/README.md#authentication-and-account-isolation` for the endpoint and access-state contract.
 
 The official hosted web tier must publish both `/.well-known/assetlinks.json` and
 `/.well-known/apple-app-site-association` as static, unauthenticated, non-redirecting JSON responses. The Android

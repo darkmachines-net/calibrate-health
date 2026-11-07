@@ -1,6 +1,7 @@
 /** @file Bounded background reminder scheduling, eligibility, deduplication, delivery, and resolution. */
 
 import prisma from '../config/database';
+import { firebaseSessionAllowed } from './firebaseAuthority';
 import { InAppNotificationType } from '@prisma/client';
 import { getSafeUtcTodayDateOnlyInTimeZone } from '../utils/date';
 import { parsePositiveInteger } from '../utils/requestParsing';
@@ -108,6 +109,7 @@ export const createAndSendScheduledReminders = async (now: Date): Promise<void> 
     });
 
     for (const user of users) {
+        if (!await firebaseSessionAllowed(user.id)) continue;
         const timeZone = user.timezone || 'UTC';
         const { minuteOfDay } = getLocalWallClock(timeZone, now);
         if (isWithinQuietHours(

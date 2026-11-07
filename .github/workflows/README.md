@@ -30,6 +30,11 @@ manual. **Production Container Scan** and **Dependency Audit** are scheduled/man
 maintenance. These workflows do not add checks to ordinary PRs. The shared Release
 workflow still owns signed build and delivery validation.
 
+Extended Validation also runs **GCP Configuration**, using `npm run gcp:check` with
+mocked Terraform providers and disposable state. It needs no cloud credentials and
+does not provision resources. [GCP deployment](../../deploy/gcp/README.md) owns the
+bootstrap inputs and the shared-toolkit requirements before changing release destinations.
+
 Validate workflow contracts with `node --test scripts/ci-workflow.test.mjs` and
 `npm run test:release`. [Quality](../../quality/README.md) owns the supported diagnostics.
 
@@ -63,10 +68,11 @@ The shared EAS worker verifies the iOS build identity and submits to TestFlight 
 is the reserved phone code; automatic build-number increments stay disabled.
 
 After approval, selected server and native artifacts can build concurrently. Server
-changes require completed webhook deployment health before dependent client publication.
-Production retains its environment
-approval. The [deployment guide](../../deploy/self-hosted/README.md) owns private
-routing, webhook configuration and health semantics.
+changes require successful Cloud SQL migration, verified Cloud Run rollout and
+revision-pinned Firebase Hosting health before dependent client publication. Both
+profiles deploy to `https://calibratehealth.app`. Production retains its environment
+approval. The [GCP deployment guide](../../deploy/gcp/README.md) owns infrastructure,
+federation and rollout boundaries.
 
 Use **Re-run failed jobs** after correcting a failure. Retries keep the original plan,
 versions and completed artifacts, reuse accepted EAS builds, and skip confirmed
@@ -94,27 +100,28 @@ promotion because approval also authorizes delivery to the deployed backend. Kee
 its required reviewers and protected-branch policy; the toolkit rejects a missing
 reviewer rule. Public-store publication retains `production` approval and submissions
 use the existing protected `play-production` environment.
-Both release profiles retain `native-release-signing` and `self-hosted-testing`;
+Both release profiles use `native-release-signing` and `gcp-production`;
 beta submissions retain `play-internal`. Keep their existing protections and restrict
 protected operations to master. Configure EXPO_TOKEN and the existing assigned Play
 credential for phone-beta, wear-beta, phone-production and wear-production submit profiles. Paired
 command builds use ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
 ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
-strings. WireGuard configuration retains its DEPLOY_* names in the deployment guide.
+strings. GCP deployment uses the environment's `GCP_WORKLOAD_IDENTITY_PROVIDER`
+and `GCP_RELEASE_SERVICE_ACCOUNT` variables; no long-lived Google key is needed.
 EAS also needs the existing iOS distribution certificate, provisioning profile and
 assigned App Store Connect submission key. The ios-beta and ios-production submit
 profiles both upload to TestFlight; App Store public release remains a separate provider action.
 
 Keep EAS preview and production public variables aligned with their matching
 `profiles.*.publicEnvironment` in `release.config.json`. Set
-`EXPO_PUBLIC_CALIBRATE_SERVER_URL=https://calibratehealth.darkmachines.net` in the EAS
+`EXPO_PUBLIC_CALIBRATE_SERVER_URL=https://calibratehealth.app` in the EAS
 preview environment for hosted development previews too. That URL is deliberately
 not fixed in `development.publicEnvironment`, so local Metro can use the worktree API.
 The development variant is set by its build profile; do not set it for beta or production.
 The environment
 job rejects conflicting remote values before reserving versions or starting builds.
 `npm run release -- validate` checks the local configuration; `npm run release --
-plan --profile production` also reads EAS and checks those values. A committed
+plan --profile beta` also reads EAS and checks those values. A committed
 configuration correction requires a new dispatch after merge because a job retry
 keeps the original source and configuration.
 
@@ -126,7 +133,7 @@ Keep the signing key and review the read-only plan before the first dispatch:
 
 `npm run release -- validate`
 
-`npm run release -- plan --profile production`
+`npm run release -- plan --profile beta`
 
 Validation does not publish, submit or deploy. The first live release requires
 separate owner authorization and verification of native installation, store handoff

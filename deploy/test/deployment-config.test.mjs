@@ -1,4 +1,4 @@
-/** @file Verify self-hosting templates, image readiness, and backup/startup contracts without a live stack. */
+/** @file Verify portable self-hosting, image readiness and backup/startup contracts independently of the optional GCP deployment. */
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
@@ -110,10 +110,10 @@ test('production startup retries migrations before opening the app process', () 
   );
 });
 
-test('deployment remains portable and does not restore removed cloud infrastructure', () => {
-  const deploymentText = fs.readdirSync(deployDirectory, { recursive: true })
-    .filter((entry) => typeof entry === 'string')
-    .join('\n');
-  assert.doesNotMatch(deploymentText, /terraform|cloudformation/i);
-  assert.equal(fs.existsSync(path.join(repositoryRoot, 'terraform')), false);
+test('portable Compose deployments remain independent of the optional GCP configuration', () => {
+  for (const file of fs.readdirSync(deployDirectory).filter(entry => /^docker-compose.*\.yml$/.test(entry))) {
+    assert.doesNotMatch(readDeploy(file), /gcp\/|google_|cloudsql|terraform/i);
+  }
+  const release = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'release.config.json'), 'utf8'));
+  assert.deepEqual(release.server.deployment, { service: 'calibratehealth', path: '/deploy/calibratehealth' });
 });

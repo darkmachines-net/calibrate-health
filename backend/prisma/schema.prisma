@@ -112,7 +112,7 @@ model User {
   password_hash     String
   /// Monotonic credential/security generation; database trigger advances it on password changes.
   credential_security_version Int @default(0)
-  /// Prepared immutable provider mapping; existence does not switch credential authority.
+  /// Immutable provider mapping; AUTH_PROVIDER selects the deployment's credential authority.
   firebase_identity FirebaseIdentity?
   created_at        DateTime  @default(now())
   email_verified_at DateTime?
@@ -200,6 +200,10 @@ model FirebaseIdentity {
   source_id String
   project_id String
   uid String
+  /// Last reconciled Firebase revocation/email/disabled state; changes revoke every local credential.
+  security_stamp String?
+  /// Durable deletion intent; account access stops before provider deletion is retried.
+  deletion_pending_at DateTime?
   created_at DateTime @default(now())
 
   @@unique([project_id, uid])
