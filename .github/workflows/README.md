@@ -90,9 +90,11 @@ commands, promotion commands or historical recovery runners.
 Keep the package, lockfile and both workflow callers at the same reviewed full toolkit SHA. The
 repository is darkmachines-net/calibrate-health; the toolkit is
 [darkmachines-net/expo-release-template](https://github.com/darkmachines-net/expo-release-template).
-Keep the existing Expo project, app/store IDs, signing identity and
-`ghcr.io/mchartier/calibratehealth` image destination. Verify package Actions write
-access for the transferred repository before dispatch.
+Keep the existing Expo project, app/store IDs and signing identity. Publish server
+images to `ghcr.io/darkmachines-net/calibrate-health` under the repository's current
+organization, where its Actions token can own the package. The old personal-namespace
+image remains available to existing self-hosted deployments. GCP copies and verifies
+the published digest into its dedicated Artifact Registry before rollout.
 
 The existing reviewer-free `preview` environment prepares development clients and
 performs approved beta publication. The existing `production` environment gates beta
