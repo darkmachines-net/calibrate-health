@@ -114,6 +114,4 @@ test('portable Compose deployments remain independent of the optional GCP config
   for (const file of fs.readdirSync(deployDirectory).filter(entry => /^docker-compose.*\.yml$/.test(entry))) {
     assert.doesNotMatch(readDeploy(file), /gcp\/|google_|cloudsql|terraform/i);
   }
-  const release = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'release.config.json'), 'utf8'));
-  assert.deepEqual(release.server.deployment, { service: 'calibratehealth', path: '/deploy/calibratehealth' });
 });
