@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** @file Start the shared isolated Expo development client against the current worktree backend. */
+/** @file Start the isolated Expo development client with the current worktree backend and public native OAuth configuration. */
 
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -80,7 +80,10 @@ export async function main() {
   });
   const server = developmentServer(repoRoot, {
     ...connection,
-    publicEnvironment: { EXPO_PUBLIC_CALIBRATE_SERVER_URL: backendUrl },
+    publicEnvironment: {
+      EXPO_PUBLIC_CALIBRATE_SERVER_URL: backendUrl,
+      ...resolveNativeOAuthEnvironment(repoRoot),
+    },
   });
 
   console.log(`[expo-native:${platform}] API: ${backendUrl}`);
@@ -102,6 +105,17 @@ export async function main() {
   if (result.status !== 0) {
     throw new Error(`Expo ${platform} session exited with status ${result.status ?? 1}.`);
   }
+}
+
+/** Forward only public OAuth client IDs, preferring host values over root .env for local native builds. */
+export function resolveNativeOAuthEnvironment(repoRoot, environment = process.env) {
+  const repoEnvironment = readDotenv(path.join(repoRoot, ".env"));
+  const values = {};
+  for (const key of ["EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID", "EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID"]) {
+    const value = environment[key]?.trim() || repoEnvironment[key]?.trim();
+    if (value) values[key] = value;
+  }
+  return values;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {

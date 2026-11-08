@@ -1,4 +1,4 @@
-/** @file Check hosted release destinations, store identities, isolated development clients and invalid Expo update inputs. */
+/** @file Check native provider configuration, release destinations, store/development identities and invalid Expo inputs. */
 
 /** Regression coverage for app.config and its failure boundaries. */
 const assert = require('node:assert/strict');
@@ -22,14 +22,45 @@ function pluginOptions(name) {
 const originalProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 const originalChannel = process.env.EXPO_UPDATES_CHANNEL;
 const originalVariant = process.env.EXPO_RELEASE_VARIANT;
+const originalGoogleIosId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const originalGoogleDevIosId = process.env.EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID;
 
 test.afterEach(() => {
+  if (originalGoogleDevIosId === undefined) delete process.env.EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID;
+  else process.env.EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID = originalGoogleDevIosId;
+  if (originalGoogleIosId === undefined) delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  else process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = originalGoogleIosId;
   if (originalProjectId === undefined) delete process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
   else process.env.EXPO_PUBLIC_EAS_PROJECT_ID = originalProjectId;
   if (originalChannel === undefined) delete process.env.EXPO_UPDATES_CHANNEL;
   else process.env.EXPO_UPDATES_CHANNEL = originalChannel;
   if (originalVariant === undefined) delete process.env.EXPO_RELEASE_VARIANT;
   else process.env.EXPO_RELEASE_VARIANT = originalVariant;
+});
+
+test('Google iOS selects separate development and store clients within the shared preview environment', () => {
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = '123-store.apps.googleusercontent.com';
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID = '123-dev.apps.googleusercontent.com';
+  process.env.EXPO_RELEASE_VARIANT = 'development';
+  const dev = createExpoConfig({ config: appConfig.expo });
+  assert.equal(dev.extra.googleIosClientId, '123-dev.apps.googleusercontent.com');
+  assert.deepEqual(dev.plugins.find(plugin => Array.isArray(plugin) && plugin[0] === '@react-native-google-signin/google-signin'), [
+    '@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.123-dev' }
+  ]);
+  delete process.env.EXPO_RELEASE_VARIANT;
+  assert.equal(createExpoConfig({ config: appConfig.expo }).extra.googleIosClientId, '123-store.apps.googleusercontent.com');
+});
+
+test('native provider config enables Apple and uses the matching reversed Google iOS scheme', () => {
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = '123-native.apps.googleusercontent.com';
+  const result = createExpoConfig({ config: appConfig.expo });
+  assert.equal(result.ios.usesAppleSignIn, true);
+  assert.ok(result.plugins.includes('expo-apple-authentication'));
+  assert.deepEqual(result.plugins.find(plugin => Array.isArray(plugin) && plugin[0] === '@react-native-google-signin/google-signin'), [
+    '@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.123-native' }
+  ]);
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = 'https://invalid.example';
+  assert.throws(() => createExpoConfig({ config: appConfig.expo }), /iOS OAuth client ID/);
 });
 
 test('static Expo config supports iPhone, iPad, and iOS Simulator builds', () => {
@@ -88,7 +119,10 @@ test('beta native profiles use store signing for TestFlight and Android testing 
 test('Expo config leaves updates disabled when no EAS project is configured', () => {
   delete process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
   const config = { name: 'calibrate', extra: { router: { origin: false } } };
-  assert.strictEqual(createExpoConfig({ config }), config);
+  const result = createExpoConfig({ config });
+  assert.equal(result.updates, undefined);
+  assert.equal(result.name, config.name);
+  assert.deepEqual(result.extra, config.extra);
 });
 
 test('Expo config embeds a project-scoped update URL, runtime, and local-build channel', () => {

@@ -1,4 +1,4 @@
-/** @file Express startup, browser/MCP routing, account sessions, release-bound readiness, and process lifecycle. */
+/** @file Express startup, rate-limited password/provider auth, browser/MCP routing, readiness and process lifecycle. */
 
 import 'dotenv/config';
 import { markVerifiedBrowserLogin, serializeBrowserLoginUser } from './utils/browserLoginCredentials';
@@ -189,6 +189,7 @@ const bootstrap = async (): Promise<void> => {
   app.use('/auth/mobile/register', authRateLimiters.registration);
   app.use('/auth/login', authRateLimiters.login);
   app.use('/auth/mobile/login', authRateLimiters.login);
+  app.use('/auth/mobile/social', authRateLimiters.registration);
   app.use('/auth/mobile/refresh', authRateLimiters.refresh);
   app.use('/auth/email-verification/resend', authRateLimiters.accountEmailRequest);
   app.use('/auth/password-reset/request', authRateLimiters.accountEmailRequest);
@@ -326,6 +327,10 @@ const bootstrap = async (): Promise<void> => {
   apiRouter.use('/legal', legalRoutes);
   apiRouter.use('/onboarding', onboardingRoutes);
   apiRouter.use('/user/password', authRateLimiters.passwordChange);
+  apiRouter.use('/user/account', (req, res, next) => {
+    if (req.method === 'DELETE') return authRateLimiters.passwordChange(req, res, next);
+    next();
+  });
   apiRouter.use('/user', userRoutes);
 
   // Keep debug/prototype routes (food provider comparisons, etc.) out of production deployments.

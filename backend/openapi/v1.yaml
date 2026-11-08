@@ -481,6 +481,72 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ApiError' }
+  /auth/mobile/providers:
+    get:
+      operationId: getMobileSocialProviders
+      security: []
+      description: Explicitly enabled Firebase providers; local-password deployments return an empty list. No-store.
+      responses:
+        '200':
+          description: Native provider availability; the client also checks device support and build configuration.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [providers]
+                properties:
+                  providers:
+                    type: array
+                    items: { type: string, enum: [google.com, apple.com] }
+  /auth/mobile/social:
+    post:
+      operationId: authenticateMobileSocial
+      security: []
+      description: Exchange a native provider credential through Firebase for a Calibrate device session. Registration requires current hosted legal consent. Never links SQL accounts by email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, id_token, intent, device_id]
+              properties:
+                provider: { type: string, enum: [google.com, apple.com] }
+                id_token: { type: string, minLength: 1, maxLength: 16384, writeOnly: true }
+                nonce: { type: string, minLength: 32, maxLength: 128, description: Raw nonce required for Apple; its SHA-256 hash was supplied to the native authorization request., writeOnly: true }
+                intent: { type: string, enum: [login, register] }
+                device_id: { type: string }
+                device_platform: { type: string, enum: [android_phone, ios] }
+                device_name: { type: string }
+                terms_version: { type: string }
+                privacy_version: { type: string }
+                accept_terms: { type: boolean }
+                accept_privacy: { type: boolean }
+      responses:
+        '200':
+          description: Authenticated native session; provider tokens are never returned.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MobileAuthResponse' }
+        '400':
+          description: Invalid request or missing/outdated legal consent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: SOCIAL_REGISTRATION_REQUIRED or SOCIAL_ACCOUNT_CONFLICT; use explicit registration or the existing sign-in method.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '429':
+          description: Too many authentication attempts.
+        '503':
+          description: Provider disabled or temporarily unavailable; no password fallback.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
   /auth/mobile/refresh:
     post:
       operationId: refreshMobile
@@ -1471,16 +1537,26 @@ paths:
           application/json:
             schema:
               type: object
-              required: [current_password]
+              oneOf:
+                - required: [current_password]
+                - required: [provider_credential]
               properties:
                 current_password:
                   type: string
                   minLength: 1
+                provider_credential:
+                  type: object
+                  description: Native provider proof must resolve to the currently authenticated Firebase UID; never creates or switches accounts.
+                  required: [provider, id_token]
+                  properties:
+                    provider: { type: string, enum: [google.com, apple.com] }
+                    id_token: { type: string, minLength: 1, maxLength: 16384, writeOnly: true }
+                    nonce: { type: string, minLength: 32, maxLength: 128, writeOnly: true }
       responses:
         '204':
           description: Account, sessions, and all user-owned data were deleted.
         '400':
-          description: Current password is missing or incorrect.
+          description: Password or same-account provider reauthentication is missing or incorrect.
           content:
             application/json:
               schema:

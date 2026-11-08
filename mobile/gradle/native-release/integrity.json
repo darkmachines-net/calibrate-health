@@ -9,7 +9,7 @@
         },
         {
           "path": "gradle/dependency-locks/app.lockfile",
-          "sha256": "f9b391df96fdceb7b357a414f5f8fb4dc22d3de57a9d1c2bd1d1eeed5e8c74f6"
+          "sha256": "58d3288794ad017d4fcc3fd5be6816ef5da7cd2edb4c9b433315e2b167533a93"
         },
         {
           "path": "gradle/dependency-locks/calibrate-wear-pairing.lockfile",
@@ -92,6 +92,10 @@
           "sha256": "9abc4d1c057abcc05c4135a1778a8c0968183a6d01b8d56939efa939610418be"
         },
         {
+          "path": "gradle/dependency-locks/react-native-google-signin_google-signin.lockfile",
+          "sha256": "d33295ae8058fe7026bc8a9d2e4c9018cffbd01c98f6bf3a8bae89d4570dfafd"
+        },
+        {
           "path": "gradle/dependency-locks/react-native-health-connect.lockfile",
           "sha256": "0cf82fbf2d19fb98742eb0b3b8afc06b8a3b0916a57e367746d0de64b24eb2b9"
         },
@@ -121,7 +125,7 @@
         },
         {
           "path": "gradle/verification-metadata.xml",
-          "sha256": "1848475c9aa2d83d7f6016f631a9dfa03867c2515e9b3b3e83997253277b2725"
+          "sha256": "eb92c1ee5941922d0f1e798c04c1d82eb2339760dc139665d500a4346369c72f"
         },
         {
           "path": "settings-gradle.lockfile",

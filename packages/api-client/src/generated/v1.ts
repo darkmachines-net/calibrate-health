@@ -316,6 +316,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/mobile/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Explicitly enabled Firebase providers; local-password deployments return an empty list. No-store. */
+        get: operations["getMobileSocialProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mobile/social": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Exchange a native provider credential through Firebase for a Calibrate device session. Registration requires current hosted legal consent. Never links SQL accounts by email. */
+        post: operations["authenticateMobileSocial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/mobile/refresh": {
         parameters: {
             query?: never;
@@ -3399,6 +3433,103 @@ export interface operations {
             };
         };
     };
+    getMobileSocialProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Native provider availability; the client also checks device support and build configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        providers: ("google.com" | "apple.com")[];
+                    };
+                };
+            };
+        };
+    };
+    authenticateMobileSocial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    provider: "google.com" | "apple.com";
+                    id_token: string;
+                    /** @description Raw nonce required for Apple; its SHA-256 hash was supplied to the native authorization request. */
+                    nonce?: string;
+                    /** @enum {string} */
+                    intent: "login" | "register";
+                    device_id: string;
+                    /** @enum {string} */
+                    device_platform?: "android_phone" | "ios";
+                    device_name?: string;
+                    terms_version?: string;
+                    privacy_version?: string;
+                    accept_terms?: boolean;
+                    accept_privacy?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Authenticated native session; provider tokens are never returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MobileAuthResponse"];
+                };
+            };
+            /** @description Invalid request or missing/outdated legal consent. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description SOCIAL_REGISTRATION_REQUIRED or SOCIAL_ACCOUNT_CONFLICT; use explicit registration or the existing sign-in method. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Too many authentication attempts. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Provider disabled or temporarily unavailable; no password fallback. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     refreshMobile: {
         parameters: {
             query?: never;
@@ -4785,8 +4916,15 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    current_password: string;
-                };
+                    current_password?: string;
+                    /** @description Native provider proof must resolve to the currently authenticated Firebase UID; never creates or switches accounts. */
+                    provider_credential?: {
+                        /** @enum {string} */
+                        provider: "google.com" | "apple.com";
+                        id_token: string;
+                        nonce?: string;
+                    };
+                } & (unknown | unknown);
             };
         };
         responses: {
@@ -4797,7 +4935,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Current password is missing or incorrect. */
+            /** @description Password or same-account provider reauthentication is missing or incorrect. */
             400: {
                 headers: {
                     [name: string]: unknown;

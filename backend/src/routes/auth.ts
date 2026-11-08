@@ -1,7 +1,8 @@
-/** @file Browser and native authentication routes, credential recovery, account sessions, and watch pairing exchange. */
+/** @file Browser/password and native Firebase provider authentication, credential recovery, sessions, and watch pairing. */
 
 import { verifyAccountPassword } from '../services/accountCredentials';
 import { firebaseAuthority } from '../services/firebaseAuthority';
+import { enabledSocialProviders, parseSocialCredential, SocialAuthRejected } from '../services/socialAuth';
 import { usesFirebaseAuthentication } from '../config/credentialProvider';
 import { deleteAccountData } from '../services/accountLifecycle';
 import express from 'express';
@@ -456,6 +457,46 @@ router.post('/mobile/login', async (req, res) => {
     } catch (err) {
         logSafeOperationalError('auth.mobile_login', err, res.locals?.requestId);
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.get('/mobile/providers', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ providers: enabledSocialProviders() });
+});
+
+router.post('/mobile/social', async (req, res) => {
+    const credential = parseSocialCredential(req.body);
+    const device = parseMobileDevicePayload(req.body);
+    const intent = req.body?.intent;
+    if (!credential || !device.ok || device.device.devicePlatform === 'WEAR_OS' || !['login', 'register'].includes(intent)) {
+        return res.status(400).json({ message: 'Invalid provider sign-in request.', code: 'SOCIAL_AUTH_REJECTED' });
+    }
+    if (!enabledSocialProviders().includes(credential.provider)) {
+        return res.status(503).json({ message: 'Provider sign-in is unavailable.', code: 'SOCIAL_AUTH_UNAVAILABLE' });
+    }
+    const hosted = resolveEmailDeliveryConfig().hostedRequired;
+    if (intent === 'register' && hosted) {
+        const legal = validateRegistrationLegalAcceptance(req.body);
+        if (!legal.ok) return res.status(400).json(invalidLegalResponse(legal.code));
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const authority = firebaseAuthority();
+        if (!authority) return res.status(503).json({ message: 'Provider sign-in is unavailable.', code: 'SOCIAL_AUTH_UNAVAILABLE' });
+        const verified = await authority.authenticateSocial(credential, intent === 'register', hosted);
+        const payload = await issueVerifiedMobileAuthPayload({
+            userId: verified.userId, credentialSecurityVersion: verified.version, device: device.device
+        });
+        if (!payload) throw new SocialAuthRejected();
+        return res.json(formatMobileAuthResponse(payload));
+    } catch (error) {
+        if (error instanceof SocialAuthRejected) {
+            const status = error.code === 'SOCIAL_AUTH_REJECTED' ? 401 : 409;
+            return res.status(status).json({ message: 'Unable to complete provider sign-in.', code: error.code });
+        }
+        // Provider payloads and tokens must never enter diagnostics, even on an unexpected failure.
+        return res.status(503).json({ message: 'Provider sign-in is temporarily unavailable.', code: 'SOCIAL_AUTH_UNAVAILABLE' });
     }
 });
 

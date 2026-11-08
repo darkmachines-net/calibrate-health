@@ -130,6 +130,24 @@ run "firebase_service_without_smtp" {
     error_message = "Hosting must be able to trust revision tags for its configured Cloud Run service."
   }
 }
+run "firebase_social_registration_preserves_application_deletion" {
+  command = plan
+  variables {
+    auth_provider = "firebase"
+    application_environment = {
+      FIREBASE_SOCIAL_PROVIDERS = "google.com,apple.com"
+    }
+  }
+  assert {
+    condition     = !google_identity_platform_config.auth[0].client[0].permissions[0].disabled_user_signup && google_identity_platform_config.auth[0].client[0].permissions[0].disabled_user_deletion
+    error_message = "Provider identities need signup enabled; application deletion must still go through Calibrate."
+  }
+  assert {
+    condition     = local.runtime_environment.FIREBASE_SOCIAL_PROVIDERS == "google.com,apple.com"
+    error_message = "The runtime provider allowlist and Firebase signup configuration must agree."
+  }
+}
+
 run "public_service_and_operator_alerts" {
   command = plan
   variables {

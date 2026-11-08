@@ -1,4 +1,4 @@
-/** @file Regression coverage for auth Screen Navigation: auth screen server navigation. */
+/** @file Auth screen server routing, provider actions, hosted consent and bounded error presentation. */
 
 import React from 'react';
 import { Platform } from 'react-native';
@@ -10,6 +10,10 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 
 jest.mock('./AuthContext', () => ({ useAuth: jest.fn() }));
+jest.mock('./SocialAuthButtons', () => ({
+    SocialAuthButtons: ({ onPress, disabled }: { onPress: (provider: string) => void; disabled: boolean }) =>
+        require('react').createElement(require('react-native').Button, { title: 'Continue with Google', disabled, onPress: () => onPress('google.com') })
+}));
 jest.mock('../account/accountDeletionNotice', () => ({ accountDeletionCleanupGuidance: jest.fn(() => '') }));
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 jest.mock('react-native-safe-area-context', () => ({
@@ -34,6 +38,7 @@ function authContextStub() {
     return {
         register: jest.fn(async () => true),
         login: jest.fn(async () => true),
+        signInWithProvider: jest.fn(async () => true),
         serverUrl: 'http://10.0.2.2:3000',
         setServerUrl: jest.fn(async () => true),
         testServerUrl: jest.fn(async () => true),
@@ -70,6 +75,29 @@ describe('auth screen server navigation', () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
+    });
+
+    it('uses the selected server for provider login without requiring password fields', async () => {
+        const auth = authContextStub();
+        mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
+        const screen = await render(<LoginScreen />);
+        await fireEvent.press(screen.getByText('Continue with Google'));
+        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'login', SELF_HOSTED_URL);
+        expect(auth.login).not.toHaveBeenCalled();
+    });
+
+    it('requires hosted consent for provider registration without requiring an email or password', async () => {
+        const auth = authContextStub();
+        mockUseLocalSearchParams.mockReturnValue({ serverUrl: HOSTED_URL });
+        mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
+        const screen = await render(<RegisterScreen />);
+        await fireEvent.press(screen.getByText('Continue with Google'));
+        expect(auth.signInWithProvider).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert')).toHaveTextContent('Review and accept both legal documents to create an account.');
+        for (const checkbox of screen.getAllByRole('checkbox')) await fireEvent.press(checkbox);
+        await fireEvent.press(screen.getByText('Continue with Google'));
+        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'register', HOSTED_URL, { acceptTerms: true, acceptPrivacy: true });
+        expect(auth.register).not.toHaveBeenCalled();
     });
 
     it('carries the login server draft into the registration link', async () => {

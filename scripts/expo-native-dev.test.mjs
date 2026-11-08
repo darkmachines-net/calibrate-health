@@ -1,4 +1,4 @@
-/** @file Check worktree API selection and credential-free shared Metro configuration for isolated dev clients. */
+/** @file Check worktree API selection, public OAuth forwarding and credential-free Metro configuration for dev clients. */
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -10,7 +10,22 @@ import { developmentServer } from "@mchartier/expo-release/development";
 import {
   parseExpoNativeDevArgs,
   resolveExpoNativeBackendUrl,
+  resolveNativeOAuthEnvironment,
 } from "./expo-native-dev.mjs";
+
+test("native OAuth forwarding includes only public client IDs and prefers the host", () => {
+  assert.deepEqual(resolveNativeOAuthEnvironment(path.resolve("mobile"), {
+    EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: " web.apps.googleusercontent.com ",
+    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: "ios.apps.googleusercontent.com",
+    EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID: "ios-dev.apps.googleusercontent.com",
+    FIREBASE_API_KEY: "must-not-forward",
+    GOOGLE_CLIENT_SECRET: "must-not-forward",
+  }), {
+    EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "web.apps.googleusercontent.com",
+    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: "ios.apps.googleusercontent.com",
+    EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID: "ios-dev.apps.googleusercontent.com",
+  });
+});
 
 test("native Expo defaults to the current worktree backend from the Android emulator", () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "calibrate-expo-native-"));

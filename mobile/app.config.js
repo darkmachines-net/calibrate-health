@@ -1,4 +1,4 @@
-/** @file Resolve release updates and separate fingerprint-based development clients without changing store identities. */
+/** @file Configure native provider callbacks, release updates and separate development clients without changing store identities. */
 
 /** Resolve the native Expo project, update channel, and automatic runtime compatibility. */
 const { runtimeVersion, developmentConfig } = require('@mchartier/expo-release/expo');
@@ -11,6 +11,25 @@ const CHANNEL_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
  * normal web development usable. The shared helper owns development identity and runtime isolation.
  */
 function createExpoConfig({ config }) {
+  // Preview and beta share an EAS environment but have separate iOS bundle identities.
+  const iosClientId = (process.env.EXPO_RELEASE_VARIANT === 'development'
+    ? process.env.EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID
+    : process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)?.trim();
+  if (iosClientId && !/^[a-zA-Z0-9-]+\.apps\.googleusercontent\.com$/.test(iosClientId)) {
+    throw new Error('The selected Google iOS client must be an iOS OAuth client ID.');
+  }
+  config = {
+    ...config,
+    ...(iosClientId ? { extra: { ...config.extra, googleIosClientId: iosClientId } } : {}),
+    ios: { ...config.ios, usesAppleSignIn: true },
+    plugins: [
+      ...(config.plugins ?? []),
+      'expo-apple-authentication',
+      ...(iosClientId ? [['@react-native-google-signin/google-signin', {
+        iosUrlScheme: iosClientId.split('.').reverse().join('.')
+      }]] : [])
+    ]
+  };
   const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || config.extra?.eas?.projectId;
   if (!projectId) return developmentConfig(config);
   if (!PROJECT_ID_PATTERN.test(projectId)) {

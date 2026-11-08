@@ -5,6 +5,44 @@ Expo React Native client for calibrate on Android and iOS.
 The app tracks the latest stable Expo release and currently uses Expo SDK 58 with React Native 0.88 and React 19.3. Development
 builds are the primary native workflow; Expo Go is useful for lightweight checks but is not the release runtime.
 
+## Native Google and Apple sign-in
+
+Google sign-in is available on Android and iOS; Apple sign-in uses the native iOS
+authorization sheet. The [Firebase backend](../backend/README.md#native-provider-sign-in)
+exchanges provider credentials and continues to issue Calibrate's rotating device
+sessions. No Firebase client session or provider refresh token is stored on the device.
+Browser email/password sign-in remains available.
+
+Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to the Firebase project's Google **Web** OAuth
+client ID. Set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` for the store iOS bundle and
+`EXPO_PUBLIC_GOOGLE_IOS_DEVELOPMENT_CLIENT_ID` for the development bundle.
+`app.config.js` selects the matching client, embeds it for the native SDK and derives
+its reversed URL scheme. Supply these
+public values consistently to native builds, Metro and EAS updates; client IDs are
+public configuration, not secrets. Local native launch reads them from root `.env`.
+
+Register Android package/signing-certificate combinations and iOS bundle IDs in the
+same Firebase/Google project. Include both store and development application IDs,
+local signing certificates and Play App Signing certificates as applicable. Enable
+Sign in with Apple for each Apple App ID and regenerate provisioning profiles;
+the Expo Apple plugin adds the entitlement. Register the iOS apps with Firebase and
+enable Apple in Firebase Authentication. Apple private-relay email is accepted;
+configure Apple's email relay for Firebase recovery mail if it is used.
+
+These native dependencies require rebuilt development/store binaries. Expo Go and
+existing binaries without the modules cannot exercise the flow. Follow the existing
+major-runtime release policy when shipping the native compatibility change; this
+feature does not change release numbers itself. Provider buttons are shown only
+when the selected server enables them and this build/device supports them. Canceling
+leaves the user signed out. Registration uses the same explicit legal consent and
+profile/goal onboarding as email/password registration.
+
+Validate on signed Android and iOS builds: new registration, returning sign-in,
+Google account selection after logout, Apple cancellation and repeat sign-in
+(including hidden email), missing provider configuration, email collisions, and
+session restore after app restart. Native provider sheets require real provider
+accounts; unit tests use synthetic credentials.
+
 ## Development
 
 Start the API/database with `npm run dev`; the

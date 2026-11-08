@@ -1,4 +1,4 @@
-/** @file Restricted Account Data Actions: Export and irreversible deletion remain available while routine health access is restricted. */
+/** @file Keep exports and password/provider account deletion available while routine health access is restricted. */
 
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -8,8 +8,11 @@ import { AppText } from '../AppText';
 import { AppSection } from '../AppSection';
 import { DeleteAccountSheet } from '../../settings/AccountSettingsSheets';
 import { useAuth } from '../../auth/AuthContext';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { acquireSocialCredential } from '../../auth/nativeSocialAuth';
 import {
     canSubmitAccountDeletion,
+    DELETE_ACCOUNT_CONFIRMATION,
     deleteAccountAndClearLocalData,
     shareAccountExport
 } from '../../account/accountData';
@@ -40,19 +43,24 @@ export function RestrictedAccountDataActions() {
         }
     });
     const deleteAccount = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (provider?: SocialAuthProvider) => {
             if (!user) throw new Error('Sign in again before deleting this account.');
+            if (provider && confirmation !== DELETE_ACCOUNT_CONFIRMATION) return false;
+            const credential = provider ? await acquireSocialCredential(provider) : password;
+            if (!credential) return false;
             const accountUserId = user.id;
             await deleteAccountAndClearLocalData(password, {
-                deleteRemoteAccount: (currentPassword) => api.deleteAccount(currentPassword),
+                deleteRemoteAccount: () => api.deleteAccount(credential),
                 discardOfflineChanges: () => clearOfflineOutboxAccountData(serverUrl, accountUserId),
                 clearHealthConnectData: healthConnect.clearAccountData,
                 clearWearData: () => clearWearAccountData(serverUrl, accountUserId),
                 persistCleanupNotice: persistAccountDeletionCleanupNotice,
                 clearLocalSession
             });
+            return true;
         },
-        onSuccess: () => {
+        onSuccess: (deleted) => {
+            if (!deleted) return;
             setPassword('');
             setConfirmation('');
             setDeleteOpen(false);
@@ -75,7 +83,7 @@ export function RestrictedAccountDataActions() {
             'This permanently deletes your profile, tracking history, goals, saved foods, and device sessions.',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete forever', style: 'destructive', onPress: () => deleteAccount.mutate() }
+                { text: 'Delete forever', style: 'destructive', onPress: () => deleteAccount.mutate(undefined) }
             ]
         );
     }
@@ -112,6 +120,8 @@ export function RestrictedAccountDataActions() {
                 </View>
             </AppSection>
             <DeleteAccountSheet
+                serverUrl={serverUrl}
+                onProviderConfirm={provider => deleteAccount.mutate(provider)}
                 visible={deleteOpen}
                 isOutboxReady
                 password={password}

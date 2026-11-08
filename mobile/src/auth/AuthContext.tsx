@@ -1,4 +1,4 @@
-/** @file Auth Context: Owns native session restoration, token rotation, server selection, and account-scoped cache cleanup. */
+/** @file Native password/provider sign-in, session restoration, token rotation, server selection and account-scoped cleanup. */
 
 import { hasExplicitLogout, beginExplicitLogout, flushExplicitLogout, finishExplicitLogin, queueNativeRevocation } from './logoutIntent';
 import { usePendingLogoutRetry } from './usePendingLogoutRetry';
@@ -49,6 +49,8 @@ import { requireRegistrationLegalAcceptance, requiresHostedLegalAcceptance, type
 import { clearOnboardingDraft } from '../onboarding/draftStorage';
 import { clearOfflineWorkspace, hydrateVerifiedOfflineWorkspace, restoreOfflineWorkspace, saveOfflineWorkspace } from './offlineWorkspace';
 import { isRetryableMutationError } from '../offline/retryability';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { acquireSocialCredential } from './nativeSocialAuth';
 
 type AuthContextValue = {
     api: CalibrateApiClient;
@@ -69,6 +71,7 @@ type AuthContextValue = {
     testServerUrl: (value: string) => Promise<boolean>;
     login: (email: string, password: string, serverCandidate: string) => Promise<boolean>;
     register: (email: string, password: string, serverCandidate: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
+    signInWithProvider: (provider: SocialAuthProvider, intent: 'login' | 'register', serverCandidate: string, acceptance?: RegistrationLegalAcceptance) => Promise<boolean>;
     logout: () => Promise<void>;
     clearLocalSession: () => Promise<void>;
     recheckClientCompatibility: () => Promise<boolean>;
@@ -529,6 +532,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         [accountDeletionCleanupNotice, confirmSelectedServerUrl, deviceId, handleClientUpgradeRequired, persistAuthPayload]
     );
 
+    const signInWithProvider = useCallback(async (
+        provider: SocialAuthProvider, intent: 'login' | 'register', serverCandidate: string,
+        acceptance?: RegistrationLegalAcceptance
+    ): Promise<boolean> => {
+        assertAccountDeletionCleanupAcknowledged(accountDeletionCleanupNotice);
+        const connection = await confirmSelectedServerUrl(serverCandidate);
+        if (!connection.ok) return false;
+        const legal = intent === 'register' && requiresHostedLegalAcceptance(connection.url)
+            ? requireRegistrationLegalAcceptance(acceptance ?? { acceptTerms: false, acceptPrivacy: false }) : null;
+        const authClient = new CalibrateApiClient({
+            baseUrl: connection.url, clientIdentity: MOBILE_CLIENT_IDENTITY,
+            onClientUpgradeRequired: handleClientUpgradeRequired
+        });
+        const available = await authClient.getMobileSocialProviders();
+        if (!available.providers.includes(provider)) throw new Error('Provider unavailable on this server.');
+        const credential = await acquireSocialCredential(provider);
+        if (!credential) return false;
+        await flushExplicitLogout(connection.url);
+        const nextDeviceId = deviceId ?? await getOrCreateDeviceId();
+        setDeviceId(nextDeviceId);
+        const payload = await authClient.authenticateMobileSocial({
+            ...credential, intent, device_id: nextDeviceId,
+            device_platform: MOBILE_CLIENT_IDENTITY.platform, device_name: getNativeDeviceName(),
+            ...(legal ? {
+                terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION,
+                accept_terms: legal.acceptTerms, accept_privacy: legal.acceptPrivacy
+            } : {})
+        });
+        await finishExplicitLogin(connection.url);
+        await persistAuthPayload(payload);
+        return true;
+    }, [accountDeletionCleanupNotice, confirmSelectedServerUrl, deviceId, handleClientUpgradeRequired, persistAuthPayload]);
+
     const logout = useCallback(async () => {
         const target = serverUrl || HOSTED_SERVER_URL;
         let intentPersisted = true;
@@ -585,13 +621,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             testServerUrl,
             login,
             register,
+            signInWithProvider,
             logout,
             clearLocalSession: clearSession,
             recheckClientCompatibility,
             persistAccountDeletionCleanupNotice,
             acknowledgeAccountDeletionCleanupNotice
         }),
-        [pendingReconnection, accessToken, accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice, api, authError, clearSession, clientServerIncompatibility, clientUpgradeRequired, deviceId, isLoading, login, logout, persistAccountDeletionCleanupNotice, recheckClientCompatibility, refreshToken, register, serverConnection, serverUrl, testServerUrl, updateCurrentUser, updateServerUrl, user]
+        [pendingReconnection, accessToken, accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice, api, authError, clearSession, clientServerIncompatibility, clientUpgradeRequired, deviceId, isLoading, login, logout, persistAccountDeletionCleanupNotice, recheckClientCompatibility, refreshToken, register, serverConnection, serverUrl, signInWithProvider, testServerUrl, updateCurrentUser, updateServerUrl, user]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

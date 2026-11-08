@@ -1,4 +1,11 @@
-# Firebase owns HTTPS routing and optional email/password authentication; native application identities remain unchanged.
+# Firebase owns HTTPS routing and credential verification; SQL still gates consent and Calibrate account access.
+locals {
+  firebase_social_signin_enabled = length(setintersection(
+    toset([for provider in split(",", lookup(var.application_environment, "FIREBASE_SOCIAL_PROVIDERS", "")) : trimspace(provider)]),
+    toset(["google.com", "apple.com"])
+  )) > 0
+}
+
 resource "google_firebase_project" "app" {
   provider = google-beta
   project  = data.google_project.app.project_id
@@ -37,8 +44,9 @@ resource "google_identity_platform_config" "auth" {
   }
   client {
     permissions {
-      # Calibrate's server records consent and durable deletion intent before Admin operations.
-      disabled_user_signup   = true
+      # signInWithIdp creates provider identities; only Calibrate's consent-gated SQL binding grants application access.
+      disabled_user_signup = !local.firebase_social_signin_enabled
+      # Remote deletion must still follow Calibrate's durable deletion intent and credential revocation.
       disabled_user_deletion = true
     }
   }

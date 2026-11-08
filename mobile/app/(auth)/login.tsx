@@ -1,4 +1,4 @@
-/** @file login: Presents sign-in, optional native server selection, and pending account-deletion cleanup guidance. */
+/** @file Password/native provider sign-in with optional server selection and account-deletion cleanup guidance. */
 
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -18,13 +18,16 @@ import { accountDeletionCleanupGuidance } from '../../src/account/accountDeletio
 import { readAuthServerDraft } from '../../src/auth/authServerDraft';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { SocialAuthButtons } from '../../src/auth/SocialAuthButtons';
+import { socialAuthErrorMessage } from '../../src/auth/socialAuthErrors';
 
 /** Presents sign-in, optional native server selection, and pending account-deletion cleanup guidance. */
 export default function LoginScreen() {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();
     const {
-        login, serverUrl, testServerUrl, serverConnection, authError,
+        login, signInWithProvider, serverUrl, testServerUrl, serverConnection, authError,
         accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice
     } = useAuth();
     const [email, setEmail] = useState('');
@@ -40,7 +43,7 @@ export default function LoginScreen() {
     }, [routedServerDraft, serverUrl]);
 
     async function handleLogin() {
-        if (accountDeletionCleanupNotice) return;
+        if (accountDeletionCleanupNotice || isSubmitting) return;
         setIsSubmitting(true);
         setError(null);
         try {
@@ -50,6 +53,15 @@ export default function LoginScreen() {
         } finally {
             setIsSubmitting(false);
         }
+    }
+
+    async function handleProvider(provider: SocialAuthProvider) {
+        if (accountDeletionCleanupNotice || isSubmitting) return;
+        setIsSubmitting(true);
+        setError(null);
+        try { await signInWithProvider(provider, 'login', serverInput); }
+        catch (err) { setError(socialAuthErrorMessage(err)); }
+        finally { setIsSubmitting(false); }
     }
 
     return (
@@ -113,6 +125,7 @@ export default function LoginScreen() {
                     disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)}
                     onPress={() => void handleLogin()}
                 />
+                <SocialAuthButtons serverUrl={serverInput} disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             {!accountDeletionCleanupNotice && (
