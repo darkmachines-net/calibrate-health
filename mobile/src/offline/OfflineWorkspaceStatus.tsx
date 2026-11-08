@@ -1,4 +1,4 @@
-/** @file Offline Workspace Status: Local continuity is independent of permission to resume server synchronization. */
+/** @file Shows saved changes and coordinates reconnection without interrupting active query retries. */
 
 import { FailedMutationRecovery } from './FailedChangeRecoveryPanel';
 import { useEffect, useRef, useState } from 'react';
@@ -44,7 +44,8 @@ export function OfflineWorkspaceStatus() {
                 if (await recheckClientCompatibility()) {
                     if (scopeRef.current.serverUrl !== serverUrl || scopeRef.current.userId !== userId) return;
                     await reconcile();
-                    await queryClient.invalidateQueries();
+                    // Let active requests finish their retry budget before another refresh.
+                    await queryClient.invalidateQueries(undefined, { cancelRefetch: false });
                 }
             } catch {
                 // Unavailability preserves identity and queued writes; terminal rejection is handled by auth.
