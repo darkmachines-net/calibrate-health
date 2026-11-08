@@ -141,8 +141,8 @@ android {
         applicationId = "net.darkmachines.healthtracker"
         minSdk = 30
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.2.9"
+        versionCode = 26
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "DEFAULT_SERVER_URL", quoteBuildConfig(configuredServerOrigin))
