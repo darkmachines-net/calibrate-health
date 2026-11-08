@@ -1,4 +1,4 @@
-/** @file Native password/provider sign-in, session restoration, token rotation, server selection and account-scoped cleanup. */
+/** @file Native password/provider sign-in on the configured backend, session restoration, token rotation and account-scoped cleanup. */
 
 import { hasExplicitLogout, beginExplicitLogout, flushExplicitLogout, finishExplicitLogin, queueNativeRevocation } from './logoutIntent';
 import { usePendingLogoutRetry } from './usePendingLogoutRetry';
@@ -17,24 +17,14 @@ import {
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '@calibrate/shared/legalVersions';
 import * as Application from 'expo-application';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-    HOSTED_SERVER_URL,
-    INITIAL_SERVER_CONNECTION_STATE,
-    normalizeServerUrl,
-    testCalibrateServerConnection,
-    type ServerConnectionResult,
-    type ServerConnectionState
-} from '../config/server';
-import { authenticateAgainstConfirmedServer, confirmServerSwitch } from './serverSwitch';
+import { getDefaultServerUrl, testCalibrateServerConnection } from '../config/server';
 import { getSessionRestoreErrorMessage, isExpectedDevAutoLoginMiss } from './authErrors';
 import { MOBILE_CLIENT_IDENTITY, MOBILE_SERVER_RELEASE_VERSION } from '../config/nativeClient';
 import { getNativeDeviceName } from '../platform/nativePlatform';
 import {
     clearStoredTokens,
     getOrCreateDeviceId,
-    readServerUrl,
     readStoredTokens,
-    writeServerUrl,
     writeStoredTokens
 } from './storage';
 import {
@@ -65,13 +55,10 @@ type AuthContextValue = {
     clientUpgradeRequired: ClientUpgradeRequirement | null;
     clientServerIncompatibility: ClientServerCompatibilityMismatch | null;
     accountDeletionCleanupNotice: AccountDeletionCleanupNotice | null;
-    serverConnection: ServerConnectionState;
     updateCurrentUser: (user: UserClientPayload) => void;
-    setServerUrl: (value: string) => Promise<boolean>;
-    testServerUrl: (value: string) => Promise<boolean>;
-    login: (email: string, password: string, serverCandidate: string) => Promise<boolean>;
-    register: (email: string, password: string, serverCandidate: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
-    signInWithProvider: (provider: SocialAuthProvider, intent: 'login' | 'register', serverCandidate: string, acceptance?: RegistrationLegalAcceptance) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<boolean>;
+    register: (email: string, password: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
+    signInWithProvider: (provider: SocialAuthProvider, intent: 'login' | 'register', acceptance?: RegistrationLegalAcceptance) => Promise<boolean>;
     logout: () => Promise<void>;
     clearLocalSession: () => Promise<void>;
     recheckClientCompatibility: () => Promise<boolean>;
@@ -81,10 +68,10 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Owns native session restoration, token rotation, server selection, and account-scoped cache cleanup. */
+/** Owns native session restoration, token rotation, configured-backend authentication, and account-scoped cache cleanup. */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const queryClient = useQueryClient();
-    const [serverUrl, setServerUrlState] = useState('');
+    const [serverUrl] = useState(getDefaultServerUrl);
     const [user, setUser] = useState<UserClientPayload | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [refreshToken, setRefreshToken] = useState<string | null>(null);
@@ -96,11 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         useState<ClientServerCompatibilityMismatch | null>(null);
     const [accountDeletionCleanupNotice, setAccountDeletionCleanupNotice] =
         useState<AccountDeletionCleanupNotice | null>(null);
-    const [serverConnection, setServerConnection] = useState<ServerConnectionState>(INITIAL_SERVER_CONNECTION_STATE);
     const accessTokenRef = useRef<string | null>(null);
     const refreshTokenRef = useRef<string | null>(null);
-    const serverTestRequestRef = useRef(0);
-    const serverUrlRef = useRef('');
+    const serverUrlRef = useRef(serverUrl);
     usePendingLogoutRetry(serverUrl, flushExplicitLogout, () => { if (!accountScopeRef.current) setAuthError(null); });
     const [pendingReconnection, setPendingReconnection] = useState(false);
     const localOnlyRef = useRef(false);
@@ -169,21 +154,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!currentRefreshToken) return false;
 
         const refreshClient = new CalibrateApiClient({
-            baseUrl: serverUrl || HOSTED_SERVER_URL,
+            baseUrl: serverUrl,
             clientIdentity: MOBILE_CLIENT_IDENTITY,
             onClientUpgradeRequired: handleClientUpgradeRequired
         });
         try {
             const refreshed = await refreshClient.refreshMobile<MobileAuthResponse>(currentRefreshToken);
             if (!isCurrent()) {
-                await queueNativeRevocation(serverUrl || HOSTED_SERVER_URL, refreshed.refresh_token);
-                await flushExplicitLogout(serverUrl || HOSTED_SERVER_URL).catch(() => undefined);
+                await queueNativeRevocation(serverUrl, refreshed.refresh_token);
+                await flushExplicitLogout(serverUrl).catch(() => undefined);
                 throw new Error('Authentication scope changed during refresh.');
             }
             if (accountScopeRef.current && refreshed.user.id !== accountScopeRef.current.userId) return false;
             if (!await persistAuthPayload(refreshed)) {
-                await queueNativeRevocation(serverUrl || HOSTED_SERVER_URL, refreshed.refresh_token);
-                await flushExplicitLogout(serverUrl || HOSTED_SERVER_URL).catch(() => undefined);
+                await queueNativeRevocation(serverUrl, refreshed.refresh_token);
+                await flushExplicitLogout(serverUrl).catch(() => undefined);
                 throw new Error('Authentication scope changed during refresh.');
             }
             return true;
@@ -201,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const api = useMemo(
         () =>
             new CalibrateApiClient({
-                baseUrl: serverUrl || HOSTED_SERVER_URL,
+                baseUrl: serverUrl,
                 clientIdentity: MOBILE_CLIENT_IDENTITY,
                 onClientUpgradeRequired: handleClientUpgradeRequired,
                 getAccessToken: () => accessTokenRef.current,
@@ -259,24 +244,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         async function hydrate() {
             try {
-                const [storedServerUrl, tokens, nextDeviceId, storedCleanupNotice] = await Promise.all([
-                    readServerUrl(),
-                    readStoredTokens(),
+                const [tokens, nextDeviceId, storedCleanupNotice] = await Promise.all([
+                    readStoredTokens(serverUrl),
                     getOrCreateDeviceId(),
                     readAccountDeletionCleanupNotice().catch(() => null)
                 ]);
                 if (!isMounted) return;
 
-                serverUrlRef.current = storedServerUrl;
-                setServerUrlState(storedServerUrl);
                 setDeviceId(nextDeviceId);
-                if (await hasExplicitLogout(storedServerUrl)) {
+                if (await hasExplicitLogout(serverUrl)) {
                     await clearSession();
-                    await flushExplicitLogout(storedServerUrl).catch(() => { if (isMounted) setAuthError('Signed out on this device. Server sign-out is pending connection.'); });
+                    await flushExplicitLogout(serverUrl).catch(() => { if (isMounted) setAuthError('Signed out on this device. Server sign-out is pending connection.'); });
                     return;
                 }
                 // A late rotated token can require revocation without signing out the current account.
-                void flushExplicitLogout(storedServerUrl).catch(() => undefined);
+                void flushExplicitLogout(serverUrl).catch(() => undefined);
                 setAccountDeletionCleanupNotice(storedCleanupNotice);
                 if (storedCleanupNotice) {
                     setAccessToken(null);
@@ -292,7 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 refreshTokenRef.current = tokens.refreshToken;
 
                 const compatibilityClient = new CalibrateApiClient({
-                    baseUrl: storedServerUrl,
+                    baseUrl: serverUrl,
                     clientIdentity: MOBILE_CLIENT_IDENTITY,
                     onClientUpgradeRequired: handleClientUpgradeRequired
                 });
@@ -315,15 +297,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         }
                         return;
                     } catch (refreshError) {
-                        if (!shouldDevAutoLogin(storedServerUrl) || !(refreshError instanceof ApiError) || refreshError.status !== 401) {
+                        if (!shouldDevAutoLogin(serverUrl) || !(refreshError instanceof ApiError) || refreshError.status !== 401) {
                             throw refreshError;
                         }
                         await clearStoredTokens();
                     }
                 }
 
-                if (shouldDevAutoLogin(storedServerUrl)) {
-                    const devAuthPayload = await getDevTestUserAuthPayload(storedServerUrl, nextDeviceId);
+                if (shouldDevAutoLogin(serverUrl)) {
+                    const devAuthPayload = await getDevTestUserAuthPayload(serverUrl, nextDeviceId);
                     if (isMounted && devAuthPayload) {
                         await persistAuthPayload(devAuthPayload);
                     }
@@ -358,7 +340,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             isMounted = false;
         };
-    }, [clearSession, getDevTestUserAuthPayload, handleClientUpgradeRequired, persistAuthPayload, queryClient]);
+    }, [clearSession, getDevTestUserAuthPayload, handleClientUpgradeRequired, persistAuthPayload, queryClient, serverUrl]);
 
     const recheckClientCompatibility = useCallback(async (): Promise<boolean> => {
         try {
@@ -389,61 +371,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [clearSession, pendingReconnection, refreshAccessToken, user]);
 
-    const probeServerUrl = useCallback(async (value: string): Promise<ServerConnectionResult> => {
-        const requestId = serverTestRequestRef.current + 1;
-        serverTestRequestRef.current = requestId;
-        const normalized = normalizeServerUrl(value);
-        setServerConnection({
-            status: 'testing',
-            testedInput: value.trim(),
-            testedUrl: normalized,
-            message: 'Testing this Calibrate server...'
-        });
-
-        const result = await testCalibrateServerConnection(value, {
+    const confirmCurrentServer = useCallback(async (): Promise<boolean> => {
+        const result = await testCalibrateServerConnection(serverUrl, {
             mobileVersion: Application.nativeApplicationVersion,
             clientServerVersion: MOBILE_SERVER_RELEASE_VERSION
         });
-        if (serverTestRequestRef.current === requestId) {
-            setServerConnection({
-                status: result.ok ? 'connected' : 'error',
-                testedInput: value.trim(),
-                testedUrl: result.url,
-                message: result.message
-            });
-        }
-        return result;
-    }, []);
-
-    const testServerUrl = useCallback(async (value: string): Promise<boolean> => {
-        const result = await probeServerUrl(value);
-        if (result.ok) setAuthError(null);
+        setAuthError(result.ok ? null : result.message);
         return result.ok;
-    }, [probeServerUrl]);
-
-    const confirmSelectedServerUrl = useCallback(async (value: string): Promise<ServerConnectionResult> => {
-        const result = await confirmServerSwitch({
-            candidate: value,
-            currentServerUrl: serverUrl,
-            testConnection: probeServerUrl,
-            clearCurrentSession: clearSession,
-            persistServerUrl: writeServerUrl
-        });
-        if (!result.ok) {
-            setAuthError(result.message);
-            return result;
-        }
-
-        serverUrlRef.current = result.url;
-        setServerUrlState(result.url);
-        setAuthError(null);
-        return result;
-    }, [clearSession, probeServerUrl, serverUrl]);
-
-    const updateServerUrl = useCallback(async (value: string): Promise<boolean> => {
-        const result = await confirmSelectedServerUrl(value);
-        return result.ok;
-    }, [confirmSelectedServerUrl]);
+    }, [serverUrl]);
 
     const updateCurrentUser = useCallback((nextUser: UserClientPayload) => {
         const scope = accountScopeRef.current;
@@ -453,103 +388,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [queryClient]);
 
     const login = useCallback(
-        async (email: string, password: string, serverCandidate: string): Promise<boolean> => {
+        async (email: string, password: string): Promise<boolean> => {
             assertAccountDeletionCleanupAcknowledged(accountDeletionCleanupNotice);
             const nextDeviceId = deviceId ?? (await getOrCreateDeviceId());
             setDeviceId(nextDeviceId);
-            const payload = await authenticateAgainstConfirmedServer({
-                candidate: serverCandidate,
-                confirmServer: confirmSelectedServerUrl,
-                authenticate: async (confirmedServerUrl) => {
-                    await flushExplicitLogout(confirmedServerUrl);
-                    const authClient = new CalibrateApiClient({
-                        baseUrl: confirmedServerUrl,
-                        clientIdentity: MOBILE_CLIENT_IDENTITY,
-                        onClientUpgradeRequired: handleClientUpgradeRequired
-                    });
-                    return authClient.loginMobile({
-                        email,
-                        password,
-                        device_id: nextDeviceId,
-                        device_platform: MOBILE_CLIENT_IDENTITY.platform,
-                        device_name: getNativeDeviceName()
-                    });
-                }
+            if (!await confirmCurrentServer()) return false;
+            await flushExplicitLogout(serverUrl);
+            const authClient = new CalibrateApiClient({
+                baseUrl: serverUrl,
+                clientIdentity: MOBILE_CLIENT_IDENTITY,
+                onClientUpgradeRequired: handleClientUpgradeRequired
             });
-            if (!payload) return false;
+            const payload = await authClient.loginMobile({
+                email,
+                password,
+                device_id: nextDeviceId,
+                device_platform: MOBILE_CLIENT_IDENTITY.platform,
+                device_name: getNativeDeviceName()
+            });
             await finishExplicitLogin(serverUrlRef.current);
 
             await persistAuthPayload(payload);
             return true;
         },
-        [accountDeletionCleanupNotice, confirmSelectedServerUrl, deviceId, handleClientUpgradeRequired, persistAuthPayload]
+        [accountDeletionCleanupNotice, confirmCurrentServer, deviceId, handleClientUpgradeRequired, persistAuthPayload, serverUrl]
     );
 
     const register = useCallback(
         async (
             email: string,
             password: string,
-            serverCandidate: string,
             acceptance: RegistrationLegalAcceptance
         ): Promise<boolean> => {
             assertAccountDeletionCleanupAcknowledged(accountDeletionCleanupNotice);
             const nextDeviceId = deviceId ?? (await getOrCreateDeviceId());
             setDeviceId(nextDeviceId);
-            const payload = await authenticateAgainstConfirmedServer({
-                candidate: serverCandidate,
-                confirmServer: confirmSelectedServerUrl,
-                authenticate: async (confirmedServerUrl) => {
-                    await flushExplicitLogout(confirmedServerUrl);
-                    const legalAcceptance = requiresHostedLegalAcceptance(confirmedServerUrl)
-                        ? requireRegistrationLegalAcceptance(acceptance)
-                        : null;
-                    const authClient = new CalibrateApiClient({
-                        baseUrl: confirmedServerUrl,
-                        clientIdentity: MOBILE_CLIENT_IDENTITY,
-                        onClientUpgradeRequired: handleClientUpgradeRequired
-                    });
-                    return authClient.registerMobile({
-                        email,
-                        password,
-                        ...(legalAcceptance ? {
-                            terms_version: CURRENT_TERMS_VERSION,
-                            privacy_version: CURRENT_PRIVACY_VERSION,
-                            accept_terms: legalAcceptance.acceptTerms,
-                            accept_privacy: legalAcceptance.acceptPrivacy
-                        } : {}),
-                        device_id: nextDeviceId,
-                        device_platform: MOBILE_CLIENT_IDENTITY.platform,
-                        device_name: getNativeDeviceName()
-                    });
-                }
+            if (!await confirmCurrentServer()) return false;
+            await flushExplicitLogout(serverUrl);
+            const legalAcceptance = requiresHostedLegalAcceptance(serverUrl)
+                ? requireRegistrationLegalAcceptance(acceptance)
+                : null;
+            const authClient = new CalibrateApiClient({
+                baseUrl: serverUrl,
+                clientIdentity: MOBILE_CLIENT_IDENTITY,
+                onClientUpgradeRequired: handleClientUpgradeRequired
             });
-            if (!payload) return false;
+            const payload = await authClient.registerMobile({
+                email,
+                password,
+                ...(legalAcceptance ? {
+                    terms_version: CURRENT_TERMS_VERSION,
+                    privacy_version: CURRENT_PRIVACY_VERSION,
+                    accept_terms: legalAcceptance.acceptTerms,
+                    accept_privacy: legalAcceptance.acceptPrivacy
+                } : {}),
+                device_id: nextDeviceId,
+                device_platform: MOBILE_CLIENT_IDENTITY.platform,
+                device_name: getNativeDeviceName()
+            });
             await finishExplicitLogin(serverUrlRef.current);
 
             await persistAuthPayload(payload);
             return true;
         },
-        [accountDeletionCleanupNotice, confirmSelectedServerUrl, deviceId, handleClientUpgradeRequired, persistAuthPayload]
+        [accountDeletionCleanupNotice, confirmCurrentServer, deviceId, handleClientUpgradeRequired, persistAuthPayload, serverUrl]
     );
 
     const signInWithProvider = useCallback(async (
-        provider: SocialAuthProvider, intent: 'login' | 'register', serverCandidate: string,
+        provider: SocialAuthProvider, intent: 'login' | 'register',
         acceptance?: RegistrationLegalAcceptance
     ): Promise<boolean> => {
         assertAccountDeletionCleanupAcknowledged(accountDeletionCleanupNotice);
-        const connection = await confirmSelectedServerUrl(serverCandidate);
-        if (!connection.ok) return false;
-        const legal = intent === 'register' && requiresHostedLegalAcceptance(connection.url)
+        if (!await confirmCurrentServer()) return false;
+        const legal = intent === 'register' && requiresHostedLegalAcceptance(serverUrl)
             ? requireRegistrationLegalAcceptance(acceptance ?? { acceptTerms: false, acceptPrivacy: false }) : null;
         const authClient = new CalibrateApiClient({
-            baseUrl: connection.url, clientIdentity: MOBILE_CLIENT_IDENTITY,
+            baseUrl: serverUrl, clientIdentity: MOBILE_CLIENT_IDENTITY,
             onClientUpgradeRequired: handleClientUpgradeRequired
         });
         const available = await authClient.getMobileSocialProviders();
         if (!available.providers.includes(provider)) throw new Error('Provider unavailable on this server.');
         const credential = await acquireSocialCredential(provider);
         if (!credential) return false;
-        await flushExplicitLogout(connection.url);
+        await flushExplicitLogout(serverUrl);
         const nextDeviceId = deviceId ?? await getOrCreateDeviceId();
         setDeviceId(nextDeviceId);
         const payload = await authClient.authenticateMobileSocial({
@@ -560,13 +481,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 accept_terms: legal.acceptTerms, accept_privacy: legal.acceptPrivacy
             } : {})
         });
-        await finishExplicitLogin(connection.url);
+        await finishExplicitLogin(serverUrl);
         await persistAuthPayload(payload);
         return true;
-    }, [accountDeletionCleanupNotice, confirmSelectedServerUrl, deviceId, handleClientUpgradeRequired, persistAuthPayload]);
+    }, [accountDeletionCleanupNotice, confirmCurrentServer, deviceId, handleClientUpgradeRequired, persistAuthPayload, serverUrl]);
 
     const logout = useCallback(async () => {
-        const target = serverUrl || HOSTED_SERVER_URL;
+        const target = serverUrl;
         let intentPersisted = true;
         await beginExplicitLogout(target, refreshTokenRef.current ?? undefined).catch(() => { intentPersisted = false; });
         try {
@@ -615,10 +536,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             clientUpgradeRequired,
             clientServerIncompatibility,
             accountDeletionCleanupNotice,
-            serverConnection,
             updateCurrentUser,
-            setServerUrl: updateServerUrl,
-            testServerUrl,
             login,
             register,
             signInWithProvider,
@@ -628,7 +546,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             persistAccountDeletionCleanupNotice,
             acknowledgeAccountDeletionCleanupNotice
         }),
-        [pendingReconnection, accessToken, accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice, api, authError, clearSession, clientServerIncompatibility, clientUpgradeRequired, deviceId, isLoading, login, logout, persistAccountDeletionCleanupNotice, recheckClientCompatibility, refreshToken, register, serverConnection, serverUrl, signInWithProvider, testServerUrl, updateCurrentUser, updateServerUrl, user]
+        [pendingReconnection, accessToken, accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice, api, authError, clearSession, clientServerIncompatibility, clientUpgradeRequired, deviceId, isLoading, login, logout, persistAccountDeletionCleanupNotice, recheckClientCompatibility, refreshToken, register, serverUrl, signInWithProvider, updateCurrentUser, user]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

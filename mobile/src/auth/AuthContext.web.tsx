@@ -1,4 +1,4 @@
-/** @file Auth Context: Browser auth intentionally relies only on the server's HttpOnly cookie session. */
+/** @file Auth Context: Browser auth uses the serving backend and its HttpOnly cookie session. */
 
 import { hasExplicitLogout, beginExplicitLogout, flushExplicitLogout, finishExplicitLogin } from './logoutIntent.web';
 import { usePendingLogoutRetry } from './usePendingLogoutRetry';
@@ -8,14 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { ClientUpgradeRequirement } from '@calibrate/shared';
 import type { ClientServerCompatibilityMismatch } from '@calibrate/shared/releaseCompatibility';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '@calibrate/shared/legalVersions';
-import {
-    getDefaultServerUrl,
-    INITIAL_SERVER_CONNECTION_STATE,
-    testCalibrateServerConnection,
-    type ServerConnectionResult,
-    type ServerConnectionState
-} from '../config/server';
-import { authenticateAgainstConfirmedServer } from './serverSwitch';
+import { getDefaultServerUrl, testCalibrateServerConnection } from '../config/server';
 import { getSessionRestoreErrorMessage } from './authErrors';
 import type { AccountDeletionCleanupNotice } from '../account/accountDeletionNotice';
 import { cleanupBrowserPushBeforeSessionChange } from '../notifications/browserPush.web';
@@ -39,12 +32,9 @@ type AuthContextValue = {
     clientUpgradeRequired: ClientUpgradeRequirement | null;
     clientServerIncompatibility: ClientServerCompatibilityMismatch | null;
     accountDeletionCleanupNotice: AccountDeletionCleanupNotice | null;
-    serverConnection: ServerConnectionState;
     updateCurrentUser: (user: UserClientPayload) => void;
-    setServerUrl: (value: string) => Promise<boolean>;
-    testServerUrl: (value: string) => Promise<boolean>;
-    login: (email: string, password: string, serverCandidate: string) => Promise<boolean>;
-    register: (email: string, password: string, serverCandidate: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<boolean>;
+    register: (email: string, password: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
     logout: () => Promise<void>;
     clearLocalSession: () => Promise<void>;
     recheckClientCompatibility: () => Promise<boolean>;
@@ -54,7 +44,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Browser auth intentionally relies only on the server's HttpOnly cookie session. */
+/** Owns serving-backend cookie authentication and account-scoped offline cleanup. */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const queryClient = useQueryClient();
     const [serverUrl] = useState(getDefaultServerUrl);
@@ -62,8 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<UserClientPayload | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
-    const [serverConnection, setServerConnection] = useState<ServerConnectionState>(INITIAL_SERVER_CONNECTION_STATE);
-    const requestId = useRef(0);
     const [pendingReconnection, setPendingReconnection] = useState(false);
     const localOnlyRef = useRef(false);
     const accountScopeRef = useRef<{ serverUrl: string; userId: number } | null>(null);
@@ -153,32 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => { active = false; };
     }, [acceptUser, api, clearSession, queryClient, serverUrl]);
 
-    const probeCurrentServer = useCallback(async (): Promise<ServerConnectionResult> => {
-        const currentRequest = requestId.current + 1;
-        requestId.current = currentRequest;
-        setServerConnection({
-            status: 'testing',
-            testedInput: serverUrl,
-            testedUrl: serverUrl,
-            message: 'Testing this Calibrate server...'
-        });
+    const confirmCurrentServer = useCallback(async (): Promise<boolean> => {
         const result = await testCalibrateServerConnection(serverUrl);
-        if (requestId.current === currentRequest) {
-            setServerConnection({
-                status: result.ok ? 'connected' : 'error',
-                testedInput: serverUrl,
-                testedUrl: result.url,
-                message: result.message
-            });
-        }
-        return result;
-    }, [serverUrl]);
-
-    const confirmCurrentServer = useCallback(async () => {
-        const result = await probeCurrentServer();
         setAuthError(result.ok ? null : result.message);
-        return result;
-    }, [probeCurrentServer]);
+        return result.ok;
+    }, [serverUrl]);
 
     const updateCurrentUser = useCallback((nextUser: UserClientPayload) => {
         const scope = accountScopeRef.current;
@@ -187,17 +154,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         void saveOfflineWorkspace(scope.serverUrl, nextUser, queryClient).catch(() => undefined);
     }, [queryClient]);
 
-    const login = useCallback(async (email: string, password: string, _serverCandidate: string) => {
+    const login = useCallback(async (email: string, password: string) => {
         await flushExplicitLogout(serverUrl);
-        const payload = await authenticateAgainstConfirmedServer({
-            candidate: serverUrl,
-            confirmServer: confirmCurrentServer,
-            authenticate: (baseUrl) => new CalibrateApiClient({
-                baseUrl,
-                requestCredentials: 'include'
-            }).loginBrowser({ email, password })
-        });
-        if (!payload) return false;
+        if (!await confirmCurrentServer()) return false;
+        const payload = await new CalibrateApiClient({
+            baseUrl: serverUrl,
+            requestCredentials: 'include'
+        }).loginBrowser({ email, password });
         await finishExplicitLogin(serverUrl);
         queryClient.clear();
         await clearBrowserUserScopedCaches();
@@ -208,33 +171,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const register = useCallback(async (
         email: string,
         password: string,
-        _serverCandidate: string,
         acceptance: RegistrationLegalAcceptance
     ) => {
         await flushExplicitLogout(serverUrl);
-        const payload = await authenticateAgainstConfirmedServer({
-            candidate: serverUrl,
-            confirmServer: confirmCurrentServer,
-            authenticate: (baseUrl) => {
-                const legalAcceptance = requiresHostedLegalAcceptance(baseUrl)
-                    ? requireRegistrationLegalAcceptance(acceptance)
-                    : null;
-                return new CalibrateApiClient({
-                    baseUrl,
-                    requestCredentials: 'include'
-                }).registerBrowser({
-                    email,
-                    password,
-                    ...(legalAcceptance ? {
-                        terms_version: CURRENT_TERMS_VERSION,
-                        privacy_version: CURRENT_PRIVACY_VERSION,
-                        accept_terms: legalAcceptance.acceptTerms,
-                        accept_privacy: legalAcceptance.acceptPrivacy
-                    } : {})
-                });
-            }
+        if (!await confirmCurrentServer()) return false;
+        const legalAcceptance = requiresHostedLegalAcceptance(serverUrl)
+            ? requireRegistrationLegalAcceptance(acceptance)
+            : null;
+        const payload = await new CalibrateApiClient({
+            baseUrl: serverUrl,
+            requestCredentials: 'include'
+        }).registerBrowser({
+            email,
+            password,
+            ...(legalAcceptance ? {
+                terms_version: CURRENT_TERMS_VERSION,
+                privacy_version: CURRENT_PRIVACY_VERSION,
+                accept_terms: legalAcceptance.acceptTerms,
+                accept_privacy: legalAcceptance.acceptPrivacy
+            } : {})
         });
-        if (!payload) return false;
         await finishExplicitLogin(serverUrl);
         queryClient.clear();
         await clearBrowserUserScopedCaches();
@@ -300,10 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clientUpgradeRequired: null,
         clientServerIncompatibility: null,
         accountDeletionCleanupNotice: null,
-        serverConnection,
         updateCurrentUser,
-        setServerUrl: async () => (await confirmCurrentServer()).ok,
-        testServerUrl: async () => (await probeCurrentServer()).ok,
         login,
         register,
         logout,
@@ -311,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recheckClientCompatibility,
         persistAccountDeletionCleanupNotice: async () => undefined,
         acknowledgeAccountDeletionCleanupNotice: async () => undefined
-    }), [updateCurrentUser, api, pendingReconnection, authError, clearSessionWithBrowserCleanup, confirmCurrentServer, isLoading, login, logout, probeCurrentServer, recheckClientCompatibility, register, serverConnection, serverUrl, user]);
+    }), [updateCurrentUser, api, pendingReconnection, authError, clearSessionWithBrowserCleanup, isLoading, login, logout, recheckClientCompatibility, register, serverUrl, user]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

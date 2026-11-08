@@ -1,9 +1,9 @@
-/** @file Serialized native credential persistence and cleanup through secure storage. */
+/** @file Serialized native credentials, bound to the configured backend before session restoration. */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
-import { getConfiguredServerUrl, getDefaultServerUrl, resolveInitialServerUrl } from '../config/server';
+import { normalizeServerUrl } from '../config/server';
 
 const ACCESS_TOKEN_KEY = 'calibrate.mobile.accessToken';
 const REFRESH_TOKEN_KEY = 'calibrate.mobile.refreshToken';
@@ -22,9 +22,21 @@ function serializeTokens<T>(work: () => Promise<T>): Promise<T> {
     return task;
 }
 
-/** Reads access and refresh credentials together through the serialized secure-storage queue. */
-export async function readStoredTokens(): Promise<StoredTokens> {
+/**
+ * Restores credentials only for the configured origin. The legacy server preference now
+ * records credential ownership; mismatched or unscoped credentials are removed before
+ * that marker changes. Storage failures reject startup without releasing any tokens.
+ */
+export async function readStoredTokens(serverUrl: string): Promise<StoredTokens> {
     return serializeTokens(async () => {
+        const storedServerUrl = await AsyncStorage.getItem(SERVER_URL_KEY);
+        if (!storedServerUrl || normalizeServerUrl(storedServerUrl) !== serverUrl) {
+            await Promise.all([
+                SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
+                SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
+            ]);
+        }
+        await AsyncStorage.setItem(SERVER_URL_KEY, serverUrl);
         const [accessToken, refreshToken] = await Promise.all([
             SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
             SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
@@ -61,19 +73,4 @@ export async function getOrCreateDeviceId(): Promise<string> {
         : `native-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     await SecureStore.setItemAsync(DEVICE_ID_KEY, next);
     return next;
-}
-
-/** Resolves the initial server from saved selection, build configuration, defaults, and development policy. */
-export async function readServerUrl(): Promise<string> {
-    return resolveInitialServerUrl(
-        await AsyncStorage.getItem(SERVER_URL_KEY),
-        getConfiguredServerUrl(),
-        getDefaultServerUrl(),
-        __DEV__
-    );
-}
-
-/** Persists the selected server URL for subsequent application launches. */
-export async function writeServerUrl(serverUrl: string): Promise<void> {
-    await AsyncStorage.setItem(SERVER_URL_KEY, serverUrl);
 }

@@ -1,8 +1,8 @@
-/** @file Password/native provider sign-in with optional server selection and account-deletion cleanup guidance. */
+/** @file Password/native provider sign-in on the configured backend with account-deletion cleanup guidance. */
 
-import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Link, useLocalSearchParams, type Href } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Link, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { AppButton } from '../../src/components/AppButton';
 import { AppSection } from '../../src/components/AppSection';
@@ -10,44 +10,34 @@ import { AppNotice } from '../../src/components/AppNotice';
 import { AppText } from '../../src/components/AppText';
 import { AuthBrand } from '../../src/components/auth/AuthBrand';
 import { Screen } from '../../src/components/Screen';
-import { ServerUrlControl } from '../../src/components/ServerUrlControl';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { TextField } from '../../src/components/TextField';
 import { useAuth } from '../../src/auth/AuthContext';
 import { accountDeletionCleanupGuidance } from '../../src/account/accountDeletionNotice';
-import { readAuthServerDraft } from '../../src/auth/authServerDraft';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
 import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
 import { SocialAuthButtons } from '../../src/auth/SocialAuthButtons';
 import { socialAuthErrorMessage } from '../../src/auth/socialAuthErrors';
 
-/** Presents sign-in, optional native server selection, and pending account-deletion cleanup guidance. */
+/** Presents sign-in and blocks authentication until pending account-deletion cleanup is acknowledged. */
 export default function LoginScreen() {
     const { colors } = useAppTheme();
-    const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();
     const {
-        login, signInWithProvider, serverUrl, testServerUrl, serverConnection, authError,
+        login, signInWithProvider, serverUrl, authError,
         accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice
     } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const canSelectServer = Platform.OS !== 'web';
-    const routedServerDraft = canSelectServer ? readAuthServerDraft(params.serverUrl) : null;
-    const [serverInput, setServerInput] = useState(routedServerDraft ?? serverUrl);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        setServerInput(routedServerDraft ?? serverUrl);
-    }, [routedServerDraft, serverUrl]);
 
     async function handleLogin() {
         if (accountDeletionCleanupNotice || isSubmitting) return;
         setIsSubmitting(true);
         setError(null);
         try {
-            await login(email, password, serverInput);
+            await login(email, password);
         } catch (err) {
             setError(getAuthActionErrorMessage(err, 'sign in'));
         } finally {
@@ -59,7 +49,7 @@ export default function LoginScreen() {
         if (accountDeletionCleanupNotice || isSubmitting) return;
         setIsSubmitting(true);
         setError(null);
-        try { await signInWithProvider(provider, 'login', serverInput); }
+        try { await signInWithProvider(provider, 'login'); }
         catch (err) { setError(socialAuthErrorMessage(err)); }
         finally { setIsSubmitting(false); }
     }
@@ -111,29 +101,18 @@ export default function LoginScreen() {
                         <AppText style={[styles.link, { color: colors.primary }]}>Forgot password?</AppText>
                     </Pressable>
                 </Link>
-                {canSelectServer && (
-                    <ServerUrlControl
-                        value={serverInput}
-                        onChangeText={setServerInput}
-                        connection={serverConnection}
-                        onTestConnection={testServerUrl}
-                    />
-                )}
                 {(error || authError) && <AppText accessibilityRole="alert" style={{ color: colors.danger }}>{error ?? authError}</AppText>}
                 <AppButton
                     title={isSubmitting ? 'Signing in...' : 'Sign in'}
                     disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)}
                     onPress={() => void handleLogin()}
                 />
-                <SocialAuthButtons serverUrl={serverInput} disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)} onPress={provider => void handleProvider(provider)} />
+                <SocialAuthButtons serverUrl={serverUrl} disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             {!accountDeletionCleanupNotice && (
                 <Link
-                    href={canSelectServer ? {
-                        pathname: '/(auth)/register',
-                        params: { serverUrl: serverInput }
-                    } : '/(auth)/register'}
+                    href="/(auth)/register"
                     asChild
                 >
                     <Pressable accessibilityRole="link" style={styles.linkTarget}>

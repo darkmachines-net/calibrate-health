@@ -1,4 +1,4 @@
-/** @file Regression coverage for launch 19 hosted pwa trust: failed update remains dismissible and leaves app navigation reachable. */
+/** @file Browser trust, installed-PWA lifecycle, and read-only backend diagnostics regression coverage. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -262,7 +262,14 @@ async function seedUserScopedCaches(page: Page) {
   }, { prefix: USER_CACHE_PREFIX });
 }
 
+/** Checks the installed cache against the shipped build manifest while excluding account and backend responses. */
 async function expectServiceWorkerCacheContract(page: Page) {
+  const workerResponse = await page.request.get('/sw.js');
+  expect(workerResponse.ok()).toBe(true);
+  const shellDeclaration = (await workerResponse.text()).match(/const APP_SHELL = (\[[\s\S]*?\]);/);
+  expect(shellDeclaration).not.toBeNull();
+  const expectedShell: string[] = JSON.parse(shellDeclaration![1]);
+  expect(expectedShell).toEqual(expect.arrayContaining(['/index.html', '/privacy.html', '/login.html']));
   const cacheState = await page.evaluate(async ({ userPrefix }) => {
     const cacheNames = await caches.keys();
     const requests = (await Promise.all(cacheNames.map(async (name) => {
@@ -275,13 +282,10 @@ async function expectServiceWorkerCacheContract(page: Page) {
   expect(cacheState.cacheNames.filter((name) => name.startsWith(cacheState.userPrefix))).toEqual([]);
   expect(cacheState.requests.some((url) => /\/(?:api|auth)(?:\/|$)/.test(new URL(url).pathname))).toBe(false);
   expect(cacheState.requests.some((url) => new URL(url).pathname.includes('missing-launch-19'))).toBe(false);
-  const unexpectedPaths = cacheState.requests.map((url) => new URL(url).pathname).filter((pathname) => !(
-    ['/index.html', '/manifest.webmanifest', '/calibrate-icon.svg', '/calibrate-icon-192.png',
-      '/calibrate-icon-512.png', '/calibrate-icon-maskable-512.png'].includes(pathname)
-    || /^\/_expo\/static\/(?:js|css)\/.+-[0-9a-f]{8,}\.(?:js|css)$/.test(pathname)
-    || /^\/assets\/.+-[0-9a-f]{8,}\.[a-z0-9]+$/i.test(pathname)
-  ));
-  expect(unexpectedPaths).toEqual([]);
+  const servingOrigin = new URL(page.url()).origin;
+  expect(cacheState.requests.every((url) => new URL(url).origin === servingOrigin)).toBe(true);
+  // The export includes route HTML and both dot- and dash-hashed assets; compare the exact build inventory.
+  expect(cacheState.requests.map((url) => new URL(url).pathname).sort()).toEqual([...expectedShell].sort());
 }
 
 async function captureEvidence(
@@ -336,6 +340,14 @@ test('hosted and installed web keep public trust, route truth, and server-accoun
     await page.getByTestId('hosted-trust-links').getByRole('link', { name: 'Privacy policy' }).click();
     await expect(page.getByTestId('legal-public-shell')).toBeVisible();
     await expect(page.getByTestId('legal-page').getByRole('heading', { name: 'Privacy policy', level: 1 })).toBeVisible();
+    await expectRouteMetadata(page, {
+      title: 'Privacy policy - Calibrate',
+      description: PRIVACY_DESCRIPTION,
+      canonicalPath: '/privacy',
+      robots: 'index, follow',
+    });
+    await page.reload();
+    await expect(page.getByTestId('legal-public-shell')).toBeVisible();
     await expectRouteMetadata(page, {
       title: 'Privacy policy - Calibrate',
       description: PRIVACY_DESCRIPTION,
@@ -431,7 +443,8 @@ test('hosted and installed web keep public trust, route truth, and server-accoun
   const advanced = page.getByTestId('advanced-settings-page');
   await expect(advanced).toBeVisible();
   await expect(advanced.getByRole('textbox', { name: 'Server URL' })).toHaveCount(0);
-  await expect(advanced).toContainText("A self-hosted service's operator is responsible for privacy, security, availability, backups, and support.");
+  await expect(advanced).toContainText('Service address');
+  await expect(advanced.getByRole('heading', { name: 'Connection', exact: true })).toHaveCount(0);
 
   await controller.activateOffline();
   const offlineNotice = page.getByTestId('pwa-offline');

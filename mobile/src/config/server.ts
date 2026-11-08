@@ -1,4 +1,4 @@
-/** @file Native server selection, origin validation, and fixed browser-origin configuration. */
+/** @file Build-configured native and serving-origin web backends, origin validation, and compatibility probes. */
 
 import { Platform } from 'react-native';
 import type { ClientConfigResponse } from '@calibrate/api-client';
@@ -40,20 +40,6 @@ export type ServerConnectionResult =
           mismatch?: ClientServerCompatibilityMismatch;
       };
 
-export type ServerConnectionState = {
-    status: 'idle' | 'testing' | 'connected' | 'error';
-    testedInput: string | null;
-    testedUrl: string | null;
-    message: string;
-};
-
-export const INITIAL_SERVER_CONNECTION_STATE: ServerConnectionState = {
-    status: 'idle',
-    testedInput: null,
-    testedUrl: null,
-    message: 'Test the connection before signing in.'
-};
-
 const hasExplicitScheme = (value: string): boolean => /^[a-z][a-z\d+.-]*:\/\//i.test(value);
 
 /** Allow cleartext HTTP only for emulator, loopback, and private-network development hosts. */
@@ -74,7 +60,7 @@ export function isLocalServerHostname(hostname: string): boolean {
 }
 
 /**
- * Parse a user-entered server address into the API origin.
+ * Parse a configured server address into the API origin.
  *
  * Scheme-less public hosts default to HTTPS, while local development hosts default to HTTP.
  */
@@ -115,21 +101,10 @@ export function parseServerUrl(
     }
 }
 
-/** Allow local Expo sessions on physical devices to point at a LAN backend without code edits. */
+/** Read the build-time backend origin, returning null when absent or invalid. */
 export function getConfiguredServerUrl(value = process.env.EXPO_PUBLIC_CALIBRATE_SERVER_URL): string | null {
     if (!value) return null;
     return normalizeServerUrl(value);
-}
-
-/** An explicit development target follows the active checkout instead of stale persisted server state. */
-export function resolveInitialServerUrl(
-    storedServerUrl: string | null,
-    configuredServerUrl: string | null,
-    fallbackServerUrl: string,
-    isDevelopment: boolean
-): string {
-    if (isDevelopment && configuredServerUrl) return configuredServerUrl;
-    return storedServerUrl ?? fallbackServerUrl;
 }
 
 /** Keep the Expo dev server and local API on separate ports while preserving same-origin web exports. */
@@ -180,7 +155,7 @@ export function getDefaultServerUrl(): string {
     return resolveDefaultNativeServerUrl(Platform.OS, configuredServerUrl, __DEV__);
 }
 
-/** Normalize self-hosted server input so API calls can safely append versioned paths. */
+/** Normalize a backend address so API calls can safely append versioned paths. */
 export function normalizeServerUrl(
     value: string,
     options: { allowInsecureLocalHttp?: boolean } = {}
@@ -199,7 +174,7 @@ const isClientConfigResponse = (value: unknown): value is ClientConfigResponse =
         && typeof record.server_version === 'string';
 };
 
-/** Check the version document before credentials or persisted server state are changed. */
+/** Probe the configured backend's version document before sending authentication credentials. */
 export async function testCalibrateServerConnection(
     value: string,
     options: {

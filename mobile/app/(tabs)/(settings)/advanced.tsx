@@ -1,64 +1,17 @@
-/** @file advanced: Format update date for stable display or serialization. */
+/** @file Advanced settings exposes read-only service diagnostics and software-update controls. */
 
-/**
- * Defines the Advanced settings Expo Router screen.
- */
-import React, { useState } from 'react';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
+import React from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import Ionicons from '@expo/vector-icons/Ionicons';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { AppButton } from '../../../src/components/AppButton';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { AppSection } from '../../../src/components/AppSection';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { AppNotice } from '../../../src/components/AppNotice';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { AppText } from '../../../src/components/AppText';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { SectionHeader } from '../../../src/components/SectionHeader';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
-import { ServerUrlControl } from '../../../src/components/ServerUrlControl';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { TabScreen } from '../../../src/components/TabScreen';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { useAuth } from '../../../src/auth/AuthContext';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
-import { HOSTED_SERVER_URL, normalizeServerUrl } from '../../../src/config/server';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { spacing, useAppTheme } from '../../../src/theme';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { useAppUpdateController } from '../../../src/updates/useAppUpdateController';
-/**
- * Defines the Advanced settings Expo Router screen.
- */
 import { getNativePlatformLabel } from '../../../src/platform/nativePlatform';
 
 const DIAGNOSTIC_ROW_MIN_HEIGHT = 52; // Keeps support values readable without inflating every row into a full control.
@@ -87,13 +40,11 @@ function getUpdateActionIcon(
     return 'cloud-done-outline';
 }
 
-/** Render connection, diagnostics, and software-update settings in one route. */
+/** Render read-only service diagnostics and software-update actions. */
 export default function AdvancedSettingsScreen() {
     const theme = useAppTheme();
-    const { serverUrl, serverConnection, setServerUrl, testServerUrl } = useAuth();
+    const { serverUrl } = useAuth();
     const updates = useAppUpdateController();
-    const [serverInput, setServerInput] = useState(serverUrl);
-    const [isSavingServer, setIsSavingServer] = useState(false);
     const { versionInfo } = updates;
     const nativeRelease = versionInfo.nativeBuild === 'Not applicable'
         ? versionInfo.nativeVersion
@@ -105,57 +56,13 @@ export default function AdvancedSettingsScreen() {
         ? `${updates.status} ${progressPercent}%`
         : updates.status;
     const updateActionIcon = getUpdateActionIcon(updates.isUpdatePending, updates.isUpdateAvailable);
-    const serviceLabel = normalizeServerUrl(serverUrl) === HOSTED_SERVER_URL
-        ? 'Calibrate hosted service'
-        : 'Self-hosted service';
     const platformLabel = Platform.OS === 'web' ? 'Web/PWA' : getNativePlatformLabel();
     const nativeBuildTargets = Platform.OS === 'android' ? 'Android or Wear OS' : 'iOS';
 
-    /** Confirm and persist the tested server selection. */
-    async function handleSaveServer() {
-        setIsSavingServer(true);
-        try {
-            await setServerUrl(serverInput);
-        } finally {
-            setIsSavingServer(false);
-        }
-    }
-
     return (
         <TabScreen contentWidth="overview" testID="advanced-settings-page" tabIndex={Platform.OS === 'web' ? 0 : undefined}>
-            {Platform.OS !== 'web' ? (
-                <AppSection>
-                    <SectionHeader title="Connection" description="Optional connection settings for self-hosted services." />
-                    <ServerUrlControl
-                        presentation="editor"
-                        value={serverInput}
-                        onChangeText={setServerInput}
-                        connection={serverConnection}
-                        onTestConnection={testServerUrl}
-                    />
-                    <AppText variant="caption">
-                        Calibrate tests a new service before signing out of the current one.
-                    </AppText>
-                    <AppButton
-                        title={isSavingServer ? 'Saving connection...' : 'Save connection'}
-                        disabled={isSavingServer}
-                        leftIcon={<Ionicons name="server-outline" size={18} color={theme.colors.onPrimary} />}
-                        onPress={() => void handleSaveServer()}
-                    />
-                </AppSection>
-            ) : null}
-
-            <AppSection style={Platform.OS !== 'web'
-                ? [styles.dividedSection, { borderTopColor: theme.colors.outlineVariant }]
-                : undefined}>
+            <AppSection>
                 <SectionHeader title="Diagnostics" description="Technical details for support and release verification." />
-                <View style={styles.operatorNotice}>
-                    <AppText variant="label">Self-hosting</AppText>
-                    <AppText variant="caption">
-                        A self-hosted service's operator is responsible for privacy, security, availability, backups,
-                        and support.
-                    </AppText>
-                </View>
                 {versionInfo.isEmergencyLaunch ? (
                     <AppNotice tone="warning" style={styles.notice}>
                         <Ionicons name="warning-outline" size={22} color={theme.colors.onWarningContainer} />
@@ -173,7 +80,6 @@ export default function AdvancedSettingsScreen() {
                     </AppNotice>
                 ) : null}
                 <View>
-                    <InfoRow label="Service" value={serviceLabel} />
                     <InfoRow label="Service address" value={serverUrl} />
                     <InfoRow label="Platform" value={platformLabel} />
                     <InfoRow label="Native build tag" value={versionInfo.nativeReleaseTag} />
@@ -260,9 +166,6 @@ const styles = StyleSheet.create({
     dividedSection: {
         borderTopWidth: StyleSheet.hairlineWidth,
         paddingTop: spacing.lg
-    },
-    operatorNotice: {
-        gap: spacing.xs
     },
     infoRow: {
         minHeight: DIAGNOSTIC_ROW_MIN_HEIGHT,

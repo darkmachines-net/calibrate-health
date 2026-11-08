@@ -1,12 +1,12 @@
-/** @file Client Diagnostics Runtime: Keep diagnostics bound to the same confirmed server as the current auth context. Bootstrap failures remain local because reporting to the hosted default could cross a self-host boundary. */
+/** @file Routes diagnostics through the configured auth client after session initialization. */
 
 import { useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { registerClientDiagnosticReporter } from './clientDiagnostics';
 
 /**
- * Keep diagnostics bound to the same confirmed server as the current auth context.
- * Bootstrap failures remain local because reporting to the hosted default could cross a self-host boundary.
+ * Keep diagnostics bound to the configured backend in the current auth context.
+ * Bootstrap failures remain local until session initialization finishes.
  */
 export function ClientDiagnosticsRuntime() {
     const { api, isLoading } = useAuth();

@@ -1,4 +1,4 @@
-/** @file Settings categories with platform navigation, offline summaries, and canonical software-license access. */
+/** @file Settings categories with platform navigation, offline summaries, software diagnostics, and canonical software-license access. */
 
 import { StyleSheet, View } from 'react-native';
 import { SettingsRow, SettingsSection } from '../components/settings/SettingsList';
@@ -27,7 +27,7 @@ type SettingsCategoryPageProps = {
     onLogout: () => void;
 };
 
-/** Renders one settings category with platform-appropriate navigation and offline-state summaries. */
+/** Renders account settings, integration navigation, offline summaries, and software-support links. */
 export function SettingsCategoryPage({
     category,
     sessionCount,
@@ -260,7 +260,7 @@ export function SettingsCategoryPage({
                     testID="settings-advanced"
                     icon="options-outline"
                     label="Advanced settings"
-                    supportingText="Connection, diagnostics, and software updates"
+                    supportingText="Diagnostics and software updates"
                     showDivider={false}
                     onPress={() => onOpenPage('advanced')}
                 />
