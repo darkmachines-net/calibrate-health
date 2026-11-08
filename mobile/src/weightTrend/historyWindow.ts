@@ -3,7 +3,7 @@
 // UTC arithmetic on date-only values avoids DST changes in the number of visible days.
 export const WEIGHT_HISTORY_DAY_MS = 86_400_000;
 // One page covers two Month windows. Fetch a neighbor while the current page is still visible.
-export const WEIGHT_HISTORY_PAGE_DAYS = 56;
+const WEIGHT_HISTORY_PAGE_DAYS = 56;
 export const WEIGHT_HISTORY_RANGES = [
     { label: 'Week', days: 7 },
     { label: 'Month', days: 28 },
