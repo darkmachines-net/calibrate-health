@@ -1288,6 +1288,8 @@ export type TrendMetricsResponse = {
         volatility: 'low' | 'medium' | 'high';
         total_points: number;
         total_span_days: number;
+        /** Earliest eligible reading, or null for no history. Supplied for explicitly anchored pages. */
+        history_start_date?: string | null;
         /** Additive v2 summary. Older servers omit it. */
         trend_summary?: WeightTrendSummary;
     };

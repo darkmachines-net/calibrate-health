@@ -1,8 +1,8 @@
-/** @file Responsive weight trend chart with observation/interval geometry and accessible point selection. */
+/** @file Responsive weight trend chart with clipped trend paths and accessible observation selection. */
 
-import React, { useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Line, Path, Polygon, Text as SvgText, type SvgProps } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, Line, Path, Polygon, Rect, Text as SvgText, type SvgProps } from 'react-native-svg';
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import { AppText } from './AppText';
 import { radius, spacing, useAppTheme, type AppTheme } from '../theme';
@@ -74,6 +74,9 @@ type ChartLayoutOptions = {
     padding?: typeof WEIGHT_TREND_CHART_PADDING;
     downsampleMeasurements?: boolean;
     modelStartDate?: string | null;
+    dateWindow?: { start: number; end: number };
+    missingWindows?: Array<{ start: number; end: number }>;
+    fixedWeightTicks?: number[];
 };
 
 /** Builds chart geometry with shared padding, weight-span bounds, and text-scale-aware date ticks. */
@@ -117,6 +120,7 @@ type WeightTrendChartProps = {
     accessibleChartSummary: string;
     selectedPoint?: WeightTrendChartPoint | null;
     showModelBoundary?: boolean;
+    clipTrendToWindow?: boolean;
     padding?: typeof WEIGHT_TREND_CHART_PADDING;
     axisFontSize?: number;
 };
@@ -124,11 +128,12 @@ type WeightTrendChartProps = {
 /** Draws trend, observations, axes, and optional model boundaries from precomputed SVG geometry. */
 export function WeightTrendChart({
     chartLayout, unit, accessibleChartSummary, selectedPoint,
-    showModelBoundary = false,
+    showModelBoundary = false, clipTrendToWindow = false,
     padding = WEIGHT_TREND_CHART_PADDING,
     axisFontSize = WEIGHT_TREND_AXIS_FONT_SIZE
 }: WeightTrendChartProps) {
     const theme = useAppTheme();
+    const clipId = `weight-trend-${useId().replace(/[^\w-]/g, '')}`;
     const includeYear = chartLayout.xTicks[0]?.dateKey.slice(0, 4) !== chartLayout.xTicks.at(-1)?.dateKey.slice(0, 4);
     return (
         <Svg
@@ -140,6 +145,10 @@ export function WeightTrendChart({
             height={chartLayout.height}
             viewBox={`0 0 ${chartLayout.width} ${chartLayout.height}`}
         >
+            {chartLayout.missingRegions.map(({ x, width }) => (
+                <Rect key={x} x={x} width={width} y={padding.top}
+                    height={chartLayout.height - padding.top - padding.bottom} fill={theme.colors.surfaceContainerLow} />
+            ))}
             {chartLayout.yTicks.map((tick) => (
                 <React.Fragment key={tick.value}>
                     <Line
@@ -195,29 +204,38 @@ export function WeightTrendChart({
                     </SvgText>
                 </React.Fragment>
             )}
-            {chartLayout.trendSegments.map((segment, index) => (
-                <React.Fragment key={`trend-segment-${index}`}>
-                    {segment.length > 1 && (
-                        <Polygon
-                            testID={`weight-trend-range-${index}`}
-                            points={buildWeightTrendBandPoints(segment)}
-                            fill={theme.colors.infoContainer}
-                            stroke={theme.colors.info}
-                            strokeWidth={0.75}
-                            opacity={0.72}
+            <Defs>
+                <ClipPath id={clipId}>
+                    <Rect x={padding.left} y={padding.top}
+                        width={Math.max(1, chartLayout.width - padding.left - padding.right)}
+                        height={chartLayout.height - padding.top - padding.bottom} />
+                </ClipPath>
+            </Defs>
+            <G clipPath={clipTrendToWindow ? `url(#${clipId})` : undefined}>
+                {chartLayout.trendSegments.map((segment, index) => (
+                    <React.Fragment key={`trend-segment-${index}`}>
+                        {segment.length > 1 && (
+                            <Polygon
+                                testID={`weight-trend-range-${index}`}
+                                points={buildWeightTrendBandPoints(segment)}
+                                fill={theme.colors.infoContainer}
+                                stroke={theme.colors.info}
+                                strokeWidth={0.75}
+                                opacity={0.72}
+                            />
+                        )}
+                        <Path
+                            testID={`weight-trend-smoothed-path-${index}`}
+                            d={buildWeightTrendLinePath(segment)}
+                            stroke={theme.colors.primary}
+                            strokeWidth={4}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
                         />
-                    )}
-                    <Path
-                        testID={`weight-trend-smoothed-path-${index}`}
-                        d={buildWeightTrendLinePath(segment)}
-                        stroke={theme.colors.primary}
-                        strokeWidth={4}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                    />
-                </React.Fragment>
-            ))}
+                    </React.Fragment>
+                ))}
+            </G>
             {chartLayout.measurementPoints.map((point) => (
                 <Circle
                     key={`${point.metric.id}-${point.dateKey}`}

@@ -1,4 +1,4 @@
-/** @file Body-metric history, weight mutations, trend queries, and transactional progress receipts. */
+/** @file Body-metric history, bounded trend pages, weight mutations, and transactional progress receipts. */
 
 import express from 'express';
 import { type BodyMetric, type BodyMetricTrend, type Prisma } from '@prisma/client';
@@ -114,6 +114,7 @@ type TrendMetricsResponse = {
         volatility: VolatilityLevel;
         total_points: number;
         total_span_days: number;
+        history_start_date?: string | null;
         trend_summary: TrendSummary;
     };
 };
@@ -446,6 +447,37 @@ function serializeMetrics(
 
 const LEGACY_TREND_FALLBACK = { weeklyRate: 0, volatility: 'low' as const };
 
+type TrendHistoryBounds = { first: Date | null; last: Date | null; count: number };
+
+/**
+ * Read a display page and its bounded model inputs from one snapshot. The model anchor is independent
+ * of the page so neighboring requests agree on which readings are modeled and on their estimates.
+ */
+async function readTrendHistoryPage(userId: number, start: Date, end: Date, asOf: Date) {
+    return prisma.$transaction(async (tx) => {
+        const history = await tx.bodyMetric.aggregate({
+            where: { user_id: userId, date: { lte: asOf } },
+            _min: { date: true },
+            _max: { date: true },
+            _count: { _all: true }
+        });
+        const last = history._max.date;
+        const windows: Prisma.BodyMetricWhereInput[] = [{ date: { gte: start, lte: end } }];
+        if (last) {
+            const { modelStartDate } = getMaterializedTrendWindowFromLatestDate(last);
+            windows.push({ date: { gte: modelStartDate, lte: last } });
+        }
+        const rows = await tx.bodyMetric.findMany({
+            where: { user_id: userId, OR: windows },
+            orderBy: { date: 'asc' }
+        });
+        return {
+            rows: rows.map((row) => ({ ...row, trend: null })),
+            bounds: { first: history._min.date, last, count: history._count._all }
+        };
+    }, { isolationLevel: 'RepeatableRead' });
+}
+
 function buildLegacyTrendSummary(
     metricsAsc: MetricRecordWithTrend[],
     trendResult: WeightTrendResult | null,
@@ -508,7 +540,8 @@ function buildTrendMetricsResponse(
     trendResult: WeightTrendResult | null,
     asOfDate: Date,
     materializationAvailability: WeightTrendMaterializationAvailability,
-    currentSourceRevision: string
+    currentSourceRevision: string,
+    historyBounds?: TrendHistoryBounds
 ): TrendMetricsResponse {
     const isTrendAvailable = materializationAvailability === 'available';
     const activeTrendStartMs = activeTrendStartDate ? activeTrendStartDate.getTime() : Number.POSITIVE_INFINITY;
@@ -650,8 +683,15 @@ function buildTrendMetricsResponse(
         meta: {
             weekly_rate: kilogramsToWeightUnit(legacyTrendSummary.weeklyRate, weightUnit),
             volatility: legacyTrendSummary.volatility,
-            total_points: metricsAsc.length,
-            total_span_days: getMetricsSpanDays(metricsAsc),
+            total_points: historyBounds?.count ?? metricsAsc.length,
+            total_span_days: historyBounds
+                ? getMetricsSpanDays(historyBounds.first && historyBounds.last
+                    ? [{ date: historyBounds.first }, { date: historyBounds.last }]
+                    : [])
+                : getMetricsSpanDays(metricsAsc),
+            ...(historyBounds ? {
+                history_start_date: historyBounds.first ? formatDateOnly(historyBounds.first) : null
+            } : {}),
             trend_summary: trendSummary
         }
     };
@@ -664,6 +704,7 @@ router.get('/', async (req, res) => {
     const weightUnit: WeightUnit = isWeightUnit(user.weight_unit) ? user.weight_unit : 'KG';
     const start = typeof req.query.start === 'string' ? req.query.start : undefined;
     const end = typeof req.query.end === 'string' ? req.query.end : undefined;
+    const asOf = req.query.as_of;
     const includeTrend = parseBooleanFlag(req.query.include_trend, false);
     const smoothingDays = parseSmoothingDays(req.query.smoothing);
     const rangeOption = parseRangeOption(req.query.range);
@@ -679,11 +720,21 @@ router.get('/', async (req, res) => {
     try {
         let requestedStart: Date | undefined;
         let requestedEnd: Date | undefined;
+        let requestedAsOf: Date | undefined;
 
-        if (start || end) {
+        if (start || end || asOf !== undefined) {
             try {
                 if (start) requestedStart = parseLocalDateOnly(start);
                 if (end) requestedEnd = parseLocalDateOnly(end);
+                if (asOf !== undefined) {
+                    if (typeof asOf !== 'string' || !includeTrend || rangeOption || !requestedStart || !requestedEnd) {
+                        return res.status(400).json({ message: 'as_of requires a trend request with start and end dates' });
+                    }
+                    requestedAsOf = parseLocalDateOnly(asOf);
+                    if (requestedStart > requestedEnd || requestedEnd > requestedAsOf) {
+                        return res.status(400).json({ message: 'Invalid date range' });
+                    }
+                }
             } catch {
                 return res.status(400).json({ message: 'Invalid date range' });
             }
@@ -694,12 +745,17 @@ router.get('/', async (req, res) => {
         const relativeRangeEndDate = effectiveEndDate;
 
         if (includeTrend) {
-            const isHistoricalAsOf = requestedEnd !== undefined && requestedEnd < currentLocalDate;
+            const modelAsOfDate = requestedAsOf && requestedAsOf < currentLocalDate ? requestedAsOf
+                : requestedAsOf ? currentLocalDate : effectiveEndDate;
+            const page = requestedAsOf && requestedStart
+                ? await readTrendHistoryPage(user.id, requestedStart, effectiveEndDate, modelAsOfDate)
+                : null;
+            const isHistoricalAsOf = modelAsOfDate < currentLocalDate;
             let materializationAvailability: WeightTrendMaterializationAvailability = 'available';
-            if (!isHistoricalAsOf) {
+            if (!page && !isHistoricalAsOf) {
                 materializationAvailability = await ensureMaterializedWeightTrends(user.id, effectiveEndDate);
             }
-            const queriedMetricsAsc = await prisma.bodyMetric.findMany({
+            const queriedMetricsAsc = page?.rows ?? await prisma.bodyMetric.findMany({
                 where: { user_id: user.id, date: { lte: effectiveEndDate } },
                 orderBy: { date: 'asc' },
                 include: {
@@ -718,14 +774,14 @@ router.get('/', async (req, res) => {
                 }
             });
             // Keep the application boundary defensive for test doubles and legacy rows as well as the DB predicate.
-            const storedMetricsAsc = queriedMetricsAsc.filter((metric) => metric.date <= effectiveEndDate);
+            const storedMetricsAsc = queriedMetricsAsc.filter((metric) => metric.date <= modelAsOfDate);
 
             // The source revision is derived from the same raw query that drives every returned trend field.
-            const boundedSource = getBoundedWeightTrendSource(storedMetricsAsc, effectiveEndDate);
+            const boundedSource = getBoundedWeightTrendSource(storedMetricsAsc, modelAsOfDate);
             let boundedTrend: ReturnType<typeof computeBoundedWeightTrend> | null = null;
             if (materializationAvailability === 'available') {
                 try {
-                    boundedTrend = computeBoundedWeightTrend(boundedSource, effectiveEndDate);
+                    boundedTrend = computeBoundedWeightTrend(boundedSource, modelAsOfDate);
                 } catch {
                     materializationAvailability = 'unavailable';
                     console.warn(
@@ -742,7 +798,7 @@ router.get('/', async (req, res) => {
                   )
                 : storedMetricsAsc.map((metric) => ({ ...metric, trend: null }));
 
-            const absoluteFiltered = applyAbsoluteDateFilter(metricsAsc, requestedStart, requestedEnd);
+            const absoluteFiltered = applyAbsoluteDateFilter(metricsAsc, requestedStart, effectiveEndDate);
             const relativeFiltered = applyRelativeRangeFilter(
                 absoluteFiltered,
                 rangeOption ?? null,
@@ -757,9 +813,10 @@ router.get('/', async (req, res) => {
                     weightUnit,
                     boundedTrend?.activeTrendStartDate ?? null,
                     boundedTrend?.result ?? null,
-                    effectiveEndDate,
+                    modelAsOfDate,
                     materializationAvailability,
-                    boundedSource.sourceRevision
+                    boundedSource.sourceRevision,
+                    page?.bounds
                 )
             );
         }

@@ -1,4 +1,4 @@
-/** @file Regression coverage for Weight Trend Preview Card: WeightTrendPreviewCard. */
+/** @file Regression coverage for the overview weight trend and shared chart presentation. */
 
 import { fireEvent, render } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
@@ -10,7 +10,12 @@ import { WeightTrendPreviewCard } from './WeightTrendPreviewCard';
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 jest.mock('@tanstack/react-query', () => ({
     ...jest.requireActual('@tanstack/react-query'),
-    useQuery: jest.fn()
+    useQuery: jest.fn(),
+    useQueries: () => []
+}));
+jest.mock('../../utils/dates', () => ({
+    ...jest.requireActual('../../utils/dates'),
+    getTodayDate: () => '2026-07-21'
 }));
 jest.mock('../../auth/AuthContext', () => ({
     useAuth: () => ({
@@ -136,7 +141,7 @@ describe('WeightTrendPreviewCard', () => {
         expect(axisLabels.every((label) => label.props.font.fontSize === 24)).toBe(true);
     });
 
-    it('uses the same full visualization, axes, readings, and estimate band as the expanded chart', async () => {
+    it('uses the same measurement and estimate styles as the expanded date viewport', async () => {
         const metrics = [
             metric(3, '2026-07-20', 168, 168.2),
             metric(2, '2026-07-19', 169, 168.8),
@@ -160,14 +165,13 @@ describe('WeightTrendPreviewCard', () => {
         const expanded = await render(<WeightTrendCard />);
         await fireEvent(expanded.getByTestId('weight-trend-chart-canvas'), 'layout', layout);
         const measurements = (result: typeof screen) => result.getAllByTestId('weight-trend-measurement')
-            .map(({ props: { cx, cy, r } }) => ({ cx, cy, r }));
+            .map(({ props: { cy, r } }) => ({ cy, r }));
         const previewBand = screen.getByTestId('weight-trend-range-0').props;
         expect(expanded.getByLabelText('Chart legend')).toBeTruthy();
         expect(measurements(expanded)).toEqual(measurements(screen));
         const expandedBand = expanded.getByTestId('weight-trend-range-0').props;
-        expect(previewBand.d).toEqual(expandedBand.d);
-        expect(screen.getByTestId('weight-trend-smoothed-path-0').props.d)
-            .toEqual(expanded.getByTestId('weight-trend-smoothed-path-0').props.d);
+        expect(screen.getByTestId('weight-trend-smoothed-path-0').props.stroke)
+            .toEqual(expanded.getByTestId('weight-trend-smoothed-path-0').props.stroke);
         expect(previewBand.fill).toEqual(expandedBand.fill);
         expect(previewBand.stroke).toEqual(expandedBand.stroke);
         expect(screen.queryByText(/Trend line:/)).toBeNull();

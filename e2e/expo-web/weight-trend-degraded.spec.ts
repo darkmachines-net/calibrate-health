@@ -1,4 +1,4 @@
-/** @file Regression coverage for weight trend degraded: Trend Details keeps raw measurements visible when the trend estimate is unavailable. */
+/** @file Verifies the paged Trend Details controls remain available when estimates are unavailable. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -50,7 +50,7 @@ test('Trend Details keeps raw measurements visible when the trend estimate is un
   await expect(legend.getByText('Underlying trend', { exact: true })).toBeVisible();
   await expect(legend.getByText('95% estimate range', { exact: true })).toBeVisible();
 
-  for (const label of ['Week', 'Month', 'Year', 'All']) {
+  for (const label of ['Week', 'Month', 'Year']) {
     const box = await page.getByText(label, { exact: true }).boundingBox();
     expect(box?.height).toBeLessThan(30);
   }
