@@ -1,4 +1,4 @@
-/** @file Account Settings Sheets: Shared profile form kept separate from the routed screen's data and navigation state. */
+/** @file Profile and deletion forms with exact destructive confirmation and password/native provider reauthentication. */
 
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,6 +19,8 @@ import { formatCalories } from '../utils/format';
 import { getSafeActionErrorMessage } from '../errors/presentation';
 import { getMinimumDateOfBirth } from '../caloriePlanning/dateBounds';
 import { confirmDiscardChanges } from '../components/confirmDiscardChanges';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { SocialAuthButtons } from '../auth/SocialAuthButtons';
 
 export type ProfileEditorContentProps = {
     timezone: string;
@@ -127,6 +129,8 @@ export function ProfileEditorContent({
 }
 
 type DeleteAccountSheetProps = {
+    serverUrl: string;
+    onProviderConfirm: (provider: SocialAuthProvider) => void;
     visible: boolean;
     isOutboxReady: boolean;
     password: string;
@@ -139,8 +143,10 @@ type DeleteAccountSheetProps = {
     onConfirm: () => void;
 };
 
-/** Collects password and exact deletion confirmation while protecting dirty input from accidental dismissal. */
+/** Require exact deletion confirmation before password submission or native provider reauthentication; protect dirty input. */
 export function DeleteAccountSheet({
+    serverUrl,
+    onProviderConfirm,
     visible,
     isOutboxReady,
     password,
@@ -210,6 +216,12 @@ export function DeleteAccountSheet({
                     style={styles.rowButton}
                 />
             </View>
+            {visible && <SocialAuthButtons
+                label="Or permanently delete this account by confirming with your sign-in provider:"
+                serverUrl={serverUrl}
+                disabled={isDeleting || confirmation !== DELETE_ACCOUNT_CONFIRMATION}
+                onPress={onProviderConfirm}
+            />}
             </View>
         </BottomSheetModal>
     );

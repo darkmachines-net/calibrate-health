@@ -72,7 +72,7 @@ variable "application_environment" {
     condition = alltrue([for key in keys(var.application_environment) : contains([
       "SMTP_HOST", "SMTP_PORT", "SMTP_SECURE", "SMTP_USERNAME", "SMTP_FROM", "FOOD_DATA_PROVIDER",
       "ADMIN_USER_IDS", "NATIVE_PUSH_MODE", "WEB_PUSH_PUBLIC_KEY", "WEB_PUSH_SUBJECT", "WEIGHT_TREND_MODEL",
-      "CALIBRATE_DIAGNOSTICS_ENABLED", "MCP_ALLOWED_HOSTS"
+      "CALIBRATE_DIAGNOSTICS_ENABLED", "MCP_ALLOWED_HOSTS", "FIREBASE_SOCIAL_PROVIDERS"
     ], key)])
     error_message = "Only documented non-secret app settings may be supplied; runtime/auth/database settings are owned by this module."
   }

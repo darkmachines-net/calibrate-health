@@ -1,4 +1,4 @@
-/** @file Regression coverage for Auth Context: AuthProvider client/server compatibility recovery. */
+/** @file Native authentication persistence, provider cancellation, server confirmation and compatibility recovery. */
 
 const mockSecureLogoutStorage = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async (key: string) => mockSecureLogoutStorage.get(key) ?? null), setItemAsync: jest.fn(async (key: string, value: string) => { mockSecureLogoutStorage.set(key, value); }), deleteItemAsync: jest.fn(async (key: string) => { mockSecureLogoutStorage.delete(key); }) }));
@@ -14,6 +14,10 @@ const mockClientOptions: Array<{ onRequestError?: (error: unknown) => void; fetc
 const mockGetClientConfig = jest.fn();
 const mockRefreshMobile = jest.fn();
 const mockLoginMobile = jest.fn();
+const mockSocialProviders = jest.fn(async () => ({ providers: ['google.com', 'apple.com'] }));
+const mockSocialAuth = jest.fn();
+const mockSocialCredential = jest.fn();
+jest.mock('./nativeSocialAuth', () => ({ acquireSocialCredential: (...args: unknown[]) => mockSocialCredential(...args) }));
 const mockLogoutMobile = jest.fn(async (_refreshToken?: string) => undefined);
 
 jest.mock('@calibrate/api-client', () => {
@@ -33,6 +37,8 @@ jest.mock('@calibrate/api-client', () => {
             getClientConfig = (...args: unknown[]) => mockGetClientConfig(...args);
             refreshMobile = (...args: unknown[]) => mockRefreshMobile(...args);
             loginMobile = (...args: unknown[]) => mockLoginMobile(...args);
+            getMobileSocialProviders = () => mockSocialProviders();
+            authenticateMobileSocial = (...args: unknown[]) => mockSocialAuth(...args);
             logoutMobile = (refreshToken?: string) => mockLogoutMobile(refreshToken);
         }
     };
@@ -170,6 +176,47 @@ async function renderAuth() {
     );
     return await renderHook(() => useAuth(), { wrapper });
 }
+
+describe('native provider session exchange', () => {
+    beforeEach(() => {
+        mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
+        mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
+        mockSocialAuth.mockReset().mockResolvedValue(AUTH_PAYLOAD);
+        mockSocialCredential.mockReset().mockResolvedValue({ provider: 'google.com', id_token: 'ephemeral' });
+        jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: true, url: 'https://calibratehealth.app', config: {} as never, message: 'Connected' });
+    });
+
+    it('uses the confirmed origin and persists only the returned Calibrate tokens', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        mockWriteStoredTokens.mockClear();
+        await act(async () => {
+            expect(await result.current.signInWithProvider('google.com', 'register', 'https://calibratehealth.app/', { acceptTerms: true, acceptPrivacy: true })).toBe(true);
+        });
+        expect(mockSocialAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google.com', id_token: 'ephemeral', intent: 'register', accept_terms: true, accept_privacy: true, device_id: 'device-1' }));
+        expect(mockClientOptions.at(-1)?.baseUrl).toBe('https://calibratehealth.app');
+        expect(JSON.stringify(mockWriteStoredTokens.mock.calls)).not.toContain('ephemeral');
+        expect(result.current.accessToken).toBe('access');
+    });
+
+    it('cancellation never exchanges or persists a provider credential', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        mockSocialCredential.mockResolvedValue(null);
+        mockWriteStoredTokens.mockClear();
+        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login', 'https://calibratehealth.app')).toBe(false); });
+        expect(mockSocialAuth).not.toHaveBeenCalled();
+        expect(mockWriteStoredTokens).not.toHaveBeenCalled();
+    });
+
+    it('failed server confirmation never opens a provider prompt', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: false, url: null, code: 'invalid_url', message: 'Invalid server' });
+        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login', 'bad-server')).toBe(false); });
+        expect(mockSocialCredential).not.toHaveBeenCalled();
+    });
+});
 
 describe('native onboarding draft cleanup', () => {
     beforeEach(() => {

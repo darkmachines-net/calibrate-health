@@ -1,4 +1,4 @@
-/** @file Canonical public privacy, account-deletion, legal contact, and licensed self-hosting disclosures. */
+/** @file Canonical public privacy, password/provider account deletion, legal contact and self-hosting disclosures. */
 
 export type PublicLegalSection = {
     title: string;
@@ -192,7 +192,7 @@ export const ACCOUNT_DELETION_SECTIONS: PublicLegalSection[] = [
     {
         title: 'Delete immediately while signed in',
         paragraphs: [
-            'Sign in, open Settings, find Account, and choose Delete account. Enter your current password to confirm. Deletion from the active Calibrate database is immediate, permanent, and cannot be undone.'
+            'Sign in, open Settings, find Account, and choose Delete account. Type the requested confirmation and enter your current password, or confirm with Google or Apple in the mobile app when available. Deletion from the active Calibrate database is immediate, permanent, and cannot be undone.'
         ]
     },
     {

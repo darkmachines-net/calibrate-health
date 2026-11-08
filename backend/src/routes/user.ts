@@ -1,7 +1,8 @@
-/** @file Account profile, preferences, avatar, password, connected apps, export, and deletion endpoints. */
+/** @file Account profile, preferences, credentials, export and deletion with password or same-UID provider reauthentication. */
 
 import { verifyAccountPassword } from '../services/accountCredentials';
 import { firebaseAuthority } from '../services/firebaseAuthority';
+import { enabledSocialProviders, parseSocialCredential, SocialAuthRejected } from '../services/socialAuth';
 import express from 'express';
 import prisma from '../config/database';
 import bcrypt from 'bcryptjs';
@@ -286,7 +287,8 @@ router.get('/account/export', async (req, res) => {
 router.delete('/account', async (req, res) => {
   const user = getAuthenticatedUser(req);
   const currentPassword = parseCurrentPassword(req.body);
-  if (!currentPassword) {
+  const providerCredential = parseSocialCredential(req.body?.provider_credential);
+  if (!currentPassword && !providerCredential) {
     return res.status(400).json({ message: 'Current password is required' });
   }
 
@@ -299,9 +301,20 @@ router.delete('/account', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const version = await verifyAccountPassword(currentPassword, { ...dbUser, id: user.id });
+    let version: number | null = null;
+    if (providerCredential) {
+      if (!enabledSocialProviders().includes(providerCredential.provider)) {
+        return res.status(400).json({ message: 'Provider reauthentication is unavailable.' });
+      }
+      const authority = firebaseAuthority();
+      const verified = await authority?.authenticateSocial(providerCredential, false, false);
+      // An authenticated session plus a different person's valid provider credential never authorizes deletion.
+      if (verified?.userId === user.id) version = verified.version;
+    } else if (currentPassword) {
+      version = await verifyAccountPassword(currentPassword, { ...dbUser, id: user.id });
+    }
     if (version === null) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
+      return res.status(400).json({ message: providerCredential ? 'Sign in with the account being deleted.' : 'Current password is incorrect' });
     }
 
     const deleted = await deleteAccountData(user.id);
@@ -318,6 +331,9 @@ router.delete('/account', async (req, res) => {
     clearSessionCookie(res);
     res.status(204).send();
   } catch (error) {
+    if (error instanceof SocialAuthRejected) {
+      return res.status(400).json({ message: 'Sign in with the account being deleted.' });
+    }
     logSafeOperationalError('account.delete', error, res.locals?.requestId);
     res.status(500).json({ message: 'Server error' });
   }

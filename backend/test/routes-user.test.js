@@ -1,4 +1,4 @@
-/** @file Regression coverage for routes user: user route: rejects unauthenticated requests via router.use middleware. */
+/** @file User route authorization, profile validation, exports and password/same-account-provider deletion regressions. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -11,7 +11,10 @@ function stubModule(resolvedPath, exports) {
   require.cache[resolvedPath] = moduleInstance;
 }
 
-function loadUserRouter({ prismaStub, bcryptStub, accountLifecycleStub, mcpOAuthStub }) {
+function loadUserRouter({ prismaStub, bcryptStub, accountLifecycleStub, mcpOAuthStub, firebaseStub }) {
+  const firebasePath = require.resolve('../src/services/firebaseAuthority');
+  const previousFirebase = require.cache[firebasePath];
+  if (firebaseStub) stubModule(firebasePath, firebaseStub);
   const dbPath = require.resolve('../src/config/database');
   const bcryptPath = require.resolve('bcryptjs');
   const accountCredentialPath = require.resolve('../src/services/accountCredentials');
@@ -75,6 +78,11 @@ function loadUserRouter({ prismaStub, bcryptStub, accountLifecycleStub, mcpOAuth
   });
 
   const loaded = require('../src/routes/user');
+
+  if (firebaseStub) {
+    if (previousFirebase) require.cache[firebasePath] = previousFirebase;
+    else delete require.cache[firebasePath];
+  }
 
   if (previousAccountCredential) require.cache[accountCredentialPath] = previousAccountCredential;
   else delete require.cache[accountCredentialPath];
@@ -486,6 +494,41 @@ test('user route: DELETE /account requires and verifies the current password', a
   assert.equal(wrongRes.statusCode, 400);
   assert.deepEqual(wrongRes.body, { message: 'Current password is incorrect' });
   assert.equal(deleted, false);
+});
+
+test('user route: provider deletion requires the current account and does not issue a replacement session', async () => {
+  const previousProvider = process.env.AUTH_PROVIDER;
+  const previousEnabled = process.env.FIREBASE_SOCIAL_PROVIDERS;
+  process.env.AUTH_PROVIDER = 'firebase';
+  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com,apple.com';
+  let deleted = null;
+  let verifiedId = 8;
+  const exchanges = [];
+  try {
+    const router = loadUserRouter({
+      prismaStub: { user: { findUnique: async () => ({ id: 7, password_hash: '!firebase' }) } },
+      bcryptStub: { compare: async () => { throw new Error('Provider accounts do not need a password'); } },
+      firebaseStub: { firebaseAuthority: () => ({ authenticateSocial: async (...args) => { exchanges.push(args); return { userId: verifiedId, version: 3 }; } }) },
+      accountLifecycleStub: { deleteAccountData: async id => { deleted = id; return true; } }
+    });
+    const handler = getRouteHandler(router, 'delete', '/account');
+    const req = { user: { id: 7 }, body: { provider_credential: { provider: 'google.com', id_token: 'synthetic' } } };
+    const wrong = createRes();
+    await handler(req, wrong);
+    assert.equal(wrong.statusCode, 400);
+    assert.equal(deleted, null);
+    verifiedId = 7;
+    const matching = createRes();
+    await handler(req, matching);
+    assert.equal(matching.statusCode, 204);
+    assert.equal(deleted, 7);
+    assert.equal(exchanges[0][1], false, 'reauthentication must never register an account');
+  } finally {
+    if (previousProvider === undefined) delete process.env.AUTH_PROVIDER;
+    else process.env.AUTH_PROVIDER = previousProvider;
+    if (previousEnabled === undefined) delete process.env.FIREBASE_SOCIAL_PROVIDERS;
+    else process.env.FIREBASE_SOCIAL_PROVIDERS = previousEnabled;
+  }
 });
 
 test('user route: DELETE /account deletes data, destroys the request session, and clears the cookie', async () => {

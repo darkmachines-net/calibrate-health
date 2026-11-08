@@ -1,4 +1,4 @@
-/** @file register: Presents account creation with explicit legal acceptance and optional native server selection. */
+/** @file Password/native provider registration with explicit legal acceptance and optional native server selection. */
 
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -17,6 +17,9 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { readAuthServerDraft } from '../../src/auth/authServerDraft';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { SocialAuthButtons } from '../../src/auth/SocialAuthButtons';
+import { socialAuthErrorMessage } from '../../src/auth/socialAuthErrors';
 import { requiresHostedLegalAcceptance } from '../../src/auth/accountAccess';
 import {
     MAX_AUTH_PASSWORD_BYTES,
@@ -29,7 +32,7 @@ import {
 export default function RegisterScreen() {
     const { colors } = useAppTheme();
     const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();
-    const { register, serverUrl, testServerUrl, serverConnection, authError } = useAuth();
+    const { register, signInWithProvider, serverUrl, testServerUrl, serverConnection, authError } = useAuth();
     const canSelectServer = Platform.OS !== 'web';
     const routedServerDraft = canSelectServer ? readAuthServerDraft(params.serverUrl) : null;
     const [serverInput, setServerInput] = useState(routedServerDraft ?? serverUrl);
@@ -48,6 +51,7 @@ export default function RegisterScreen() {
     }, [routedServerDraft, serverUrl]);
 
     async function handleRegister() {
+        if (isSubmitting) return;
         const normalizedEmail = normalizeAuthEmailCredential(email);
         if (!normalizedEmail) {
             setError('Enter a valid email address.');
@@ -85,12 +89,27 @@ export default function RegisterScreen() {
         }
     }
 
+    async function handleProvider(provider: SocialAuthProvider) {
+        if (isSubmitting) return;
+        if (legalConsentRequired && (!termsAccepted || !privacyAccepted)) {
+            setConsentError('Review and accept both legal documents to create an account.');
+            return;
+        }
+        setIsSubmitting(true);
+        setError(null);
+        setConsentError(null);
+        try {
+            await signInWithProvider(provider, 'register', serverInput, { acceptTerms: termsAccepted, acceptPrivacy: privacyAccepted });
+        } catch (err) { setError(socialAuthErrorMessage(err)); }
+        finally { setIsSubmitting(false); }
+    }
+
     return (
         <Screen contentWidth="form" safeTop style={styles.screen}>
             <AuthBrand description="Track food, weight, and progress against a personalized calorie target." />
 
             <AppSection>
-                <SectionHeader title="Create account" description="Create your Calibrate account with email and password." />
+                <SectionHeader title="Create account" description="Choose how to create your Calibrate account." />
                 <TextField
                     label="Email"
                     autoCapitalize="none"
@@ -148,6 +167,7 @@ export default function RegisterScreen() {
                 )}
                 {(error || authError) && <AppText accessibilityRole="alert" style={{ color: colors.danger }}>{error ?? authError}</AppText>}
                 <AppButton title={isSubmitting ? 'Creating...' : 'Create account'} disabled={isSubmitting} onPress={() => void handleRegister()} />
+                <SocialAuthButtons serverUrl={serverInput} disabled={isSubmitting} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             <View style={styles.footerLinks}>

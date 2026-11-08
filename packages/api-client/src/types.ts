@@ -1,4 +1,4 @@
-/** @file Shared public API request/response types and compatibility shapes layered over the generated wire schema. */
+/** @file Public API shapes, including ephemeral native provider proof, layered over the generated wire schema. */
 
 import type {
     ActivityLevel,
@@ -13,6 +13,7 @@ import type {
     Sex,
     WeightUnit
 } from '@calibrate/shared';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
 
 export type ClientDiagnosticInput = SharedClientDiagnosticInput;
 export type ClientDiagnosticResponse = SharedClientDiagnosticResponse;
@@ -349,9 +350,7 @@ export type AccountExport = {
     }>;
 };
 
-export type DeleteAccountRequest = {
-    current_password: string;
-};
+export type DeleteAccountRequest = { current_password: string } | { provider_credential: NativeProviderCredential };
 
 export type MobileAuthRequest = {
     email: string;
@@ -362,6 +361,18 @@ export type MobileAuthRequest = {
 };
 
 export type MobileRegistrationRequest = MobileAuthRequest & Partial<RegistrationLegalAcceptance>;
+
+export type NativeProviderCredential = {
+    provider: SocialAuthProvider;
+    id_token: string;
+    nonce?: string;
+};
+
+export type MobileSocialAuthRequest = Omit<MobileAuthRequest, 'email' | 'password'> & Partial<RegistrationLegalAcceptance> & NativeProviderCredential & {
+    intent: 'login' | 'register';
+};
+
+export type MobileSocialProvidersResponse = { providers: SocialAuthProvider[] };
 
 export type BrowserAuthRequest = {
     email: string;

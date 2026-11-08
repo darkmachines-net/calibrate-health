@@ -6,6 +6,12 @@
   "main": "./dist/cjs/index.js",
   "types": "./index.ts",
   "exports": {
+    "./socialAuth": {
+      "types": "./socialAuth.ts",
+      "browser": "./socialAuth.ts",
+      "react-native": "./socialAuth.ts",
+      "default": "./dist/cjs/socialAuth.js"
+    },
     ".": {
       "types": "./index.ts",
       "browser": "./index.ts",

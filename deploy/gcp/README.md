@@ -135,11 +135,17 @@ login; it has no session or provider-secret access. Release has no direct secret
 
 For `auth_provider="local"`, set SMTP public settings in `application_environment`
 and select `SMTP_PASSWORD` before `serve=true`. For `auth_provider="firebase"`,
-Terraform enables email/password authentication, disables direct client signup and
-deletion, creates the web-app API key secret, and grants the API identity Firebase
+Terraform enables email/password authentication, disables direct client deletion,
+creates the web-app API key secret, and grants the API identity Firebase
 administration plus signing on itself. Calibrate's server owns consent and deletion;
 Firebase owns passwords and verification/recovery email. `EMAIL_DELIVERY_MODE` stays
 `disabled` and no SMTP credentials are required. Verify delivery before inviting users.
+Direct Firebase signup is disabled by default. Enabling `FIREBASE_SOCIAL_PROVIDERS`
+in `application_environment` allows provider identity creation for native Google/Apple
+sign-in; apply this configuration along with the backend flag. Firebase identities
+alone grant no Calibrate access: the backend still requires explicit registration,
+current hosted legal consent and an immutable SQL binding. Configure the providers
+in Firebase and the native clients as described in the [backend guide](../../backend/README.md#native-provider-sign-in).
 The sample uses Open Food Facts until provider credentials are available. FatSecret
 needs both credential versions and the matching `FOOD_DATA_PROVIDER`. Configure
 `ADMIN_USER_IDS` only after verifying control of an existing account as described in

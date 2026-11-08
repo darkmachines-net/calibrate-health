@@ -1,4 +1,4 @@
-/** @file settings: Coordinates account preferences, sessions, integrations, offline recovery, export, and account deletion. */
+/** @file Account settings, sessions, integrations, offline recovery and deletion with password or native provider proof. */
 
 import React, { useState } from 'react';
 import { Image, Platform, StyleSheet, View } from 'react-native';
@@ -18,8 +18,11 @@ import { TabScreen } from '../../../src/components/TabScreen';
 import { TextField } from '../../../src/components/TextField';
 import { SkeletonBlock } from '../../../src/components/SkeletonBlock';
 import { useAuth } from '../../../src/auth/AuthContext';
+import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
+import { acquireSocialCredential } from '../../../src/auth/nativeSocialAuth';
 import {
     canSubmitAccountDeletion,
+    DELETE_ACCOUNT_CONFIRMATION,
     deleteAccountAndClearLocalData,
     shareAccountExport
 } from '../../../src/account/accountData';
@@ -153,12 +156,15 @@ export function SettingsScreen({ category }: { category?: SettingsCategoryId }) 
         }
     });
     const deleteAccount = useMutation({
-        mutationFn: async () => {
+        mutationFn: async (provider?: SocialAuthProvider) => {
             if (!user) throw new Error('Sign in again before deleting this account.');
+            if (provider && deleteAccountConfirmation !== DELETE_ACCOUNT_CONFIRMATION) return;
+            const credential = provider ? await acquireSocialCredential(provider) : deleteAccountPassword;
+            if (!credential) return;
             const accountUserId = user.id;
             const accountServerUrl = serverUrl;
             await deleteAccountAndClearLocalData(deleteAccountPassword, {
-                deleteRemoteAccount: (currentPassword) => api.deleteAccount(currentPassword),
+                deleteRemoteAccount: () => api.deleteAccount(credential),
                 discardOfflineChanges,
                 clearHealthConnectData: healthConnect.clearAccountData,
                 clearWearData: () => clearWearAccountData(accountServerUrl, accountUserId),
@@ -287,7 +293,7 @@ export function SettingsScreen({ category }: { category?: SettingsCategoryId }) 
 
     function confirmDeleteAccount() {
         if (!canSubmitAccountDeletion(deleteAccountPassword, deleteAccountConfirmation)) return;
-        deleteAccount.mutate();
+        deleteAccount.mutate(undefined);
     }
 
     let goalSummary = 'Current goal unavailable';
@@ -610,6 +616,8 @@ export function SettingsScreen({ category }: { category?: SettingsCategoryId }) 
             </SettingsDetailSheet>
 
             <DeleteAccountSheet
+                serverUrl={serverUrl}
+                onProviderConfirm={provider => deleteAccount.mutate(provider)}
                 visible={isDeleteAccountOpen}
                 isOutboxReady={isOutboxReady}
                 password={deleteAccountPassword}

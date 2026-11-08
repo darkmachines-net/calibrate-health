@@ -9,6 +9,38 @@ Run `npm --prefix backend run typecheck`, `npm --prefix backend test`, and
 `npm --prefix backend run build` from the root. The supported development stack is
 the root `npm run dev` launcher. [prisma](prisma/README.md) owns migration guidance.
 
+## Native provider sign-in
+
+On a Firebase deployment, enable Google and Apple in Firebase Authentication before
+setting `FIREBASE_SOCIAL_PROVIDERS=google.com,apple.com` on the backend. The default
+is empty and `AUTH_PROVIDER=local` always advertises no providers. For GCP, supply
+the flag through `application_environment` and apply the corresponding Firebase
+signup permission change before testing registration. On other Firebase deployments,
+enable user creation for `signInWithIdp`; Firebase-only identities cannot access
+Calibrate without an explicit consent-gated SQL registration. Provider enablement and OAuth clients
+are configured in the Firebase/Google/Apple consoles. Native build configuration
+and platform scope are owned by the [mobile guide](../mobile/README.md#native-google-and-apple-sign-in).
+
+`GET /auth/mobile/providers` advertises the enabled subset. `POST /auth/mobile/social`
+exchanges a native provider ID token (and Apple's raw nonce) with Firebase's
+`accounts:signInWithIdp`, then verifies the resulting Firebase ID token with revocation
+checking. Only verified email and matching project, UID, provider and recent auth
+claims are accepted. SQL identity is resolved exclusively by project/UID. New SQL
+accounts require the registration intent and current hosted legal consent. Existing
+SQL email collisions never create an identity link; use the existing sign-in method.
+Firebase remains responsible for any provider linking within its own UID.
+
+Provider credentials are not stored or logged. The response is the normal Calibrate
+mobile session, with the existing security-generation guard, account restrictions,
+refresh rotation, logout and onboarding. A new provider identity discovered during
+login asks the user to use Create account; it does not create a SQL account or consent.
+Canceled/failed registration can leave an unbound Firebase identity; a later explicit
+registration may bind that same verified UID without deleting a remote identity.
+Account deletion also accepts fresh provider proof, but requires it to resolve to
+the already authenticated account. A different valid Google/Apple account cannot
+authorize deletion. The mobile UI retains the exact destructive confirmation and
+all existing offline, watch and device cleanup.
+
 ## Authentication and account isolation
 
 Browser sessions use Postgres-backed HttpOnly cookies, secure and host-scoped in

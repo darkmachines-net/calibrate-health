@@ -1,4 +1,4 @@
-/** @file Firebase credential lifecycle with immutable SQL identity binding, provider-owned email and fail-closed session reconciliation. */
+/** @file Firebase password and native provider credentials with immutable SQL binding and fail-closed session reconciliation. */
 import { randomUUID } from 'node:crypto';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth, type Auth, type UserRecord } from 'firebase-admin/auth';
@@ -9,9 +9,11 @@ import { revokeAccountCredentials } from './accountRevocation';
 import { USER_CLIENT_SELECT } from '../utils/userSerialization';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../../../shared/legalVersions';
 import { MS_PER_MINUTE } from '../utils/time';
+import { normalizeEmailCredential } from '../utils/authCredentials';
+import { SocialAuthRejected, type SocialCredential } from './socialAuth';
 
 type Settings = { projectId: string; apiKey: string; origin: string; emulatorHost?: string };
-type RestResponse = { idToken?: string; localId?: string; email?: string; error?: { message?: string } };
+type RestResponse = { idToken?: string; localId?: string; email?: string; needConfirmation?: boolean; error?: { message?: string } };
 const REJECTED_CODES = new Set(['INVALID_LOGIN_CREDENTIALS', 'EMAIL_NOT_FOUND', 'INVALID_PASSWORD', 'USER_DISABLED', 'INVALID_OOB_CODE', 'EXPIRED_OOB_CODE']);
 
 /** Read only provider error codes; provider messages and response bodies must never enter application logs. */
@@ -36,11 +38,19 @@ export class FirebaseAuthority {
       });
       const data = await response.json() as RestResponse;
       if (!response.ok) {
+        if (method === 'signInWithIdp' && response.status === 400) {
+          const code = data.error?.message?.split(' : ')[0];
+          if (['EMAIL_EXISTS', 'FEDERATED_USER_ID_ALREADY_LINKED'].includes(code ?? '')) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');
+          if (['INVALID_IDP_RESPONSE', 'INVALID_ID_TOKEN', 'MISSING_OR_INVALID_NONCE', 'USER_DISABLED'].includes(code ?? '')) throw new SocialAuthRejected();
+        }
         if (response.status === 400 && REJECTED_CODES.has(data.error?.message ?? '')) return null;
         throw new CredentialProviderUnavailable();
       }
       return data;
-    } catch { throw new CredentialProviderUnavailable(); }
+    } catch (error) {
+      if (error instanceof SocialAuthRejected) throw error;
+      throw new CredentialProviderUnavailable();
+    }
   }
 
   /** Fetch only the immutable mapped UID in this project; never link an account by matching its email. */
@@ -125,6 +135,63 @@ export class FirebaseAuthority {
       await this.auth.deleteUser(uid).catch(() => {});
       throw new CredentialProviderUnavailable();
     }
+  }
+
+  /**
+   * Exchange a native Google/Apple credential through Firebase, then resolve only its verified project/UID.
+   * New SQL accounts require explicit registration consent; email collisions never link local accounts.
+   * Provider credentials remain ephemeral and the returned security generation guards session issuance.
+   */
+  async authenticateSocial(credential: SocialCredential, registration: boolean, hosted: boolean): Promise<{ userId: number; version: number }> {
+    const postBody = new URLSearchParams({ providerId: credential.provider, id_token: credential.idToken });
+    if (credential.nonce) postBody.set('nonce', credential.nonce);
+    const signed = await this.request('signInWithIdp', {
+      requestUri: this.settings.origin, postBody: postBody.toString(), returnSecureToken: true
+    });
+    if (signed?.needConfirmation) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');
+    if (!signed?.idToken || !signed.localId) throw new SocialAuthRejected();
+    let token;
+    try { token = await this.auth.verifyIdToken(signed.idToken, true); }
+    catch (error) {
+      if (['auth/id-token-revoked', 'auth/id-token-expired', 'auth/invalid-id-token', 'auth/argument-error', 'auth/user-disabled', 'auth/user-not-found'].includes(providerCode(error) ?? '')) throw new SocialAuthRejected();
+      throw new CredentialProviderUnavailable();
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const email = normalizeEmailCredential(token.email);
+    if (token.uid !== signed.localId || token.aud !== this.settings.projectId ||
+        token.firebase?.sign_in_provider !== credential.provider || token.firebase?.tenant ||
+        !Number.isFinite(token.auth_time) || token.auth_time < now - 60 || token.auth_time > now + 30 ||
+        !email || token.email_verified !== true) throw new SocialAuthRejected();
+    const key = { project_id_uid: { project_id: this.settings.projectId, uid: token.uid } };
+    let identity = await this.database.firebaseIdentity.findUnique({ where: key });
+    if (!identity) {
+      if (!registration) throw new SocialAuthRejected('SOCIAL_REGISTRATION_REQUIRED');
+      const collision = await this.database.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
+      if (collision) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');
+      try {
+        await this.database.user.create({ data: {
+          email, password_hash: `!firebase:${randomUUID()}`, email_verified_at: new Date(),
+          firebase_identity: { create: { installation_id: this.settings.projectId, source_id: 'social-registration', project_id: this.settings.projectId, uid: token.uid } },
+          legal_acceptances: hosted ? { create: { terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION } } : undefined
+        } });
+      } catch (error) {
+        // Concurrent attempts may create this same immutable binding; never adopt a different email-matched UID.
+        if (providerCode(error) !== 'P2002') throw error;
+      }
+      identity = await this.database.firebaseIdentity.findUnique({ where: key });
+      if (!identity) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');
+    }
+    const before = await this.reconcile(identity.user_id);
+    if (!before.allowed) throw new SocialAuthRejected();
+    // Recheck revocation after reconciliation; a provider reset between exchange and lookup must not mint a fresh local session.
+    try { await this.auth.verifyIdToken(signed.idToken, true); }
+    catch (error) {
+      if (['auth/id-token-revoked', 'auth/id-token-expired', 'auth/invalid-id-token', 'auth/argument-error', 'auth/user-disabled', 'auth/user-not-found'].includes(providerCode(error) ?? '')) throw new SocialAuthRejected();
+      throw new CredentialProviderUnavailable();
+    }
+    const after = await this.reconcile(identity.user_id);
+    if (!after.allowed || after.version !== before.version) throw new SocialAuthRejected();
+    return { userId: identity.user_id, version: after.version };
   }
 
   /** Send Firebase's hosted verification or reset email; ephemeral provider tokens never leave this method. */

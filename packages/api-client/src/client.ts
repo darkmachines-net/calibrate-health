@@ -1,4 +1,4 @@
-/** @file Shared HTTP client, typed endpoint methods, authentication refresh, and privacy-safe API error decoding. */
+/** @file Typed HTTP endpoints, password/provider authentication, session refresh and privacy-safe API error decoding. */
 
 import type {
     AccountExport,
@@ -44,6 +44,9 @@ import type {
     MobileAuthRequest,
     MobileAuthResponse,
     MobileRegistrationRequest,
+    MobileSocialAuthRequest,
+    MobileSocialProvidersResponse,
+    NativeProviderCredential,
     MobileSessionSummary,
     EmailVerificationConfirmRequest,
     EmailVerificationConfirmResponse,
@@ -560,6 +563,16 @@ export class CalibrateApiClient {
             auth: false,
             json: payload
         });
+    }
+
+    /** Discover explicitly enabled native providers without sending account credentials. */
+    getMobileSocialProviders(): Promise<MobileSocialProvidersResponse> {
+        return this.request<MobileSocialProvidersResponse>('/auth/mobile/providers', { auth: false, cache: 'no-store' });
+    }
+
+    /** Exchange an ephemeral native provider credential for Calibrate's ordinary rotating device session. */
+    authenticateMobileSocial(payload: MobileSocialAuthRequest): Promise<MobileAuthResponse> {
+        return this.request<MobileAuthResponse>('/auth/mobile/social', { method: 'POST', auth: false, json: payload });
     }
 
     /** Exchanges the supplied refresh token for rotated credentials; the generic result preserves device-specific fields. */
@@ -1185,11 +1198,11 @@ export class CalibrateApiClient {
         return this.request<AccountExport>('/api/user/account/export');
     }
 
-    /** Permanently deletes the current account after verifying its password. */
-    deleteAccount(currentPassword: string): Promise<void> {
+    /** Permanently delete the current account after password or same-account native provider reauthentication. */
+    deleteAccount(credential: string | NativeProviderCredential): Promise<void> {
         return this.request<void>('/api/user/account', {
             method: 'DELETE',
-            json: { current_password: currentPassword }
+            json: typeof credential === 'string' ? { current_password: credential } : { provider_credential: credential }
         });
     }
 
