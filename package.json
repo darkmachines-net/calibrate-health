@@ -118,7 +118,7 @@
     "node": "^22.14.0 || ^24.3.0 || >=26.0.0"
   },
   "devDependencies": {
-    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#7bebb994427f2c7acced4f472764dfe5a4e9196d",
+    "@mchartier/expo-release": "git+https://github.com/darkmachines-net/expo-release-template.git#5a9175108ba6c72cb7bd72faa62cc70ec6c7fc2a",
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "^1.61.1",
