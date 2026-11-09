@@ -4,7 +4,7 @@ import type { Locator, Page, Route } from '@playwright/test';
 import { expect } from './fixtures';
 import { ROUTE_IDS } from '../../mobile/src/navigation/routeRegistry';
 import type { UxLocatorContract } from './ux-matrix';
-import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import { installOnboardingAccount } from './onboarding.fixture';
 
 const RESUME_CONFIRMATION_DUE_PAUSE_RESPONSE = {
@@ -94,9 +94,9 @@ export async function installAccessibilityApiExtensions(
     next_cursor: null,
   }));
 
-  if (surfaceId === 'plan-check-adjustment-review' || routeId === 'plan-check') {
-    await page.route('**/api/v1/calibration/status', (route) => {
-      return fulfillJson(route, PLAN_CHECK_RECOMMENDATION_STATUS);
+  if (routeId === 'plan-check') {
+    await page.route('**/api/v1/plan-check', (route) => {
+      return fulfillJson(route, PLAN_CHECK_STATUS);
     });
   }
 

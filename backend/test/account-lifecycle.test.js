@@ -226,6 +226,10 @@ const exportRow = {
     created_at: at('2025-01-04T18:00:00.000Z'),
     applied_at: at('2025-01-04T20:00:00.000Z')
   }],
+  weekly_progress_reports: [{
+    report_date: at('2026-11-08'), timezone: 'America/Los_Angeles', generated_at: at('2026-11-08T12:00:00Z'),
+    model: 'test-model', summary: 'A week of progress.', highlights: ['Four food days.'], next_step: 'Log weight.', evidence: { coverage: 4 }
+  }],
   calorie_plan_revisions: [{
     id: 12,
     user_id: 7,
@@ -254,7 +258,9 @@ test('account export returns canonical versioned tracking data without credentia
   const result = await exportAccountData(7, at('2026-07-11T20:00:00.000Z'));
 
   assert.equal(result.format, 'calibrate-account-export');
-  assert.equal(result.version, 11);
+  assert.equal(result.version, 12);
+  assert.equal(result.weekly_progress_reports[0].summary, 'A week of progress.');
+  assert.equal(result.weekly_progress_reports[0].report_date, '2026-11-08');
   assert.equal(result.exported_at, '2026-07-11T20:00:00.000Z');
   assert.equal(result.account.date_of_birth, '1990-05-03');
   assert.equal(result.account.email_verified_at, '2025-01-02T12:00:00.000Z');
@@ -349,7 +355,7 @@ test('portable export preserves captured and unavailable day plans through JSON 
     const { exportAccountData } = loadAccountLifecycle({ user: { findUnique: async () => row } });
     const exported = JSON.parse(JSON.stringify(await exportAccountData(7)));
     const day = exported.food_log_days[0];
-    assert.equal(exported.version, 11);
+    assert.equal(exported.version, 12);
     assert.equal(day.status, 'OPEN');
     assert.equal(day.comparison_target_kcal, snapshot.comparison_target_kcal);
     assert.equal(day.comparison_maintenance_kcal, snapshot.comparison_maintenance_kcal);
@@ -364,6 +370,6 @@ test('export v10 retains both manual pace and nullable legacy revision provenanc
   ] };
   const { exportAccountData } = loadAccountLifecycle({ user: { findUnique: async () => row } });
   const wire = JSON.parse(JSON.stringify(await exportAccountData(7)));
-  assert.equal(wire.version, 11);
+  assert.equal(wire.version, 12);
   assert.deepEqual(wire.calorie_plan_revisions.map(revision => revision.configured_daily_deficit), [250, null]);
 });

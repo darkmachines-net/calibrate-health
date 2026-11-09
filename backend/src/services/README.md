@@ -46,12 +46,16 @@ Unavailable trends retain factual observation recency and raw measurements but
 expose null model estimates. Legacy fallback values must never masquerade as an
 available trend. Older context has no invented model interval.
 
-[calibration.ts](calibration.ts) bounds food evidence to the personal reference
-horizon and weight evidence to the action window plus its boundary. Recommendation
-fingerprints do not depend on unrelated goal-to-date descriptive reads. Apply/undo
-revalidate the materialized recommendation; accepted revisions preserve configured
-deficit and profile TDEE. Selecting `WEIGHT_TREND_MODEL=v1` suppresses v4 automatic
-recommendations and stales pending ones without undoing accepted/scheduled plans.
+[planCheck.ts](planCheck.ts) reads descriptive 7/14/28-day windows in a consistent
+account-local snapshot. [planCheckSummary.ts](planCheckSummary.ts) computes simple
+observed rates and logged-day averages without calorie-plan eligibility, inferred intake,
+or target decisions. [Weekly reports](weeklyReports/README.md) persist optional Sunday AI
+analysis separately from the read path.
+
+[calibration.ts](calibration.ts) only supports older clients reading or undoing previously
+accepted future revisions. New recommendation applications are rejected; no production
+request calls the retired calibration evaluator. Existing approved corrections continue
+to preserve the configured deficit and profile-estimated TDEE.
 
 ## Replay, snapshots, and reminders
 

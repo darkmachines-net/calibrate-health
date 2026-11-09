@@ -252,6 +252,7 @@ async function verifyUpgradedSchema(client, schemaName, userId, migrationNames) 
     'SyncChange',
     'WearPairingCredential',
     'FoodTrackingPause',
+    'WeeklyProgressReport',
   ];
   const tableResult = await client.query(
     `SELECT "table_name" FROM information_schema.tables
@@ -262,6 +263,13 @@ async function verifyUpgradedSchema(client, schemaName, userId, migrationNames) 
   assert.deepEqual(tableResult.rows.map((row) => row.table_name), [...expectedNewTables].sort());
   assert.equal((await client.query(`SELECT count(*)::int AS count FROM ${schema}."DailyCaloriePlan"`)).rows[0].count, 0,
     'Upgrade must not manufacture historical daily plans');
+  // Reports start empty and the account/Sunday key remains the durable duplicate-delivery boundary.
+  assert.equal((await client.query(`SELECT count(*)::int AS count FROM ${schema}."WeeklyProgressReport"`)).rows[0].count, 0);
+  await client.query(`INSERT INTO ${schema}."WeeklyProgressReport" ("user_id", "report_date", "timezone") VALUES ($1, '2026-11-08', 'UTC')`, [userId]);
+  await assert.rejects(
+    client.query(`INSERT INTO ${schema}."WeeklyProgressReport" ("user_id", "report_date", "timezone") VALUES ($1, '2026-11-08', 'UTC')`, [userId]),
+    error => error.code === '23505'
+  );
 
   const columnResult = await client.query(
     `SELECT "column_name" FROM information_schema.columns

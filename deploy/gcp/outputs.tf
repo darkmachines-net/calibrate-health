@@ -8,6 +8,15 @@ output "workload_identity_provider" {
 output "release_service_account" {
   value = google_service_account.service["release"].email
 }
+output "openai_workload_identity" {
+  description = "Public Google identity claims for the OpenAI project service-account mapping; no credentials."
+  value = {
+    email    = google_service_account.service["api"].email
+    subject  = google_service_account.service["api"].unique_id
+    issuer   = "https://accounts.google.com"
+    audience = lookup(var.application_environment, "OPENAI_WIF_AUDIENCE", "https://api.openai.com/v1")
+  }
+}
 output "sql_connection" {
   value = google_sql_database_instance.postgres.connection_name
 }

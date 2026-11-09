@@ -183,6 +183,8 @@ model User {
   calibration_recommendations CalibrationRecommendation[]
   /// Accepted target adjustments, dated so changes take effect on a user-local day boundary.
   calorie_plan_revisions CaloriePlanRevision[]
+  /// Immutable Sunday analyses; provider credentials and raw prompts are never stored here.
+  weekly_progress_reports WeeklyProgressReport[]
   /// Purpose-bound, one-time verification and recovery credentials. Only hashes are stored.
   account_action_tokens AccountActionToken[]
   /// Versioned user consent history for Terms and Privacy.
@@ -191,6 +193,28 @@ model User {
   mcp_oauth_authorization_codes McpOAuthAuthorizationCode[]
   /// Revocable OAuth grants that let remote MCP clients read this account's selected data.
   mcp_oauth_grants McpOAuthGrant[]
+}
+
+model WeeklyProgressReport {
+  id Int @id @default(autoincrement())
+  user_id Int
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  report_date DateTime @db.Date
+  timezone String
+  status String @default("PENDING")
+  /// Expiring ownership lets Cloud Tasks recover a worker that died before committing a report.
+  lease_token String?
+  lease_expires_at DateTime?
+  model String?
+  summary String?
+  highlights Json?
+  next_step String?
+  /// Aggregated, identifier-free evidence used for this report, retained for account export.
+  evidence Json?
+  generated_at DateTime?
+  created_at DateTime @default(now())
+
+  @@unique([user_id, report_date])
 }
 
 model FirebaseIdentity {

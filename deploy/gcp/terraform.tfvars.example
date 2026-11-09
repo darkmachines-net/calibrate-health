@@ -22,12 +22,19 @@ billing_account = ""
 # Firebase owns verification/recovery email. SMTP settings apply only to auth_provider="local".
 application_environment = {
   FOOD_DATA_PROVIDER = "openfoodfacts"
+  # Sunday reports require an OpenAI mapping for the attached calibrate-api Google identity.
+  # OPENAI_IDENTITY_PROVIDER_ID = "YOUR_OPENAI_PROVIDER_ID"
+  # OPENAI_SERVICE_ACCOUNT_ID   = "YOUR_OPENAI_SERVICE_ACCOUNT_ID"
+  # OPENAI_WIF_AUDIENCE         = "https://api.openai.com/v1"
+  # OPENAI_WEEKLY_REPORT_MODEL  = "gpt-6-luna"
   # SMTP_HOST     = "smtp.example.com"
   # SMTP_PORT     = "587"
   # SMTP_SECURE   = "false"
   # SMTP_USERNAME = "provider-user"
   # SMTP_FROM     = "Calibrate <noreply@calibratehealth.app>"
 }
+# Enable only after the OpenAI mapping, report API and migration are ready.
+# weekly_reports_enabled = true
 secret_versions = {
   # SMTP_PASSWORD = "1"
 }

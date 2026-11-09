@@ -34,7 +34,7 @@ reading cannot revise earlier emitted points.
 
 The 95% band estimates underlying weight, not the next scale reading. Short-term
 reading variability is separate. The latest velocity state supplies public current
-weekly pace; calibration instead requests a robust average slope and bootstrap over
+weekly pace; the retired calibration evaluator used a robust average slope and bootstrap over
 its exact uninterrupted food-evidence window. Pre-window data cannot affect that
 regression or seed. A reset inside the window makes it unavailable, never substitutes
 instantaneous pace. [weightTrendParameters.ts](weightTrendParameters.ts) owns numeric
@@ -48,14 +48,13 @@ An intentional fixture/model change can regenerate it with
 RMSE, reversal, spike, ordering/unit and append-stability gates; do not advance the
 approved fingerprint to hide an unreviewed numeric change.
 
-## Calibration assessment
+## Plan check contracts and legacy calibration
 
-[calibration.ts](calibration.ts) separates retrospective pace assessment from target
-recommendation. Evidence spans 14-42 uninterrupted days with at least three weights,
-a current reading and a sufficiently narrow interval. Food affects the target
-decision, not the displayed weight interval. Pauses/segment resets restart evidence.
-Off-track pace alone does not imply a wrong target. Target-correction recommendations
-are limited to adult loss goals and require user acceptance; maintenance/gain still receive an assessment. Goal rate
-is a planning target, not a forecast. [calibrationScenarios.ts](calibrationScenarios.ts)
-is the deterministic product lab input; client behavior lives in
-[Progress](../mobile/src/progress/README.md).
+[planCheck.ts](planCheck.ts) defines descriptive tracking-window and saved-report wire
+shapes. [Progress](../mobile/src/progress/README.md) owns their presentation contract;
+[backend services](../backend/src/services/README.md) own calculation and persistence.
+
+[calibration.ts](calibration.ts) and [calibrationScenarios.ts](calibrationScenarios.ts)
+retain legacy wire types and synthetic historical evaluator diagnostics. Production
+routes no longer evaluate or create target recommendations. Accepted corrections remain
+part of calorie planning; this compatibility does not authorize new adjustments.
