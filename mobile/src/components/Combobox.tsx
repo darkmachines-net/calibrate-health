@@ -1,4 +1,4 @@
-/** @file Accessible selectable combobox and listbox primitives with shared option and keyboard behavior. */
+/** @file Accessible combobox and listbox primitives with content-sized option sheets and keyboard navigation. */
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -381,6 +381,7 @@ export function Combobox<T extends string>({
                             title={label}
                             accessibilityLabel={`${label} options`}
                             showCloseButton
+                            pinHeader
                             scrollable={false}
                             maxHeight="72%"
                             initialFocusRef={searchable ? searchRef : undefined}
@@ -463,7 +464,7 @@ function createStyles(theme: AppTheme) {
             fontWeight: '600'
         },
         dialogContent: {
-            flex: 1,
+            flexShrink: 1,
             minHeight: 0,
             gap: theme.spacing.md
         },
@@ -479,7 +480,9 @@ function createStyles(theme: AppTheme) {
             ...theme.typography.styles.body
         },
         listbox: {
-            flex: 1,
+            flexGrow: 0,
+            flexShrink: 1,
+            minHeight: 0,
             borderColor: theme.colors.outline,
             borderWidth: theme.stroke.control,
             borderRadius: theme.radius.md,

@@ -1,4 +1,4 @@
-/** @file Save Meal As Recipe Sheet: Create a reusable immutable recipe from selected entries in one logged meal. */
+/** @file Creates a reusable recipe from a logged meal in a scrollable editor with a fixed heading. */
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -106,6 +106,7 @@ export const SaveMealAsRecipeSheet: React.FC<SaveMealAsRecipeSheetProps> = ({
             description={meal ? `${formatMealPeriod(meal)} | ${formatDateOnlyForDisplay(date)}` : formatDateOnlyForDisplay(date)}
             maxHeight="92%"
             showCloseButton
+            pinHeader
             dismissDisabled={saveRecipe.isPending}
             isDirty={hasUnsavedDraft}
             confirmDismiss={confirmDiscardChanges}

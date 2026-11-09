@@ -1,9 +1,26 @@
-/** @file Regression coverage for Keyboard Aware Scroll View: KeyboardAwareScrollView. */
+/** @file Covers the keyboard scroller's focus bounds, optional context, and inset ownership. */
 
 import { Keyboard, StyleSheet } from 'react-native';
 import { act, render } from '@testing-library/react-native';
 import { AppText } from './AppText';
-import { KeyboardAwareScrollView } from './KeyboardAwareScrollView';
+import { KeyboardAwareScrollView, resolveFocusedFieldOffset } from './KeyboardAwareScrollView';
+
+describe('resolveFocusedFieldOffset', () => {
+    it.each([
+        [120, 48, 100, 100, 100],
+        [180, 48, 100, 100, 136],
+        [60, 48, 100, 100, 52],
+        [100, 96, 80, 64, 100],
+        [100, 48, 80, 50, 99]
+    ])('fits a field at %d with height %d, scroll offset %d and viewport %d', (top, height, offset, viewport, expected) => {
+        expect(resolveFocusedFieldOffset(top, height, offset, viewport)).toBe(expected);
+    });
+
+    it('reveals context when there is room and prioritizes the field on a short viewport', () => {
+        expect(resolveFocusedFieldOffset(180, 48, 100, 130, 60)).toBe(166);
+        expect(resolveFocusedFieldOffset(180, 48, 100, 100, 60)).toBe(136);
+    });
+});
 
 describe('KeyboardAwareScrollView', () => {
     const keyboardListeners: Partial<Record<string, () => void>> = {};
@@ -105,5 +122,17 @@ describe('KeyboardAwareScrollView', () => {
             view.container.queryAll((node) => node.type === 'RCTScrollView')[0].props.contentContainerStyle
         );
         expect(contentStyle.paddingBottom).toBe(160);
+    });
+
+    it('does not add keyboard padding when the parent already fits above the keyboard', async () => {
+        const view = await render(
+            <KeyboardAwareScrollView keyboardBounded contentContainerStyle={{ paddingBottom: 12 }}>
+                <AppText>Short sheet</AppText>
+            </KeyboardAwareScrollView>
+        );
+        await act(() => (keyboardListeners.keyboardDidShow ?? keyboardListeners.keyboardWillShow)?.());
+        const scroller = view.container.queryAll((node) => node.type === 'RCTScrollView')[0];
+        expect(StyleSheet.flatten(scroller.props.contentContainerStyle).paddingBottom).toBe(12);
+        expect(scroller.props.automaticallyAdjustKeyboardInsets).toBe(false);
     });
 });

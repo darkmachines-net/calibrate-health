@@ -1,4 +1,4 @@
-/** @file Weight Value Input: Renders unit-aware weight entry and stepping controls that adapt to enlarged text. */
+/** @file Unit-aware weight input with text scaling and steppers that yield to a software keypad. */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -14,6 +14,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { WeightUnit } from '@calibrate/shared';
 import { AppText } from './AppText';
 import { useFocusVisible } from './useFocusVisible';
+import { useSoftwareKeyboardVisible } from '../hooks/useSoftwareKeyboardVisible';
+import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight';
 import { type AppTheme, useAppTheme } from '../theme';
 import { formatWeightUnit } from '../utils/format';
 import {
@@ -46,7 +48,7 @@ const WEIGHT_STEPPER_SIZE = 56;
 const WEIGHT_UNIT_STACK_FONT_SCALE = 1.3; // Moves the unit below enlarged input text instead of over the digits.
 const DEFAULT_HELPER_TEXT = 'Use one decimal place for a precise, consistent trend.';
 
-/** Renders unit-aware weight entry and stepping controls that adapt to enlarged text. */
+/** Renders an editable measurement with steppers available when its software keypad is closed. */
 export const WeightValueInput: React.FC<WeightValueInputProps> = ({
     label = 'Weight',
     helperText = DEFAULT_HELPER_TEXT,
@@ -66,6 +68,8 @@ export const WeightValueInput: React.FC<WeightValueInputProps> = ({
     const styles = useMemo(() => createStyles(theme), [theme]);
     const measurementInputRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
     const [webFontScale, setWebFontScale] = useState(1);
+    const [isFocused, setIsFocused] = useState(false);
+    const isKeypadVisible = useSoftwareKeyboardVisible(useVisualViewportHeight()) && isFocused;
     const effectiveFontScale = Math.max(fontScale, webFontScale);
     const stackUnit = effectiveFontScale >= WEIGHT_UNIT_STACK_FONT_SCALE;
     const valueHeight = Math.max(WEIGHT_VALUE_HEIGHT, Math.ceil(WEIGHT_VALUE_LINE_HEIGHT * effectiveFontScale) + theme.spacing.md);
@@ -112,6 +116,8 @@ export const WeightValueInput: React.FC<WeightValueInputProps> = ({
                     accessibilityHint="Enter a weight using one decimal place."
                     autoCorrect={false}
                     editable={editable}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     inputMode="decimal"
                     keyboardType="decimal-pad"
                     onChangeText={(nextValue) => onChangeText(normalizeWeightInputText(nextValue))}
@@ -133,42 +139,44 @@ export const WeightValueInput: React.FC<WeightValueInputProps> = ({
                     <AppText accessible={false} style={styles.unit}>{formatWeightUnit(unit)}</AppText>
                 </View>
             </View>
-            <View style={styles.stepperRow}>
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Decrease ${measurementLabel} by ${step} ${getSpokenWeightUnit(unit, step !== 1)}`}
-                    accessibilityValue={{ text: accessibleValue }}
-                    disabled={!editable}
-                    onFocus={decreaseFocus.handleFocus}
-                    onBlur={decreaseFocus.handleBlur}
-                    onPress={() => adjust(-step)}
-                    style={({ pressed }) => [
-                        styles.stepperButton,
-                        decreaseFocus.focusVisible && styles.focusVisible,
-                        !editable && styles.disabled,
-                        pressed && editable && styles.pressed
-                    ]}
-                >
-                    <Ionicons name="remove" size={24} color={theme.colors.onSurface} />
-                </Pressable>
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Increase ${measurementLabel} by ${step} ${getSpokenWeightUnit(unit, step !== 1)}`}
-                    accessibilityValue={{ text: accessibleValue }}
-                    disabled={!editable}
-                    onFocus={increaseFocus.handleFocus}
-                    onBlur={increaseFocus.handleBlur}
-                    onPress={() => adjust(step)}
-                    style={({ pressed }) => [
-                        styles.stepperButton,
-                        increaseFocus.focusVisible && styles.focusVisible,
-                        !editable && styles.disabled,
-                        pressed && editable && styles.pressed
-                    ]}
-                >
-                    <Ionicons name="add" size={24} color={theme.colors.onSurface} />
-                </Pressable>
-            </View>
+            {!isKeypadVisible && (
+                <View style={styles.stepperRow}>
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Decrease ${measurementLabel} by ${step} ${getSpokenWeightUnit(unit, step !== 1)}`}
+                        accessibilityValue={{ text: accessibleValue }}
+                        disabled={!editable}
+                        onFocus={decreaseFocus.handleFocus}
+                        onBlur={decreaseFocus.handleBlur}
+                        onPress={() => adjust(-step)}
+                        style={({ pressed }) => [
+                            styles.stepperButton,
+                            decreaseFocus.focusVisible && styles.focusVisible,
+                            !editable && styles.disabled,
+                            pressed && editable && styles.pressed
+                        ]}
+                    >
+                        <Ionicons name="remove" size={24} color={theme.colors.onSurface} />
+                    </Pressable>
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Increase ${measurementLabel} by ${step} ${getSpokenWeightUnit(unit, step !== 1)}`}
+                        accessibilityValue={{ text: accessibleValue }}
+                        disabled={!editable}
+                        onFocus={increaseFocus.handleFocus}
+                        onBlur={increaseFocus.handleBlur}
+                        onPress={() => adjust(step)}
+                        style={({ pressed }) => [
+                            styles.stepperButton,
+                            increaseFocus.focusVisible && styles.focusVisible,
+                            !editable && styles.disabled,
+                            pressed && editable && styles.pressed
+                        ]}
+                    >
+                        <Ionicons name="add" size={24} color={theme.colors.onSurface} />
+                    </Pressable>
+                </View>
+            )}
             {helperText ? <AppText variant="caption">{helperText}</AppText> : null}
         </View>
     );

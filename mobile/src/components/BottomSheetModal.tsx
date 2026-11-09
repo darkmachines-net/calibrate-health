@@ -1,4 +1,4 @@
-/** @file Cross-platform modal sheet layout, focus isolation, stacked-dialog accessibility, and dismissal behavior. */
+/** @file Content-sized mobile sheets and adaptive dialogs with bounded scrolling, focus isolation, and dismissal. */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,7 +22,8 @@ import {
 } from '../layout/adaptiveLayout';
 import { type AppTheme, useAppTheme } from '../theme';
 import { useReducedMotionPreference } from '../hooks/useReducedMotionPreference';
-import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight';
+import { useVisualViewportHeight, useVisualViewportOffsetTop } from '../hooks/useVisualViewportHeight';
+import { useSoftwareKeyboardVisible } from '../hooks/useSoftwareKeyboardVisible';
 import { useModalFocusManagement, type ModalFocusableTarget } from '../hooks/useModalFocusManagement';
 import { getKeyboardAvoidingBehavior } from '../utils/keyboard';
 import { AppIconButton } from './AppIconButton';
@@ -41,6 +42,8 @@ export type BottomSheetModalProps = {
     showCloseButton?: boolean;
     showHandle?: boolean;
     scrollable?: boolean;
+    fillAvailableHeight?: boolean;
+    pinHeader?: boolean;
     footer?: React.ReactNode;
     dismissDisabled?: boolean;
     contentKey?: React.Key;
@@ -53,7 +56,7 @@ export type BottomSheetModalProps = {
     isDirty?: boolean;
     confirmDismiss?: () => boolean | Promise<boolean>;
     contentStyle?: StyleProp<ViewStyle>;
-    revealFocusedInputOnFocus?: boolean;
+    keyboardContextRef?: React.RefObject<React.ComponentRef<typeof View> | null>;
 };
 
 export const ADAPTIVE_DIALOG_BREAKPOINT = TABLET_LAYOUT_BREAKPOINT;
@@ -66,6 +69,7 @@ const SHEET_OPEN_DURATION_MS = 280; // Gives full-height bottom travel a smooth 
 const SHEET_CLOSE_DURATION_MS = 200; // Keeps dismissal responsive while returning below the viewport.
 const WEB_FIXED_POSITION = 'fixed' as ViewStyle['position']; // Keeps portal sheets anchored while the underlying web page is scrolled.
 const SHEET_CLOSE_ROW_MAX_WIDTH = 800; // Aligns an optional close action with wide detail-sheet content.
+const PINNED_HEADER_FONT_SCALE_LIMIT = 1.3; // Lets enlarged headings scroll to leave room for fields on short screens.
 let activeWebBottomSheets = 0;
 let webAppRoot: HTMLElement | null = null;
 let webAppRootAriaHidden: string | null = null;
@@ -173,9 +177,9 @@ export function resolveSheetEntranceOffset(viewportHeight: number, isDialog: boo
 }
 
 /**
- * Presents as a mobile bottom sheet or a bounded dialog on larger viewports.
- * Keep it to a short contextual task, picker, preview, or confirmation; use a
- * registered route for browsable, multi-section, or independently managed work.
+ * Fits content up to a viewport ceiling, scrolling the body independently of fixed controls and footer.
+ * Use fillAvailableHeight for list workspaces that need a definite viewport of their own.
+ * Keep independently managed work in a registered route.
  */
 export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     visible,
@@ -186,6 +190,8 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     showCloseButton = false,
     showHandle = true,
     scrollable = true,
+    fillAvailableHeight = false,
+    pinHeader = false,
     footer,
     dismissDisabled = false,
     contentKey,
@@ -198,14 +204,16 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     isDirty = false,
     confirmDismiss,
     contentStyle,
-    revealFocusedInputOnFocus = false
+    keyboardContextRef
 }) => {
     const insets = useSafeAreaInsets();
     const theme = useAppTheme();
     const styles = React.useMemo(() => createStyles(theme), [theme]);
     const reduceMotion = useReducedMotionPreference();
     const visualViewportHeight = useVisualViewportHeight();
-    const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+    const visualViewportOffsetTop = useVisualViewportOffsetTop();
+    const isKeyboardVisible = useSoftwareKeyboardVisible(visualViewportHeight);
+    const { width: viewportWidth, height: viewportHeight, fontScale } = useWindowDimensions();
     const [shouldRender, setShouldRender] = useState(visible);
     const [presentationReady, setPresentationReady] = useState(false);
     const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -222,6 +230,8 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     const sheetAlignment: ViewStyle['alignSelf'] = isDialog ? 'center' : 'flex-start';
     const sheetLeftInset = isDialog ? 0 : insets.left;
     const modalAccessibilityLabel = title ?? accessibilityLabel;
+    const hasPinnedHeader = pinHeader && Boolean(title || description) && fontScale < PINNED_HEADER_FONT_SCALE_LIMIT;
+    const bottomInset = isKeyboardVisible ? 0 : insets.bottom;
 
     const animateIn = useCallback(() => {
         Animated.parallel([
@@ -309,46 +319,30 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         inputRange: [0, 1],
         outputRange: [0, resolveSheetEntranceOffset(viewportHeight, isDialog)]
     });
-    let sheetTopControl: React.ReactNode = null;
-    if (showCloseButton) {
-        sheetTopControl = (
-            <View style={styles.closeRow}>
-                <AppIconButton
-                    icon="close"
-                    accessibilityLabel={`Close ${modalAccessibilityLabel.toLowerCase()}`}
-                    variant="ghost"
-                    disabled={dismissDisabled}
-                    onPress={() => {
-                        void requestDismiss();
-                    }}
-                />
-            </View>
-        );
-    } else if (showHandle && !isDialog) {
-        sheetTopControl = <View accessible={false} aria-hidden style={styles.handle} />;
-    }
-    const fixedSheetHeight = resolveFixedSheetHeight(maxHeight, visualViewportHeight);
-    const dialogHeight = resolveFixedSheetHeight(maxHeight, visualViewportHeight ?? viewportHeight);
+    const closeButton = showCloseButton && (
+        <AppIconButton
+            icon="close"
+            accessibilityLabel={`Close ${modalAccessibilityLabel.toLowerCase()}`}
+            variant="ghost"
+            disabled={dismissDisabled}
+            onPress={() => { void requestDismiss(); }}
+        />
+    );
+    const heightLimit = isKeyboardVisible && !isDialog && !fillAvailableHeight ? '100%' : maxHeight;
+    const sheetHeight = resolveFixedSheetHeight(heightLimit, visualViewportHeight);
+    const dialogHeight = resolveFixedSheetHeight(heightLimit, visualViewportHeight ?? viewportHeight);
     const boundedDialogHeight = typeof dialogHeight === 'number'
         ? Math.min(dialogHeight, Math.max(0, (visualViewportHeight ?? viewportHeight) - (dialogVerticalInset * 2)))
         : dialogHeight;
-    const usesFixedSheetHeight = !scrollable || Boolean(footer);
-    let panelMaxHeight: ViewStyle['maxHeight'] = maxHeight;
-    let panelHeight: ViewStyle['height'];
-    if (isDialog) {
-        panelMaxHeight = boundedDialogHeight;
-        if (usesFixedSheetHeight) panelHeight = boundedDialogHeight;
-    } else if (usesFixedSheetHeight) {
-        panelMaxHeight = fixedSheetHeight;
-        panelHeight = fixedSheetHeight;
-    }
+    const panelHeight = fillAvailableHeight ? (isDialog ? boundedDialogHeight : sheetHeight) : undefined;
+    let panelMaxHeight = isDialog ? boundedDialogHeight : sheetHeight;
     if (Platform.OS === 'web' && (typeof panelMaxHeight === 'number' || typeof panelMaxHeight === 'string')) {
         // Portaled sheets must also fit inside the root's CSS safe-area padding.
         const maximum = typeof panelMaxHeight === 'number' ? `${panelMaxHeight}px` : panelMaxHeight;
         panelMaxHeight = `min(${maximum}, 100%)` as ViewStyle['maxHeight'];
     }
     const modalHeader = title || description ? (
-        <View style={styles.modalHeader}>
+        <View style={[styles.modalHeader, hasPinnedHeader && styles.pinnedHeaderCopy]}>
             {title && (
                 <AppText nativeID={titleId} variant="section" accessibilityRole="header">
                     {title}
@@ -361,6 +355,14 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
             )}
         </View>
     ) : null;
+    let sheetTopControl: React.ReactNode = null;
+    if (hasPinnedHeader) {
+        sheetTopControl = <View style={styles.pinnedHeader}>{modalHeader}{closeButton}</View>;
+    } else if (closeButton) {
+        sheetTopControl = <View style={styles.closeRow}>{closeButton}</View>;
+    } else if (showHandle && !isDialog) {
+        sheetTopControl = <View accessible={false} aria-hidden style={styles.handle} />;
+    }
 
     return (
         <Modal
@@ -387,9 +389,11 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                     styles.root,
                     isDialog && styles.dialogRoot,
                     isDialog && { paddingVertical: dialogVerticalInset },
+                    !isDialog && isKeyboardVisible && { paddingTop: insets.top },
                     webSafeAreaPadding(isDialog ? theme.spacing.lg : 0),
+                    !isDialog && isKeyboardVisible && Platform.OS === 'web' && { paddingBottom: 0 },
                     visualViewportHeight !== undefined && styles.webViewportRoot,
-                    visualViewportHeight !== undefined && { height: visualViewportHeight }
+                    visualViewportHeight !== undefined && { height: visualViewportHeight, top: visualViewportOffsetTop }
                 ]}
             >
                 <Pressable
@@ -420,7 +424,6 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                     style={[
                         styles.sheet,
                         isDialog && styles.dialog,
-                        usesFixedSheetHeight && styles.fixedHeightSheet,
                         {
                             width: sheetWidth,
                             alignSelf: sheetAlignment,
@@ -442,19 +445,22 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                             key={contentKey}
                             testID="bottom-sheet-scroll"
                             style={styles.scroll}
-                            revealFocusedInputOnFocus={revealFocusedInputOnFocus}
+                            keyboardBounded
+                            alwaysBounceVertical={false}
+                            keyboardContextRef={keyboardContextRef}
+                            keyboardDismissMode="none"
                             contentContainerStyle={[
                                 styles.content,
                                 {
                                     paddingTop: sheetTopControl ? theme.spacing.sm : theme.spacing.md,
                                     paddingBottom: footer
                                         ? 0
-                                        : Math.max(theme.spacing.lg, insets.bottom + theme.spacing.sm)
+                                        : Math.max(theme.spacing.lg, bottomInset + theme.spacing.sm)
                                 },
                                 contentStyle
                             ]}
                         >
-                            {modalHeader}
+                            {!hasPinnedHeader && modalHeader}
                             {children}
                         </KeyboardAwareScrollView>
                     ) : (
@@ -463,16 +469,17 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                             style={[
                                 styles.content,
                                 styles.fixedContent,
+                                fillAvailableHeight && styles.fillContent,
                                 {
                                     paddingTop: sheetTopControl ? theme.spacing.sm : theme.spacing.md,
                                     paddingBottom: footer
                                         ? 0
-                                        : Math.max(theme.spacing.lg, insets.bottom + theme.spacing.sm)
+                                        : Math.max(theme.spacing.lg, bottomInset + theme.spacing.sm)
                                 },
                                 contentStyle
                             ]}
                         >
-                            {modalHeader}
+                            {!hasPinnedHeader && modalHeader}
                             {children}
                         </View>
                     )}
@@ -480,7 +487,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
                         <View
                             style={[
                                 styles.footer,
-                                { paddingBottom: Math.max(theme.spacing.md, insets.bottom + theme.spacing.sm) }
+                                { paddingBottom: Math.max(theme.spacing.md, bottomInset + theme.spacing.sm) }
                             ]}
                         >
                             {footer}
@@ -543,9 +550,8 @@ function createStyles(theme: AppTheme) {
         backgroundColor: theme.colors.surfaceContainerLow
     },
     scroll: {
-        flexShrink: 1
-    },
-    fixedHeightSheet: {
+        flexGrow: 0,
+        flexShrink: 1,
         minHeight: 0
     },
     content: {
@@ -554,6 +560,18 @@ function createStyles(theme: AppTheme) {
     },
     modalHeader: {
         gap: theme.spacing.xs
+    },
+    pinnedHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
+        paddingBottom: theme.spacing.sm,
+        borderBottomColor: theme.colors.outlineVariant,
+        borderBottomWidth: StyleSheet.hairlineWidth
+    },
+    pinnedHeaderCopy: {
+        flex: 1,
+        minWidth: 0
     },
     modalDescription: {
         color: theme.colors.onSurfaceVariant
@@ -567,9 +585,10 @@ function createStyles(theme: AppTheme) {
         justifyContent: 'center'
     },
     fixedContent: {
-        flex: 1,
+        flexShrink: 1,
         minHeight: 0
     },
+    fillContent: { flexGrow: 1 },
     footer: {
         gap: theme.spacing.sm,
         paddingHorizontal: theme.spacing.lg,

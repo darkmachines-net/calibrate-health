@@ -1,4 +1,4 @@
-/** @file Regression coverage for adaptive forms: Add Food uses a centered wide dialog at the desktop breakpoint. */
+/** @file Regression coverage for adaptive sheet sizing, modal focus, and simulated software keyboard geometry. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -104,4 +104,73 @@ test('Add Food uses a phone sheet, reflows at 200% text, and guards dirty dismis
   await expect(dialog.getByRole('button', { name: 'Add & close', exact: true })).toBeVisible();
 
   await captureEvidence(page, 'add-food-phone-320x568-200-percent-text.png');
+});
+
+test('short sheets fit their contents and keep focused fields above the software keyboard', async ({ page, ux }, testInfo) => {
+  test.skip(testInfo.project.name !== 'compact-phone-chrome', 'One compact phone geometry regression.');
+  await page.setViewportSize({ width: 320, height: 720 });
+  await ux.install('populated');
+  await page.goto('/today');
+
+  const setVisualViewport = (height: number, offsetTop: number) => page.evaluate(({ height, offsetTop }) => {
+    const viewport = window.visualViewport!;
+    Object.defineProperties(viewport, {
+      height: { configurable: true, value: height },
+      offsetTop: { configurable: true, value: offsetTop },
+    });
+    viewport.dispatchEvent(new Event('resize'));
+  }, { height, offsetTop });
+
+  async function expectFieldInSheet(name: string | RegExp) {
+    const field = page.getByRole('textbox', { name });
+    await field.evaluate((element: HTMLElement) => element.focus({ preventScroll: true }));
+    await expect.poll(() => field.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      const body = element.closest('[data-testid="bottom-sheet-scroll"]')!.getBoundingClientRect();
+      return bounds.top >= body.top - 1 && bounds.bottom <= body.bottom + 1;
+    })).toBe(true);
+  }
+
+  await page.getByTestId('today-weight-card-press-layer').click();
+  const weightSheet = page.getByRole('dialog', { name: 'Weight entry', exact: true });
+  const stepper = weightSheet.getByRole('button', { name: /^Increase weight by / });
+  await expect(stepper).toBeVisible();
+  const weightBox = (await weightSheet.boundingBox())!;
+  expect(weightBox.height).toBeLessThan(720 * 0.75);
+
+  const weightField = /^Weight in /;
+  await page.getByRole('textbox', { name: weightField }).focus();
+  await setVisualViewport(290, 16);
+  await expect(stepper).toHaveCount(0);
+  await expectFieldInSheet(weightField);
+  await expect.poll(async () => {
+    const footer = (await weightSheet.getByRole('button', { name: 'Cancel', exact: true }).boundingBox())!;
+    return footer.y + footer.height;
+  }).toBeLessThanOrEqual(307);
+
+  await setVisualViewport(720, 0);
+  await expect(stepper).toBeVisible();
+  await weightSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('button', { name: 'Add food', exact: true }).click();
+  const foodSheet = page.getByRole('dialog', { name: 'Add food', exact: true });
+  await foodSheet.getByRole('radio', { name: 'Quick', exact: true }).click();
+  await expect(foodSheet.getByRole('textbox', { name: 'Calories', exact: true })).toBeVisible();
+  await expect.poll(async () => (await foodSheet.boundingBox())!.height).toBeLessThan(720 * 0.8);
+
+  await setVisualViewport(395, 0);
+  await expectFieldInSheet('Food name (optional)');
+  await expect.poll(() => foodSheet.getByRole('button', { name: 'Add & close', exact: true }).evaluate((element) => {
+    const action = element.getBoundingClientRect();
+    const body = element.closest('[data-testid="bottom-sheet-scroll"]')!.getBoundingClientRect();
+    return action.bottom <= body.bottom + 1;
+  })).toBe(true);
+
+  await setVisualViewport(225, 16);
+  await expectFieldInSheet('Calories');
+  await expectFieldInSheet('Food name (optional)');
+  await expectFieldInSheet('Calories');
+  await expect.poll(async () => {
+    const panel = (await foodSheet.boundingBox())!;
+    return Math.round(panel.y + panel.height);
+  }).toBe(241);
 });

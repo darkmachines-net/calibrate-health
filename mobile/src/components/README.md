@@ -63,6 +63,15 @@ and persistent notices must leave navigation reachable and offer dismissal when 
 Expo Router `Link asChild` merges child styles as objects. Use a flattened style object, with explicit
 hover/pressed state if needed, instead of a Pressable style callback that the slot cannot preserve.
 
+### Sheets and software keyboards
+
+`BottomSheetModal` fits its content up to the available height. The body scrolls on overflow while
+fixed controls and any footer stay outside it. Opt into `fillAvailableHeight` for a virtualized
+results workspace that needs a definite list viewport. Short editors use the sheet's own scroller.
+
+The modal follows the unobscured viewport as the keyboard resizes it. The sheet scroller measures
+the focused input against the body, scrolling only as far as needed to bring it into view. The
+focused weight input hides its steppers while the software keypad is visible.
 
 ## Ownership and verification
 

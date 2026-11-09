@@ -1,4 +1,4 @@
-/** @file Food Log Content: Coordinates dated meal sections, offline log mutations, selection, and recoverable deletion. */
+/** @file Coordinates dated meal sections, in-place editing, offline mutations, and recoverable deletion. */
 
 import { OfflineMutationConflict } from '../offline/mutationConflict';
 import { copyFoodWhenSynchronized } from './copyFoodWhenSynchronized';
@@ -439,7 +439,6 @@ export default function FoodLogContent({ embedded = false }: { embedded?: boolea
 
             <BottomSheetModal
                 visible={Boolean(editEntry)}
-                revealFocusedInputOnFocus
                 title="Edit food"
                 description="Update this log entry snapshot."
                 onRequestClose={() => {

@@ -1,7 +1,7 @@
-/** @file Regression coverage for Weight Value Input: WeightValueInput. */
+/** @file Covers weight units, steppers, keypad visibility, and enlarged text. */
 
 import { act, fireEvent, render } from '@testing-library/react-native';
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, Keyboard, StyleSheet } from 'react-native';
 import { WeightValueInput } from './WeightValueInput';
 
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
@@ -80,6 +80,27 @@ describe('WeightValueInput', () => {
         await fireEvent.press(screen.getByRole('button', { name: 'Increase weight by 0.1 pounds' }));
         expect(onChangeText).toHaveBeenCalledWith('170.6');
         expect(onStep).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the steppers only while this input has focus and the software keypad is open', async () => {
+        const listeners = new Map<string, () => void>();
+        const subscribe = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, listener) => {
+            listeners.set(event, listener as () => void);
+            return { remove: jest.fn() } as ReturnType<typeof Keyboard.addListener>;
+        });
+        try {
+            const screen = await render(<WeightValueInput value="170.5" unit="LB" step={0.1} min={0.1} editable onChangeText={jest.fn()} />);
+            const input = screen.getByLabelText('Weight in pounds');
+            const stepper = () => screen.queryByRole('button', { name: 'Increase weight by 0.1 pounds' });
+            await fireEvent(input, 'focus');
+            expect(stepper()).toBeTruthy();
+            await act(() => listeners.get('keyboardDidShow')?.());
+            expect(stepper()).toBeNull();
+            await act(() => (listeners.get('keyboardWillHide') ?? listeners.get('keyboardDidHide'))?.());
+            expect(stepper()).toBeTruthy();
+        } finally {
+            subscribe.mockRestore();
+        }
     });
 
     it('makes room for 200% native text and moves the unit out of the numeric input', async () => {
