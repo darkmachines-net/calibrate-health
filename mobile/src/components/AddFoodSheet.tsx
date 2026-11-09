@@ -14,7 +14,6 @@ import { AppText } from './AppText';
 import { BottomSheetModal } from './BottomSheetModal';
 import { TABLET_LAYOUT_BREAKPOINT } from '../layout/adaptiveLayout';
 import { FoodSelectionEditor, type FoodSelectionSubmitRequest } from './FoodSelectionEditor';
-import { KeyboardAwareScrollView } from './KeyboardAwareScrollView';
 import { OverlaySelect } from './OverlaySelect';
 import { SegmentedControl } from './SegmentedControl';
 import { TextField } from './TextField';
@@ -140,7 +139,7 @@ function appendSection(rows: FoodBrowseRow[], title: string, items: FoodBrowseRo
     rows.push({ kind: 'header', key: `header:${title}`, title }, ...items);
 }
 
-/** Coordinates food search, serving selection, and idempotent logging within the adaptive add-food sheet. */
+/** Coordinates a virtualized search workspace and content-sized editors for idempotent food logging. */
 export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     visible,
     date,
@@ -167,12 +166,13 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     const [isMealSelectorOpen, setIsMealSelectorOpen] = useState(false);
     const [isSearchFieldFocused, setIsSearchFieldFocused] = useState(false);
     const searchBlurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const quickActionsRef = useRef<React.ComponentRef<typeof View>>(null);
     const normalizedQuery = query.trim();
+    const usesSearchWorkspace = mode === 'search' && selection === null;
     const isMobileSearchWorkspace = usesCompactAddFoodLayout(viewportWidth)
-        && mode === 'search'
-        && isSearchFieldFocused
-        && selection === null;
-    const usesEdgeToEdgeSheetContent = Platform.OS === 'web'
+        && usesSearchWorkspace
+        && isSearchFieldFocused;
+    const usesEdgeToEdgeSheetContent = (Platform.OS === 'web' && usesSearchWorkspace)
         || (Platform.OS === 'android' && isMobileSearchWorkspace);
 
     useEffect(() => () => {
@@ -473,12 +473,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             ? getProviderAttribution(selection.item.source ?? undefined, providerData?.attribution)
             : null;
         return (
-            <KeyboardAwareScrollView
-                style={styles.flex}
-                contentContainerStyle={styles.editorContent}
-                revealFocusedInputOnFocus
-                keyboardShouldPersistTaps="handled"
-            >
+            <View style={styles.editorContent}>
                 {selectionAttribution && renderProviderAttribution(selectionAttribution)}
                 <FoodSelectionEditor
                     selection={selection}
@@ -492,7 +487,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                     }}
                     onSubmit={(request) => logFood.mutate(request)}
                 />
-            </KeyboardAwareScrollView>
+            </View>
         );
     }
 
@@ -618,11 +613,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
     function renderModeContent() {
         if (mode === 'quick') {
             return (
-                <KeyboardAwareScrollView
-                    style={styles.flex}
-                    contentContainerStyle={styles.formContent}
-                    keyboardShouldPersistTaps="handled"
-                >
+                <View style={styles.formContent}>
                     <TextField
                         label="Calories"
                         value={quickCalories}
@@ -643,7 +634,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                         <AppText accessibilityRole="alert" style={styles.error}>Calories must be zero or greater.</AppText>
                     )}
                     {mutationError && <AppText accessibilityRole="alert" style={styles.error}>{mutationError}</AppText>}
-                    <View style={[styles.actions, fontScale >= 1.3 && styles.actionsStacked]}>
+                    <View ref={quickActionsRef} collapsable={false} style={[styles.actions, fontScale >= 1.3 && styles.actionsStacked]}>
                         <AppButton
                             title={logFood.isPending ? 'Adding...' : 'Add another'}
                             variant="secondary"
@@ -660,13 +651,13 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                             style={styles.actionButton}
                         />
                     </View>
-                </KeyboardAwareScrollView>
+                </View>
             );
         }
 
         if (mode === 'search') {
             return (
-                <View style={styles.flex}>
+                <View style={usesSearchWorkspace ? styles.flex : undefined}>
                     {!isMobileSearchWorkspace && (
                         <View style={styles.modeFieldHeader}>
                             <AppText variant="label">Search foods</AppText>
@@ -739,7 +730,11 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
             maxHeight={ADD_FOOD_SHEET_HEIGHT}
             size="wide"
             showCloseButton
-            scrollable={false}
+            scrollable={!usesSearchWorkspace}
+            fillAvailableHeight={usesSearchWorkspace}
+            pinHeader={!usesSearchWorkspace}
+            contentKey={mode}
+            keyboardContextRef={mode === 'quick' ? quickActionsRef : undefined}
             dismissDisabled={logFood.isPending}
             isDirty={hasUnsavedDraft}
             confirmDismiss={confirmDiscardChanges}
@@ -770,7 +765,7 @@ export const AddFoodSheet: React.FC<AddFoodSheetProps> = ({
                     <SegmentedControl accessibilityLabel="Add food method" options={ADD_FOOD_MODES} value={mode} onChange={selectMode} />
                 </>
             )}
-            <View style={styles.modeContent}>{renderModeContent()}</View>
+            {renderModeContent()}
         </BottomSheetModal>
     );
 };
@@ -822,10 +817,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     mealControl: {
         gap: spacing.sm
     },
-    modeContent: {
-        flex: 1,
-        minHeight: 0
-    },
     edgeToEdgeSheetContent: {
         // The focused Android workspace already ends above the software keyboard.
         paddingBottom: 0
@@ -842,8 +833,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         gap: spacing.sm
     },
     formContent: {
-        gap: spacing.md,
-        paddingBottom: spacing.md
+        gap: spacing.md
     },
     editorContent: {
         gap: spacing.md,

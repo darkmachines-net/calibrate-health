@@ -1,4 +1,4 @@
-/** @file Regression coverage for Bottom Sheet Modal: BottomSheetModal. */
+/** @file Covers intrinsic sheet sizing, modal focus, and backdrop accessibility. */
 
 import { StyleSheet, Text } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
@@ -17,7 +17,8 @@ jest.mock('../hooks/useReducedMotionPreference', () => ({
 }));
 
 jest.mock('../hooks/useVisualViewportHeight', () => ({
-    useVisualViewportHeight: () => 720
+    useVisualViewportHeight: () => 720,
+    useVisualViewportOffsetTop: () => 0
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -151,6 +152,18 @@ describe('BottomSheetModal', () => {
         );
 
         expect(StyleSheet.flatten(screen.getByTestId('bottom-sheet-content').props.style).paddingBottom).toBe(0);
+    });
+
+    it('treats the height as a ceiling even with a fixed footer', async () => {
+        const screen = await render(
+            <BottomSheetModal visible footer={<Text>Save</Text>} onRequestClose={jest.fn()}>
+                <Text>Short form</Text>
+            </BottomSheetModal>
+        );
+
+        expect(StyleSheet.flatten(screen.getByTestId('adaptive-dialog-panel').props.style).height).toBeUndefined();
+        expect(screen.getByTestId('bottom-sheet-scroll')).toHaveStyle({ flexGrow: 0, flexShrink: 1 });
+        expect(screen.getByText('Save')).toBeTruthy();
     });
 
     it('normalizes stacked web modal containers and lets a successor observer take over after cleanup', () => {
