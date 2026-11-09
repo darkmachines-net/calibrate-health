@@ -760,7 +760,7 @@ jobs:
     name: Capture iOS welcome screen
     if: github.ref_name == 'codex/pr-513-ios-capture' && inputs.validation_scope == 'configuration-only'
     runs-on: macos-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       CI: "1"
       NODE_ENV: production
@@ -786,13 +786,14 @@ jobs:
         working-directory: mobile/ios
         run: pod install
       - name: Build iOS Simulator app
+        id: simulator-build
         working-directory: mobile/ios
         run: |
           set -o pipefail
           xcodebuild -workspace Calibrate.xcworkspace -scheme Calibrate -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/calibrate-ios-derived-data" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO GCC_OPTIMIZATION_LEVEL=0 SWIFT_OPTIMIZATION_LEVEL=-Onone build \
             > "$RUNNER_TEMP/calibrate-xcode.log" 2>&1 || {
             grep -E -n 'error:|BUILD FAILED' "$RUNNER_TEMP/calibrate-xcode.log" | tail -25
             tail -28 "$RUNNER_TEMP/calibrate-xcode.log"
@@ -808,8 +809,6 @@ jobs:
           bundle_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
           xcrun simctl boot "$sim"
           xcrun simctl bootstatus "$sim" -b
-          xcrun simctl ui "$sim" appearance light
-          xcrun simctl status_bar "$sim" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState unplugged --batteryLevel 100
           xcrun simctl install "$sim" "$app"
           xcrun simctl launch "$sim" "$bundle_id"
           cat > "$RUNNER_TEMP/read-screenshot.swift" <<'SWIFT'
@@ -839,3 +838,14 @@ jobs:
           path: ${{ runner.temp }}/calibrate-welcome-ios.png
           if-no-files-found: ignore
           retention-days: 3
+      - name: Archive the compiled simulator app for a capture retry
+        if: failure() && steps.simulator-build.outcome == 'success'
+        run: |
+          tar -czf "$RUNNER_TEMP/calibrate-simulator-app.tar.gz" \
+            -C "$RUNNER_TEMP/calibrate-ios-derived-data/Build/Products/Release-iphonesimulator" Calibrate.app
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.simulator-build.outcome == 'success'
+        with:
+          name: pr-513-compiled-simulator
+          path: ${{ runner.temp }}/calibrate-simulator-app.tar.gz
+          retention-days: 1
