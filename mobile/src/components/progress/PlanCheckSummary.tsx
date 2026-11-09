@@ -1,15 +1,14 @@
-/** @file Plan Check Summary: A stable diagnosis slot; expanded details own review, apply, and undo actions. */
+/** @file Compact descriptive progress summary and entry point to tracking windows and weekly reports. */
 
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
-import type { CalibrationStatusResponse } from '@calibrate/api-client';
+import type { PlanCheckResponse } from '@calibrate/api-client';
 import { useAuth } from '../../auth/AuthContext';
 import { calibrationStatusQueryKey } from '../../calibration/queryKeys';
-import { paceIcon, paceTitle, waitingTitle } from '../../calibration/planCheckPresentation';
+import { useCurrentLocalDate } from '../../hooks/useCurrentLocalDate';
 import { usePendingCalibrationEvidenceMutation } from '../../offline/usePendingCalibrationEvidenceMutation';
-import { dateOnlyToLocalDate } from '../../utils/dates';
 import { useAppTheme, type AppTheme } from '../../theme';
 import { AppText } from '../AppText';
 import { FixedPageColumn } from '../FixedPage';
@@ -18,11 +17,10 @@ import { useFocusVisible } from '../useFocusVisible';
 
 type PlanCheckSummaryProps = {
     onPress: () => void;
-    planAvailable?: boolean;
 };
 
 type PlanCheckSummaryViewProps = PlanCheckSummaryProps & {
-    status?: CalibrationStatusResponse;
+    status?: PlanCheckResponse;
     pendingEvidence?: boolean;
     isLoading?: boolean;
     error?: boolean;
@@ -36,76 +34,50 @@ type SummaryPresentation = {
     tone: 'muted' | 'success' | 'warning';
 };
 
-function presentSummary({ status, pendingEvidence, planAvailable, isLoading, error, offline }: PlanCheckSummaryViewProps): SummaryPresentation {
+function presentSummary({ status, pendingEvidence, isLoading, error, offline }: PlanCheckSummaryViewProps): SummaryPresentation {
     if (pendingEvidence) return {
-        metadata: 'Updating after your entries sync',
-        diagnosis: 'Your latest food and weight entries are syncing.',
+        metadata: 'Updating after your entries sync', diagnosis: 'Your latest food and weight entries are syncing.',
         icon: 'sync-outline', tone: 'muted'
-    };
-    if (planAvailable === false || status?.planStatus === 'requires_review') return {
-        metadata: 'Calorie plan unavailable',
-        diagnosis: 'Review your calorie plan to restart this check.',
-        icon: 'information-circle-outline', tone: 'warning'
     };
     if (!status && (error || offline)) return {
         metadata: offline ? 'Offline' : 'Unable to update',
-        diagnosis: offline ? 'Reconnect to load your plan check.' : 'Open details to retry your plan check.',
-        icon: offline ? 'cloud-offline-outline' : 'alert-circle-outline', tone: 'muted'
+        diagnosis: offline ? 'Reconnect to load your progress summary.' : 'Open details to retry your progress summary.',
+        icon: 'cloud-offline-outline', tone: 'muted'
     };
-    if (isLoading || !status?.evaluation) return {
-        metadata: 'Checking your latest completed day',
-        diagnosis: 'Building your plan check...',
+    if (isLoading || !status) return {
+        metadata: 'Recent tracking', diagnosis: 'Loading your progress summary...', icon: 'time-outline', tone: 'muted'
+    };
+    if (status.windows.length === 0) return {
+        metadata: 'Getting started', diagnosis: 'Your first trend summary appears after 7 days of tracking.',
         icon: 'time-outline', tone: 'muted'
     };
-    if (status.scheduledChange) return {
-        metadata: 'Saved calorie target update',
-        diagnosis: status.scheduledChange.dailyCalorieBudgetKcal === null
-            ? 'Your saved update is on hold. Open details to review it.'
-            : 'A calorie target update is scheduled. Open details to review or undo it.',
-        icon: status.scheduledChange.dailyCalorieBudgetKcal === null ? 'time-outline' : 'checkmark-circle-outline',
-        tone: status.scheduledChange.dailyCalorieBudgetKcal === null ? 'warning' : 'success'
+    if (status.needsWeighIn) return {
+        metadata: 'A recent weigh-in is needed', diagnosis: 'Log your weight today to restore weight trends.',
+        icon: 'scale-outline', tone: 'muted'
     };
-    const assessment = status.evaluation.assessment;
-    if (!assessment) return {
-        metadata: 'Check unavailable',
-        diagnosis: 'This check is not available from your connected server yet.',
-        icon: 'information-circle-outline', tone: 'muted'
-    };
-    const date = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
-        .format(dateOnlyToLocalDate(assessment.window?.endDate ?? status.evaluation.asOfDate));
-    const metadata = assessment.window ? `${assessment.window.spanDays} days through ${date}` : `Updated through ${date}`;
-    if (assessment.state === 'waiting') return {
-        metadata,
-        diagnosis: waitingTitle(assessment.blocker),
-        icon: 'time-outline', tone: 'muted'
-    };
-    if (!assessment.paceStatus) return {
-        metadata, diagnosis: 'Your plan check is still taking shape.', icon: 'time-outline', tone: 'muted'
-    };
+    const durations = status.windows.map(window => window.days).join(', ');
     return {
-        metadata,
-        diagnosis: paceTitle(assessment.paceStatus),
-        icon: paceIcon(assessment.paceStatus),
-        tone: assessment.paceStatus === 'aligned' ? 'success' : 'warning'
+        metadata: 'Last ' + durations + ' days',
+        diagnosis: status.weeklyReports.length ? 'Your weekly report and recent trends are ready.' : 'Explore your weight changes and food-log coverage.',
+        icon: 'stats-chart-outline', tone: 'muted'
     };
 }
 
-/** A stable diagnosis slot; expanded details own review, apply, and undo actions. */
-export function PlanCheckSummary({ onPress, planAvailable }: PlanCheckSummaryProps) {
-    const { api } = useAuth();
+/** Load the descriptive summary independently of calorie-plan availability. */
+export function PlanCheckSummary({ onPress }: PlanCheckSummaryProps) {
+    const { api, user } = useAuth();
+    const localDate = useCurrentLocalDate(user?.timezone);
     const statusQuery = useQuery({
-        queryKey: calibrationStatusQueryKey,
-        queryFn: () => api.getCalibrationStatus(),
-        enabled: planAvailable !== false
+        queryKey: [...calibrationStatusQueryKey, localDate],
+        queryFn: () => api.getPlanCheck()
     });
     const pendingEvidence = usePendingCalibrationEvidenceMutation();
     const isOnline = useOnlineStatus();
     return <PlanCheckSummaryView
         onPress={onPress}
-        planAvailable={planAvailable}
         status={statusQuery.data}
         isLoading={statusQuery.isLoading}
-        error={statusQuery.isError}
+        error={statusQuery.isError || statusQuery.failureReason != null}
         offline={!isOnline}
         pendingEvidence={pendingEvidence}
     />;
@@ -118,7 +90,7 @@ export function PlanCheckSummaryView(props: PlanCheckSummaryViewProps) {
     const { focusVisible, handleFocus, handleBlur } = useFocusVisible();
     const [hovered, setHovered] = React.useState(false);
     const presentation = presentSummary(props);
-    const showingFailedRefresh = props.error && props.status && !props.pendingEvidence && props.planAvailable !== false;
+    const showingFailedRefresh = props.error && props.status && !props.pendingEvidence;
     const metadata = showingFailedRefresh ? 'Could not refresh | Showing saved check' : presentation.metadata;
     const colors = { muted: theme.colors.onSurfaceVariant, success: theme.colors.success, warning: theme.colors.warning };
     return <Pressable

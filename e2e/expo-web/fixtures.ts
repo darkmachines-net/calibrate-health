@@ -1,5 +1,6 @@
 /** @file fixtures: Keep unrelated late PWA lifecycle notices from intercepting feature-test actions. */
 
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import {
   expect,
   test as base,
@@ -733,6 +734,7 @@ async function installAuthenticatedApi(
     if (pathname === '/api/v1/user/tracking-history') {
       return fulfillJson(route, { tracking_start_date: '2026-01-01' });
     }
+    if (pathname === '/api/v1/plan-check') return fulfillJson(route, PLAN_CHECK_STATUS);
     if (pathname === '/api/v1/calibration/status') {
       return fulfillJson(route, {
         ...CALIBRATION_STATUS_RESPONSE,

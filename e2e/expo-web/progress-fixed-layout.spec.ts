@@ -3,11 +3,11 @@
 import { applyTwoHundredPercentText } from './text-scaling';
 import type { Page } from '@playwright/test';
 import { expect, test, hideTransientPwaNotices } from './fixtures';
-import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 
 async function installPlanCheck(page: Page) {
-  await page.route('**/api/v1/calibration/status', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(PLAN_CHECK_RECOMMENDATION_STATUS),
+  await page.route('**/api/v1/plan-check', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify(PLAN_CHECK_STATUS),
   }));
 }
 
@@ -50,7 +50,7 @@ test('Progress gives the complete chart available space and keeps Plan check rea
   const snapshot = page.getByTestId('progress-snapshot-card');
   const canvas = page.getByTestId('weight-trend-preview-canvas');
   const summary = page.getByTestId('plan-check-summary');
-  await expect(summary).toContainText('Your recent weight trend is slower than your goal');
+  await expect(summary).toContainText('Your weekly report and recent trends are ready.');
   await expect(summary).toHaveAttribute('role', 'button');
   await expect(summary.getByRole('button')).toHaveCount(0);
   const [snapshotBox, canvasBox, summaryBox] = await Promise.all([snapshot.boundingBox(), canvas.boundingBox(), summary.boundingBox()]);
@@ -66,7 +66,7 @@ test('Progress gives the complete chart available space and keeps Plan check rea
   await page.screenshot({ path: testInfo.outputPath('progress-fixed-layout.png') });
   await summary.click();
   await expect(page.getByTestId("expanded-plan")).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Review suggested 1,750 calorie daily target', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Report history', exact: true })).toBeVisible();
 });
 
 test('Progress fits a Galaxy Ultra-sized viewport without scrolling the overview', async ({ page, ux }, testInfo) => {
@@ -79,7 +79,7 @@ test('Progress fits a Galaxy Ultra-sized viewport without scrolling the overview
   await hideTransientPwaNotices(page);
   const canvas = page.getByTestId('weight-trend-preview-canvas');
   const summary = page.getByTestId('plan-check-summary');
-  await expect(summary).toContainText('Your recent weight trend is slower than your goal');
+  await expect(summary).toContainText('Your weekly report and recent trends are ready.');
   await expect(page.getByLabel('Chart legend', { exact: true })).toHaveCount(0);
   const scroller = page.getByTestId('fixed-page-scroll');
   await expect.poll(() => scroller.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
@@ -190,7 +190,7 @@ test('200 percent Progress text keeps the chart and diagnosis in natural page or
   await summary.scrollIntoViewIfNeeded();
   await expect(summary).toBeInViewport({ ratio: 1 });
   await expect(summary).toHaveCSS('overflow', 'visible');
-  await expect(summary.getByText('Your recent weight trend is slower than your goal', { exact: true })).toHaveCSS('font-size', '32px');
+  await expect(summary.getByText('Your weekly report and recent trends are ready.', { exact: true })).toHaveCSS('font-size', '32px');
   const labels = await canvas.locator('text').evaluateAll(elements => elements.map(element => ({ left: element.getBoundingClientRect().left, right: element.getBoundingClientRect().right })));
   for (const label of labels) {
     expect(label.left).toBeGreaterThanOrEqual(canvasBox.x - 1);
@@ -200,46 +200,16 @@ test('200 percent Progress text keeps the chart and diagnosis in natural page or
   await page.screenshot({ path: testInfo.outputPath('progress-200-percent-text.png') });
 });
 
-test('Plan check detail navigation preserves recommendation review, apply, and undo', async ({ page, ux }) => {
+test('Plan check detail navigation opens saved weekly report history', async ({ page, ux }) => {
   await ux.install('populated');
-  const scheduledChange = { recommendationId: 7, targetAdjustmentKcal: -150, dailyCalorieBudgetKcal: 1750, effectiveLocalDate: '2026-08-01' };
-  let applied = false;
-  const mutations: string[] = [];
-  await page.route('**/api/v1/calibration/status', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(applied
-      ? { ...PLAN_CHECK_RECOMMENDATION_STATUS, recommendation: null, scheduledChange }
-      : PLAN_CHECK_RECOMMENDATION_STATUS),
-  }));
-  await page.route('**/api/v1/calibration/recommendations/7/apply', (route) => {
-    expect(route.request().method()).toBe('POST');
-    mutations.push('apply');
-    applied = true;
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(scheduledChange) });
-  });
-  await page.route('**/api/v1/calibration/recommendations/7/cancel', (route) => {
-    expect(route.request().method()).toBe('POST');
-    mutations.push('cancel');
-    applied = false;
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PLAN_CHECK_RECOMMENDATION_STATUS) });
-  });
+  await page.route('**/api/v1/plan-check', route => route.fulfill({ json: PLAN_CHECK_STATUS }));
   await page.goto('/progress');
   await hideTransientPwaNotices(page);
   await page.getByTestId('plan-check-summary').click();
-  await expect(page.getByTestId("expanded-plan")).toBeVisible();
-  await page.getByRole('button', { name: 'Review suggested 1,750 calorie daily target', exact: true }).click();
-  const review = page.getByRole('dialog', { name: 'Review calorie target', exact: true });
-  await expect(review).toBeVisible();
-  expect(mutations).toEqual([]);
-  await review.getByRole('button', { name: 'Apply 1,750 kcal', exact: true }).click();
-  await expect(review).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Undo scheduled calorie target update', exact: true })).toBeVisible();
-  expect(mutations).toEqual(['apply']);
-  await page.getByRole('button', { name: "Back to Progress", exact: true }).click();
-  await expect(page.getByTestId('plan-check-summary')).toContainText('A calorie target update is scheduled.');
-  await page.getByTestId('plan-check-summary').click();
-  await page.getByRole('button', { name: 'Undo scheduled calorie target update', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Review suggested 1,750 calorie daily target', exact: true })).toBeVisible();
-  expect(mutations).toEqual(['apply', 'cancel']);
+  await expect(page.getByTestId('expanded-plan')).toBeVisible();
+  await page.getByRole('button', { name: 'Report history', exact: true }).click();
+  await page.getByRole('button', { name: /Nov.*1.*2026/ }).click();
+  await expect(page.getByText('Previous weekly report.', { exact: true })).toBeVisible();
 });
 
 test('unavailable calorie plans keep a Plan check destination', async ({ page, ux }) => {
@@ -247,7 +217,7 @@ test('unavailable calorie plans keep a Plan check destination', async ({ page, u
   await page.goto('/progress');
   await hideTransientPwaNotices(page);
   const summary = page.getByTestId('plan-check-summary');
-  await expect(summary).toContainText('Review your calorie plan to restart this check.');
+  await expect(summary).toContainText('Your weekly report and recent trends are ready.');
   await summary.click();
   await expect(page.getByTestId("expanded-plan")).toBeVisible();
 });

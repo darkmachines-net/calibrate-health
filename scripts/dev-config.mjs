@@ -329,6 +329,10 @@ export async function resolveDevConfig({
     FATSECRET_CLIENT_ID: fatsecretClientId,
     FATSECRET_CLIENT_SECRET: fatsecretClientSecret,
     USDA_API_KEY: usdaApiKey,
+    OPENAI_IDENTITY_PROVIDER_ID: readUserValue("OPENAI_IDENTITY_PROVIDER_ID"),
+    OPENAI_SERVICE_ACCOUNT_ID: readUserValue("OPENAI_SERVICE_ACCOUNT_ID"),
+    OPENAI_WIF_AUDIENCE: readUserValue("OPENAI_WIF_AUDIENCE"),
+    OPENAI_WEEKLY_REPORT_MODEL: readUserValue("OPENAI_WEEKLY_REPORT_MODEL"),
     WEB_PUSH_PUBLIC_KEY: webPushPublicKey,
     WEB_PUSH_PRIVATE_KEY: webPushPrivateKey,
     WEB_PUSH_SUBJECT:
