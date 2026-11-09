@@ -1,10 +1,9 @@
 /** @file Safe provider sign-in recovery copy without displaying native SDK or Firebase error details. */
 import { ApiError } from '@calibrate/api-client';
 
-/** Distinguish registration, linking and retry actions using bounded server codes. */
+/** Distinguish account conflicts, legal acceptance and retry actions using bounded server codes. */
 export function socialAuthErrorMessage(error: unknown): string {
     if (error instanceof ApiError) {
-        if (error.code === 'SOCIAL_REGISTRATION_REQUIRED') return 'Create an account first using the same sign-in provider.';
         if (error.code === 'SOCIAL_ACCOUNT_CONFLICT') return 'Use your existing sign-in method for this email. Accounts are not linked automatically.';
         if (error.code === 'INVALID_LEGAL_ACCEPTANCE' || error.code === 'INVALID_LEGAL_VERSION') return 'Review and accept the current Terms and Privacy Policy to create an account.';
         if (error.status === 429) return 'Too many attempts were made. Try again shortly.';

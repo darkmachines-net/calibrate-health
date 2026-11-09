@@ -7,6 +7,7 @@ import {
     ApiError,
     CalibrateApiClient,
     type MobileAuthResponse,
+    type MobileSocialAuthRequest,
     type UserClientPayload
 } from '@calibrate/api-client';
 import type { ClientUpgradeRequirement } from '@calibrate/shared';
@@ -42,6 +43,17 @@ import { isRetryableMutationError } from '../offline/retryability';
 import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
 import { acquireSocialCredential } from './nativeSocialAuth';
 
+// A pending provider registration keeps its credential in memory only while consent is being reviewed.
+const PROVIDER_REGISTRATION_WINDOW_MS = 5 * 60 * 1000;
+
+export type PendingProviderRegistration = {
+    requiresLegalAcceptance: boolean;
+    /** Consume this attempt once, returning false if it expired or the auth screen was left. */
+    complete: (acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
+    /** Release the provider credential when the user leaves the consent step. */
+    cancel: () => void;
+};
+
 type AuthContextValue = {
     api: CalibrateApiClient;
     user: UserClientPayload | null;
@@ -58,7 +70,8 @@ type AuthContextValue = {
     updateCurrentUser: (user: UserClientPayload) => void;
     login: (email: string, password: string) => Promise<boolean>;
     register: (email: string, password: string, acceptance: RegistrationLegalAcceptance) => Promise<boolean>;
-    signInWithProvider: (provider: SocialAuthProvider, intent: 'login' | 'register', acceptance?: RegistrationLegalAcceptance) => Promise<boolean>;
+    /** Sign in an existing account, or return a short-lived registration step for this verified identity. */
+    signInWithProvider: (provider: SocialAuthProvider, signal?: AbortSignal) => Promise<PendingProviderRegistration | null>;
     logout: () => Promise<void>;
     clearLocalSession: () => Promise<void>;
     recheckClientCompatibility: () => Promise<boolean>;
@@ -455,35 +468,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     const signInWithProvider = useCallback(async (
-        provider: SocialAuthProvider, intent: 'login' | 'register',
-        acceptance?: RegistrationLegalAcceptance
-    ): Promise<boolean> => {
+        provider: SocialAuthProvider, signal?: AbortSignal
+    ): Promise<PendingProviderRegistration | null> => {
         assertAccountDeletionCleanupAcknowledged(accountDeletionCleanupNotice);
-        if (!await confirmCurrentServer()) return false;
-        const legal = intent === 'register' && requiresHostedLegalAcceptance(serverUrl)
-            ? requireRegistrationLegalAcceptance(acceptance ?? { acceptTerms: false, acceptPrivacy: false }) : null;
+        if (!await confirmCurrentServer() || signal?.aborted) return null;
+        const originalScope = accountScopeRef.current;
+        const isCurrent = () => !signal?.aborted
+            && accountScopeRef.current === originalScope;
         const authClient = new CalibrateApiClient({
             baseUrl: serverUrl, clientIdentity: MOBILE_CLIENT_IDENTITY,
             onClientUpgradeRequired: handleClientUpgradeRequired
         });
         const available = await authClient.getMobileSocialProviders();
+        if (!isCurrent()) return null;
         if (!available.providers.includes(provider)) throw new Error('Provider unavailable on this server.');
-        const credential = await acquireSocialCredential(provider);
-        if (!credential) return false;
+        let credential = await acquireSocialCredential(provider);
+        if (!credential || !isCurrent()) return null;
         await flushExplicitLogout(serverUrl);
         const nextDeviceId = deviceId ?? await getOrCreateDeviceId();
+        if (!isCurrent()) return null;
         setDeviceId(nextDeviceId);
-        const payload = await authClient.authenticateMobileSocial({
-            ...credential, intent, device_id: nextDeviceId,
-            device_platform: MOBILE_CLIENT_IDENTITY.platform, device_name: getNativeDeviceName(),
-            ...(legal ? {
-                terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION,
-                accept_terms: legal.acceptTerms, accept_privacy: legal.acceptPrivacy
-            } : {})
-        });
-        await finishExplicitLogin(serverUrl);
-        await persistAuthPayload(payload);
-        return true;
+        const device = {
+            device_id: nextDeviceId, device_platform: MOBILE_CLIENT_IDENTITY.platform,
+            device_name: getNativeDeviceName()
+        };
+
+        // Only the verified "registration required" response can lead to account creation.
+        const existingSession = await authClient
+            .authenticateMobileSocial({ ...credential, ...device, intent: 'login' })
+            .catch((error: unknown) => {
+                if (error instanceof ApiError && error.status === 409 && error.code === 'SOCIAL_REGISTRATION_REQUIRED') return null;
+                throw error;
+            });
+        if (!isCurrent()) return null;
+        if (existingSession) {
+            await finishExplicitLogin(serverUrl);
+            if (isCurrent()) await persistAuthPayload(existingSession);
+            return null;
+        }
+
+        const requiresLegalAcceptance = requiresHostedLegalAcceptance(serverUrl);
+        const expiresAt = Date.now() + PROVIDER_REGISTRATION_WINDOW_MS;
+        const timer = setTimeout(cancel, PROVIDER_REGISTRATION_WINDOW_MS);
+        /** Drop the token on cancellation, expiry, or consumption. */
+        function cancel() {
+            credential = null;
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', cancel);
+        }
+        signal?.addEventListener('abort', cancel);
+
+        return {
+            requiresLegalAcceptance,
+            cancel,
+            complete: async (acceptance) => {
+                if (!credential || !isCurrent() || Date.now() >= expiresAt) {
+                    cancel();
+                    return false;
+                }
+                const legal = requiresLegalAcceptance ? requireRegistrationLegalAcceptance(acceptance) : null;
+                const approvedCredential = credential;
+                cancel();
+                const request: MobileSocialAuthRequest = {
+                    ...approvedCredential, ...device, intent: 'register',
+                    ...(legal ? {
+                        terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION,
+                        accept_terms: legal.acceptTerms, accept_privacy: legal.acceptPrivacy
+                    } : {})
+                };
+                const payload = await authClient.authenticateMobileSocial(request);
+                if (!isCurrent()) return false;
+                await finishExplicitLogin(serverUrl);
+                if (!isCurrent()) return false;
+                return persistAuthPayload(payload);
+            }
+        };
     }, [accountDeletionCleanupNotice, confirmCurrentServer, deviceId, handleClientUpgradeRequired, persistAuthPayload, serverUrl]);
 
     const logout = useCallback(async () => {

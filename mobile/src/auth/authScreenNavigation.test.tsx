@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import LoginScreen from '../../app/(auth)/login';
 import RegisterScreen from '../../app/(auth)/register';
-import { useAuth } from './AuthContext';
+import { useAuth, type PendingProviderRegistration } from './AuthContext';
 import { SocialAuthButtons } from './SocialAuthButtons';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
@@ -13,7 +13,7 @@ import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 jest.mock('./AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('./SocialAuthButtons', () => ({
     SocialAuthButtons: jest.fn(({ onPress, disabled }: { onPress: (provider: string) => void; disabled: boolean }) =>
-        require('react').createElement(require('react-native').Button, { title: 'Continue with Google', disabled, onPress: () => onPress('google.com') }))
+        require('react').createElement(require('react-native').Button, { title: 'Sign in with Google', disabled, onPress: () => onPress('google.com') }))
 }));
 jest.mock('../account/accountDeletionNotice', () => ({ accountDeletionCleanupGuidance: jest.fn(() => '') }));
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
@@ -24,6 +24,7 @@ jest.mock('expo-router', () => {
     const ReactActual = jest.requireActual<typeof React>('react');
     return {
         useLocalSearchParams: jest.fn(),
+        useFocusEffect: (effect: React.EffectCallback) => ReactActual.useEffect(effect, [effect]),
         Link: jest.fn(({ children }: { children: React.ReactNode }) =>
             ReactActual.createElement(require('react-native').Text, null, children))
     };
@@ -39,7 +40,7 @@ function authContextStub() {
     return {
         register: jest.fn(async () => true),
         login: jest.fn(async () => true),
-        signInWithProvider: jest.fn(async () => true),
+        signInWithProvider: jest.fn(async (): Promise<PendingProviderRegistration | null> => null),
         serverUrl: 'http://10.0.2.2:3000',
         authError: null,
         accountDeletionCleanupNotice: null,
@@ -47,16 +48,19 @@ function authContextStub() {
     };
 }
 
-function expectAuthLink(pathname: string) {
-    const linkProps = mockLink.mock.calls.map(([props]) => props).find((props) => props.href === pathname);
+function expectAuthLink(pathname: string, method?: string) {
+    const linkProps = mockLink.mock.calls
+        .map(([props]) => props)
+        .find((props) => method ? props.href?.pathname === pathname && props.href.params?.method === method : props.href === pathname);
     expect(linkProps).toBeDefined();
+    expect(linkProps.href).toEqual(method ? { pathname, params: { method } } : pathname);
     expect(linkProps.children.props.accessibilityRole).toBe('link');
 }
 
 describe('fixed-backend auth screens', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockUseLocalSearchParams.mockReturnValue({ serverUrl: SELF_HOSTED_URL });
+        mockUseLocalSearchParams.mockReturnValue({ serverUrl: SELF_HOSTED_URL, method: 'email' });
         mockUseAuth.mockReturnValue(authContextStub() as unknown as ReturnType<typeof useAuth>);
     });
 
@@ -64,28 +68,39 @@ describe('fixed-backend auth screens', () => {
         jest.restoreAllMocks();
     });
 
-    it('ignores legacy server parameters for provider login without requiring password fields', async () => {
+    it('offers native providers on the welcome screen alongside email actions', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
+        mockUseLocalSearchParams.mockReturnValue({ serverUrl: SELF_HOSTED_URL });
         const screen = await render(<LoginScreen />);
-        await fireEvent.press(screen.getByText('Continue with Google'));
-        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'login');
+        expect(screen.queryByLabelText('Password')).toBeNull();
+        expectAuthLink('/(auth)/login', 'email');
+        expectAuthLink('/(auth)/register');
+        await fireEvent.press(screen.getByText('Sign in with Google'));
+        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', expect.anything());
         expect(jest.mocked(SocialAuthButtons).mock.calls.at(-1)?.[0].serverUrl).toBe(auth.serverUrl);
+        expect(screen.queryByLabelText('Server URL')).toBeNull();
         expect(auth.login).not.toHaveBeenCalled();
     });
 
-    it('requires hosted consent for provider registration without requiring an email or password', async () => {
+    it('collects consent for a new provider account without email fields or a second provider prompt', async () => {
         const auth = authContextStub();
+        const complete = jest.fn(async () => true);
+        auth.signInWithProvider.mockResolvedValueOnce({ requiresLegalAcceptance: true, complete, cancel: jest.fn() });
         auth.serverUrl = HOSTED_URL;
+        mockUseLocalSearchParams.mockReturnValue({});
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
-        const screen = await render(<RegisterScreen />);
-        await fireEvent.press(screen.getByText('Continue with Google'));
-        expect(auth.signInWithProvider).not.toHaveBeenCalled();
+        const screen = await render(<LoginScreen />);
+        await fireEvent.press(screen.getByText('Sign in with Google'));
+        await screen.findByText('Finish creating your account');
+        expect(screen.queryByLabelText('Email')).toBeNull();
+        await fireEvent.press(screen.getByLabelText('Create account'));
+        expect(complete).not.toHaveBeenCalled();
         expect(screen.getByRole('alert')).toHaveTextContent('Review and accept both legal documents to create an account.');
         for (const checkbox of screen.getAllByRole('checkbox')) await fireEvent.press(checkbox);
-        await fireEvent.press(screen.getByText('Continue with Google'));
-        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'register', { acceptTerms: true, acceptPrivacy: true });
-        expect(jest.mocked(SocialAuthButtons).mock.calls.at(-1)?.[0].serverUrl).toBe(HOSTED_URL);
+        await fireEvent.press(screen.getByLabelText('Create account'));
+        expect(complete).toHaveBeenCalledWith({ acceptTerms: true, acceptPrivacy: true });
+        expect(auth.signInWithProvider).toHaveBeenCalledTimes(1);
         expect(auth.register).not.toHaveBeenCalled();
     });
 
@@ -104,7 +119,7 @@ describe('fixed-backend auth screens', () => {
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
         expect(screen.queryByLabelText('Show advanced connection options')).toBeNull();
         expect(screen.queryByLabelText('Server URL')).toBeNull();
-        expectAuthLink('/(auth)/login');
+        expectAuthLink('/(auth)/login', 'email');
     });
 
     it('submits login credentials without a backend override', async () => {

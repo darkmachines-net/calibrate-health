@@ -321,8 +321,8 @@ test('hosted and installed web keep public trust, route truth, and server-accoun
     await page.goto('/');
 
     await expect(page.getByTestId('hosted-landing')).toBeVisible();
-    await expect(page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Sign in' })).toBeVisible();
-    await expect(page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Create account' })).toBeVisible();
+    await expect(page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Sign in with email' })).toBeVisible();
+    await expect(page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Create Calibrate account' })).toBeVisible();
     await expect(page.getByTestId('hosted-install-copy')).toContainText('install');
     await expect(page.getByTestId('hosted-trust-links')).toContainText('Privacy policy');
     await expect(page.getByTestId('hosted-trust-links')).toContainText('Terms of service');

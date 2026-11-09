@@ -12,7 +12,7 @@ jest.mock('@react-native-google-signin/google-signin', () => {
 });
 jest.mock('expo-apple-authentication', () => ({
     AppleAuthenticationButton: (props: object) => require('react').createElement(require('react-native').Button, { ...props, title: 'Apple' }),
-    AppleAuthenticationButtonType: { CONTINUE: 1 }, AppleAuthenticationButtonStyle: { BLACK: 1 }
+    AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, WHITE_OUTLINE: 1 }
 }));
 beforeEach(() => { jest.useFakeTimers(); mockProviders.mockReset(); });
 afterEach(() => { jest.useRealTimers(); });
