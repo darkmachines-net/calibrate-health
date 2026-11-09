@@ -2,7 +2,7 @@
 
 Calibrate is a hosted calorie tracker for people who want to lose or maintain weight by logging food and weight, then
 comparing daily intake with an estimated target based on their profile. The official service is the default for routine
-use; self-hosting remains available as an Advanced option for operators who want to run the application and database.
+use; self-hosting remains available as a deployment option for operators who want to run the application and database.
 
 - Official service: https://calibratehealth.app
 - Launch clients: English Web/PWA, Android phone, and Wear OS

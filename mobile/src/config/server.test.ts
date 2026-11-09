@@ -1,4 +1,4 @@
-/** @file Regression coverage for server: server URL parsing. */
+/** @file Regression coverage for configured backend origins and compatibility probes. */
 
 import {
     HOSTED_SERVER_URL,
@@ -8,7 +8,6 @@ import {
     resolveBrowserServerUrl,
     resolveDefaultNativeServerUrl,
     resolveDefaultWebServerUrl,
-    resolveInitialServerUrl,
     testCalibrateServerConnection
 } from './server';
 
@@ -33,7 +32,7 @@ const compatibleConfig = {
 };
 
 describe('server URL parsing', () => {
-    it('uses the canonical hosted origin while keeping self-hosting available', () => {
+    it('uses the canonical hosted origin by default', () => {
         expect(HOSTED_SERVER_URL).toBe('https://calibratehealth.app');
     });
 
@@ -68,27 +67,6 @@ describe('server URL parsing', () => {
         expect(getConfiguredServerUrl('not a url')).toBeNull();
     });
 
-    it('uses an explicit development target instead of a stale stored server', () => {
-        expect(resolveInitialServerUrl(
-            'https://previous.example',
-            'http://10.0.2.2:3329',
-            'https://calibratehealth.app',
-            true
-        )).toBe('http://10.0.2.2:3329');
-        expect(resolveInitialServerUrl(
-            'https://previous.example',
-            'https://build-default.example',
-            'https://calibratehealth.app',
-            false
-        )).toBe('https://previous.example');
-        expect(resolveInitialServerUrl(
-            null,
-            'https://build-default.example',
-            HOSTED_SERVER_URL,
-            false
-        )).toBe(HOSTED_SERVER_URL);
-    });
-
     it('targets port 3000 from a loopback Expo dev server but preserves production origins', () => {
         const expoLocation = new URL('http://localhost:8081/login');
         expect(resolveDefaultWebServerUrl(expoLocation, true)).toBe('http://localhost:3000');
@@ -114,6 +92,9 @@ describe('server URL parsing', () => {
         expect(resolveDefaultNativeServerUrl('ios', 'http://192.168.0.10:3000', true))
             .toBe('http://192.168.0.10:3000');
         expect(resolveDefaultNativeServerUrl('ios', null, false)).toBe(HOSTED_SERVER_URL);
+        expect(resolveDefaultNativeServerUrl('android', null, false)).toBe(HOSTED_SERVER_URL);
+        expect(resolveDefaultNativeServerUrl('android', 'https://build.example', false)).toBe('https://build.example');
+        expect(resolveDefaultNativeServerUrl('ios', 'https://build.example', false)).toBe('https://build.example');
     });
 });
 

@@ -33,7 +33,7 @@ These native dependencies require rebuilt development/store binaries. Expo Go an
 existing binaries without the modules cannot exercise the flow. Follow the existing
 major-runtime release policy when shipping the native compatibility change; this
 feature does not change release numbers itself. Provider buttons are shown only
-when the selected server enables them and this build/device supports them. Canceling
+when the configured backend enables them and this build/device supports them. Canceling
 leaves the user signed out. Registration uses the same explicit legal consent and
 profile/goal onboarding as email/password registration.
 
@@ -62,7 +62,7 @@ worktree setup and seeded/manual authentication.
 - In Expo dev builds pointed at localhost, the emulator loopback, or a LAN backend, the app auto-mints a mobile
   session for `test@calibratehealth.app` when no stored session can be restored.
 - Official builds default to `https://calibratehealth.app`.
-- A stored self-hosted server remains selected across restarts; choosing a custom server is an Advanced sign-in option.
+- Native uses the backend configured at build time; users cannot override it in the app.
 
 `npm run preview -- --platform android` (or `ios`) publishes a hosted preview of the
 working copy, including uncommitted edits, using EAS CLI 25.3.0 and an authenticated
@@ -112,10 +112,15 @@ require a new package.
 The same route tree produces Web/PWA and native clients. Browser cookie auth,
 IndexedDB queues and service workers use platform modules; Health Connect and Wear
 native dependencies must not evaluate in a browser bundle. Production web is bound
-to its serving origin, with no custom-server selector. Native keeps an Advanced
-server selector and probes compatibility before sending credentials. Official Android builds
-default to `https://calibratehealth.app`; development defaults to `http://10.0.2.2:3000`
-unless the launcher supplies its worktree API. A saved custom origin survives restart.
+to its serving origin. Native uses `EXPO_PUBLIC_CALIBRATE_SERVER_URL` from the build
+and probes compatibility before sending credentials. Without an explicit value, release
+builds use `https://calibratehealth.app`; development uses `http://10.0.2.2:3000` on
+Android or `http://127.0.0.1:3000` on iOS unless the launcher supplies its worktree API.
+Neither client exposes a server selector or accepts server overrides from auth links.
+Native storage retains the last credential origin only to prevent restoring tokens on
+a different backend. Legacy custom-server preferences do not change the configured
+backend; credentials with a different or unknown origin are cleared before restoration.
+Same-origin credentials and origin-scoped offline workspaces remain usable.
 
 The production image serves `mobile/dist` through `FRONTEND_DIST_DIR`, preserving
 API/auth routes. `npm run test:expo-web:release` validates export routes, PWA files

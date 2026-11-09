@@ -1,28 +1,10 @@
-/** @file Regression coverage for Advanced Settings Screen: AdvancedSettingsScreen. */
+/** @file Regression coverage for read-only service diagnostics and software-update actions. */
 
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
+import { fireEvent, render } from '@testing-library/react-native';
 import { Platform } from 'react-native';
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
 import { HOSTED_SERVER_URL } from '../config/server';
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
 import { useAuth } from '../auth/AuthContext';
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
 import { useAppUpdateController } from '../updates/useAppUpdateController';
-/**
- * Exercises the consolidated Advanced settings route and interaction boundaries.
- */
 import AdvancedSettingsScreen from '../../app/(tabs)/(settings)/advanced';
 
 jest.mock('@expo/vector-icons/Ionicons', () => ({
@@ -41,8 +23,6 @@ jest.mock('../updates/useAppUpdateController', () => ({
 
 const mockedUseAuth = jest.mocked(useAuth);
 const mockedUseAppUpdateController = jest.mocked(useAppUpdateController);
-const mockSetServerUrl = jest.fn(async () => true);
-const mockTestServerUrl = jest.fn(async () => true);
 
 /** Build a complete update-controller fixture with optional state overrides. */
 function updateController(overrides: Partial<ReturnType<typeof useAppUpdateController>> = {}) {
@@ -77,44 +57,22 @@ describe('AdvancedSettingsScreen', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedUseAuth.mockReturnValue({
-            serverUrl: HOSTED_SERVER_URL,
-            serverConnection: {
-                status: 'idle',
-                testedInput: null,
-                testedUrl: null,
-                message: 'Test this address before continuing.'
-            },
-            setServerUrl: mockSetServerUrl,
-            testServerUrl: mockTestServerUrl
+            serverUrl: HOSTED_SERVER_URL
         } as unknown as ReturnType<typeof useAuth>);
         mockedUseAppUpdateController.mockReturnValue(updateController());
     });
 
-    it('combines connection, diagnostics, and software updates on one page', async () => {
+    it('shows diagnostics and software updates on one page', async () => {
         const view = await render(<AdvancedSettingsScreen />);
 
-        expect(view.getByRole('header', { name: 'Connection' })).toBeTruthy();
         expect(view.getByRole('header', { name: 'Diagnostics' })).toBeTruthy();
         expect(view.getByRole('header', { name: 'Software updates' })).toBeTruthy();
-        expect(view.getByLabelText('Server URL')).toBeTruthy();
         expect(view.getByText(HOSTED_SERVER_URL)).toBeTruthy();
         expect(view.getByText('0.2.5 (build 7)')).toBeTruthy();
     });
 
-    it('tests and saves a selected server from the route', async () => {
-        const view = await render(<AdvancedSettingsScreen />);
-        const serverUrl = 'https://self-hosted.example.invalid';
-
-        await fireEvent.changeText(view.getByLabelText('Server URL'), serverUrl);
-        await fireEvent.press(view.getByRole('button', { name: 'Test Calibrate server connection' }));
-        await fireEvent.press(view.getByRole('button', { name: 'Save connection' }));
-
-        expect(mockTestServerUrl).toHaveBeenCalledWith(serverUrl);
-        await waitFor(() => expect(mockSetServerUrl).toHaveBeenCalledWith(serverUrl));
-    });
-
-    it('does not offer the origin-bound server editor on web', async () => {
-        const platform = jest.replaceProperty(Platform, 'OS', 'web');
+    it.each(['web', 'android', 'ios'] as const)('does not offer a server editor on %s', async (os) => {
+        const platform = jest.replaceProperty(Platform, 'OS', os);
         try {
             const view = await render(<AdvancedSettingsScreen />);
 

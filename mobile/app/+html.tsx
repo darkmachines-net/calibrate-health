@@ -1,4 +1,4 @@
-/** @file +html: Web-only document metadata shared by every statically rendered Expo route. */
+/** @file Static browser document with route metadata handed to Expo Head after hydration. */
 
 import { type PropsWithChildren } from 'react';
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
@@ -21,17 +21,18 @@ const ONE_TIME_TOKEN_BOOTSTRAP = `
   } catch (_) {}
 })();`;
 
-/** Web-only document metadata shared by every statically rendered Expo route. */
+/** Renders route metadata before JavaScript loads and marks only those tags for Expo Head to reconcile. */
 export default function RootHtml({ children, pathname }: PropsWithChildren<{ pathname: string }>) {
     const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
     const metadata = resolveRouteMetadata(pathname, { authenticated: false });
     return (
         <html lang="en" {...htmlAttributes}>
             <head>
-                <title>{metadata.title}</title>
-                <meta name="description" content={metadata.description} />
-                <meta name="robots" content={metadata.robots} />
-                {metadata.canonicalPath ? <link rel="canonical" href={metadata.canonicalPath} /> : null}
+                {/* Expo Head's Helmet reconciler adopts these static tags instead of appending duplicates. */}
+                <title data-rh="true">{metadata.title}</title>
+                <meta data-rh="true" name="description" content={metadata.description} />
+                <meta data-rh="true" name="robots" content={metadata.robots} />
+                {metadata.canonicalPath ? <link data-rh="true" rel="canonical" href={metadata.canonicalPath} /> : null}
                 <meta charSet="utf-8" />
                 <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
                 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />

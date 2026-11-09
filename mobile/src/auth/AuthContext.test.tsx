@@ -1,11 +1,16 @@
-/** @file Native authentication persistence, provider cancellation, server confirmation and compatibility recovery. */
+/** @file Configured-backend authentication persistence, provider cancellation and compatibility recovery. */
 
 const mockSecureLogoutStorage = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async (key: string) => mockSecureLogoutStorage.get(key) ?? null), setItemAsync: jest.fn(async (key: string, value: string) => { mockSecureLogoutStorage.set(key, value); }), deleteItemAsync: jest.fn(async (key: string) => { mockSecureLogoutStorage.delete(key); }) }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveOfflineWorkspace, restoreOfflineWorkspace } from './offlineWorkspace';
-beforeEach(async () => { await AsyncStorage.clear(); mockSecureLogoutStorage.clear(); mockClientOptions.length = 0; });
+beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockSecureLogoutStorage.clear();
+    mockClientOptions.length = 0;
+    jest.mocked(getDefaultServerUrl).mockReturnValue('https://health.example');
+});
 import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -57,12 +62,10 @@ jest.mock('../config/nativeClient', () => ({
 jest.mock('./storage', () => ({
     clearStoredTokens: jest.fn(async () => undefined),
     getOrCreateDeviceId: jest.fn(async () => 'device-1'),
-    readServerUrl: jest.fn(async () => 'https://health.example'),
     readStoredTokens: jest.fn(async () => ({
         accessToken: 'stored-access',
         refreshToken: 'stored-refresh'
     })),
-    writeServerUrl: jest.fn(async () => undefined),
     writeStoredTokens: jest.fn(async () => undefined)
 }));
 
@@ -82,12 +85,13 @@ jest.mock('./devAutoLogin', () => ({
 jest.mock('../onboarding/draftStorage', () => ({ clearOnboardingDraft: jest.fn(async () => undefined) }));
 jest.mock('../config/server', () => ({
     ...jest.requireActual('../config/server'),
+    getDefaultServerUrl: jest.fn(() => 'https://health.example'),
     testCalibrateServerConnection: jest.fn()
 }));
 
-import { writeStoredTokens, clearStoredTokens } from './storage';
+import { writeStoredTokens, clearStoredTokens, readStoredTokens } from './storage';
 import { clearOnboardingDraft } from '../onboarding/draftStorage';
-import { testCalibrateServerConnection } from '../config/server';
+import { getDefaultServerUrl, testCalibrateServerConnection } from '../config/server';
 import { AuthProvider, useAuth } from './AuthContext';
 
 const mockWriteStoredTokens = jest.mocked(writeStoredTokens);
@@ -179,6 +183,8 @@ async function renderAuth() {
 
 describe('native provider session exchange', () => {
     beforeEach(() => {
+        jest.clearAllMocks();
+        jest.mocked(getDefaultServerUrl).mockReturnValue('https://calibratehealth.app');
         mockGetClientConfig.mockResolvedValue({ server_version: '1.2.0' });
         mockRefreshMobile.mockResolvedValue(AUTH_PAYLOAD);
         mockSocialAuth.mockReset().mockResolvedValue(AUTH_PAYLOAD);
@@ -186,13 +192,14 @@ describe('native provider session exchange', () => {
         jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: true, url: 'https://calibratehealth.app', config: {} as never, message: 'Connected' });
     });
 
-    it('uses the confirmed origin and persists only the returned Calibrate tokens', async () => {
+    it('uses the configured origin and persists only the returned Calibrate tokens', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         mockWriteStoredTokens.mockClear();
         await act(async () => {
-            expect(await result.current.signInWithProvider('google.com', 'register', 'https://calibratehealth.app/', { acceptTerms: true, acceptPrivacy: true })).toBe(true);
+            expect(await result.current.signInWithProvider('google.com', 'register', { acceptTerms: true, acceptPrivacy: true })).toBe(true);
         });
+        expect(testCalibrateServerConnection).toHaveBeenCalledWith('https://calibratehealth.app', expect.any(Object));
         expect(mockSocialAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google.com', id_token: 'ephemeral', intent: 'register', accept_terms: true, accept_privacy: true, device_id: 'device-1' }));
         expect(mockClientOptions.at(-1)?.baseUrl).toBe('https://calibratehealth.app');
         expect(JSON.stringify(mockWriteStoredTokens.mock.calls)).not.toContain('ephemeral');
@@ -204,16 +211,28 @@ describe('native provider session exchange', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         mockSocialCredential.mockResolvedValue(null);
         mockWriteStoredTokens.mockClear();
-        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login', 'https://calibratehealth.app')).toBe(false); });
+        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login')).toBe(false); });
         expect(mockSocialAuth).not.toHaveBeenCalled();
         expect(mockWriteStoredTokens).not.toHaveBeenCalled();
+    });
+
+    it('requires hosted consent before opening a provider registration prompt', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        await act(async () => {
+            await expect(result.current.signInWithProvider('google.com', 'register'))
+                .rejects.toThrow('Explicit acceptance of the current legal documents is required.');
+        });
+        expect(mockSocialCredential).not.toHaveBeenCalled();
+        expect(mockSocialAuth).not.toHaveBeenCalled();
     });
 
     it('failed server confirmation never opens a provider prompt', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
-        jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: false, url: null, code: 'invalid_url', message: 'Invalid server' });
-        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login', 'bad-server')).toBe(false); });
+        jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: false, url: null, code: 'unreachable', message: 'Offline' });
+        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login')).toBe(false); });
+        expect(testCalibrateServerConnection).toHaveBeenCalledWith('https://calibratehealth.app', expect.any(Object));
         expect(mockSocialCredential).not.toHaveBeenCalled();
     });
 });
@@ -257,24 +276,26 @@ describe('native onboarding draft cleanup', () => {
     it('preserves a same-account session and clears the former account on replacement', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
-        await act(async () => { await result.current.login('person@example.com', 'password', 'https://health.example'); });
+        await act(async () => { await result.current.login('person@example.com', 'password'); });
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
         mockLoginMobile.mockResolvedValue({ ...AUTH_PAYLOAD, user: { id: 8, email: 'another@example.com' } });
-        await act(async () => { await result.current.login('another@example.com', 'password', 'https://health.example'); });
+        await act(async () => { await result.current.login('another@example.com', 'password'); });
         expect(clearOnboardingDraft).toHaveBeenCalledWith('https://health.example', 7);
         expect(result.current.user?.id).toBe(8);
     });
 
-    it('preserves the draft after a failed server probe and clears it for a confirmed switch', async () => {
+    it('checks only the configured backend and preserves the session after a failed probe', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
+        expect(readStoredTokens).toHaveBeenCalledWith('https://health.example');
+        mockLoginMobile.mockClear();
         jest.mocked(testCalibrateServerConnection).mockResolvedValueOnce({ ok: false, url: null, code: 'unreachable', message: 'Offline' });
-        await act(async () => { await result.current.setServerUrl('https://other.example'); });
+        await act(async () => { expect(await result.current.login('person@example.com', 'password')).toBe(false); });
+        expect(testCalibrateServerConnection).toHaveBeenLastCalledWith('https://health.example', expect.any(Object));
+        expect(mockLoginMobile).not.toHaveBeenCalled();
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
-        jest.mocked(testCalibrateServerConnection).mockResolvedValueOnce({ ok: true, url: 'https://other.example', config: {} as never, message: 'Connected' });
-        await act(async () => { await result.current.setServerUrl('https://other.example'); });
-        expect(clearOnboardingDraft).toHaveBeenCalledWith('https://health.example', 7);
-        expect(result.current.serverUrl).toBe('https://other.example');
+        expect(result.current.serverUrl).toBe('https://health.example');
+        expect(result.current.authError).toBe('Offline');
     });
 
     it('does not clear saved progress for a transient startup network failure', async () => {
@@ -375,7 +396,7 @@ it('keeps native logout intent across offline restart and drains the old token b
     mockLogoutMobile.mockResolvedValue(undefined);
     mockLoginMobile.mockResolvedValue({ ...AUTH_PAYLOAD, user: { ...AUTH_PAYLOAD.user, id: 8 } });
     jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: true, url: 'https://health.example', config: {} as never, message: 'Connected' });
-    await act(async () => { expect(await second.result.current.login('other@example.com', 'password', 'https://health.example')).toBe(true); });
+    await act(async () => { expect(await second.result.current.login('other@example.com', 'password')).toBe(true); });
     expect(second.result.current.user?.id).toBe(8);
     expect(mockLogoutMobile).toHaveBeenLastCalledWith('refresh');
     expect([...mockSecureLogoutStorage.values()]).toEqual([]);

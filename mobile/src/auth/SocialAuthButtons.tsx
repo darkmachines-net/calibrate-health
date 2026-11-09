@@ -1,4 +1,4 @@
-/** @file Show official native provider buttons only when both the selected server and this device support them. */
+/** @file Show official native provider buttons only when both the configured backend and this device support them. */
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { CalibrateApiClient } from '@calibrate/api-client';
@@ -9,7 +9,7 @@ import { spacing, useAppTheme } from '../theme';
 import { nativeSocialProviders } from './nativeSocialAuth';
 import type { SocialAuthButtonsProps } from './SocialAuthButtons.types';
 
-// Match the shared minimum touch target and debounce edits to the optional server field.
+// Match the shared minimum touch target and defer provider discovery until the auth screen mounts.
 const PROVIDER_BUTTON_HEIGHT = 48;
 const SERVER_DISCOVERY_DELAY_MS = 300;
 

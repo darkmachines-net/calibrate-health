@@ -1,4 +1,4 @@
-/** @file Regression coverage for Auth Context web: browser onboarding draft cleanup. */
+/** @file Regression coverage for serving-origin browser authentication: browser onboarding draft cleanup. */
 
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +24,6 @@ jest.mock('@calibrate/api-client', () => ({
 }));
 jest.mock('../config/server', () => ({
     getDefaultServerUrl: () => 'https://health.example',
-    INITIAL_SERVER_CONNECTION_STATE: { status: 'idle' },
     testCalibrateServerConnection: async () => ({ ok: true, url: 'https://health.example', message: 'Connected' })
 }));
 jest.mock('./devAutoLogin', () => ({ restoreBrowserDevelopmentSession: (...args: unknown[]) => mockRestoreSession(...args) }));
@@ -65,10 +64,10 @@ describe('browser onboarding draft cleanup', () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
-        await act(async () => { await result.current.login('person@example.com', 'password', 'https://health.example'); });
+        await act(async () => { await result.current.login('person@example.com', 'password'); });
         expect(clearOnboardingDraft).not.toHaveBeenCalled();
         mockLoginBrowser.mockResolvedValue({ user: { ...USER, id: 8 } });
-        await act(async () => { await result.current.login('another@example.com', 'password', 'https://health.example'); });
+        await act(async () => { await result.current.login('another@example.com', 'password'); });
         expect(clearOnboardingDraft).toHaveBeenCalledWith('https://health.example', 7);
         expect(result.current.user?.id).toBe(8);
     });
@@ -169,7 +168,7 @@ it('stays explicitly signed out across failed invalidation, restart, recovery an
     expect(mockRestoreSession).not.toHaveBeenCalled();
     mockLogoutBrowser.mockResolvedValue(undefined);
     mockLoginBrowser.mockResolvedValue({ user: { ...USER, id: 8 } });
-    await act(async () => { expect(await second.result.current.login('other@example.com', 'password', 'https://health.example')).toBe(true); });
+    await act(async () => { expect(await second.result.current.login('other@example.com', 'password')).toBe(true); });
     expect(second.result.current.user?.id).toBe(8);
     expect(mockLogoutBrowser).toHaveBeenCalled();
     await second.unmount();

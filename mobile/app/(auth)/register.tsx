@@ -1,20 +1,18 @@
-/** @file Password/native provider registration with explicit legal acceptance and optional native server selection. */
+/** @file Password/native provider registration with explicit legal acceptance on the configured backend. */
 
-import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Link, useLocalSearchParams, type Href } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Link, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { AppButton } from '../../src/components/AppButton';
 import { AppSection } from '../../src/components/AppSection';
 import { AppText } from '../../src/components/AppText';
 import { AuthBrand } from '../../src/components/auth/AuthBrand';
 import { Screen } from '../../src/components/Screen';
-import { ServerUrlControl } from '../../src/components/ServerUrlControl';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { TextField } from '../../src/components/TextField';
 import { LegalConsentFields } from '../../src/components/legal/LegalConsentFields';
 import { useAuth } from '../../src/auth/AuthContext';
-import { readAuthServerDraft } from '../../src/auth/authServerDraft';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
 import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
@@ -28,14 +26,10 @@ import {
     utf8ByteLength
 } from '../../../shared/authCredentials';
 
-/** Presents account creation with explicit legal acceptance and optional native server selection. */
+/** Presents account creation with explicit legal acceptance on the configured backend. */
 export default function RegisterScreen() {
     const { colors } = useAppTheme();
-    const params = useLocalSearchParams<{ serverUrl?: string | string[] }>();
-    const { register, signInWithProvider, serverUrl, testServerUrl, serverConnection, authError } = useAuth();
-    const canSelectServer = Platform.OS !== 'web';
-    const routedServerDraft = canSelectServer ? readAuthServerDraft(params.serverUrl) : null;
-    const [serverInput, setServerInput] = useState(routedServerDraft ?? serverUrl);
+    const { register, signInWithProvider, serverUrl, authError } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,11 +38,7 @@ export default function RegisterScreen() {
     const [consentError, setConsentError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const legalConsentRequired = requiresHostedLegalAcceptance(serverInput);
-
-    useEffect(() => {
-        setServerInput(routedServerDraft ?? serverUrl);
-    }, [routedServerDraft, serverUrl]);
+    const legalConsentRequired = requiresHostedLegalAcceptance(serverUrl);
 
     async function handleRegister() {
         if (isSubmitting) return;
@@ -78,7 +68,7 @@ export default function RegisterScreen() {
         setError(null);
         setConsentError(null);
         try {
-            await register(normalizedEmail, password, serverInput, {
+            await register(normalizedEmail, password, {
                 acceptTerms: termsAccepted,
                 acceptPrivacy: privacyAccepted
             });
@@ -99,7 +89,7 @@ export default function RegisterScreen() {
         setError(null);
         setConsentError(null);
         try {
-            await signInWithProvider(provider, 'register', serverInput, { acceptTerms: termsAccepted, acceptPrivacy: privacyAccepted });
+            await signInWithProvider(provider, 'register', { acceptTerms: termsAccepted, acceptPrivacy: privacyAccepted });
         } catch (err) { setError(socialAuthErrorMessage(err)); }
         finally { setIsSubmitting(false); }
     }
@@ -157,25 +147,14 @@ export default function RegisterScreen() {
                     disabled={isSubmitting}
                     error={consentError}
                 />}
-                {canSelectServer && (
-                    <ServerUrlControl
-                        value={serverInput}
-                        onChangeText={setServerInput}
-                        connection={serverConnection}
-                        onTestConnection={testServerUrl}
-                    />
-                )}
                 {(error || authError) && <AppText accessibilityRole="alert" style={{ color: colors.danger }}>{error ?? authError}</AppText>}
                 <AppButton title={isSubmitting ? 'Creating...' : 'Create account'} disabled={isSubmitting} onPress={() => void handleRegister()} />
-                <SocialAuthButtons serverUrl={serverInput} disabled={isSubmitting} onPress={provider => void handleProvider(provider)} />
+                <SocialAuthButtons serverUrl={serverUrl} disabled={isSubmitting} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             <View style={styles.footerLinks}>
                 <Link
-                    href={canSelectServer ? {
-                        pathname: '/(auth)/login',
-                        params: { serverUrl: serverInput }
-                    } : '/(auth)/login'}
+                    href="/(auth)/login"
                     asChild
                 >
                     <Pressable accessibilityRole="link" style={styles.linkTarget}>

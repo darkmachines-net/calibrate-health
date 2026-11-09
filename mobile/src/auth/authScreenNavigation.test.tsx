@@ -1,4 +1,4 @@
-/** @file Auth screen server routing, provider actions, hosted consent and bounded error presentation. */
+/** @file Fixed-backend password/provider auth forms, navigation, legal acceptance and bounded error presentation. */
 
 import React from 'react';
 import { Platform } from 'react-native';
@@ -6,13 +6,14 @@ import { fireEvent, render, waitFor, within } from '@testing-library/react-nativ
 import LoginScreen from '../../app/(auth)/login';
 import RegisterScreen from '../../app/(auth)/register';
 import { useAuth } from './AuthContext';
+import { SocialAuthButtons } from './SocialAuthButtons';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 
 jest.mock('./AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('./SocialAuthButtons', () => ({
-    SocialAuthButtons: ({ onPress, disabled }: { onPress: (provider: string) => void; disabled: boolean }) =>
-        require('react').createElement(require('react-native').Button, { title: 'Continue with Google', disabled, onPress: () => onPress('google.com') })
+    SocialAuthButtons: jest.fn(({ onPress, disabled }: { onPress: (provider: string) => void; disabled: boolean }) =>
+        require('react').createElement(require('react-native').Button, { title: 'Continue with Google', disabled, onPress: () => onPress('google.com') }))
 }));
 jest.mock('../account/accountDeletionNotice', () => ({ accountDeletionCleanupGuidance: jest.fn(() => '') }));
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
@@ -40,14 +41,6 @@ function authContextStub() {
         login: jest.fn(async () => true),
         signInWithProvider: jest.fn(async () => true),
         serverUrl: 'http://10.0.2.2:3000',
-        setServerUrl: jest.fn(async () => true),
-        testServerUrl: jest.fn(async () => true),
-        serverConnection: {
-            status: 'connected' as const,
-            testedInput: SELF_HOSTED_URL,
-            testedUrl: SELF_HOSTED_URL,
-            message: 'Connected to Calibrate 1.0.0 (API v1).'
-        },
         authError: null,
         accountDeletionCleanupNotice: null,
         acknowledgeAccountDeletionCleanupNotice: jest.fn(async () => undefined)
@@ -55,18 +48,12 @@ function authContextStub() {
 }
 
 function expectAuthLink(pathname: string) {
-    const linkProps = mockLink.mock.calls
-        .map(([props]) => props)
-        .find((props) => props.href?.pathname === pathname);
+    const linkProps = mockLink.mock.calls.map(([props]) => props).find((props) => props.href === pathname);
     expect(linkProps).toBeDefined();
-    expect(linkProps.href).toEqual({
-        pathname,
-        params: { serverUrl: SELF_HOSTED_URL }
-    });
     expect(linkProps.children.props.accessibilityRole).toBe('link');
 }
 
-describe('auth screen server navigation', () => {
+describe('fixed-backend auth screens', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockUseLocalSearchParams.mockReturnValue({ serverUrl: SELF_HOSTED_URL });
@@ -77,18 +64,19 @@ describe('auth screen server navigation', () => {
         jest.restoreAllMocks();
     });
 
-    it('uses the selected server for provider login without requiring password fields', async () => {
+    it('ignores legacy server parameters for provider login without requiring password fields', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
         const screen = await render(<LoginScreen />);
         await fireEvent.press(screen.getByText('Continue with Google'));
-        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'login', SELF_HOSTED_URL);
+        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'login');
+        expect(jest.mocked(SocialAuthButtons).mock.calls.at(-1)?.[0].serverUrl).toBe(auth.serverUrl);
         expect(auth.login).not.toHaveBeenCalled();
     });
 
     it('requires hosted consent for provider registration without requiring an email or password', async () => {
         const auth = authContextStub();
-        mockUseLocalSearchParams.mockReturnValue({ serverUrl: HOSTED_URL });
+        auth.serverUrl = HOSTED_URL;
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
         const screen = await render(<RegisterScreen />);
         await fireEvent.press(screen.getByText('Continue with Google'));
@@ -96,29 +84,30 @@ describe('auth screen server navigation', () => {
         expect(screen.getByRole('alert')).toHaveTextContent('Review and accept both legal documents to create an account.');
         for (const checkbox of screen.getAllByRole('checkbox')) await fireEvent.press(checkbox);
         await fireEvent.press(screen.getByText('Continue with Google'));
-        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'register', HOSTED_URL, { acceptTerms: true, acceptPrivacy: true });
+        expect(auth.signInWithProvider).toHaveBeenCalledWith('google.com', 'register', { acceptTerms: true, acceptPrivacy: true });
+        expect(jest.mocked(SocialAuthButtons).mock.calls.at(-1)?.[0].serverUrl).toBe(HOSTED_URL);
         expect(auth.register).not.toHaveBeenCalled();
     });
 
-    it('carries the login server draft into the registration link', async () => {
+    it('ignores legacy server parameters and links directly to registration', async () => {
         const screen = await render(<LoginScreen />);
 
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
-        await fireEvent.press(screen.getByLabelText('Show advanced connection options'));
-        expect(screen.getByLabelText('Server URL')).toHaveProp('value', SELF_HOSTED_URL);
+        expect(screen.queryByLabelText('Show advanced connection options')).toBeNull();
+        expect(screen.queryByLabelText('Server URL')).toBeNull();
         expectAuthLink('/(auth)/register');
     });
 
-    it('carries the registration server draft back to the login link', async () => {
+    it('ignores legacy server parameters and links directly to sign-in', async () => {
         const screen = await render(<RegisterScreen />);
 
         expect(screen.queryByText(SELF_HOSTED_URL)).toBeNull();
-        await fireEvent.press(screen.getByLabelText('Show advanced connection options'));
-        expect(screen.getByLabelText('Server URL')).toHaveProp('value', SELF_HOSTED_URL);
+        expect(screen.queryByLabelText('Show advanced connection options')).toBeNull();
+        expect(screen.queryByLabelText('Server URL')).toBeNull();
         expectAuthLink('/(auth)/login');
     });
 
-    it('submits login credentials with the routed server draft', async () => {
+    it('submits login credentials without a backend override', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
         const screen = await render(<LoginScreen />);
@@ -128,11 +117,11 @@ describe('auth screen server navigation', () => {
         await fireEvent.press(screen.getByLabelText('Sign in'));
 
         await waitFor(() => {
-            expect(auth.login).toHaveBeenCalledWith('user@example.com', 'secret', SELF_HOSTED_URL);
+            expect(auth.login).toHaveBeenCalledWith('user@example.com', 'secret');
         });
     });
 
-    it('submits registration credentials with the routed server draft', async () => {
+    it('submits registration credentials without a backend override', async () => {
         const auth = authContextStub();
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
         const screen = await render(<RegisterScreen />);
@@ -144,7 +133,7 @@ describe('auth screen server navigation', () => {
         await fireEvent.press(screen.getByLabelText('Create account'));
 
         await waitFor(() => {
-            expect(auth.register).toHaveBeenCalledWith('new@example.com', 'secret12', SELF_HOSTED_URL, {
+            expect(auth.register).toHaveBeenCalledWith('new@example.com', 'secret12', {
                 acceptTerms: false,
                 acceptPrivacy: false
             });
@@ -184,7 +173,6 @@ describe('auth screen server navigation', () => {
     it('requires both legal choices for hosted account creation', async () => {
         const auth = authContextStub();
         auth.serverUrl = HOSTED_URL;
-        mockUseLocalSearchParams.mockReturnValue({ serverUrl: HOSTED_URL });
         mockUseAuth.mockReturnValue(auth as unknown as ReturnType<typeof useAuth>);
         const screen = await render(<RegisterScreen />);
 
@@ -195,6 +183,12 @@ describe('auth screen server navigation', () => {
 
         expect(screen.getByRole('alert')).toHaveTextContent('Review and accept both legal documents to create an account.');
         expect(auth.register).not.toHaveBeenCalled();
+        await fireEvent.press(screen.getByTestId('accept-terms'));
+        await fireEvent.press(screen.getByTestId('accept-privacy'));
+        await fireEvent.press(screen.getByLabelText('Create account'));
+        await waitFor(() => expect(auth.register).toHaveBeenCalledWith('new@example.com', 'password123', {
+            acceptTerms: true, acceptPrivacy: true
+        }));
     });
     it('hides server selection and uses the serving server on web', async () => {
         jest.replaceProperty(Platform, 'OS', 'web');
@@ -212,8 +206,7 @@ describe('auth screen server navigation', () => {
         await waitFor(() => {
             expect(auth.login).toHaveBeenCalledWith(
                 'user@example.com',
-                'secret',
-                auth.serverUrl
+                'secret'
             );
         });
         expect(mockLink.mock.calls.some(([props]) => props.href === '/(auth)/register')).toBe(true);
