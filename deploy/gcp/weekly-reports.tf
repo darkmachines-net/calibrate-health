@@ -1,8 +1,14 @@
-# Optional Sunday reports use a dedicated caller, a bounded queue, and application-level OIDC checks.
+# Optional Sunday reports prepare identity/runtime settings before release; scheduling starts only after unpausing.
 variable "weekly_reports_enabled" {
   type        = bool
   default     = false
-  description = "Enable Sunday AI reports after deploying the report migration/API and configuring OpenAI workload identity and a model."
+  description = "Provision Sunday report infrastructure and runtime settings after configuring OpenAI workload identity and a model."
+}
+
+variable "weekly_reports_paused" {
+  type        = bool
+  default     = true
+  description = "Keep dispatch paused until the shared Release workflow has deployed the report API, migration and runtime settings."
 }
 
 locals {
@@ -62,6 +68,7 @@ resource "google_cloud_scheduler_job" "weekly_reports" {
   region           = var.region
   schedule         = "0 * * * *"
   time_zone        = "Etc/UTC"
+  paused           = var.weekly_reports_paused
   attempt_deadline = "180s"
   # Hourly dispatch covers local Sundays in every IANA timezone, including fractional-hour offsets.
   http_target {

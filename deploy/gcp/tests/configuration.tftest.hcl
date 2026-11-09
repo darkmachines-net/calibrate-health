@@ -71,12 +71,36 @@ run "weekly_reports_use_scoped_identity_and_bounded_queue" {
     error_message = "Local Sunday dispatch must be hourly with bounded concurrent provider work."
   }
   assert {
+    condition     = google_cloud_scheduler_job.weekly_reports[0].paused && contains(keys(local.runtime_environment), "WEEKLY_REPORT_TASK_QUEUE")
+    error_message = "Prepare runtime settings before release while leaving dispatch paused by default."
+  }
+  assert {
     condition     = google_cloud_scheduler_job.weekly_reports[0].http_target[0].oidc_token[0].audience == local.report_task_origin && google_cloud_run_v2_service_iam_member.weekly_report_invoker[0].member != "allUsers"
     error_message = "Internal reporting needs audience-bound tokens and a private service identity."
   }
   assert {
     condition     = !contains(keys(local.runtime_secrets), "OPENAI_API_KEY") && !contains(keys(local.optional_secrets), "OPENAI_API_KEY") && local.runtime_environment.OPENAI_IDENTITY_PROVIDER_ID == "idp-synthetic" && local.runtime_environment.OPENAI_SERVICE_ACCOUNT_ID == "sa-synthetic"
     error_message = "OpenAI federation must use public mapping identifiers without storing or injecting an API key."
+  }
+}
+
+run "weekly_reports_unpause_after_release" {
+  command = plan
+  variables {
+    image                  = "us-central1-docker.pkg.dev/calibrate-test/application/server@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    serve                  = true
+    auth_provider          = "firebase"
+    weekly_reports_enabled = true
+    weekly_reports_paused  = false
+    application_environment = {
+      OPENAI_WEEKLY_REPORT_MODEL  = "operator-selected-model"
+      OPENAI_IDENTITY_PROVIDER_ID = "idp-synthetic"
+      OPENAI_SERVICE_ACCOUNT_ID   = "sa-synthetic"
+    }
+  }
+  assert {
+    condition     = !google_cloud_scheduler_job.weekly_reports[0].paused
+    error_message = "Operators must be able to start dispatch after verifying the released runtime settings."
   }
 }
 

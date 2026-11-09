@@ -33,8 +33,9 @@ application_environment = {
   # SMTP_USERNAME = "provider-user"
   # SMTP_FROM     = "Calibrate <noreply@calibratehealth.app>"
 }
-# Enable only after the OpenAI mapping, report API and migration are ready.
+# Prepare the queue/runtime settings before release, then unpause after verifying the serving revision.
 # weekly_reports_enabled = true
+# weekly_reports_paused  = true
 secret_versions = {
   # SMTP_PASSWORD = "1"
 }

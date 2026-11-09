@@ -285,9 +285,9 @@ before launch. Empty alert input allows setup but sends no operator notification
 
 ## Weekly progress reports
 
-Weekly AI reports are optional and disabled by default. Deploy migration 0048 and the
-report API before enabling the scheduler. Reapply bootstrap to enable the Cloud Tasks
-and Cloud Scheduler APIs. OpenAI authentication uses Google workload identity federation;
+Weekly AI reports are optional and disabled by default. Reapply bootstrap to enable
+the Cloud Tasks and Cloud Scheduler APIs. Prepare the infrastructure with scheduling
+paused before releasing the report API and migration 0048. OpenAI authentication uses Google workload identity federation;
 no OpenAI API key or Google service-account key file is stored or provisioned.
 
 In the OpenAI organization containing the Calibrate Health project, open Organization
@@ -311,8 +311,18 @@ Set `application_environment.OPENAI_IDENTITY_PROVIDER_ID` and
 `application_environment.OPENAI_WEEKLY_REPORT_MODEL` to a Responses model with structured
 outputs. `OPENAI_WIF_AUDIENCE` defaults to the audience above; configure it explicitly if
 the provider uses another audience. These are non-secret settings. Set
-`weekly_reports_enabled=true` only after the mapping is ready and review the Terraform plan.
-No OpenAI model is chosen automatically. Configure the project budget separately in OpenAI.
+`weekly_reports_enabled=true` after the mapping is ready, keep `weekly_reports_paused=true`
+(the default), and review/apply the Terraform plan. This prepares the queue, caller and
+Cloud Run template settings without dispatching reports. No OpenAI model is chosen
+automatically. Configure the project budget separately in OpenAI.
+
+Terraform preserves release-owned traffic and Hosting pins, so template changes do not
+activate settings on the serving revision. Deploy the report code and migration through
+the shared Release workflow after preparing these settings. Verify the serving revision
+contains both the OpenAI and `WEEKLY_REPORT_TASK_*` settings, then set
+`weekly_reports_paused=false` and apply the reviewed scheduler-only change. Later pauses
+use `weekly_reports_paused=true`; existing queued tasks may finish. Do not move traffic
+or deploy Hosting outside the release workflow to activate environment changes.
 
 The module creates a dedicated task caller, queue-scoped enqueuer access for the API,
 and an hourly UTC Scheduler trigger. The dispatcher only queues accounts whose local
