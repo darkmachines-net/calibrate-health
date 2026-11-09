@@ -1,4 +1,4 @@
-/** @file Regression coverage for routes metrics: metrics baseline: same-day first weight and correction preserve the goal and synchronize its baseline. */
+/** @file Regression coverage for metric mutations, legacy trend responses, and bounded history pages. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -1224,6 +1224,64 @@ test('metrics route: GET / recomputes a bounded historical trend as of the reque
   assert.equal(res.body.meta.trend_summary.modeled_points, 10);
   assert.equal(res.body.meta.trend_summary.returned_points, 10);
   assert.equal(res.body.meta.trend_summary.observation_span_days, 9);
+});
+
+test('metrics route: paged trend history reads only the display page and shared model window', async () => {
+  const today = getUtcTodayDateOnly();
+  const rows = Array.from({ length: 602 }, (_, index) => ({
+    id: index + 1,
+    user_id: 7,
+    date: addUtcDays(today, index - 600),
+    weight_grams: 90000 - index * 12,
+    body_fat_percent: null
+  }));
+  const queries = [];
+  const router = loadMetricsRouter({
+    bodyMetric: {
+      aggregate: async ({ where }) => {
+        const eligible = rows.filter((row) => row.user_id === where.user_id && row.date <= where.date.lte);
+        return { _min: { date: eligible[0].date }, _max: { date: eligible.at(-1).date }, _count: { _all: eligible.length } };
+      },
+      findMany: async ({ where }) => {
+        queries.push(where);
+        return rows.filter((row) => row.user_id === where.user_id &&
+          where.OR.some(({ date }) => row.date >= date.gte && row.date <= date.lte));
+      }
+    }
+  });
+  const handler = getRouteHandler(router, 'get', '/');
+  const readPage = async (start, end) => {
+    const res = createRes();
+    await handler({
+      user: { id: 7, weight_unit: 'KG', timezone: 'UTC' },
+      query: {
+        include_trend: 'true',
+        start: formatDateOnly(addUtcDays(today, start)),
+        end: formatDateOnly(addUtcDays(today, end)),
+        as_of: formatDateOnly(today)
+      }
+    }, res);
+    assert.equal(res.statusCode, 200);
+    return res.body;
+  };
+  const recent = await readPage(-55, 0);
+  const overlapping = await readPage(-110, -55);
+  const older = await readPage(-400, -345);
+  assert.equal(queries.length, 3);
+  for (const query of queries) {
+    assert.equal(query.user_id, 7);
+    assert.equal(query.OR.length, 2);
+    assert.deepEqual(query.OR[1].date, { gte: addUtcDays(today, -149), lte: today });
+  }
+  assert.equal(older.metrics.length, 56);
+  assert.equal(older.meta.history_start_date, formatDateOnly(rows[0].date));
+  assert.equal(older.meta.total_points, 601);
+  assert.equal(older.meta.total_span_days, 601);
+  assert.ok(older.metrics.every((row) => !row.trend_is_materialized));
+  assert.deepEqual(recent.metrics.at(-1), overlapping.metrics[0], 'overlapping estimates must agree across pages');
+  assert.equal(older.meta.trend_summary.as_of_date, recent.meta.trend_summary.as_of_date);
+  assert.equal(older.meta.trend_summary.modeled_start_date, recent.meta.trend_summary.modeled_start_date);
+  assert.deepEqual(older.meta.trend_summary.latest_trend, recent.meta.trend_summary.latest_trend);
 });
 
 test('metrics route: GET / legacy weekly rate ignores a pre-gap reversal', async () => {

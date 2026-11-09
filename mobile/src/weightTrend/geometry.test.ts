@@ -1,7 +1,8 @@
-/** @file Regression coverage for geometry: weight trend chart geometry. */
+/** @file Regression coverage for fixed date bounds, weight observations, and trend segments. */
 
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import { buildWeightTrendChartGeometry, normalizeWeightTrendMetrics } from './geometry';
+import { weightHistoryDay } from './historyWindow';
 
 function metric(
     id: number,
@@ -63,6 +64,24 @@ describe('weight trend chart geometry', () => {
         expect(last.x).toBe(350);
         expect(second.x).toBeCloseTo(80, 5);
         expect(second.x).not.toBeCloseTo(200, 5);
+    });
+
+    it('keeps empty dates on the axis and uses offscreen readings only for edge continuity', () => {
+        const start = weightHistoryDay('2026-07-02');
+        const end = weightHistoryDay('2026-07-08');
+        const geometry = buildWeightTrendChartGeometry([
+            metric(1, '2026-07-01', 80),
+            metric(2, '2026-07-05', 79)
+        ], {
+            ...OPTIONS,
+            dateWindow: { start, end },
+            missingWindows: [{ start: end - 0.5, end: end + 2 }]
+        });
+
+        expect(geometry.xTicks.map((tick) => tick.dateKey)).toEqual(['2026-07-02', '2026-07-05', '2026-07-08']);
+        expect(geometry.points.map(({ dateKey, x }) => ({ dateKey, x }))).toEqual([{ dateKey: '2026-07-05', x: 200 }]);
+        expect(geometry.trendSegments[0][0].x).toBeLessThan(OPTIONS.padding.left);
+        expect(geometry.missingRegions).toEqual([{ x: 325, width: 25 }]);
     });
 
     it('breaks modeled paths across gaps longer than 14 days', () => {

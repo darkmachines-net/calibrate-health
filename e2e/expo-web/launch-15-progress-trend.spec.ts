@@ -1,4 +1,4 @@
-/** @file Regression coverage for launch 15 progress trend: Progress and Trend explain fresh, stale, gapped, and raw-only weight history. */
+/** @file Browser coverage for fixed-window weight history, panning, prefetching, and trend evidence states. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -13,7 +13,6 @@ const TRANSIENT_PWA_TITLES = new Set([
   'Updating Calibrate',
 ]);
 
-type TrendRange = 'week' | 'month' | 'year' | 'all';
 type MonthFreshness = 'current' | 'stale' | 'outdated';
 
 type TrendMetric = {
@@ -32,11 +31,12 @@ type TrendMetric = {
 
 type TrendFixture = {
   monthFreshness: MonthFreshness;
+  pageEnds: string[];
 };
 
 const MODELED_MONTH_METRICS: TrendMetric[] = [
-  metric(101, '2026-06-20', 90, 89.7, { segmentStart: true }),
-  metric(102, '2026-06-21', 89.6, 89.5),
+  metric(101, '2026-06-24', 90, 89.7, { segmentStart: true }),
+  metric(102, '2026-06-25', 89.6, 89.5),
   metric(103, '2026-07-16', 88.8, 88.6, { segmentStart: true }),
   metric(104, '2026-07-18', 88.2, 88.4),
 ];
@@ -52,6 +52,11 @@ const OUTDATED_MONTH_METRICS: TrendMetric[] = [
 ];
 
 const RAW_ONLY_HISTORY = metric(1, '2025-01-02', 94.2, 94.2, { materialized: false });
+const EARLIER_READINGS = [
+  metric(2, '2025-11-02', 93.4, 93.4, { materialized: false }),
+  metric(3, '2026-05-20', 91.5, 91.2, { segmentStart: true }),
+  metric(4, '2026-06-04', 91.1, 90.8, { segmentStart: true })
+];
 
 function metric(
   id: number,
@@ -79,7 +84,6 @@ function metric(
 function trendSummary(
   freshness: MonthFreshness,
   metrics: TrendMetric[],
-  options: { modeledStartDate?: string | null } = {},
 ) {
   const latest = [...metrics].sort((left, right) => left.date.localeCompare(right.date)).at(-1)!;
   const modeled = metrics.filter((entry) => entry.trend_is_materialized);
@@ -95,7 +99,7 @@ function trendSummary(
     scope_end_date: latest.date,
     latest_observation_date: latest.date,
     days_since_latest: daysSinceLatest,
-    modeled_start_date: options.modeledStartDate ?? modeled[0]?.date ?? null,
+    modeled_start_date: modeled[0]?.date ?? null,
     latest_trend: latestModeled ? {
       weight: latestModeled.trend_weight,
       lower: latestModeled.trend_ci_lower,
@@ -124,51 +128,37 @@ function trendSummary(
   };
 }
 
-function trendResponse(range: TrendRange, monthFreshness: MonthFreshness) {
-  let metrics = MODELED_MONTH_METRICS;
-  let freshness = monthFreshness;
-  let modeledStartDate: string | null | undefined;
-
-  if (range === 'week') {
-    metrics = STALE_WEEK_METRICS;
-    freshness = 'stale';
-  } else if (range === 'year' || range === 'all') {
-    metrics = [RAW_ONLY_HISTORY, ...MODELED_MONTH_METRICS];
-    freshness = 'current';
-    modeledStartDate = MODELED_MONTH_METRICS[0].date;
-  } else if (monthFreshness === 'outdated') {
-    metrics = OUTDATED_MONTH_METRICS;
-  } else if (monthFreshness === 'stale') {
-    metrics = STALE_WEEK_METRICS;
-  }
-
+function trendResponse(freshness: MonthFreshness, start: string | null, end: string | null) {
+  let recent = MODELED_MONTH_METRICS;
+  if (freshness === 'outdated') recent = OUTDATED_MONTH_METRICS;
+  else if (freshness === 'stale') recent = STALE_WEEK_METRICS;
+  const history = start && end ? [RAW_ONLY_HISTORY, ...EARLIER_READINGS, ...recent] : recent;
+  const metrics = history.filter(({ date }) => (!start || date >= start) && (!end || date <= end));
   return {
     metrics,
     meta: {
       weekly_rate: -0.25,
       volatility: 'low',
-      total_points: metrics.length,
-      total_span_days: range === 'all' ? 563 : 28,
-      trend_summary: trendSummary(freshness, metrics, { modeledStartDate }),
+      total_points: history.length,
+      total_span_days: start ? 563 : 25,
+      ...(start ? { history_start_date: history[0].date } : {}),
+      trend_summary: trendSummary(freshness, history),
     },
   };
 }
 
 async function installTrendFixture(page: Page): Promise<TrendFixture> {
-  const fixture: TrendFixture = { monthFreshness: 'current' };
+  const fixture: TrendFixture = { monthFreshness: 'current', pageEnds: [] };
   await page.route('**/api/v1/metrics**', (route: Route) => {
     const url = new URL(route.request().url());
     if (url.searchParams.get('include_trend') !== 'true') return route.fallback();
-    const requestedRange = url.searchParams.get('range');
-    const range: TrendRange = requestedRange === 'week'
-      || requestedRange === 'year'
-      || requestedRange === 'all'
-      ? requestedRange
-      : 'month';
+    const start = url.searchParams.get('start');
+    const end = url.searchParams.get('end');
+    if (end && url.searchParams.has('as_of')) fixture.pageEnds.push(end);
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(trendResponse(range, fixture.monthFreshness)),
+      body: JSON.stringify(trendResponse(fixture.monthFreshness, start, end)),
     });
   });
   return fixture;
@@ -285,7 +275,7 @@ test('Progress and Trend explain fresh, stale, gapped, and raw-only weight histo
   await page.keyboard.press('ArrowRight');
   await expect(selectedSummary).toContainText('Jul 18, 2026');
   await page.keyboard.press('Home');
-  await expect(selectedSummary).toContainText('Jun 20, 2026');
+  await expect(selectedSummary).toContainText('Jun 24, 2026');
   await page.keyboard.press('End');
   await expect(selectedSummary).toContainText('Jul 18, 2026');
   await page.getByRole('button', { name: 'Previous weigh-in', exact: true }).click();
@@ -293,26 +283,76 @@ test('Progress and Trend explain fresh, stale, gapped, and raw-only weight histo
   await page.getByRole('button', { name: 'Next weigh-in', exact: true }).click();
   await expect(selectedSummary).toContainText('Jul 18, 2026');
 
+  const historyWindow = page.getByTestId('weight-history-window');
+  await expect(historyWindow).toContainText('Jun 24 - Jul 21, 2026');
+  await expect(historyWindow).toContainText('28 days');
+  await expect(page.getByText('All', { exact: true })).toHaveCount(0);
+  await expect.poll(() => trendFixture.pageEnds).toEqual(expect.arrayContaining(['2026-07-21', '2026-05-26']));
+  expect(new Set(trendFixture.pageEnds).size).toBe(2);
+  if (desktopChart) {
+    await chartCanvas.scrollIntoViewIfNeeded();
+    const box = (await chartCanvas.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.55, box.y + box.height / 2, { steps: 12 });
+    await page.mouse.up();
+    await expect(historyWindow).not.toContainText('Jul 21, 2026');
+    await expect(historyWindow).toContainText('28 days');
+    await page.getByRole('button', { name: 'Back to today', exact: true }).click();
+  } else {
+    await chartCanvas.scrollIntoViewIfNeeded();
+    const box = (await chartCanvas.boundingBox())!;
+    const touch = await page.context().newCDPSession(page);
+    const point = (fraction: number) => [{ x: box.x + box.width * fraction, y: box.y + box.height / 2 }];
+    try {
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(0.25) });
+      for (const fraction of [0.30, 0.38, 0.46, 0.55]) {
+        await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(fraction) });
+      }
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } finally {
+      await touch.detach();
+    }
+    await expect(historyWindow).not.toContainText('Jul 21, 2026');
+    await expect(historyWindow).toContainText('28 days');
+    await page.getByRole('button', { name: 'Back to today', exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'Previous 28 days', exact: true }).click();
+  await expect(historyWindow).toContainText('May 27 - Jun 23, 2026');
+  await expect(selectedSummary).toContainText('Jun 4, 2026');
+  await page.getByRole('button', { name: 'Previous 28 days', exact: true }).click();
+  await expect(selectedSummary).toContainText('May 20, 2026');
+  await page.getByText('Week', { exact: true }).click();
+  await expect(historyWindow).toContainText('May 20 - May 26, 2026');
+  await page.getByRole('button', { name: 'Previous 7 days', exact: true }).click();
+  await expect(page.getByText('No weigh-ins in this window', { exact: true })).toBeVisible();
+  await expect(chartCanvas).toBeVisible();
+  await page.getByRole('button', { name: 'Back to today', exact: true }).click();
+  await expect(historyWindow).toContainText('Jul 15 - Jul 21, 2026');
+  await expect(selectedSummary).toContainText('Jul 18, 2026');
+
   await hideTransientPwaNotices(page);
-  await page.getByText('All', { exact: true }).click();
+  await page.getByText('Year', { exact: true }).click();
   await expect(page.getByTestId('weight-trend-model-boundary')).toHaveCount(1);
   await expect(page.getByText(
-    'Smoothed trend starts Jun 20, 2026. Earlier dots are measurements only.',
+    'Smoothed trend starts May 20, 2026. Earlier dots are measurements only.',
     { exact: true },
   )).toBeVisible();
   await chartKeyboardTarget.focus();
   await page.keyboard.press('Home');
-  await expect(selectedSummary).toContainText('Jan 2, 2025');
+  await expect(selectedSummary).toContainText('Nov 2, 2025');
   await expect(selectedSummary).toContainText('This older point has no underlying trend estimate.');
   await expect(selectedSummary).not.toContainText('95% trend range');
   await expect(legend.getByText('Underlying trend', { exact: true })).toBeVisible();
   await expect(legend.getByText('95% estimate range', { exact: true })).toBeVisible();
 
-  await hideTransientPwaNotices(page);
-  await page.getByText('Week', { exact: true }).click();
-  await expect(selectedSummary).toContainText('Jul 11, 2026');
-  await expect(selectedSummary).toContainText('Based on an older weigh-in');
-  await expect(selectedSummary).not.toContainText('Current underlying trend');
+  await page.getByRole('button', { name: 'Previous 365 days', exact: true }).click();
+  await expect(historyWindow).toContainText('365 days | Earliest');
+  await expect(selectedSummary).toContainText('Nov 2, 2025');
+  await chartKeyboardTarget.focus();
+  await page.keyboard.press('Home');
+  await expect(selectedSummary).toContainText('Jan 2, 2025');
+  await page.getByRole('button', { name: 'Back to today', exact: true }).click();
 
   await hideTransientPwaNotices(page);
   await page.getByText('Month', { exact: true }).click();
@@ -321,6 +361,12 @@ test('Progress and Trend explain fresh, stale, gapped, and raw-only weight histo
   await expect(page).toHaveURL((url) => url.pathname === '/progress');
   await expect(page.locator('#route-focus-title')).toHaveText('Progress');
 
+  // Each following scenario replaces the server fixture; don't restore the previous scenario's saved reads.
+  await page.addInitScript(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('@calibrate/offline-workspace/')) localStorage.removeItem(key);
+    }
+  });
   trendFixture.monthFreshness = 'stale';
   await page.reload();
   await expect(page.getByTestId('trend-preview-heading-line')).toContainText(

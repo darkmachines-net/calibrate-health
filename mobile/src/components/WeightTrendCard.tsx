@@ -1,6 +1,6 @@
-/** @file Weight Trend Card: React Native reports locationX, while React Native Web forwards the browser click's offsetX. */
+/** @file Expanded weight trend with date-window navigation, panning, and independent weigh-in selection. */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
     Platform,
     Pressable,
@@ -18,17 +18,20 @@ import {
     getWeightTrendChartMinimumHeight,
     useWeightTrendChartTypography
 } from './WeightTrendChart';
-import { useQuery } from '@tanstack/react-query';
+import { AppButton } from './AppButton';
 import { AppChip } from './AppChip';
 import { AppText } from './AppText';
-import { AsyncStateBoundary, useAsyncResourceState, useOnlineStatus } from './AsyncStateBoundary';
-import { LoadingState } from './LoadingState';
+import { AsyncStateBoundary, useOnlineStatus } from './AsyncStateBoundary';
 import { SectionHeader } from './SectionHeader';
 import { useFocusVisible } from './useFocusVisible';
 import { useAuth } from '../auth/AuthContext';
+import { ASYNC_RESOURCE_STATES, resolveAsyncResourceState } from '../asyncState/resolveAsyncState';
 import { radius, spacing, useAppTheme, type AppTheme } from '../theme';
 import { formatDateOnlyForDisplay } from '../utils/dates';
 import { formatWeight } from '../utils/format';
+import { WEIGHT_HISTORY_RANGES, weightHistoryDate } from '../weightTrend/historyWindow';
+import { useWeightTrendHistory } from '../weightTrend/useWeightTrendHistory';
+import { useWeightTrendPan } from '../weightTrend/useWeightTrendPan';
 import type { WeightTrendChartPoint } from '../weightTrend/geometry';
 import {
     describeVisibleWeightTrend,
@@ -40,21 +43,13 @@ import {
     useWeightTrendDegradationDiagnostic
 } from '../diagnostics/operationDiagnostics';
 
-type TrendRange = 'week' | 'month' | 'year' | 'all';
-
 type WeightTrendCardProps = ViewProps & {
     title?: string | null;
     description?: string;
     footer?: React.ReactNode;
 };
 
-const RANGE_OPTIONS: Array<{ value: TrendRange; label: string }> = [
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
-    { value: 'year', label: 'Year' },
-    { value: 'all', label: 'All' }
-];
-
+// Provides initial geometry until the chart canvas is measured.
 const DEFAULT_CHART_WIDTH = 340;
 export { getWeightTrendChartMinimumHeight } from './WeightTrendChart';
 
@@ -100,7 +95,7 @@ function describeSelectedTrendPoint(
     return `Selected ${formatDateOnlyForDisplay(point.dateKey)}. Underlying weight estimate ${formatWeight(snapshot.weight, unit)}. 95% trend range ${formatEstimatedTrendRange(snapshot, unit)}. Scale reading ${formatWeight(point.metric.weight, unit)}.`;
 }
 
-/** Loads range-selected trend history and exposes chart selection alongside the weight summary. */
+/** Renders a pannable date window over weight history without changing the selected span. */
 export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
     title = 'Weight trend',
     description,
@@ -108,36 +103,53 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
     style,
     ...props
 }) => {
-    const { api, user } = useAuth();
+    const { user } = useAuth();
     const { width: viewportWidth } = useWindowDimensions();
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const [range, setRange] = useState<TrendRange>('month');
     const [selectedPointKey, setSelectedPointKey] = useState<string | null>(null);
     const [selectionAnnouncement, setSelectionAnnouncement] = useState('');
     const [chartCanvasWidth, setChartCanvasWidth] = useState(DEFAULT_CHART_WIDTH);
     const [chartCanvasHeight, setChartCanvasHeight] = useState(0);
+    const [panPreview, setPanPreview] = useState<{ point: WeightTrendChartPoint | null; weightTicks: number[] } | null>(null);
+    const panning = panPreview !== null;
+    const pan = useRef({ origin: 0, target: 0 });
     const { axisScale, axisPadding, axisFontSize, axisProbe } = useWeightTrendChartTypography();
     const chartMinHeight = getWeightTrendChartMinimumHeight(viewportWidth) * axisScale;
     const chartHeight = Math.max(chartCanvasHeight, chartMinHeight);
-    const trendQuery = useQuery({
-        queryKey: ['mobile-metrics-trend', range],
-        queryFn: () => api.getTrendMetrics({ range })
+    const history = useWeightTrendHistory();
+    const { range, start, end, metrics, trendSummary } = history;
+    const panBindings = useWeightTrendPan({
+        begin: () => {
+            pan.current = { origin: end, target: end };
+            setPanPreview({ point: selectedPoint, weightTicks: chartLayout.yTicks.map(({ value }) => value) });
+            clearSelection();
+        },
+        move: (pixels) => {
+            const width = Math.max(1, chartCanvasWidth - axisPadding.left - axisPadding.right);
+            const next = pan.current.origin - pixels * (range - 1) / width;
+            pan.current.target = next;
+            history.panTo(next);
+        },
+        end: () => {
+            history.panTo(Math.round(pan.current.target));
+            setPanPreview(null);
+        }
     });
     const isOnline = useOnlineStatus();
-    const trendState = useAsyncResourceState(trendQuery, (data) => data.metrics.length === 0);
-    const metrics = useMemo(() => trendQuery.data?.metrics ?? [], [trendQuery.data?.metrics]);
-    const trendSummary = trendQuery.data?.meta.trend_summary;
     const chartLayout = useMemo(
         () => buildWeightTrendVisualization(metrics, {
             width: chartCanvasWidth,
             height: chartHeight,
             minHeight: chartMinHeight,
             padding: axisPadding,
-            downsampleMeasurements: range === 'all',
-            modelStartDate: trendSummary?.modeled_start_date
+            downsampleMeasurements: range === 365,
+            modelStartDate: trendSummary?.modeled_start_date,
+            dateWindow: { start, end },
+            missingWindows: history.missingWindows,
+            fixedWeightTicks: panPreview?.weightTicks
         }),
-        [axisPadding, chartCanvasWidth, chartHeight, chartMinHeight, metrics, range, trendSummary?.modeled_start_date]
+        [axisPadding, chartCanvasWidth, chartHeight, chartMinHeight, end, history.missingWindows, metrics, panPreview, range, start, trendSummary?.modeled_start_date]
     );
     const chartPoints = chartLayout.points;
     const selectedPointIndex = useMemo(() => {
@@ -147,22 +159,59 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
         return matchingIndex >= 0 ? matchingIndex : chartPoints.length - 1;
     }, [chartPoints, selectedPointKey]);
     const selectedPoint = selectedPointIndex >= 0 ? chartPoints[selectedPointIndex] : null;
+    // Keep the space below the plot stable through gaps while the user is dragging.
+    const displayedPoint = panPreview ? panPreview.point : selectedPoint;
 
-    const hasWeightHistory = (trendQuery.data?.meta.total_points ?? 0) > 0;
     const trendUnavailable = trendSummary?.status === 'unavailable';
     useClientQueryFailureDiagnostic({
         operation: 'weight_trend_load',
-        isError: trendQuery.isError,
-        error: trendQuery.error,
-        errorUpdatedAt: trendQuery.errorUpdatedAt
+        isError: history.error !== null,
+        error: history.error,
+        errorUpdatedAt: history.errorUpdatedAt
     });
-    useWeightTrendDegradationDiagnostic(trendUnavailable, trendQuery.dataUpdatedAt);
-    const latestSnapshot = getLatestWeightTrendSnapshot(metrics, trendSummary);
-    const visibleTrendSummary = describeVisibleWeightTrend(metrics, user?.weight_unit);
-    const showModelBoundary = (range === 'year' || range === 'all') && chartLayout.modelBoundaryPoint !== null;
+    useWeightTrendDegradationDiagnostic(trendUnavailable, history.dataUpdatedAt);
+    const visibleMetrics = chartPoints.map((point) => point.metric);
+    const latestSnapshot = getLatestWeightTrendSnapshot(visibleMetrics);
+    const visibleTrendSummary = describeVisibleWeightTrend(visibleMetrics, user?.weight_unit);
+    const showModelBoundary = range === 365 && chartLayout.modelBoundaryPoint !== null;
+    const atLatest = Math.round(end) === history.today;
+    const atOldest = Math.round(end) === history.oldestEnd;
+    const startDate = weightHistoryDate(start);
+    const endDate = weightHistoryDate(end);
+    const dateLabel = `${formatDateOnlyForDisplay(startDate, startDate.slice(0, 4) !== endDate.slice(0, 4))} - ${formatDateOnlyForDisplay(endDate)}`;
+    let windowStatus = `${range} days`;
+    if (atLatest) windowStatus += ' | Latest';
+    else if (atOldest) windowStatus += ' | Earliest';
+    if (history.loadingPage && chartPoints.length) windowStatus += ' | Loading...';
+    let emptyMessage = '';
+    const missingPage = history.missingWindows.length > 0;
+    const pageState = resolveAsyncResourceState({
+        data: missingPage && !chartPoints.length ? undefined : chartPoints.length > 0,
+        status: history.error ? 'error' : missingPage ? 'pending' : 'success',
+        error: history.error,
+        dataUpdatedAt: history.dataUpdatedAt
+    }, { isEmpty: (hasPoints) => !hasPoints, isOnline });
+    const showPageNotice = pageState.kind === ASYNC_RESOURCE_STATES.ERROR ||
+        pageState.kind === ASYNC_RESOURCE_STATES.STALE ||
+        pageState.kind === ASYNC_RESOURCE_STATES.DEGRADED;
+    if (!chartPoints.length) {
+        if (missingPage && isOnline && !history.error) {
+            emptyMessage = history.historyCount ? 'Loading weight history...' : 'Loading trend...';
+        }
+        else if (!missingPage && !history.error && isOnline) {
+            emptyMessage = history.historyCount ? 'No weigh-ins in this window' : 'Log a weigh-in to start a trend.';
+        }
+    }
+    const firstWeighIn = history.historyCount === 1 && chartPoints.length === 1 ? chartPoints[0] : null;
+    const showChart = !firstWeighIn && (history.historyCount > 0 || chartPoints.length > 0);
     const accessibleChartSummary = latestSnapshot
         ? `Weight chart from ${formatDateOnlyForDisplay(chartPoints[0]?.dateKey ?? '')} to ${formatDateOnlyForDisplay(chartPoints[chartPoints.length - 1]?.dateKey ?? '')}, with ${chartPoints.length} measurements. Latest smoothed weight ${formatWeight(latestSnapshot.weight, user?.weight_unit)}. 95% estimated trend range ${formatEstimatedTrendRange(latestSnapshot, user?.weight_unit)}.`
         : `Weight chart with ${chartPoints.length} measurements. Smoothed estimates are not available for this selected history.`;
+
+    function clearSelection() {
+        setSelectedPointKey(null);
+        setSelectionAnnouncement('');
+    }
 
     function selectPoint(point: WeightTrendChartPoint) {
         setSelectedPointKey(getPointKey(point));
@@ -206,37 +255,19 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
             {axisProbe}
             {(title || description) && <SectionHeader title={title ?? ''} description={description} />}
             <View style={styles.rangeRow}>
-                {RANGE_OPTIONS.map((option) => (
+                {WEIGHT_HISTORY_RANGES.map((option) => (
                     <AppChip
-                        key={option.value}
+                        key={option.days}
                         label={option.label}
-                        selected={option.value === range}
+                        selected={option.days === range}
                         onPress={() => {
-                            setRange(option.value);
-                            setSelectedPointKey(null);
-                            setSelectionAnnouncement('');
+                            history.chooseRange(option.days);
+                            clearSelection();
                         }}
                         style={styles.rangeChip}
                     />
                 ))}
             </View>
-            <AsyncStateBoundary
-                contentStyle={styles.trendBody}
-                state={trendState}
-                resourceLabel="weight trend"
-                loading={<LoadingState label="Loading trend..." />}
-                empty={(
-                    <View style={styles.emptyChart}>
-                        <AppText variant="muted">
-                            {hasWeightHistory
-                                ? 'No weigh-ins in this range. Choose All to view your weight history.'
-                                : 'Log a weigh-in to start a trend.'}
-                        </AppText>
-                    </View>
-                )}
-                onRetry={isOnline ? () => trendQuery.refetch() : undefined}
-                retrying={trendQuery.isFetching}
-            >
             {trendUnavailable ? (
                 <View testID="weight-trend-unavailable" accessibilityRole="alert" style={styles.unavailableNotice}>
                     <AppText variant="subtitle">Trend estimate temporarily unavailable</AppText>
@@ -245,106 +276,140 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
                     </AppText>
                 </View>
             ) : null}
-            {chartPoints.length === 1 ? (
-                <View
-                    accessibilityLabel={`First weigh-in recorded at ${formatWeight(chartPoints[0].metric.weight, user?.weight_unit)}`}
-                    style={styles.singlePointState}
-                >
-                    <View style={styles.singlePointIcon}>
-                        <Ionicons name="scale-outline" size={24} color={theme.colors.primary} />
+            <View testID="weight-trend-chart-shell" style={styles.chartShell}>
+                <View accessibilityRole="toolbar" accessibilityLabel="Weight history window" style={styles.windowBar}>
+                    <WindowStepButton direction={-1} days={range} disabled={atOldest} onPress={() => {
+                        clearSelection();
+                        history.shiftWindow(-1);
+                    }} />
+                    <View style={styles.windowLabel} testID="weight-history-window" accessibilityLiveRegion={panning ? 'none' : 'polite'}>
+                        <AppText variant="label" style={styles.centered}>{dateLabel}</AppText>
+                        <AppText variant="caption" style={styles.centered}>{windowStatus}</AppText>
                     </View>
-                    <View style={styles.singlePointText}>
-                        <AppText variant="subtitle">First weigh-in recorded</AppText>
-                        <AppText variant="body">
-                            {formatWeight(chartPoints[0].metric.weight, user?.weight_unit)} on{' '}
-                            {formatDateOnlyForDisplay(chartPoints[0].dateKey)}
-                        </AppText>
-                        <AppText variant="muted">Log one more weigh-in to reveal your trend.</AppText>
-                    </View>
+                    <WindowStepButton direction={1} days={range} disabled={atLatest} onPress={() => {
+                        clearSelection();
+                        history.shiftWindow(1);
+                    }} />
                 </View>
-            ) : (
-                <View testID="weight-trend-chart-shell" style={styles.chartShell}>
-                    <View
-                        testID="weight-trend-chart-canvas"
-                        style={[
-                            styles.chartCanvas,
-                            { minHeight: chartMinHeight }
-                        ]}
-                        onLayout={(event) => {
-                            setChartCanvasWidth(event.nativeEvent.layout.width);
-                            setChartCanvasHeight(event.nativeEvent.layout.height);
-                        }}
-                    >
-                        <WeightTrendChart
-                            chartLayout={chartLayout}
-                            padding={axisPadding}
-                            axisFontSize={axisFontSize}
-                            unit={user?.weight_unit}
-                            accessibleChartSummary={accessibleChartSummary}
-                            selectedPoint={selectedPoint}
-                            showModelBoundary={showModelBoundary}
-                        />
-                        <Pressable
+                <View
+                    ref={panBindings.ref}
+                    testID="weight-trend-chart-canvas"
+                    style={[
+                        styles.chartCanvas,
+                        { minHeight: chartMinHeight }
+                    ]}
+                    onLayout={(event) => {
+                        setChartCanvasWidth(event.nativeEvent.layout.width);
+                        setChartCanvasHeight(event.nativeEvent.layout.height);
+                    }}
+                >
+                    {showChart && <WeightTrendChart
+                        chartLayout={chartLayout}
+                        padding={axisPadding}
+                        axisFontSize={axisFontSize}
+                        unit={user?.weight_unit}
+                        accessibleChartSummary={accessibleChartSummary}
+                        selectedPoint={panning ? null : selectedPoint}
+                        showModelBoundary={showModelBoundary}
+                        clipTrendToWindow
+                    />}
+                    {firstWeighIn && (
+                        <View style={styles.singlePointState}>
+                            <View style={styles.singlePointIcon}>
+                                <Ionicons name="scale-outline" size={24} color={theme.colors.primary} />
+                            </View>
+                            <View style={styles.singlePointText}>
+                                <AppText variant="subtitle">First weigh-in recorded</AppText>
+                                <AppText variant="body">
+                                    {formatWeight(firstWeighIn.metric.weight, user?.weight_unit)} on{' '}
+                                    {formatDateOnlyForDisplay(firstWeighIn.dateKey)}
+                                </AppText>
+                                <AppText variant="muted">Log one more weigh-in to reveal your trend.</AppText>
+                            </View>
+                        </View>
+                    )}
+                    {!!emptyMessage && (
+                        <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.emptyChart]}>
+                            <AppText variant="muted" style={styles.centered}>{emptyMessage}</AppText>
+                        </View>
+                    )}
+                    <View {...panBindings.panHandlers} style={StyleSheet.absoluteFill} pointerEvents={firstWeighIn ? 'none' : 'auto'}>
+                        {chartPoints.length > 0 && !firstWeighIn && <Pressable
                             accessibilityActions={[
                                 { name: 'decrement', label: 'Previous weigh-in' },
                                 { name: 'increment', label: 'Next weigh-in' }
                             ]}
                             accessibilityRole="button"
                             accessibilityLabel="Select nearest weigh-in"
-                            accessibilityHint="Use Left and Right arrow keys, or Home and End, to review weigh-ins. Previous and Next buttons follow the chart."
+                            accessibilityHint="Use Left and Right arrow keys, or Home and End, to review weigh-ins. Use the window buttons to browse older dates."
                             onAccessibilityAction={handleChartAccessibilityAction}
                             focusable={Platform.OS === 'web'}
                             onPress={(event) => selectNearestPoint(getChartPressX(event.nativeEvent))}
                             {...({ onKeyDown: handleChartKeyDown } as object)}
                             style={StyleSheet.absoluteFill}
+                        />}
+                    </View>
+                </View>
+                <View style={styles.historyActions}>
+                    <View style={styles.dragHint}>
+                        <Ionicons name="swap-horizontal" size={16} color={theme.colors.onSurfaceVariant} />
+                        <AppText variant="caption">{Platform.OS === 'web' ? 'Drag or swipe to browse' : 'Swipe to browse'}</AppText>
+                    </View>
+                    <AppButton title="Back to today" variant="ghost" disabled={atLatest} onPress={() => {
+                        clearSelection();
+                        history.panTo(history.today);
+                    }} />
+                </View>
+                {showPageNotice && (
+                    <AsyncStateBoundary state={pageState} resourceLabel="weight trend" loading={null} empty={null}
+                        onRetry={isOnline ? history.retry : undefined} retrying={history.isFetching}>
+                        {null}
+                    </AsyncStateBoundary>
+                )}
+                {showModelBoundary && chartLayout.modelBoundaryPoint && (
+                    <AppText variant="caption" style={styles.boundaryNote}>
+                        Smoothed trend starts {formatDateOnlyForDisplay(chartLayout.modelBoundaryPoint.dateKey)}. Earlier dots are measurements only.
+                    </AppText>
+                )}
+                {!firstWeighIn && displayedPoint && <TrendChartLegend />}
+                {displayedPoint && !firstWeighIn && (
+                    <SelectedTrendPanel
+                        point={displayedPoint}
+                        unit={user?.weight_unit}
+                        trendUnavailable={trendUnavailable}
+                        freshness={atLatest && selectedPointIndex === chartPoints.length - 1
+                            ? trendSummary?.freshness ?? (trendSummary?.status === 'stale' ? 'stale' : 'current')
+                            : null}
+                    />
+                )}
+                {displayedPoint && !firstWeighIn && (
+                    <View accessibilityRole="toolbar" accessibilityLabel="Selected weigh-in navigation" style={styles.pointNavigation}>
+                        <PointNavigationButton
+                            direction="previous"
+                            disabled={selectedPointIndex <= 0}
+                            onPress={() => selectPointAtIndex(selectedPointIndex - 1)}
+                        />
+                        <PointNavigationButton
+                            direction="next"
+                            disabled={selectedPointIndex >= chartPoints.length - 1}
+                            onPress={() => selectPointAtIndex(selectedPointIndex + 1)}
                         />
                     </View>
-                    {showModelBoundary && chartLayout.modelBoundaryPoint && (
-                        <AppText variant="caption" style={styles.boundaryNote}>
-                            Smoothed trend starts {formatDateOnlyForDisplay(chartLayout.modelBoundaryPoint.dateKey)}. Earlier dots are measurements only.
-                        </AppText>
-                    )}
-                    <TrendChartLegend />
-                    {selectedPoint && (
-                        <SelectedTrendPanel
-                            point={selectedPoint}
-                            unit={user?.weight_unit}
-                            trendUnavailable={trendUnavailable}
-                            freshness={selectedPointIndex === chartPoints.length - 1
-                                ? trendSummary?.freshness ?? (trendSummary?.status === 'stale' ? 'stale' : 'current')
-                                : null}
-                        />
-                    )}
-                    {selectedPoint && (
-                        <View accessibilityRole="toolbar" accessibilityLabel="Selected weigh-in navigation" style={styles.pointNavigation}>
-                            <PointNavigationButton
-                                direction="previous"
-                                disabled={selectedPointIndex <= 0}
-                                onPress={() => selectPointAtIndex(selectedPointIndex - 1)}
-                            />
-                            <PointNavigationButton
-                                direction="next"
-                                disabled={selectedPointIndex >= chartPoints.length - 1}
-                                onPress={() => selectPointAtIndex(selectedPointIndex + 1)}
-                            />
-                        </View>
-                    )}
-                    <AppText
-                        testID="weight-trend-selection-announcement"
-                        accessibilityLiveRegion="polite"
-                        role="status"
-                        style={styles.liveStatus}
-                    >
-                        {selectionAnnouncement}
+                )}
+                <AppText
+                    testID="weight-trend-selection-announcement"
+                    accessibilityLiveRegion="polite"
+                    role="status"
+                    style={styles.liveStatus}
+                >
+                    {selectionAnnouncement}
+                </AppText>
+                {!trendSummary && !firstWeighIn && chartPoints.length > 0 && (
+                    <AppText variant="caption" style={styles.summary}>
+                        {visibleTrendSummary}
                     </AppText>
-                    {!trendSummary && (
-                        <AppText variant="caption" style={styles.summary}>
-                            {visibleTrendSummary}
-                        </AppText>
-                    )}
-                </View>
-            )}
-            </AsyncStateBoundary>
+                )}
+            </View>
             {footer}
         </View>
     );
@@ -441,6 +506,31 @@ const SelectedTrendPanel: React.FC<{
     );
 };
 
+function WindowStepButton({ direction, days, disabled, onPress }: {
+    direction: -1 | 1;
+    days: number;
+    disabled: boolean;
+    onPress: () => void;
+}) {
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+    const { focusVisible, handleFocus, handleBlur } = useFocusVisible();
+    return (
+        <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${direction < 0 ? 'Previous' : 'Next'} ${days} days`}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onPress={onPress}
+            style={({ pressed }) => [styles.windowStep, pressed && styles.pressed, disabled && styles.disabled, focusVisible && styles.focusVisible]}
+        >
+            <Ionicons name={direction < 0 ? 'chevron-back' : 'chevron-forward'} size={20} color={theme.colors.primary} />
+        </Pressable>
+    );
+}
+
 const PointNavigationButton: React.FC<{
     direction: 'previous' | 'next';
     disabled: boolean;
@@ -471,7 +561,6 @@ const PointNavigationButton: React.FC<{
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     content: { width: '100%', gap: spacing.md },
-    trendBody: { flexGrow: 1 },
     rangeRow: { flexDirection: 'row', gap: spacing.sm },
     rangeChip: { flex: 1, paddingHorizontal: spacing.xs },
     chartShell: {
@@ -484,11 +573,34 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         gap: spacing.sm
     },
     chartCanvas: { position: 'relative', flexGrow: 1, flexShrink: 1 },
-    emptyChart: {
-        flexGrow: 1,
-        minHeight: getWeightTrendChartMinimumHeight(0),
+    windowBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingBottom: spacing.sm,
+        borderBottomColor: theme.colors.outlineVariant,
+        borderBottomWidth: StyleSheet.hairlineWidth
+    },
+    windowLabel: { flex: 1, minWidth: 0, gap: spacing.xs },
+    centered: { textAlign: 'center' },
+    windowStep: {
+        width: theme.interaction.minimumTouchTarget,
+        height: theme.interaction.minimumTouchTarget,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderRadius: radius.md,
-        backgroundColor: theme.colors.surfaceContainer,
+        borderColor: theme.colors.outlineVariant,
+        borderWidth: StyleSheet.hairlineWidth
+    },
+    historyActions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        columnGap: spacing.xs
+    },
+    dragHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    emptyChart: {
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.lg
@@ -592,5 +704,4 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     pressed: { backgroundColor: theme.colors.surfacePressed },
     disabled: { opacity: 0.45 },
-    error: { color: theme.colors.danger }
 });

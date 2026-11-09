@@ -15,6 +15,12 @@ The detailed Trend content also gives its plot all remaining height after the ra
 selected reading, and point navigation. Keep a legible minimum and scroll short screens; do not cap
 the plot height while leaving unused space below it.
 
+Expanded Trend uses fixed 7-, 28-, and 365-day windows. The date arrows move a full
+window; dragging or swiping slides by date and snaps to a day on release. Changing
+the span keeps the visible end date within the history bounds. Back to today returns
+to the account-local current day. The chart caches 56-day pages and prefetches
+neighbors; gaps keep their calendar space, including when a window has no readings.
+
 `PlanCheckSummary` occupies the bottom area as one expansion target: heading, assessment period,
 and available diagnosis or a useful pending/building/unavailable state. Keep this area stable when a
 diagnosis is absent. Tapping expands Plan check in place; the overview does not contain the full evidence and

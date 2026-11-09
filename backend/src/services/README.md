@@ -39,6 +39,9 @@ dates, and weights, including warmup. A same-date edit must invalidate it.
 
 Metrics responses derive bands, counts, freshness and summary from one queried raw
 snapshot. Historical end dates get an as-of pass; future local dates are excluded.
+Trend pages can supply a separate `as_of` date to hold the model steady across
+display windows. These requests read only the display interval and bounded model
+inputs, and report the earliest eligible reading for navigation.
 Unavailable trends retain factual observation recency and raw measurements but
 expose null model estimates. Legacy fallback values must never masquerade as an
 available trend. Older context has no invented model interval.

@@ -1224,6 +1224,11 @@ export interface components {
                 volatility: "low" | "medium" | "high";
                 total_points: number;
                 total_span_days: number;
+                /**
+                 * Format: date
+                 * @description Earliest eligible reading, or null for no history. Supplied when as_of is requested.
+                 */
+                history_start_date?: string | null;
                 trend_summary: components["schemas"]["WeightTrendSummary"];
             };
         };
@@ -4384,8 +4389,10 @@ export interface operations {
         parameters: {
             query?: {
                 start?: string;
-                /** @description An explicit historical end date also scopes trend fitting and freshness. */
+                /** @description An explicit historical end date also scopes trend fitting and freshness unless as_of is supplied. */
                 end?: string;
+                /** @description Shared model and freshness anchor across pages. Requires include_trend, start and end, and no named range. */
+                as_of?: string;
                 range?: "week" | "month" | "year" | "all";
                 include_trend?: boolean;
                 /** @description Legacy rolling-average window used only when include_trend is false. */

@@ -47,13 +47,15 @@ export function clampDateOnly(value: string, min: string, max: string): string {
     return value;
 }
 
-/** Formats a date-only value through local calendar fields, preserving invalid input as a fallback. */
-export function formatDateOnlyForDisplay(value: string): string {
+/** Formats local calendar fields, optionally omitting the year for compact ranges. Invalid input is returned unchanged. */
+export function formatDateOnlyForDisplay(value: string, includeYear = true): string {
     const [yearString, monthString, dayString] = value.split('-');
     const year = Number(yearString);
     const month = Number(monthString);
     const day = Number(dayString);
     const date = new Date(year, month - 1, day);
     if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'short', day: 'numeric', ...(includeYear ? { year: 'numeric' } : {})
+    }).format(date);
 }

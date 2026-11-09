@@ -1,20 +1,23 @@
-/** @file Regression coverage for Weight Trend Card: WeightTrendCard. */
+/** @file Regression coverage for weight history navigation, chart geometry, and weigh-in selection. */
 
 import { fireEvent, render, within } from '@testing-library/react-native';
 import { Dimensions, Platform, StyleSheet } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import type { TrendMetricEntry, TrendMetricsResponse, WeightTrendSummary } from '@calibrate/api-client';
 import {
     getWeightTrendChartMinimumHeight,
     WeightTrendCard
 } from './WeightTrendCard';
 import { spacing } from '../theme';
+import { getTodayDate } from '../utils/dates';
 
 jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 jest.mock('@tanstack/react-query', () => ({
     ...jest.requireActual('@tanstack/react-query'),
-    useQuery: jest.fn()
+    useQuery: jest.fn(),
+    useQueries: jest.fn()
 }));
+jest.mock('../utils/dates', () => ({ ...jest.requireActual('../utils/dates'), getTodayDate: jest.fn() }));
 jest.mock('../auth/AuthContext', () => ({
     useAuth: () => ({
         api: { getTrendMetrics: jest.fn() },
@@ -91,7 +94,10 @@ function response(metrics = METRICS, summary: WeightTrendSummary | null = create
 describe('WeightTrendCard', () => {
     beforeEach(() => {
         Dimensions.set({ window: { width: 390, height: 844, scale: 1, fontScale: 1 }, screen: { width: 390, height: 844, scale: 1, fontScale: 1 } });
+        (getTodayDate as jest.Mock).mockReturnValue('2026-07-15');
         (useQuery as jest.Mock).mockReturnValue({ data: response(), error: null, isLoading: false, status: 'success' });
+        (useQueries as jest.Mock).mockImplementation(({ queries }) =>
+            queries.map(() => (useQuery as jest.Mock).getMockImplementation()?.()));
     });
 
     it('uses the screen pane directly instead of adding a second card surface', async () => {
@@ -119,7 +125,7 @@ describe('WeightTrendCard', () => {
         expect(screen.getAllByText('Scale reading')).toHaveLength(2);
         expect(screen.getByText('Underlying trend')).toBeTruthy();
         expect(screen.getByText('95% estimate range')).toBeTruthy();
-        await fireEvent(chart, 'press', { nativeEvent: { offsetX: 170 } });
+        await fireEvent(chart, 'press', { nativeEvent: { offsetX: 318 } });
         expect(screen.getByText('Jul 14, 2026')).toBeTruthy();
         await fireEvent(chart, 'press', { nativeEvent: { offsetX: 18 } });
         expect(screen.getByText('Jul 13, 2026')).toBeTruthy();
@@ -179,6 +185,7 @@ describe('WeightTrendCard', () => {
     });
 
     it('draws raw measurements as dots and segments only the modeled trend', async () => {
+        (getTodayDate as jest.Mock).mockReturnValue('2026-07-25');
         const metrics = [
             { ...createMetric(4, '2026-07-25', 168.3), trend_weight: 168.2 },
             { ...createMetric(3, '2026-07-24', 168.7), trend_weight: 168.8 },
@@ -195,7 +202,7 @@ describe('WeightTrendCard', () => {
         expect(screen.getByTestId('weight-trend-range-1')).toBeTruthy();
     });
 
-    it('shows old context as measurement-only and marks the model boundary for Year and All', async () => {
+    it('shows old context as measurement-only and marks the model boundary for Year', async () => {
         const metrics = [
             createMetric(3, '2026-07-15', 168.3),
             createMetric(2, '2026-07-14', 168.7),
@@ -208,10 +215,12 @@ describe('WeightTrendCard', () => {
                 trend_std: 0
             }
         ];
-        (useQuery as jest.Mock).mockReturnValue({ data: response(metrics, null), error: null, isLoading: false, status: 'success' });
+        const history = response(metrics, null);
+        history.meta.history_start_date = '2026-01-01';
+        (useQuery as jest.Mock).mockReturnValue({ data: history, error: null, isLoading: false, status: 'success' });
         const screen = await render(<WeightTrendCard />);
 
-        await fireEvent.press(screen.getByText('All'));
+        await fireEvent.press(screen.getByText('Year'));
         expect(screen.getByTestId('weight-trend-model-boundary')).toBeTruthy();
         expect(screen.getByText(/Earlier dots are measurements only/)).toBeTruthy();
 
@@ -323,21 +332,28 @@ describe('WeightTrendCard', () => {
         expect(screen.queryByText('Current pace estimate')).toBeNull();
     });
 
-    it('distinguishes an empty selected range from a user with no weight history', async () => {
+    it('allows panning across empty windows and preserves the historical end when changing range', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: {
                 metrics: [],
-                meta: { weekly_rate: 0, volatility: 'low', total_points: 4, total_span_days: 120 }
+                meta: { weekly_rate: 0, volatility: 'low', total_points: 4, total_span_days: 120, history_start_date: '2025-01-01' }
             },
             error: null,
             isLoading: false, status: 'success'
         });
         const screen = await render(<WeightTrendCard />);
-        expect(screen.getByText('No weigh-ins in this range. Choose All to view your weight history.')).toBeTruthy();
-        await fireEvent.press(screen.getByText('All'));
-        expect(useQuery).toHaveBeenLastCalledWith(expect.objectContaining({
-            queryKey: ['mobile-metrics-trend', 'all']
+        expect(screen.getByText('No weigh-ins in this window')).toBeTruthy();
+        expect(screen.queryByText('All')).toBeNull();
+        expect(screen.getByText('Jun 18 - Jul 15, 2026')).toBeTruthy();
+        expect(useQueries).toHaveBeenLastCalledWith(expect.objectContaining({
+            queries: [expect.objectContaining({ queryKey: ['mobile-metrics-trend', 'page', '2026-07-15', 1] })]
         }));
+        await fireEvent.press(screen.getByLabelText('Previous 28 days'));
+        expect(screen.getByText('May 21 - Jun 17, 2026')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Week'));
+        expect(screen.getByText('Jun 11 - Jun 17, 2026')).toBeTruthy();
+        await fireEvent.press(screen.getByLabelText('Back to today'));
+        expect(screen.getByText('Jul 9 - Jul 15, 2026')).toBeTruthy();
     });
 
     it('exposes the dynamic chart as one named image', async () => {

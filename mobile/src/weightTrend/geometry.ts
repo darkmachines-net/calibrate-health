@@ -1,11 +1,11 @@
-/** @file Deterministic SVG geometry for trend paths, uncertainty bands, ticks, and selected observations. */
+/** @file Deterministic SVG geometry for trend paths, uncertainty bands, and fixed date viewports. */
 
 import type { TrendMetricEntry } from '@calibrate/api-client';
 import { isVisibleWeightTrendPoint } from './presentation';
+import { WEIGHT_HISTORY_DAY_MS as MS_PER_DAY } from './historyWindow';
 
 const WEIGHT_TREND_SEGMENT_GAP_DAYS = 14;
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const TARGET_Y_AXIS_INTERVALS = 3;
 
 type WeightTrendChartPadding = {
@@ -42,6 +42,7 @@ export type WeightTrendChartGeometry = {
     measurementPoints: WeightTrendChartPoint[];
     trendSegments: WeightTrendChartPoint[][];
     modelBoundaryPoint: WeightTrendModelBoundary | null;
+    missingRegions: Array<{ x: number; width: number }>;
     yTicks: Array<{ value: number; y: number }>;
     xTicks: Array<{
         key: string;
@@ -76,6 +77,9 @@ type WeightTrendChartGeometryOptions = {
     yAxisMode?: 'nice' | 'bounds';
     downsampleMeasurements?: boolean;
     modelStartDate?: string | null;
+    dateWindow?: { start: number; end: number };
+    missingWindows?: Array<{ start: number; end: number }>;
+    fixedWeightTicks?: number[];
 };
 
 /**
@@ -196,6 +200,25 @@ export function buildWeightTrendChartGeometry(
     const normalized = normalizeWeightTrendMetrics(metrics);
     const width = Math.max(options.width, options.minWidth);
     const height = Math.max(options.height, options.minHeight);
+    const drawableWidth = Math.max(1, width - options.padding.left - options.padding.right);
+    const firstDateMs = options.dateWindow ? options.dateWindow.start * MS_PER_DAY : normalized[0]?.dateMs ?? 0;
+    const lastDateMs = options.dateWindow ? options.dateWindow.end * MS_PER_DAY : normalized.at(-1)?.dateMs ?? 0;
+    const dateRangeMs = Math.max(MS_PER_DAY, lastDateMs - firstDateMs);
+    const xForDate = (dateMs: number) =>
+        options.padding.left + ((dateMs - firstDateMs) / dateRangeMs) * drawableWidth;
+    const missingRegions = (options.missingWindows ?? []).flatMap(({ start, end }) => {
+        const left = Math.max(start * MS_PER_DAY, firstDateMs);
+        const right = Math.min(end * MS_PER_DAY, lastDateMs);
+        return right > left ? [{ x: xForDate(left), width: xForDate(right) - xForDate(left) }] : [];
+    });
+    const xTicks = getXAxisTickFractions(options.xTickCount ?? 3).map((fraction, index, fractions) => {
+        const dateMs = firstDateMs + (lastDateMs - firstDateMs) * fraction;
+        let textAnchor: 'start' | 'middle' | 'end' = 'middle';
+        if (index === 0) textAnchor = 'start';
+        if (index === fractions.length - 1) textAnchor = 'end';
+        const dateKey = dateKeyFromMs(options.dateWindow ? Math.round(dateMs / MS_PER_DAY) * MS_PER_DAY : dateMs);
+        return { key: `date-${index}`, dateKey, x: xForDate(dateMs), textAnchor };
+    });
     if (normalized.length === 0) {
         return {
             width,
@@ -204,12 +227,14 @@ export function buildWeightTrendChartGeometry(
             measurementPoints: [],
             trendSegments: [],
             modelBoundaryPoint: null,
+            missingRegions,
             yTicks: [],
-            xTicks: []
+            xTicks: options.dateWindow ? xTicks : []
         };
     }
 
-    const values = normalized.flatMap((point) => point.hasVisibleTrend
+    const visible = normalized.filter((point) => point.dateMs >= firstDateMs && point.dateMs <= lastDateMs);
+    const values = (visible.length ? visible : normalized).flatMap((point) => point.hasVisibleTrend
         ? [point.metric.weight, point.metric.trend_weight, point.metric.trend_ci_lower, point.metric.trend_ci_upper]
         : [point.metric.weight]
     );
@@ -224,7 +249,12 @@ export function buildWeightTrendChartGeometry(
     let axisMaximum: number;
     let yTicks: WeightTrendChartGeometry['yTicks'];
 
-    if (options.yAxisMode === 'bounds') {
+    const fixedTicks = options.fixedWeightTicks;
+    if (fixedTicks && fixedTicks.length >= 2 && fixedTicks[0] <= minimum && fixedTicks[fixedTicks.length - 1] >= maximum) {
+        axisMinimum = fixedTicks[0];
+        axisMaximum = fixedTicks[fixedTicks.length - 1];
+        yTicks = fixedTicks.map((value) => ({ value, y: 0 }));
+    } else if (options.yAxisMode === 'bounds') {
         const middle = (minimum + maximum) / 2;
         axisMinimum = middle - requestedRange / 2;
         axisMaximum = middle + requestedRange / 2;
@@ -248,13 +278,7 @@ export function buildWeightTrendChartGeometry(
     }
 
     const axisRange = axisMaximum - axisMinimum;
-    const drawableWidth = width - options.padding.left - options.padding.right;
     const drawableHeight = height - options.padding.top - options.padding.bottom;
-    const firstDateMs = normalized[0].dateMs;
-    const lastDateMs = normalized[normalized.length - 1].dateMs;
-    const dateRangeMs = Math.max(MS_PER_DAY, lastDateMs - firstDateMs);
-    const xForDate = (dateMs: number) =>
-        options.padding.left + ((dateMs - firstDateMs) / dateRangeMs) * drawableWidth;
     const yForValue = (value: number) =>
         options.padding.top + drawableHeight - ((value - axisMinimum) / axisRange) * drawableHeight;
 
@@ -267,7 +291,7 @@ export function buildWeightTrendChartGeometry(
 
     let previousModeledDateMs: number | null = null;
     let previousWasModeled = false;
-    const points = normalized.map<WeightTrendChartPoint>((point) => {
+    const contextPoints = normalized.map<WeightTrendChartPoint>((point) => {
         const gapDays = previousModeledDateMs === null ? Number.POSITIVE_INFINITY :
             (point.dateMs - previousModeledDateMs) / MS_PER_DAY;
         const startsTrendSegment = point.hasVisibleTrend && (
@@ -290,12 +314,13 @@ export function buildWeightTrendChartGeometry(
     });
 
     const trendSegments: WeightTrendChartPoint[][] = [];
-    for (const point of points) {
+    for (const point of contextPoints) {
         if (!point.hasVisibleTrend) continue;
         if (point.startsTrendSegment || trendSegments.length === 0) trendSegments.push([]);
         trendSegments[trendSegments.length - 1].push(point);
     }
 
+    const points = contextPoints.filter((point) => point.dateMs >= firstDateMs && point.dateMs <= lastDateMs);
     const firstModeledIndex = points.findIndex((point) => point.hasVisibleTrend);
     const modeledStartMs = options.modelStartDate ? parseDateKey(options.modelStartDate) : null;
     const hasExplicitBoundary = modeledStartMs !== null &&
@@ -316,23 +341,10 @@ export function buildWeightTrendChartGeometry(
             x: points[firstModeledIndex].x
         };
     }
-    const xTickCount = options.xTickCount ?? 3;
-    const xTicks = getXAxisTickFractions(xTickCount).map((fraction, index, fractions) => {
-        const dateMs = firstDateMs + (lastDateMs - firstDateMs) * fraction;
-        let textAnchor: 'start' | 'middle' | 'end' = 'middle';
-        if (index === 0) textAnchor = 'start';
-        if (index === fractions.length - 1) textAnchor = 'end';
-        return {
-            key: `date-${dateKeyFromMs(dateMs)}-${index}`,
-            dateKey: dateKeyFromMs(dateMs),
-            x: xForDate(dateMs),
-            textAnchor
-        };
-    });
 
     const measurementPoints = options.downsampleMeasurements
         ? downsampleWeightTrendMeasurements(points, drawableWidth, options.padding.left)
         : points;
 
-    return { width, height, points, measurementPoints, trendSegments, modelBoundaryPoint, yTicks, xTicks };
+    return { width, height, points, measurementPoints, trendSegments, modelBoundaryPoint, missingRegions, yTicks, xTicks };
 }

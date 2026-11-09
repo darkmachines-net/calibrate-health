@@ -1141,7 +1141,11 @@ paths:
           schema: { type: string, format: date }
         - name: end
           in: query
-          description: An explicit historical end date also scopes trend fitting and freshness.
+          description: An explicit historical end date also scopes trend fitting and freshness unless as_of is supplied.
+          schema: { type: string, format: date }
+        - name: as_of
+          in: query
+          description: Shared model and freshness anchor across pages. Requires include_trend, start and end, and no named range.
           schema: { type: string, format: date }
         - name: range
           in: query
@@ -2012,6 +2016,10 @@ components:
               description: Legacy compatibility label. On unavailable refreshes, a safe last-known-good value is used or the established low fallback; use trend_summary.short_term_variation for availability.
             total_points: { type: integer, minimum: 0 }
             total_span_days: { type: number, minimum: 0 }
+            history_start_date:
+              type: [string, 'null']
+              format: date
+              description: Earliest eligible reading, or null for no history. Supplied when as_of is requested.
             trend_summary: { $ref: '#/components/schemas/WeightTrendSummary' }
     MetricSaveResponse:
       type: object

@@ -801,13 +801,14 @@ export class CalibrateApiClient {
         return this.request<MetricEntry[]>('/api/metrics');
     }
 
-    /** Requests trend-enriched metrics for the supplied named range or explicit date boundaries. */
-    getTrendMetrics(params: { range?: 'week' | 'month' | 'year' | 'all'; start?: string; end?: string } = {}): Promise<TrendMetricsResponse> {
+    /** Requests trend-enriched metrics; asOf pins the model across pages with explicit start/end dates. */
+    getTrendMetrics(params: { range?: 'week' | 'month' | 'year' | 'all'; start?: string; end?: string; asOf?: string } = {}): Promise<TrendMetricsResponse> {
         const query = new URLSearchParams();
         query.set('include_trend', 'true');
         if (params.range) query.set('range', params.range);
         if (params.start) query.set('start', params.start);
         if (params.end) query.set('end', params.end);
+        if (params.asOf) query.set('as_of', params.asOf);
         return this.request<TrendMetricsResponse>(`/api/metrics?${query.toString()}`);
     }
 
