@@ -755,3 +755,87 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  capture:
+    name: Capture iOS welcome screen
+    if: github.ref_name == 'codex/pr-513-ios-capture' && inputs.validation_scope == 'configuration-only'
+    runs-on: macos-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      NODE_ENV: production
+      EXPO_NO_METRO_WORKSPACE_ROOT: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_PUBLIC_CALIBRATE_SERVER_URL: https://calibratehealth.app
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 234661857427-ikshiafpv975antj4ejapup7lnd563i9.apps.googleusercontent.com
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 234661857427-ugmine6o9t4rnajurobcvurga4b013vh.apps.googleusercontent.com
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.14.0
+          cache: npm
+      - name: Install dependencies and generate the iOS project
+        run: |
+          npm ci --include=dev --no-audit --fund=false
+          npm --prefix shared run build
+          npm --prefix mobile run prebuild:ios
+      - name: Install CocoaPods dependencies
+        working-directory: mobile/ios
+        run: pod install
+      - name: Build iOS Simulator app
+        working-directory: mobile/ios
+        run: |
+          set -o pipefail
+          xcodebuild -workspace Calibrate.xcworkspace -scheme Calibrate -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/calibrate-ios-derived-data" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build \
+            > "$RUNNER_TEMP/calibrate-xcode.log" 2>&1 || {
+            grep -E -n 'error:|BUILD FAILED' "$RUNNER_TEMP/calibrate-xcode.log" | tail -25
+            tail -28 "$RUNNER_TEMP/calibrate-xcode.log"
+            exit 1
+          }
+      - name: Boot iPhone and capture both native provider buttons
+        run: |
+          set -euo pipefail
+          devices=$(xcrun simctl list devices available -j)
+          sim=$(printf '%s' "$devices" | node -e 'const all = Object.values(JSON.parse(require("fs").readFileSync(0,"utf8")).devices).flat().filter(d => d.isAvailable && d.name.startsWith("iPhone")); const device = all.find(d => d.name.endsWith("Pro Max")) ?? all[0]; if (!device) process.exit(1); console.error(device.name); console.log(device.udid)')
+          app=$(find "$RUNNER_TEMP/calibrate-ios-derived-data/Build/Products/Release-iphonesimulator" -maxdepth 1 -name 'Calibrate.app' -type d -print -quit)
+          test -n "$app"
+          bundle_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
+          xcrun simctl boot "$sim"
+          xcrun simctl bootstatus "$sim" -b
+          xcrun simctl ui "$sim" appearance light
+          xcrun simctl status_bar "$sim" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState unplugged --batteryLevel 100
+          xcrun simctl install "$sim" "$app"
+          xcrun simctl launch "$sim" "$bundle_id"
+          cat > "$RUNNER_TEMP/read-screenshot.swift" <<'SWIFT'
+          import Foundation
+          import Vision
+          let request = VNRecognizeTextRequest()
+          request.recognitionLevel = .accurate
+          try VNImageRequestHandler(url: URL(fileURLWithPath: CommandLine.arguments[1])).perform([request])
+          print((request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n"))
+          SWIFT
+          swiftc "$RUNNER_TEMP/read-screenshot.swift" -o "$RUNNER_TEMP/read-screenshot"
+          for attempt in $(seq 1 12); do
+            xcrun simctl io "$sim" screenshot "$RUNNER_TEMP/calibrate-welcome-ios.png"
+            text=$("$RUNNER_TEMP/read-screenshot" "$RUNNER_TEMP/calibrate-welcome-ios.png")
+            if grep -qi 'see your progress' <<< "$text" && grep -qi 'google' <<< "$text" && grep -qi 'apple' <<< "$text"; then
+              printf '%s\n' "$text"
+              exit 0
+            fi
+            sleep 3
+          done
+          printf '%s\n' "$text"
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-513-ios-welcome
+          path: ${{ runner.temp }}/calibrate-welcome-ios.png
+          if-no-files-found: ignore
+          retention-days: 3
