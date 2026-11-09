@@ -161,7 +161,7 @@ test('critical web flows remain keyboard-operable across forced colors, reflow, 
     const main = page.locator('[role="main"]:visible');
     expect(await main.evaluate((node) => node === document.activeElement)).toBe(true);
 
-    const landingSignIn = page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Sign in' });
+    const landingSignIn = page.getByTestId('hosted-landing-actions').getByRole('link', { name: 'Sign in with email' });
     await activateWithKeyboard(page, landingSignIn);
     await expect(page).toHaveURL((url) => url.pathname === '/login');
     await expectRouteFocus(page, 'calibrate');

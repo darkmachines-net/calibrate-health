@@ -11,6 +11,8 @@ let mockAuthState: { user: { id: number } | null; isLoading: boolean } = {
 jest.mock('./AuthContext', () => ({
     useAuth: () => mockAuthState
 }));
+jest.mock('./SocialAuthButtons', () => jest.requireActual('./SocialAuthButtons.web'));
+jest.mock('@expo/vector-icons/Ionicons', () => () => null);
 jest.mock('react-native-safe-area-context', () => ({
     useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 })
 }));
@@ -39,18 +41,10 @@ describe('hosted web root', () => {
         await screen.rerender(<WebHomeRoute />);
         expect(screen.getByTestId('hosted-landing')).toBeTruthy();
         expect(screen.getByTestId('hosted-landing-actions')).toBeTruthy();
-        expect(screen.getByText('Sign in')).toBeTruthy();
-        expect(screen.getByText('Create account')).toBeTruthy();
-        expect(screen.getByText('Sign in')).toHaveStyle({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        });
-        expect(screen.getByText('Create account')).toHaveStyle({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        });
+        expect(screen.getByText('See your progress.')).toHaveProp('accessibilityRole', 'header');
+        expect(screen.getByRole('link', { name: 'Sign in with email' })).toBeTruthy();
+        expect(screen.getByRole('link', { name: 'Create Calibrate account' })).toBeTruthy();
+        expect(screen.queryByText('Sign in with Google')).toBeNull();
 
         mockAuthState = { user: { id: 7 }, isLoading: false };
         await screen.rerender(<WebHomeRoute />);

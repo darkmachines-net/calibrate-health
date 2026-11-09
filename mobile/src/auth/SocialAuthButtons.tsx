@@ -5,17 +5,16 @@ import { CalibrateApiClient } from '@calibrate/api-client';
 import { SOCIAL_AUTH_PROVIDERS, type SocialAuthProvider } from '@calibrate/shared/socialAuth';
 import { normalizeServerUrl } from '../config/server';
 import { AppText } from '../components/AppText';
-import { spacing, useAppTheme } from '../theme';
+import { interaction, radius, spacing, useAppTheme } from '../theme';
 import { nativeSocialProviders } from './nativeSocialAuth';
 import type { SocialAuthButtonsProps } from './SocialAuthButtons.types';
 
-// Match the shared minimum touch target and defer provider discovery until the auth screen mounts.
-const PROVIDER_BUTTON_HEIGHT = 48;
+// Defer provider discovery until the auth screen mounts.
 const SERVER_DISCOVERY_DELAY_MS = 300;
 
 /** Refresh public provider availability on server changes; stale responses cannot re-enable another server's buttons. */
-export function SocialAuthButtons({ serverUrl, disabled, onPress, label = 'Or continue with' }: SocialAuthButtonsProps) {
-    const { colors } = useAppTheme();
+export function SocialAuthButtons({ serverUrl, disabled, onPress, label, children }: SocialAuthButtonsProps) {
+    const { dark } = useAppTheme();
     const [available, setAvailable] = useState<{ serverUrl: string; providers: SocialAuthProvider[] } | null>(null);
     useEffect(() => {
         let active = true;
@@ -40,7 +39,7 @@ export function SocialAuthButtons({ serverUrl, disabled, onPress, label = 'Or co
     const { GoogleSigninButton }: typeof import('@react-native-google-signin/google-signin') = require('@react-native-google-signin/google-signin');
     const AppleAuthentication: typeof import('expo-apple-authentication') = require('expo-apple-authentication');
     return <View style={styles.group}>
-        <AppText style={{ color: colors.onSurfaceVariant }}>{label}</AppText>
+        {label && <AppText variant="muted">{label}</AppText>}
         {providers.includes(SOCIAL_AUTH_PROVIDERS.GOOGLE) && <GoogleSigninButton
             style={styles.button}
             size={GoogleSigninButton.Size.Wide}
@@ -51,15 +50,19 @@ export function SocialAuthButtons({ serverUrl, disabled, onPress, label = 'Or co
         {providers.includes(SOCIAL_AUTH_PROVIDERS.APPLE) && <View pointerEvents={disabled ? 'none' : 'auto'} accessibilityElementsHidden={disabled}>
             <AppleAuthentication.AppleAuthenticationButton
                 style={styles.button}
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={dark
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                cornerRadius={radius.sm}
                 onPress={() => { if (!disabled) onPress(SOCIAL_AUTH_PROVIDERS.APPLE); }}
             />
         </View>}
+        {children}
     </View>;
 }
 
 const styles = StyleSheet.create({
     group: { gap: spacing.sm },
-    button: { width: '100%', height: PROVIDER_BUTTON_HEIGHT }
+    button: { width: '100%', height: interaction.minimumTouchTarget }
 });

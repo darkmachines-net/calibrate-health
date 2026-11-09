@@ -64,7 +64,7 @@ test('hosted web entry and sign-in share canonical public trust destinations', a
   }));
 
   await page.goto('/');
-  const publicHeading = page.getByRole('heading', { name: 'calibrate', level: 1, exact: true });
+  const publicHeading = page.getByRole('heading', { name: 'See your progress.', level: 1, exact: true });
   await expect(publicHeading).toBeVisible();
   await expect(page.getByTestId('hosted-landing-trust')).toContainText('Your account stays under your control.');
   await expectLink(page, 'Privacy policy', CALIBRATE_PRODUCT_LINKS.privacy);
@@ -72,9 +72,9 @@ test('hosted web entry and sign-in share canonical public trust destinations', a
   await expectLink(page, 'Support', CALIBRATE_PRODUCT_LINKS.support);
   await expect(page.getByRole('main')).not.toContainText(/\b(?:API|OTA|runtime|server URL)\b/i);
   await expectNoHorizontalOverflow(page);
-  await expectHorizontallyCentered(page, publicHeading);
+  await expectHorizontallyCentered(page, page.getByTestId('hosted-landing-primary'));
 
-  await page.getByRole('link', { name: 'Sign in', exact: true }).click();
+  await page.getByRole('link', { name: 'Sign in with email', exact: true }).click();
   await expect(page).toHaveURL((url) => url.pathname === '/login');
   const loginHeading = page.getByRole('heading', { name: 'calibrate', level: 1, exact: true });
   await expect(loginHeading).toBeVisible();

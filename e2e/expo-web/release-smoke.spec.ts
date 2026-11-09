@@ -389,9 +389,9 @@ test('production export boots to the signed-out shell at each release viewport',
 
   await expect(page).toHaveURL((url) => url.pathname === '/');
   await expect(page).toHaveTitle('Calibrate - Private calorie tracking');
-  await expect(page.getByText('Calibrate Health', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create account', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'See your progress.', level: 1, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in with email', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Create Calibrate account', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Privacy policy', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Account deletion', exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
@@ -435,7 +435,7 @@ test('auth deep links and reloads resolve through the static-host fallback', asy
   await expect(page).toHaveURL((url) => url.pathname === '/register');
   await expect(page.getByRole('button', { name: 'Create account', exact: true })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Back to sign in', exact: true }).click();
+  await page.getByRole('link', { name: 'Sign in with email', exact: true }).click();
   await expect(page).toHaveURL((url) => url.pathname === '/login');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();

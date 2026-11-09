@@ -28,10 +28,12 @@ const mockLogoutMobile = jest.fn(async (_refreshToken?: string) => undefined);
 jest.mock('@calibrate/api-client', () => {
     class ApiError extends Error {
         status: number;
+        code: string | null;
 
-        constructor(status: number, message: string) {
+        constructor(status: number, message: string, code: string | null = null) {
             super(message);
             this.status = status;
+            this.code = code;
         }
     }
 
@@ -192,18 +194,69 @@ describe('native provider session exchange', () => {
         jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: true, url: 'https://calibratehealth.app', config: {} as never, message: 'Connected' });
     });
 
-    it('uses the configured origin and persists only the returned Calibrate tokens', async () => {
+    it('signs an existing provider account in on the confirmed origin without asking for registration', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         mockWriteStoredTokens.mockClear();
         await act(async () => {
-            expect(await result.current.signInWithProvider('google.com', 'register', { acceptTerms: true, acceptPrivacy: true })).toBe(true);
+            expect(await result.current.signInWithProvider('google.com')).toBeNull();
         });
         expect(testCalibrateServerConnection).toHaveBeenCalledWith('https://calibratehealth.app', expect.any(Object));
-        expect(mockSocialAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google.com', id_token: 'ephemeral', intent: 'register', accept_terms: true, accept_privacy: true, device_id: 'device-1' }));
+        expect(mockSocialAuth).toHaveBeenCalledTimes(1);
+        expect(mockSocialAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google.com', id_token: 'ephemeral', intent: 'login', device_id: 'device-1' }));
+        expect(mockSocialAuth.mock.calls[0][0]).not.toHaveProperty('accept_terms');
         expect(mockClientOptions.at(-1)?.baseUrl).toBe('https://calibratehealth.app');
         expect(JSON.stringify(mockWriteStoredTokens.mock.calls)).not.toContain('ephemeral');
         expect(result.current.accessToken).toBe('access');
+    });
+
+    it('creates a new hosted account only after consent, using the original provider selection once', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        mockWriteStoredTokens.mockClear();
+        mockSocialAuth.mockRejectedValueOnce(new (require('@calibrate/api-client').ApiError)(409, 'New account', 'SOCIAL_REGISTRATION_REQUIRED'));
+        await act(async () => {
+            const registration = await result.current.signInWithProvider('google.com');
+            expect(registration?.requiresLegalAcceptance).toBe(true);
+            expect(mockSocialAuth).toHaveBeenCalledTimes(1);
+            expect(mockWriteStoredTokens).not.toHaveBeenCalled();
+            await expect(registration?.complete({ acceptTerms: true, acceptPrivacy: false })).rejects.toThrow('Explicit acceptance');
+            expect(await registration?.complete({ acceptTerms: true, acceptPrivacy: true })).toBe(true);
+            expect(await registration?.complete({ acceptTerms: true, acceptPrivacy: true })).toBe(false);
+        });
+        expect(mockSocialCredential).toHaveBeenCalledTimes(1);
+        expect(mockSocialAuth).toHaveBeenCalledTimes(2);
+        expect(mockSocialAuth).toHaveBeenLastCalledWith(expect.objectContaining({
+            provider: 'google.com', id_token: 'ephemeral', intent: 'register',
+            accept_terms: true, accept_privacy: true, device_id: 'device-1'
+        }));
+        expect(JSON.stringify(mockWriteStoredTokens.mock.calls)).not.toContain('ephemeral');
+    });
+
+    it('discards a pending credential when the screen is left', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        const attempt = new AbortController();
+        mockSocialAuth.mockRejectedValueOnce(new (require('@calibrate/api-client').ApiError)(409, 'New account', 'SOCIAL_REGISTRATION_REQUIRED'));
+        await act(async () => {
+            const registration = await result.current.signInWithProvider('google.com', attempt.signal);
+            expect(registration).not.toBeNull();
+            attempt.abort();
+            expect(await registration?.complete({ acceptTerms: true, acceptPrivacy: true })).toBe(false);
+        });
+        expect(mockSocialAuth).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not offer registration when Firebase reports an account conflict', async () => {
+        const { result } = await renderAuth();
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        mockSocialAuth.mockRejectedValueOnce(new (require('@calibrate/api-client').ApiError)(409, 'Conflict', 'SOCIAL_ACCOUNT_CONFLICT'));
+        await act(async () => {
+            await expect(result.current.signInWithProvider('google.com')).rejects.toMatchObject({
+                code: 'SOCIAL_ACCOUNT_CONFLICT'
+            });
+        });
+        expect(mockSocialAuth).toHaveBeenCalledTimes(1);
     });
 
     it('cancellation never exchanges or persists a provider credential', async () => {
@@ -211,27 +264,16 @@ describe('native provider session exchange', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         mockSocialCredential.mockResolvedValue(null);
         mockWriteStoredTokens.mockClear();
-        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login')).toBe(false); });
+        await act(async () => { expect(await result.current.signInWithProvider('google.com')).toBeNull(); });
         expect(mockSocialAuth).not.toHaveBeenCalled();
         expect(mockWriteStoredTokens).not.toHaveBeenCalled();
-    });
-
-    it('requires hosted consent before opening a provider registration prompt', async () => {
-        const { result } = await renderAuth();
-        await waitFor(() => expect(result.current.isLoading).toBe(false));
-        await act(async () => {
-            await expect(result.current.signInWithProvider('google.com', 'register'))
-                .rejects.toThrow('Explicit acceptance of the current legal documents is required.');
-        });
-        expect(mockSocialCredential).not.toHaveBeenCalled();
-        expect(mockSocialAuth).not.toHaveBeenCalled();
     });
 
     it('failed server confirmation never opens a provider prompt', async () => {
         const { result } = await renderAuth();
         await waitFor(() => expect(result.current.isLoading).toBe(false));
         jest.mocked(testCalibrateServerConnection).mockResolvedValue({ ok: false, url: null, code: 'unreachable', message: 'Offline' });
-        await act(async () => { expect(await result.current.signInWithProvider('google.com', 'login')).toBe(false); });
+        await act(async () => { expect(await result.current.signInWithProvider('google.com')).toBeNull(); });
         expect(testCalibrateServerConnection).toHaveBeenCalledWith('https://calibratehealth.app', expect.any(Object));
         expect(mockSocialCredential).not.toHaveBeenCalled();
     });

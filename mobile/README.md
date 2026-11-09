@@ -32,10 +32,17 @@ configure Apple's email relay for Firebase recovery mail if it is used.
 These native dependencies require rebuilt development/store binaries. Expo Go and
 existing binaries without the modules cannot exercise the flow. Follow the existing
 major-runtime release policy when shipping the native compatibility change; this
-feature does not change release numbers itself. Provider buttons are shown only
-when the configured backend enables them and this build/device supports them. Canceling
-leaves the user signed out. Registration uses the same explicit legal consent and
-profile/goal onboarding as email/password registration.
+feature does not change release numbers itself. The native welcome screen shows
+Google and Apple beside the email entry points when the configured backend and
+device support them. The buttons use the providers' native styles and share the
+same width and touch height. The web welcome offers email sign-in and registration.
+
+One provider action handles both returning users and new accounts. A returning
+user receives a Calibrate session immediately after the verified provider exchange.
+When the server requires registration, the app asks for confirmation and the
+current hosted Terms and Privacy Policy before submitting the same credential.
+That credential stays in memory and expires after five minutes or when the user
+leaves the flow. New users continue through profile and goal onboarding.
 
 Validate on signed Android and iOS builds: new registration, returning sign-in,
 Google account selection after logout, Apple cancellation and repeat sign-in

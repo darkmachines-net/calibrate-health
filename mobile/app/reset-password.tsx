@@ -8,6 +8,7 @@ import { AppText } from '../src/components/AppText';
 import { TextField } from '../src/components/TextField';
 import { TrustPageShell, trustPageStyles } from '../src/components/auth/TrustPageShell';
 import { consumeOneTimeToken } from '../src/auth/oneTimeToken';
+import { authEntryHref } from '../src/auth/authEntryHref';
 import { useAuth } from '../src/auth/AuthContext';
 import { getAccountTrustErrorMessage } from '../src/errors/presentation';
 import { useAppTheme } from '../src/theme';
@@ -71,7 +72,7 @@ export default function ResetPasswordRoute() {
             description="A successful reset signs out every browser, phone, and watch session for this account."
             footer={(
                 <View style={trustPageStyles.links}>
-                    <Link href={complete ? '/(auth)/login' : '/forgot-password'} asChild>
+                    <Link href={complete ? authEntryHref('email') : '/forgot-password'} asChild>
                         <Pressable accessibilityRole="link" style={trustPageStyles.linkTarget}>
                             <AppText style={{ color: colors.primary, fontWeight: '600' }}>
                                 {complete ? 'Sign in' : 'Request a new link'}
