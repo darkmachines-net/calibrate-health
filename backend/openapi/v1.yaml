@@ -6,6 +6,18 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/plan-check:
+    get:
+      operationId: getPlanCheck
+      description: Read completed 7/14/28-day tracking summaries and up to 12 saved Sunday reports. Missing food days are excluded from averages; weight rates require a weigh-in today or yesterday and readings spanning half the window. Never changes calorie planning.
+      responses:
+        '200':
+          description: Account-local descriptive progress, including coverage and report history.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanCheckResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/server-settings:
     get:
       operationId: getServerSettings
@@ -1326,10 +1338,11 @@ paths:
   /api/v1/calibration/status:
     get:
       operationId: getCalibrationStatus
-      description: Lazily evaluate bounded food and weight history and materialize any current actionable suggestion.
+      deprecated: true
+      description: Compatibility response for older clients. Returns no new assessment or recommendation; use plan-check for descriptive progress.
       responses:
         '200':
-          description: Current deterministic calibration status.
+          description: Legacy non-actionable status. New recommendations are retired; accepted future changes remain visible.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CalibrationStatusResponse' }
@@ -1338,7 +1351,8 @@ paths:
   /api/v1/calibration/recommendations/{recommendationId}/apply:
     post:
       operationId: applyCalibrationRecommendation
-      description: Revalidate and accept a current recommendation as a next-local-day target revision.
+      deprecated: true
+      description: Retired. All new applications return 409 without changing the calorie plan.
       parameters:
         - name: recommendationId
           in: path
@@ -1359,14 +1373,14 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
-          description: Recommendation is stale, already applied, or conflicts with another operation.
+          description: New calibration recommendations have been retired.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ApiError' }
   /api/v1/calibration/recommendations/{recommendationId}/cancel:
     post:
       operationId: cancelCalibrationRecommendation
-      description: Cancel a calibration revision before its effective local date and restore the recommendation for review.
+      description: Cancel a previously accepted calibration revision before its effective local date. New recommendations are retired.
       parameters:
         - name: recommendationId
           in: path
@@ -1627,6 +1641,54 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    PlanCheckWindow:
+      type: object
+      required: [days, startDate, endDate, loggedFoodDays, completeFoodDays, averageLoggedCalories, weighIns, weightSpanDays, weightChangeKg, weeklyWeightChangeKg]
+      properties:
+        days: { type: integer, enum: [7, 14, 28] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        loggedFoodDays: { type: integer }
+        completeFoodDays: { type: integer }
+        averageLoggedCalories: { type: [integer, 'null'] }
+        weighIns: { type: integer }
+        weightSpanDays: { type: integer }
+        weightChangeKg: { type: [number, 'null'] }
+        weeklyWeightChangeKg: { type: [number, 'null'] }
+    WeeklyProgressReport:
+      type: object
+      required: [reportDate, generatedAt, summary, highlights, nextStep]
+      properties:
+        reportDate: { type: string, format: date }
+        generatedAt: { type: string, format: date-time }
+        summary: { type: string }
+        highlights: { type: array, items: { type: string } }
+        nextStep: { type: string }
+    PlanCheckResponse:
+      type: object
+      required: [localDate, trackingSince, trackingDays, weightUnit, latestWeighInDate, needsWeighIn, windows, weeklyReportsEnabled, weeklyReports]
+      properties:
+        localDate: { type: string, format: date }
+        trackingSince: { type: [string, 'null'], format: date }
+        trackingDays: { type: integer }
+        weightUnit: { type: string, enum: [KG, LB] }
+        latestWeighInDate: { type: [string, 'null'], format: date }
+        needsWeighIn: { type: boolean }
+        windows: { type: array, items: { $ref: '#/components/schemas/PlanCheckWindow' } }
+        weeklyReportsEnabled: { type: boolean }
+        weeklyReports: { type: array, items: { $ref: '#/components/schemas/WeeklyProgressReport' } }
+    AccountExportWeeklyProgressReport:
+      type: object
+      required: [report_date, timezone, generated_at, model, summary, highlights, next_step, evidence]
+      properties:
+        report_date: { type: string, format: date }
+        timezone: { type: string }
+        generated_at: { type: string, format: date-time }
+        model: { type: string }
+        summary: { type: string }
+        highlights: { type: array, items: { type: string } }
+        next_step: { type: string }
+        evidence: {}
     InAppNotification:
       type: object
       required: [id, type, local_date, title, body, action_url, read_at, created_at]
@@ -2092,14 +2154,14 @@ components:
     AccountExport:
       type: object
       additionalProperties: false
-      required: [format, version, exported_at, account, legal_acceptances, goals, body_metrics, food_logs, food_log_days, daily_calorie_plans, food_tracking_pauses, my_foods, in_app_notifications, activity_records, activity_day_summaries, calibration_recommendations, calorie_plan_revisions]
+      required: [format, version, exported_at, account, legal_acceptances, goals, body_metrics, food_logs, food_log_days, daily_calorie_plans, food_tracking_pauses, my_foods, in_app_notifications, activity_records, activity_day_summaries, calibration_recommendations, calorie_plan_revisions, weekly_progress_reports]
       properties:
         format:
           type: string
           const: calibrate-account-export
         version:
           type: integer
-          const: 11
+          const: 12
         exported_at:
           type: string
           format: date-time
@@ -2157,6 +2219,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AccountExportCaloriePlanRevision'
+        weekly_progress_reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountExportWeeklyProgressReport'
     AccountExportProfile:
       type: object
       required: [id, email, email_verified_at, created_at, weight_unit, height_unit, timezone, language, reminder_log_weight_enabled, reminder_log_food_enabled, reminder_log_weight_minute, reminder_log_food_minute, reminder_quiet_hours_start_minute, reminder_quiet_hours_end_minute, haptics_enabled, date_of_birth, sex, height_mm, activity_level, profile_image]

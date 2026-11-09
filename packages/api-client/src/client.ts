@@ -9,6 +9,7 @@ import type {
     BrowserRegistrationRequest,
     BrowserPushSubscriptionPayload,
     CalibrationStatusResponse,
+    PlanCheckResponse,
     CaloriePlanOptionsRequest,
     CaloriePlanOptionsResponse,
     ClientDiagnosticInput,
@@ -767,12 +768,17 @@ export class CalibrateApiClient {
         });
     }
 
-    /** Reads calibration evidence, recommendation state, and any scheduled target correction. */
+    /** Reads the retired calibration response and previously accepted future changes; use getPlanCheck for current trends. */
     getCalibrationStatus(): Promise<CalibrationStatusResponse> {
         return this.request<CalibrationStatusResponse>('/api/calibration/status');
     }
 
-    /** Accepts the identified recommendation and returns its scheduled target change. */
+    /** Read descriptive tracking windows and saved weekly reports without evaluating or changing the calorie plan. */
+    getPlanCheck(): Promise<PlanCheckResponse> {
+        return this.request<PlanCheckResponse>('/api/plan-check');
+    }
+
+    /** Legacy wire compatibility only: current servers reject new recommendation applications with HTTP 409. */
     applyCalibrationRecommendation(id: number, operationId?: string): Promise<ScheduledCalibrationChange> {
         return this.request<ScheduledCalibrationChange>(
             `/api/calibration/recommendations/${encodeURIComponent(String(id))}/apply`,

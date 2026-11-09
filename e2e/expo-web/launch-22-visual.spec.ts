@@ -1,4 +1,4 @@
-/** @file Regression coverage for launch 22 visual: onboarding imperial measurements with enlarged text. */
+/** @file Reviewed browser screenshots for shared app surfaces, tracking reports, and enlarged-text layouts. */
 
 import { applyTwoHundredPercentText } from './text-scaling';
 import { existsSync } from 'node:fs';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { installSavedFoodsFixture } from './saved-foods.fixture';
-import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import { fillOnboardingDetails, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';
 
 const SCREENSHOT_OPTIONS = {
@@ -21,6 +21,8 @@ const SCREENSHOT_OPTIONS = {
 
 // The editorial refresh is reviewed across form, list, overview, and analytical layouts in both themes.
 const EDITORIAL_PROJECTS = ['ux-phone-320', 'ux-phone-390', 'ux-tablet-820', 'ux-desktop-1440'] as const;
+// Show all three trend periods and the report without clipping the scroll container in section captures.
+const PLAN_CHECK_CAPTURE_HEIGHT = 1600;
 const EDITORIAL_ROUTES = [
   { name: 'today', path: '/today', ready: 'Daily balance' },
   { name: 'food-log', path: '/food-log', ready: 'Meals' },
@@ -31,44 +33,30 @@ const EDITORIAL_ROUTES = [
 ] as const;
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`plan check comparison and recommendation in ${scheme}`, async ({ page, ux }, testInfo) => {
+  test(`plan check trends and weekly report in ${scheme}`, async ({ page, ux }, testInfo) => {
     runOn(testInfo, EDITORIAL_PROJECTS);
     // Capture the complete section at each real device width, including content normally below the fold.
-    await page.setViewportSize({ ...page.viewportSize()!, height: 1000 });
+    await page.setViewportSize({ ...page.viewportSize()!, height: PLAN_CHECK_CAPTURE_HEIGHT });
     await page.emulateMedia({ colorScheme: scheme });
     await ux.install('populated');
-    await page.route('**/api/v1/calibration/status', (route) => route.fulfill({
-      status: 200, contentType: 'application/json', body: JSON.stringify(PLAN_CHECK_RECOMMENDATION_STATUS),
+    await page.route('**/api/v1/plan-check', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify(PLAN_CHECK_STATUS),
     }));
     await page.goto('/progress');
     await page.getByTestId('plan-check-summary').click();
     await expect(page.getByTestId('expanded-plan')).toBeVisible();
     const section = page.getByTestId('plan-check-section');
-    const review = section.getByRole('button', { name: 'Review suggested 1,750 calorie daily target' });
-    await expect(review).toBeVisible();
-    const metrics = await page.getByTestId('plan-check-metrics').evaluate(element =>
-      Array.from(element.children).map(child => {
-        const { x, y, width } = child.getBoundingClientRect();
-        return { x, y, width };
-      }));
-    expect(metrics[0].y).toBe(metrics[1].y);
-    expect(metrics[0].x + metrics[0].width).toBeLessThan(metrics[1].x);
-    expect((await review.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    await expect(section.getByText('Last 7 days', { exact: true })).toBeVisible();
+    await expect(section.getByText('Last 14 days', { exact: true })).toBeAttached();
+    await expect(section.getByText('Last 28 days', { exact: true })).toBeAttached();
+    await expect(section.getByTestId('weekly-progress-report')).toBeAttached();
     await expect(section).toHaveScreenshot(`plan-check-recommendation-${scheme}.png`, SCREENSHOT_OPTIONS);
     if (testInfo.project.name === 'ux-phone-320' && scheme === 'light') {
       await page.setViewportSize({ width: 320, height: 568 });
       await applyTwoHundredPercentText(page);
-      const target = section.getByText('1,750', { exact: true });
-      const targetSize = await target.evaluate(element => ({
-        height: element.getBoundingClientRect().height,
-        lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
-      }));
-      expect(targetSize.height).toBeLessThanOrEqual(targetSize.lineHeight + 1);
       const overflow = await section.evaluate(element => element.scrollWidth - element.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     }
-    await review.click();
-    await expect(page.getByRole('dialog', { name: 'Review calorie target', exact: true })).toBeVisible();
   });
 
   for (const surface of EDITORIAL_ROUTES) {

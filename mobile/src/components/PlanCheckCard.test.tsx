@@ -1,412 +1,83 @@
-/** @file Regression coverage for Plan Check Card: Plan check card. */
+/** @file Plan-check regressions for descriptive windows, stale weight recovery, report history and syncing. */
 
-import React from 'react';
-import { Dimensions } from 'react-native';
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ApiError, type CalibrationStatusResponse } from '@calibrate/api-client';
-import { PlanCheckCard } from './PlanCheckCard';
+import { PlanCheckCard, PlanCheckCardView } from './PlanCheckCard';
+import { planCheckFixture } from '../../test/fixtures/planCheck';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';
+import { getTodayDate } from '../utils/dates';
 
-let mockHasPendingCalibrationEvidence = false;
-jest.mock('../offline/usePendingCalibrationEvidenceMutation', () => ({
-    usePendingCalibrationEvidenceMutation: () => mockHasPendingCalibrationEvidence
-}));
+const mockPush = jest.fn();
+let mockPending = false;
+const mockApi = { getPlanCheck: jest.fn() };
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('../auth/AuthContext', () => ({ useAuth: () => ({ api: mockApi, user: { timezone: 'UTC' } }) }));
+jest.mock('../offline/usePendingCalibrationEvidenceMutation', () => ({ usePendingCalibrationEvidenceMutation: () => mockPending }));
+afterEach(async () => { await cleanup(); mockPending = false; jest.clearAllMocks(); });
 
-jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'plan-check-operation-id') }));
-jest.mock('expo-haptics', () => ({
-    NotificationFeedbackType: { Success: 'success' },
-    notificationAsync: jest.fn(async () => undefined)
-}));
-
-const mockApi = {
-    getCalibrationStatus: jest.fn(),
-    applyCalibrationRecommendation: jest.fn(),
-    cancelCalibrationRecommendation: jest.fn()
-};
-
-jest.mock('../auth/AuthContext', () => ({
-    useAuth: () => ({ api: mockApi, user: { timezone: 'America/Los_Angeles' } })
-}));
-
-jest.mock('../utils/dates', () => ({
-    ...jest.requireActual('../utils/dates'),
-    getTodayDate: () => '2026-07-31'
-}));
-
-jest.mock('./BottomSheetModal', () => {
-    const ReactModule = require('react');
-    const { Pressable, Text, View } = require('react-native');
-    return {
-        BottomSheetModal: ({ visible, children, onRequestClose }: {
-            visible: boolean;
-            children: React.ReactNode;
-            onRequestClose: () => void;
-        }) => visible
-            ? ReactModule.createElement(
-                View,
-                null,
-                children,
-                ReactModule.createElement(
-                    Pressable,
-                    { accessibilityRole: 'button', onPress: onRequestClose },
-                    ReactModule.createElement(Text, null, 'Dismiss review')
-                )
-            )
-            : null
-    };
+test('shows every available duration and partial food coverage without target actions', async () => {
+    const screen = await render(<PlanCheckCardView status={planCheckFixture()} />);
+    for (const days of [7, 14, 28]) expect(screen.getByText(`Last ${days} days`)).toBeTruthy();
+    expect(screen.getByText('Food logged on 5 of 7 days | 4 marked complete')).toBeTruthy();
+    expect(screen.getAllByText('0.35 kg loss / week')).toHaveLength(3);
+    expect(screen.queryByText(/Review suggested/)).toBeNull();
+    expect(screen.getByText('Your recorded weight moved gradually downward this week.')).toBeTruthy();
 });
 
-function baseStatus(): CalibrationStatusResponse {
-    return {
-        generatedAt: '2026-07-31T20:00:00.000Z',
-        inputFingerprint: 'current-input',
-        planStatus: 'available',
-        planReasonCode: null,
-        evaluation: {
-            modelVersion: 4,
-            asOfDate: '2026-07-31',
-            weightUnit: 'KG',
-            status: 'insight',
-            headline: 'Legacy headline must not render',
-            summary: 'Legacy summary must not render.',
-            nextStep: 'Legacy next step must not render.',
-            historyProgress: null,
-            selectedWindowDays: 28,
-            dataQuality: {
-                observationDays: 28,
-                completeDays: 28,
-                confidentDays: 28,
-                suspiciousDays: 0,
-                incompleteDays: 0,
-                missingDays: 0,
-                weightPoints: 14,
-                weightSpanDays: 28
-            },
-            missingCriteria: ['Legacy missing criterion must not render.'],
-            assumptions: [],
-            estimates: {
-                averageIntakeKcal: { low: 1850, midpoint: 1900, high: 1950 },
-                observedWeeklyWeightChangeKg: { low: -0.50, midpoint: -0.46, high: -0.42 },
-                targetAdjustmentKcal: { low: -25, midpoint: 0, high: 25 },
-                configuredWeeklyWeightChangeKg: -0.455
-            },
-            recommendation: null,
-            activityContext: null,
-            assessment: {
-                version: 1,
-                state: 'on_track',
-                paceStatus: 'aligned',
-                window: {
-                    startDate: '2026-07-03',
-                    endDate: '2026-07-31',
-                    spanDays: 28,
-                    confidenceLevel: 0.95
-                },
-                recentWeightTrendKgPerWeek: { low: -0.50, midpoint: -0.46, high: -0.42 },
-                goalRateKgPerWeek: -0.455,
-                blocker: null,
-                targetDecision: 'no_change_recommended',
-                targetDecisionBlocker: null,
-                minimumDailyCalorieTargetKcal: 1650
-            }
-        },
-        recommendation: null,
-        scheduledChange: null
-    };
-}
+test('stale weigh-in hides weight values and offers a working log action while retaining intake coverage', async () => {
+    const status = { ...planCheckFixture(), needsWeighIn: true };
+    const onLogWeight = jest.fn();
+    const screen = await render(<PlanCheckCardView status={status} onLogWeight={onLogWeight} />);
+    expect(screen.queryByText('0.35 kg loss / week')).toBeNull();
+    expect(screen.getByText(/today or yesterday/)).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Log weight' }));
+    expect(onLogWeight).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Food logged on 5 of 7 days | 4 marked complete')).toBeTruthy();
+});
 
-function waitingStatus(): CalibrationStatusResponse {
-    const status = baseStatus();
-    return {
-        ...status,
-        evaluation: {
-            ...status.evaluation,
-            status: 'not_ready',
-            selectedWindowDays: null,
-            estimates: {
-                ...status.evaluation.estimates,
-                observedWeeklyWeightChangeKg: null
-            },
-            assessment: {
-                ...status.evaluation.assessment,
-                state: 'waiting',
-                paceStatus: null,
-                window: null,
-                recentWeightTrendKgPerWeek: null,
-                blocker: 'weight_history',
-                targetDecision: 'waiting'
-            }
-        }
-    };
-}
+test('fewer than seven days has no trend and disabled reports do not advertise a schedule', async () => {
+    const status = { ...planCheckFixture(), trackingDays: 6, windows: [], weeklyReports: [], weeklyReportsEnabled: false };
+    const screen = await render(<PlanCheckCardView status={status} />);
+    expect(screen.getByText(/after 7 days of tracking/)).toBeTruthy();
+    expect(screen.queryByText('Last 7 days')).toBeNull();
+    expect(screen.queryByText('Weekly report')).toBeNull();
+});
 
-function recommendationStatus(): CalibrationStatusResponse {
-    const status = baseStatus();
-    return {
-        ...status,
-        evaluation: {
-            ...status.evaluation,
-            status: 'recommendation',
-            estimates: {
-                ...status.evaluation.estimates,
-                observedWeeklyWeightChangeKg: { low: -0.30, midpoint: -0.25, high: -0.20 },
-                targetAdjustmentKcal: { low: -250, midpoint: -200, high: -150 }
-            },
-            recommendation: {
-                currentTargetKcal: 1900,
-                recommendedTargetKcal: 1750,
-                adjustmentStepKcal: -150,
-                currentTargetAdjustmentKcal: 0,
-                recommendedTargetAdjustmentKcal: -150
-            },
-            assessment: {
-                ...status.evaluation.assessment,
-                state: 'off_track',
-                paceStatus: 'slower',
-                recentWeightTrendKgPerWeek: { low: -0.30, midpoint: -0.25, high: -0.20 },
-                targetDecision: 'change_available'
-            }
-        },
-        recommendation: {
-            id: 7,
-            status: 'pending',
-            inputFingerprint: 'current-input',
-            effectiveLocalDate: '2026-08-01'
-        }
-    };
-}
+test('renders pounds and allows reopening an earlier stored report', async () => {
+    const status = planCheckFixture();
+    status.weightUnit = 'LB';
+    status.weeklyReports.push({ ...status.weeklyReports[0], reportDate: '2026-11-01', summary: 'Previous report.' });
+    const screen = await render(<PlanCheckCardView status={status} />);
+    expect(screen.getAllByText('0.77 lb loss / week')).toHaveLength(3);
+    await fireEvent.press(screen.getByRole('button', { name: 'Report history' }));
+    const previous = screen.getAllByRole('button').at(-1)!;
+    await fireEvent.press(previous);
+    expect(screen.getByText('Previous report.')).toBeTruthy();
+});
 
-function scheduledStatus(): CalibrationStatusResponse {
-    return {
-        ...recommendationStatus(),
-        recommendation: null,
-        scheduledChange: {
-            recommendationId: 7,
-            targetAdjustmentKcal: -150,
-            dailyCalorieBudgetKcal: 1750,
-            effectiveLocalDate: '2026-08-01'
-        }
-    };
-}
+test('pending offline evidence hides stale summaries until sync', async () => {
+    mockPending = true;
+    mockApi.getPlanCheck.mockResolvedValue(planCheckFixture());
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const screen = await render(<QueryClientProvider client={client}><PlanCheckCard /></QueryClientProvider>);
+    expect(screen.getByText(/entries are syncing/)).toBeTruthy();
+    expect(screen.queryByText('Last 7 days')).toBeNull();
+    await cleanup();
+    client.clear();
+});
 
-const testQueryClients: QueryClient[] = [];
-
-async function renderCard() {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: { retry: false, gcTime: 0 },
-            mutations: { retry: false, gcTime: 0 }
-        }
-    });
-    const screen = await render(
-        <QueryClientProvider client={queryClient}>
-            <PlanCheckCard />
-        </QueryClientProvider>
-    );
-    testQueryClients.push(queryClient);
-    return { ...screen, queryClient };
-}
-
-describe('Plan check card', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        mockHasPendingCalibrationEvidence = false;
-        Dimensions.set({
-            window: { width: 1024, height: 768, scale: 1, fontScale: 1 },
-            screen: { width: 1024, height: 768, scale: 1, fontScale: 1 }
-        });
-        mockApi.getCalibrationStatus.mockResolvedValue(baseStatus());
-        mockApi.applyCalibrationRecommendation.mockResolvedValue({
-            recommendationId: 7,
-            targetAdjustmentKcal: -150,
-            dailyCalorieBudgetKcal: 1750,
-            effectiveLocalDate: '2026-08-01'
-        });
-        mockApi.cancelCalibrationRecommendation.mockResolvedValue(recommendationStatus());
-    });
-
-    afterEach(async () => {
+test('a failed refresh labels saved trends while reconnect retries are still running', async () => {
+    mockApi.getPlanCheck.mockRejectedValueOnce(new Error('Refresh unavailable'))
+        .mockImplementation(() => new Promise(() => undefined));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: 3, retryDelay: 0, gcTime: 0 } } });
+    client.setQueryData([...calibrationStatusQueryKey, getTodayDate('UTC')], planCheckFixture());
+    try {
+        const screen = await render(<QueryClientProvider client={client}><PlanCheckCard /></QueryClientProvider>);
+        expect(await screen.findByText("Couldn't refresh plan check")).toBeTruthy();
+        expect(screen.getByText('Last 7 days')).toBeTruthy();
+        expect(client.isFetching()).toBe(1);
+    } finally {
         await cleanup();
-        testQueryClients.splice(0).forEach((client) => client.clear());
-        await act(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 0));
-        });
-    });
-
-    it('suppresses stale decisions while evidence is syncing', async () => {
-        mockHasPendingCalibrationEvidence = true;
-        const screen = await renderCard();
-
-        expect(screen.getByText('Plan check')).toBeTruthy();
-        expect(screen.getByText(/latest food and weight entries are syncing/)).toBeTruthy();
-        expect(screen.queryByText('Review adjustment')).toBeNull();
-    });
-
-    it('sets expectations without preview metrics while waiting', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValue(waitingStatus());
-        const screen = await renderCard();
-
-        await waitFor(() => expect(screen.getByText('Not enough history for a reliable plan check')).toBeTruthy());
-        expect(screen.getByText(/Keep logging meals and weight consistently/)).toBeTruthy();
-        expect(screen.getByText('more weight history')).toBeTruthy();
-        expect(screen.queryByText('Available now')).toBeNull();
-        expect(screen.queryByText('Confidence still building')).toBeNull();
-        expect(screen.queryByText(/kcal\/day deficit/)).toBeNull();
-        expect(screen.queryByText('Legacy headline must not render')).toBeNull();
-        expect(screen.queryByText('Legacy summary must not render.')).toBeNull();
-    });
-
-    it('shows a retrospective on-track trend and no-change decision', async () => {
-        const screen = await renderCard();
-
-        await waitFor(() => expect(
-            screen.getByText('Your recent weight trend matches your goal')
-        ).toBeTruthy());
-        expect(screen.getByLabelText('Recent weight trend: 0.46 kg/week loss')).toBeTruthy();
-        expect(screen.getByLabelText('Your goal: 0.46 kg/week loss')).toBeTruthy();
-        expect(screen.getByText('Likely range: 0.42-0.50 kg/week loss')).toBeTruthy();
-        expect(screen.getByText('This describes the period shown, not a forecast.')).toBeTruthy();
-        expect(screen.getByText('No calorie-target change suggested right now.')).toBeTruthy();
-        expect(screen.getByTestId('plan-check-pace-comparison')).toBeTruthy();
-        expect(screen.queryByText('Expected from logs')).toBeNull();
-        expect(screen.queryByText('Estimated calorie balance')).toBeNull();
-    });
-
-    it('keeps Apply inside the adjustment review', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
-        const screen = await renderCard();
-
-        await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        expect(screen.getByText('Your recent weight trend is slower than your goal')).toBeTruthy();
-        expect(screen.queryByText('Apply 1,750 kcal')).toBeNull();
-
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        expect(screen.getByText('Current calorie target')).toBeTruthy();
-        expect(screen.getByText('Suggested calorie target')).toBeTruthy();
-        expect(screen.getByText('Safety limit')).toBeTruthy();
-        expect(screen.getByText('Apply 1,750 kcal')).toBeTruthy();
-
-        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
-        await waitFor(() => expect(mockApi.applyCalibrationRecommendation).toHaveBeenCalledWith(
-            7,
-            'plan-check-operation-id'
-        ));
-        expect(screen.queryByText('Apply 1,750 kcal')).toBeNull();
-    });
-
-    it('keeps the assessment visible with a scheduled update and supports Undo', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValue(scheduledStatus());
-        const screen = await renderCard();
-
-        await waitFor(() => expect(screen.getByText('Calorie target update scheduled')).toBeTruthy());
-        expect(screen.getByText('Your recent weight trend is slower than your goal')).toBeTruthy();
-        expect(screen.getByText(/1,750 kcal\/day starts/)).toBeTruthy();
-        expect(screen.queryByText('Review adjustment')).toBeNull();
-        expect(screen.queryByText('Keep your current calorie target for now.')).toBeNull();
-
-        await fireEvent.press(screen.getByText('Undo'));
-        await waitFor(() => expect(mockApi.cancelCalibrationRecommendation).toHaveBeenCalledWith(
-            7,
-            'plan-check-operation-id'
-        ));
-    });
-
-    it('updates the cached scheduled state immediately after Apply', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValueOnce(recommendationStatus());
-        mockApi.getCalibrationStatus.mockResolvedValue(scheduledStatus());
-        const { queryClient, ...screen } = await renderCard();
-
-        await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
-
-        await waitFor(() => {
-            const cached = queryClient.getQueryData<CalibrationStatusResponse>(calibrationStatusQueryKey);
-            expect(cached?.recommendation).toBeNull();
-            expect(cached?.scheduledChange?.dailyCalorieBudgetKcal).toBe(1750);
-        });
-    });
-
-    it('does not display a permanent loading state for an older server response', async () => {
-        const status = baseStatus();
-        const { assessment: _assessment, ...legacyEvaluation } = status.evaluation;
-        mockApi.getCalibrationStatus.mockResolvedValue({ ...status, evaluation: legacyEvaluation });
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText(/not available from your connected server yet/)).toBeTruthy());
-        expect(screen.queryByLabelText('Loading plan check')).toBeNull();
-        expect(screen.queryByText('Legacy headline must not render')).toBeNull();
-    });
-
-    it('does not tell users to change their calorie plan when the trend model is unavailable', async () => {
-        const status = waitingStatus();
-        status.evaluation.assessment.blocker = 'trend_unavailable';
-        mockApi.getCalibrationStatus.mockResolvedValue(status);
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText('Your weight trend is unavailable')).toBeTruthy());
-        expect(screen.queryByText('Review your calorie plan')).toBeNull();
-    });
-
-    it.each([
-        { width: 320, fontScale: 1, direction: 'row' },
-        { width: 1024, fontScale: 1.6, direction: 'column' }
-    ] as const)('keeps comparisons readable at $width px and $fontScale font scale', async ({ width, fontScale, direction }) => {
-        Dimensions.set({ window: { width, height: 844, scale: 1, fontScale } });
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByTestId('plan-check-metrics')).toHaveStyle({ flexDirection: direction }));
-        expect(screen.getByTestId('plan-check-pace-comparison').props.accessibilityLabel)
-            .toMatch(/not a forecast/);
-    });
-
-    it('requires a fresh review when the pending recommendation changes', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        expect(screen.getByText('Apply 1,750 kcal')).toBeTruthy();
-        const next = recommendationStatus();
-        next.recommendation = { ...next.recommendation!, id: 8, inputFingerprint: 'new-evidence' };
-        next.evaluation.recommendation = { ...next.evaluation.recommendation!, recommendedTargetKcal: 1800 };
-        await act(() => screen.queryClient.setQueryData(calibrationStatusQueryKey, next));
-        await waitFor(() => expect(screen.queryByText('Apply 1,750 kcal')).toBeNull());
-        expect(screen.queryByText('Apply 1,800 kcal')).toBeNull();
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        expect(screen.getByText('Apply 1,800 kcal')).toBeTruthy();
-        expect(mockApi.applyCalibrationRecommendation).not.toHaveBeenCalled();
-    });
-
-    it('keeps the review retryable after a transient apply failure', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValue(recommendationStatus());
-        mockApi.applyCalibrationRecommendation.mockRejectedValueOnce(new TypeError('Network request failed'));
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
-        await waitFor(() => expect(screen.getByText('Check your connection and try again.')).toBeTruthy());
-        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
-        await waitFor(() => expect(mockApi.applyCalibrationRecommendation).toHaveBeenCalledTimes(2));
-    });
-
-    it('refreshes stale evidence after an apply conflict instead of retrying the same recommendation', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValueOnce(recommendationStatus()).mockResolvedValue(baseStatus());
-        mockApi.applyCalibrationRecommendation.mockRejectedValue(new ApiError('Stale', 409, null));
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText('Review adjustment')).toBeTruthy());
-        await fireEvent.press(screen.getByText('Review adjustment'));
-        await fireEvent.press(screen.getByText('Apply 1,750 kcal'));
-        await waitFor(() => expect(screen.getByText('Your recent weight trend matches your goal')).toBeTruthy());
-        expect(screen.queryByText('Apply 1,750 kcal')).toBeNull();
-        expect(mockApi.getCalibrationStatus).toHaveBeenCalledTimes(2);
-    });
-
-    it('refreshes the scheduled banner after an undo conflict', async () => {
-        mockApi.getCalibrationStatus.mockResolvedValueOnce(scheduledStatus()).mockResolvedValue(baseStatus());
-        mockApi.cancelCalibrationRecommendation.mockRejectedValue(new ApiError('Already effective', 409, null));
-        const screen = await renderCard();
-        await waitFor(() => expect(screen.getByText('Undo')).toBeTruthy());
-        await act(async () => { await fireEvent.press(screen.getByText('Undo')); });
-        await waitFor(() => expect(screen.queryByText('Calorie target update scheduled')).toBeNull());
-        expect(mockApi.getCalibrationStatus).toHaveBeenCalledTimes(2);
-    });
+        client.clear();
+    }
 });

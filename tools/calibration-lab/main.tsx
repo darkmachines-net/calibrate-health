@@ -1,15 +1,15 @@
-/** @file Interactive synthetic-history laboratory for calibration evidence and plan-check presentation. */
+/** @file Synthetic progress preview with historical calibration diagnostics; no live accounts or target changes. */
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { CalibrationInput, CalibrationResult } from '@calibrate/shared/calibration';
-import type { CalibrationStatusResponse } from '@calibrate/api-client';
-import { PlanCheckCardView } from '../../mobile/src/components/PlanCheckCard';
+import type { CalibrationStatusResponse, PlanCheckResponse } from '@calibrate/api-client';
+import { summarizeTracking } from '../../backend/src/services/planCheckSummary';
+import { PlanCheckCardView } from '../../mobile/src/components/PlanCheckCardView';
 import {
     applyPreviewRecommendation,
     buildPreviewStatus,
-    cancelPreviewScheduledChange
 } from './status.mjs';
 
 type CalibrationScenario = {
@@ -26,6 +26,7 @@ function LabApp() {
     const [description, setDescription] = useState('Loading preset histories...');
     const [historyInput, setHistoryInput] = useState('');
     const [status, setStatus] = useState<CalibrationStatusResponse>();
+    const [summary, setSummary] = useState<PlanCheckResponse>();
     const [error, setError] = useState<Error | null>(null);
     const [isEvaluating, setIsEvaluating] = useState(false);
 
@@ -39,6 +40,15 @@ function LabApp() {
         setError(null);
         try {
             const input = JSON.parse(json) as CalibrationInput;
+            const dates = [...input.foodDays.map(day => day.date), ...input.weightPoints.map(point => point.date)].sort();
+            setSummary({
+                ...summarizeTracking({
+                    localDate: new Date(input.asOfDate), trackingSince: dates[0] ? new Date(dates[0]) : null,
+                    weightUnit: input.weightUnit, weights: input.weightPoints.map(point => ({ date: new Date(point.date), weight_grams: point.weightKg * 1000 })),
+                    food: input.foodDays.filter(day => day.entryCount > 0).map(day => ({ local_date: new Date(day.date), calories: day.calories })),
+                    days: input.foodDays.filter(day => day.isComplete).map(day => ({ local_date: new Date(day.date), status: 'COMPLETE' }))
+                }), weeklyReports: [], weeklyReportsEnabled: false
+            });
             const response = await fetch('/api/evaluate', {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
@@ -89,14 +99,6 @@ function LabApp() {
         })();
     }, []);
 
-    async function applyRecommendation(recommendationId: number) {
-        setStatus((current) => applyPreviewRecommendation(current, recommendationId));
-    }
-
-    async function cancelScheduledChange(recommendationId: number) {
-        setStatus((current) => cancelPreviewScheduledChange(current, recommendationId));
-    }
-
     function updateHistoryInput(value: string) {
         setHistoryInput(value);
         setSelectedScenarioId(null);
@@ -112,7 +114,7 @@ function LabApp() {
                 <div>
                     <span className="eyebrow">Development tool</span>
                     <h1>Calibration history lab</h1>
-                    <p>Explore the exact end-user conclusions and guidance generated from deterministic food, weight, and uncertainty histories.</p>
+                    <p>Preview descriptive progress summaries from synthetic tracking histories. Retired calibration results remain below for historical diagnostics.</p>
                 </div>
                 <div className="scenario-control">
                     <label htmlFor="preset-history">Preset history</label>
@@ -135,25 +137,13 @@ function LabApp() {
                     <div>
                         <span className="eyebrow">Shared product component</span>
                         <h2 id="preview-title">End-user preview</h2>
-                        <p>This is the same Plan check card and review sheet rendered on Progress. Apply and undo are simulated locally.</p>
+                        <p>This is the descriptive Plan check shown on Progress. Edit the history to explore duration, sparse logging and stale weigh-ins.</p>
                     </div>
                     <span className="preview-state">{isEvaluating ? 'Evaluating...' : 'Live preview'}</span>
                 </div>
                 <div className="product-preview">
                     <SafeAreaProvider>
-                        <PlanCheckCardView
-                            status={status}
-                            isLoading={isEvaluating && !status}
-                            error={error}
-                            todayDate={status?.evaluation.asOfDate}
-                            onRetry={() => void evaluate(
-                                historyInput,
-                                `lab-${selectedScenarioId ?? 'custom'}`,
-                                scenarios.find((scenario) => scenario.id === selectedScenarioId)?.previewState
-                            )}
-                            onApplyRecommendation={applyRecommendation}
-                            onCancelScheduledChange={cancelScheduledChange}
-                        />
+                        <PlanCheckCardView status={summary} isLoading={isEvaluating && !summary} />
                     </SafeAreaProvider>
                 </div>
             </section>

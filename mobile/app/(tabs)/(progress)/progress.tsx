@@ -404,7 +404,6 @@ export default function ProgressScreen() {
                 fullWidthBody
                 footer={<PlanCheckSummary
                     onPress={() => setExpandedSection('plan')}
-                    planAvailable={profileQuery.data ? profileQuery.data.calorieSummary.planStatus === 'available' : undefined}
                 />}
             >
                 {({ expanded }) => <WeightTrendPreviewCard

@@ -38,6 +38,8 @@ import syncRoutes from './routes/sync';
 import userRoutes from './routes/user';
 import watchRoutes from './routes/watch';
 import calibrationRoutes from './routes/calibration';
+import planCheckRoutes from './routes/planCheck';
+import weeklyReportTaskRoutes from './routes/weeklyReportTasks';
 import caloriePlanRoutes from './routes/caloriePlan';
 import legalRoutes from './routes/legal';
 import onboardingRoutes from './routes/onboarding';
@@ -131,6 +133,8 @@ const bootstrap = async (): Promise<void> => {
     ...(isProductionOrStaging ? {} : { strictTransportSecurity: false })
   }));
   app.get('/internal/diagnostics/metrics', createDiagnosticsMetricsHandler({ config: observabilityConfig }));
+  // Cloud jobs authenticate independently before the browser/mobile account middleware.
+  app.use('/internal/weekly-reports', weeklyReportTaskRoutes);
   const authRateLimiters = createAuthRateLimiters();
   const clientDiagnosticsRateLimiter = createClientDiagnosticsRateLimiter();
 
@@ -323,6 +327,7 @@ const bootstrap = async (): Promise<void> => {
   apiRouter.use('/sync', syncRoutes);
   apiRouter.use('/watch', watchRoutes);
   apiRouter.use('/calibration', calibrationRoutes);
+  apiRouter.use('/plan-check', planCheckRoutes);
   apiRouter.use('/calorie-plan', caloriePlanRoutes);
   apiRouter.use('/legal', legalRoutes);
   apiRouter.use('/onboarding', onboardingRoutes);

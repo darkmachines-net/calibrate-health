@@ -10,7 +10,11 @@ locals {
     DB_POOL_ACQUIRE_TIMEOUT_SECONDS = "10"
     DB_POOL_IDLE_TIMEOUT_SECONDS    = "30"
   }
-  runtime_environment = merge(local.database_environment, var.application_environment, var.auth_provider == "firebase" ? {
+  runtime_environment = merge(local.database_environment, var.application_environment, var.weekly_reports_enabled ? {
+    WEEKLY_REPORT_TASK_QUEUE           = google_cloud_tasks_queue.weekly_reports[0].id
+    WEEKLY_REPORT_TASK_ORIGIN          = local.report_task_origin
+    WEEKLY_REPORT_TASK_SERVICE_ACCOUNT = google_service_account.weekly_reports[0].email
+    } : {}, var.auth_provider == "firebase" ? {
     FIREBASE_PROJECT_ID      = var.project_id
     FIREBASE_SERVICE_ACCOUNT = google_service_account.service["api"].email
     } : {}, {

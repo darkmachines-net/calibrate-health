@@ -1,7 +1,7 @@
 /** @file launch 24 data state matrix: One reviewed primary resource and truthful surface contract for every data-backed route. */
 
 import type { ApiResourceFixture } from './fixtures';
-import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import {
   ROUTE_REGISTRY,
   type RouteId,
@@ -39,25 +39,7 @@ export type Launch24DataRouteCase = {
 
 const LOCAL_DATE = '2026-07-21';
 
-const EMPTY_PLAN_CHECK_STATUS = {
-  ...PLAN_CHECK_RECOMMENDATION_STATUS,
-  recommendation: null,
-  evaluation: {
-    ...PLAN_CHECK_RECOMMENDATION_STATUS.evaluation,
-    status: 'not_ready',
-    recommendation: null,
-    selectedWindowDays: null,
-    assessment: {
-      ...PLAN_CHECK_RECOMMENDATION_STATUS.evaluation.assessment,
-      state: 'waiting',
-      paceStatus: null,
-      window: null,
-      recentWeightTrendKgPerWeek: null,
-      blocker: 'weight_history',
-      targetDecision: 'waiting',
-    },
-  },
-};
+const EMPTY_PLAN_CHECK_STATUS = { ...PLAN_CHECK_STATUS, windows: [], trackingDays: 0, weeklyReports: [], weeklyReportsEnabled: false };
 
 const GOAL = {
   id: 7,
@@ -262,18 +244,18 @@ export const LAUNCH_24_DATA_ROUTE_CASES = [
   }),
   routeCase('plan-check', {
     resource: {
-      pathname: '/api/v1/calibration/status',
-      content: PLAN_CHECK_RECOMMENDATION_STATUS,
+      pathname: '/api/v1/plan-check',
+      content: PLAN_CHECK_STATUS,
       empty: EMPTY_PLAN_CHECK_STATUS,
     },
     loading: { kind: 'label', value: 'Loading plan check' },
-    content: { kind: 'text', value: 'Your recent weight trend is slower than your goal' },
-    empty: { kind: 'text', value: 'Not enough history for a reliable plan check' },
+    content: { kind: 'text', value: 'Last 7 days' },
+    empty: { kind: 'text', value: 'Your first trend summary appears after 7 days of tracking.' },
     errorText: "Can't load plan check",
     errorActionText: 'Retry',
     staleText: "Couldn't refresh plan check",
     offlineText: 'Offline - showing saved information',
-    terminalEmptyText: 'Not enough history for a reliable plan check',
+    terminalEmptyText: 'Your first trend summary appears after 7 days of tracking.',
   }),
   routeCase('settings', {
     resource: {

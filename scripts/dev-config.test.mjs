@@ -1,4 +1,4 @@
-/** @file Regression coverage for dev config: worktree identifiers are stable and Docker-safe. */
+/** @file Regression coverage for stable worktree identifiers and allowlisted application configuration. */
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -66,6 +66,11 @@ test("generated worktree configuration is isolated, persistent, and secret-safe"
         "WEIGHT_TREND_MODEL=v1",
         "ADMIN_USER_IDS=7,12",
         "ADMIN_EMAILS=operator@example.com",
+        "OPENAI_IDENTITY_PROVIDER_ID=idp-test",
+        "OPENAI_SERVICE_ACCOUNT_ID=service-account-test",
+        "OPENAI_WIF_AUDIENCE=https://api.openai.com/v1",
+        "OPENAI_WEEKLY_REPORT_MODEL=report-model",
+        "OPENAI_API_KEY=unused-test-secret",
         "",
       ].join("\n")
     );
@@ -80,6 +85,11 @@ test("generated worktree configuration is isolated, persistent, and secret-safe"
     assert.equal(first.WEIGHT_TREND_MODEL, "v1");
     assert.equal(first.ADMIN_USER_IDS, "7,12");
     assert.equal(first.ADMIN_EMAILS, undefined);
+    assert.equal(first.OPENAI_IDENTITY_PROVIDER_ID, "idp-test");
+    assert.equal(first.OPENAI_SERVICE_ACCOUNT_ID, "service-account-test");
+    assert.equal(first.OPENAI_WIF_AUDIENCE, "https://api.openai.com/v1");
+    assert.equal(first.OPENAI_WEEKLY_REPORT_MODEL, "report-model");
+    assert.equal(first.OPENAI_API_KEY, undefined);
     assert.equal(first.WEB_PUSH_SUBJECT, "mailto:test@example.com");
     assert.equal(first.SESSION_COOKIE_NAME, `cal.${first.WORKTREE_HASH}.sid`);
     assert.match(first.hostDatabaseUrl, new RegExp(`127\\.0\\.0\\.1:${first.POSTGRES_PORT}`));
@@ -102,6 +112,7 @@ test("generated worktree configuration is isolated, persistent, and secret-safe"
     const generated = fs.readFileSync(path.join(temporaryDirectory, ".dev.env"), "utf8");
     assert.doesNotMatch(generated, /GITHUB_TOKEN|CALIBRATE_GH_PAT/);
     assert.doesNotMatch(generated, /ADMIN_EMAILS/);
+    assert.doesNotMatch(generated, /OPENAI_API_KEY|unused-test-secret/);
   } finally {
     fs.rmSync(temporaryDirectory, { recursive: true, force: true });
   }

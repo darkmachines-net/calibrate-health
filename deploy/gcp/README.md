@@ -283,6 +283,64 @@ tooling above; infrastructure apply performs neither operation.
 Set `alert_email`, confirm the notification channel and optionally set `billing_account`
 before launch. Empty alert input allows setup but sends no operator notifications.
 
+## Weekly progress reports
+
+Weekly AI reports are optional and disabled by default. Reapply bootstrap to enable
+the Cloud Tasks and Cloud Scheduler APIs. Prepare the infrastructure with scheduling
+paused before releasing the report API and migration 0048. OpenAI authentication uses Google workload identity federation;
+no OpenAI API key or Google service-account key file is stored or provisioned.
+
+In the OpenAI organization containing the Calibrate Health project, open Organization
+Settings > Security > Workload Identity Provider. Create a provider using issuer
+`https://accounts.google.com`, audience `https://api.openai.com/v1`, and Google OIDC
+discovery (leave uploaded JWKS disabled). Create a dedicated OpenAI service account in
+that project, give it model-request access, and map the provider to it with an exact `sub`
+match for the attached `calibrate-api` Google service account's **numeric unique ID**.
+The task caller is a separate identity. Retrieve the runtime identity using:
+
+```text
+gcloud run services describe calibrate-api --project=calibrate-health --region=us-central1 --format="value(spec.template.spec.serviceAccountName)"
+gcloud iam service-accounts describe calibrate-api@calibrate-health.iam.gserviceaccount.com --project=calibrate-health --format="value(uniqueId)"
+```
+
+After applying this module, `terraform -chdir=deploy/gcp output openai_workload_identity`
+also exposes the public mapping claims. See OpenAI's
+[Google Cloud guide](https://developers.openai.com/api/docs/guides/workload-identity-federation/google-cloud).
+Set `application_environment.OPENAI_IDENTITY_PROVIDER_ID` and
+`application_environment.OPENAI_SERVICE_ACCOUNT_ID` to the OpenAI identifiers, and
+`application_environment.OPENAI_WEEKLY_REPORT_MODEL` to a Responses model with structured
+outputs. `OPENAI_WIF_AUDIENCE` defaults to the audience above; configure it explicitly if
+the provider uses another audience. These are non-secret settings. Set
+`weekly_reports_enabled=true` after the mapping is ready, keep `weekly_reports_paused=true`
+(the default), and review/apply the Terraform plan. This prepares the queue, caller and
+Cloud Run template settings without dispatching reports. No OpenAI model is chosen
+automatically. Configure the project budget separately in OpenAI.
+
+Terraform preserves release-owned traffic and Hosting pins, so template changes do not
+activate settings on the serving revision. Deploy the report code and migration through
+the shared Release workflow after preparing these settings. Verify the serving revision
+contains both the OpenAI and `WEEKLY_REPORT_TASK_*` settings, then set
+`weekly_reports_paused=false` and apply the reviewed scheduler-only change. Later pauses
+use `weekly_reports_paused=true`; existing queued tasks may finish. Do not move traffic
+or deploy Hosting outside the release workflow to activate environment changes.
+
+The module creates a dedicated task caller, queue-scoped enqueuer access for the API,
+and an hourly UTC Scheduler trigger. The dispatcher only queues accounts whose local
+date is Sunday and whose tracking history spans a week. The queue allows two concurrent
+tasks at one dispatch per second and retries failures with backoff. Both internal paths
+verify Google's OIDC signature, audience, expiry and the exact caller email even when
+the API itself is public. The caller gets Cloud Run invocation only, without database
+or secret access. The API identity can act as that caller when creating a task.
+
+The deployer needs `iam.serviceAccounts.actAs` on the new caller to create the Scheduler
+job. Keep the Google-managed Cloud Tasks/Scheduler service-agent grants intact. Check
+Scheduler executions, queue retries and the API's sanitized error messages after enabling;
+incorrect federation mappings, missing model access or exhausted API quota leave tasks retryable. The hosted worker
+requires acceptance of the current privacy document before any model request. Reports
+appear in Plan check, with no email or push delivery. See the
+[worker contract](../../backend/src/services/weeklyReports/README.md) for data handling,
+leases, history and validation. Disabling scheduling preserves already saved reports.
+
 ## Release integration
 
 `release.config.json` selects GCP for beta and production. The pinned shared toolkit supports an optional worker and

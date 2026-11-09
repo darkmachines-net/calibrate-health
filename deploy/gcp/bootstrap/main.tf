@@ -46,7 +46,7 @@ resource "google_project_service" "api" {
     "sqladmin.googleapis.com", "artifactregistry.googleapis.com", "secretmanager.googleapis.com",
     "monitoring.googleapis.com", "logging.googleapis.com", "billingbudgets.googleapis.com",
     "identitytoolkit.googleapis.com", "securetoken.googleapis.com", "apikeys.googleapis.com",
-    "dns.googleapis.com"
+    "dns.googleapis.com", "cloudtasks.googleapis.com", "cloudscheduler.googleapis.com"
   ])
   project            = data.google_project.app.project_id
   service            = each.value
