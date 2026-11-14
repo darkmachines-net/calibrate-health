@@ -2,7 +2,11 @@
 
 ## Database connections
 
-The application uses one `pg.Pool` for Prisma, browser sessions and readiness.
+Prisma and browser sessions share the application `pg.Pool`. Web processes can
+use one additional connection from the readiness pool, with the same connection
+settings. Concurrent `/readyz` calls share a probe and get an answer within two
+seconds, including connection acquisition. A timed-out query loses its connection
+so it cannot occupy the next probe's slot. `/healthz` checks process liveness.
 Prisma CLI resolves the same explicit settings; it runs in its own process and
 must be counted separately. Connection settings do not provision infrastructure or change credential authority. Authentication defaults to local.
 
@@ -30,9 +34,9 @@ to be scheduled; it is not a guarantee while a runtime is suspended.
 
 Illustrative configuration: `DB_POOL_MAX=3`,
 `DB_POOL_ACQUIRE_TIMEOUT_SECONDS=5`, `DB_POOL_IDLE_TIMEOUT_SECONDS=30`.
-A combined budget could reserve `(2 old + 2 new web processes) × 3 = 12`,
+A combined budget could reserve `(2 old + 2 new web processes) × (3 + 1) = 16`,
 plus two overlapping job/CLI processes × 3 = 6, plus 3 administrative connections:
-21 total before other applications and additional safety headroom. Count
+25 total before other applications and additional safety headroom. Count
 all replicas, revision overlap, jobs, admin and other applications against the
 database's usable limit. Autoscaler limits are not a strict connection or cost
 guarantee; this example selects no production tier or availability policy.
@@ -69,7 +73,7 @@ to pg; this is not general libpq connection-string compatibility.
 URL `schema` takes precedence over `DB_SCHEMA`; the selected schema goes to
 both Prisma's adapter and pg `search_path`, and is reflected in the CLI URL.
 Schema-only Prisma generate/format/validate still work without live credentials.
-Scripts must call `disconnectDatabase()` to end Prisma and its owned pool,
+Scripts must call `disconnectDatabase()` to end Prisma and the owned pools,
 including when Prisma disconnect fails. Idle connection failures are reported
 without driver credentials and removed by pg; later acquisition can replace them.
 

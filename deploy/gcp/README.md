@@ -195,7 +195,8 @@ image, `/api/v1/readyz`, `/api/v1/healthz`, app configuration and logs via authe
 Cloud Run access (for example `gcloud run services proxy calibrate-api --project=PROJECT_ID --region=us-central1`).
 
 The startup probe has a bounded 200-second window; liveness checks the process rather
-than restarting it during a database outage. The pool is limited to three connections.
+than restarting it during a database outage. Each web process can use three
+application connections and one [bounded readiness connection](../../backend/src/config/README.md#database-connections).
 Service-wide minimum/maximum of one instance and continuously allocated CPU keep the
 current in-process reminder scheduler running between requests, without assigning a
 minimum to every old Hosting-tagged revision. Cloud Run can overlap revisions during

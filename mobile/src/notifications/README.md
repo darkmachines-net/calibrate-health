@@ -5,6 +5,12 @@ unread count; Settings owns schedules and permission recovery. SSE, polling and
 service-worker messages invalidate/refetch that state instead of becoming separate stores.
 Deep links accept only registered destinations.
 
+The browser opens one credentialed SSE connection for the visible, signed-in app.
+Hosted connections end before the Cloud Run request deadline. Opening each replacement
+connection refetches the notification state to recover changes made during the gap.
+Hiding the tab, signing out, or changing accounts or servers clears the old connection
+and any pending reconnect. Returning to a visible tab refreshes the notification state.
+
 Native registration requires both a signed-in user action and the server's capability.
 `NATIVE_PUSH_MODE` defaults to disabled; `expo` opts into the Expo Push Service
 boundary. Disabled servers reject registration and delivery, and the phone does not

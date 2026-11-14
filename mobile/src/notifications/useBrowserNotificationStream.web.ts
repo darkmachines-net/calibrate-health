@@ -1,4 +1,4 @@
-/** @file Authenticated browser notification stream lifecycle and bounded cache invalidation. */
+/** @file Keeps the foreground browser notification cache synchronized over one reconnecting stream. */
 
 import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
@@ -6,7 +6,8 @@ import {
     NOTIFICATION_REALTIME_EVENT_NAME,
     isNotificationRealtimePayload
 } from '../../../shared/notificationRealtime';
-import { MOBILE_NOTIFICATION_QUERY_KEY } from './query';
+import { isAppForeground, subscribeAppForeground } from '../platform/appForeground.web';
+import { invalidateNotificationQueries } from './query';
 
 export { MOBILE_NOTIFICATION_QUERY_KEY } from './query';
 
@@ -18,6 +19,7 @@ type StreamSource = {
     addEventListener(name: string, listener: (event: StreamEvent) => void): void;
     close(): void;
     onerror: ((event: Event) => unknown) | null;
+    onopen: ((event: Event) => unknown) | null;
 };
 
 type NotificationStreamDependencies = {
@@ -26,6 +28,8 @@ type NotificationStreamDependencies = {
     invalidate(): void;
     scheduleReconnect(callback: () => void, delayMs: number): number;
     cancelReconnect(timerId: number): void;
+    isForeground(): boolean;
+    subscribeForeground(listener: () => void): () => void;
 };
 
 /** Builds the versioned server-sent notification stream URL for the selected server. */
@@ -33,7 +37,7 @@ export function getNotificationStreamUrl(serverUrl: string): string {
     return new URL('/api/v1/notifications/stream', serverUrl).toString();
 }
 
-/** Own one credentialed, reconnecting browser stream and return an idempotent teardown. */
+/** Own one credentialed stream while visible, refetch after each open, and return idempotent cleanup. */
 export function connectBrowserNotificationStream(dependencies: NotificationStreamDependencies): () => void {
     let active = true;
     let source: StreamSource | null = null;
@@ -46,55 +50,79 @@ export function connectBrowserNotificationStream(dependencies: NotificationStrea
         reconnectTimer = null;
     }
 
+    function closeSource() {
+        const previous = source;
+        source = null;
+        previous?.close();
+    }
+
     function connect() {
-        cancelPendingReconnect();
-        if (!active) return;
-        source = dependencies.createSource(streamUrl, { withCredentials: true });
-        source.addEventListener(NOTIFICATION_REALTIME_EVENT_NAME, (event) => {
+        if (!active || source || !dependencies.isForeground()) return;
+        const current = dependencies.createSource(streamUrl, { withCredentials: true });
+        source = current;
+        // The server has no event replay. Refresh once the new subscription can observe further writes.
+        current.onopen = () => { if (source === current) dependencies.invalidate(); };
+        current.addEventListener(NOTIFICATION_REALTIME_EVENT_NAME, (event) => {
+            if (source !== current) return;
             try {
                 if (isNotificationRealtimePayload(JSON.parse(event.data))) dependencies.invalidate();
             } catch {
                 // The normal notification query remains the recovery path for malformed stream data.
             }
         });
-        source.onerror = () => {
-            source?.close();
-            source = null;
-            if (!active) return;
-            reconnectTimer = dependencies.scheduleReconnect(connect, NOTIFICATION_STREAM_RECONNECT_MS);
+        current.onerror = () => {
+            if (source !== current) return;
+            closeSource();
+            reconnectTimer = dependencies.scheduleReconnect(() => {
+                reconnectTimer = null;
+                connect();
+            }, NOTIFICATION_STREAM_RECONNECT_MS);
         };
     }
 
     connect();
+    const unsubscribeForeground = dependencies.subscribeForeground(() => {
+        if (!active) return;
+        if (!dependencies.isForeground()) {
+            cancelPendingReconnect();
+            closeSource();
+        } else if (source || reconnectTimer !== null) {
+            dependencies.invalidate();
+        } else {
+            connect();
+        }
+    });
     return () => {
         if (!active) return;
         active = false;
+        unsubscribeForeground();
         cancelPendingReconnect();
-        source?.close();
-        source = null;
+        closeSource();
     };
 }
 
-/** Keep the selected authenticated browser session subscribed to notification changes. */
+/** Own the foreground notification source for the selected server and full-access account. */
 export function useBrowserNotificationStream({
-    enabled,
+    accountId,
     serverUrl,
     queryClient
 }: {
-    enabled: boolean;
+    accountId: number | undefined;
     serverUrl: string;
     queryClient: QueryClient;
 }) {
     useEffect(() => {
-        if (!enabled || !serverUrl || typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+        if (accountId === undefined || !serverUrl || typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
             return;
         }
         return connectBrowserNotificationStream({
             serverUrl,
             createSource: (url, options) => new window.EventSource(url, options),
-            invalidate: () => void queryClient.invalidateQueries({ queryKey: [...MOBILE_NOTIFICATION_QUERY_KEY] }),
+            invalidate: () => void invalidateNotificationQueries(queryClient),
             scheduleReconnect: (callback, delayMs) => window.setTimeout(callback, delayMs),
-            cancelReconnect: (timerId) => window.clearTimeout(timerId)
+            cancelReconnect: (timerId) => window.clearTimeout(timerId),
+            isForeground: isAppForeground,
+            subscribeForeground: subscribeAppForeground
         });
-    }, [enabled, queryClient, serverUrl]);
+    }, [accountId, queryClient, serverUrl]);
 }

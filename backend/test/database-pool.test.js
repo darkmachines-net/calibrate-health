@@ -1,4 +1,4 @@
-/** @file Regression coverage for database pool: real pg pool bounds waiting, recovers after release, and removes idle clients. */
+/** @file Verifies pg pool recovery and the application and readiness pools' configuration and disposal. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -67,7 +67,7 @@ test('failed acquisitions and idle errors release capacity for replacement', asy
   } finally { await pool.end(); }
 });
 
-test('runtime owns one pool, passes schema to adapter, and ends pool even if Prisma disconnect fails', async () => {
+test('runtime bounds the readiness pool separately and ends both pools even if Prisma disconnect fails', async () => {
   const Module = require('node:module');
   const originalLoad = Module._load;
   const originalEnv = process.env;
@@ -101,18 +101,23 @@ test('runtime owns one pool, passes schema to adapter, and ends pool even if Pri
       failDisconnect = shouldFail;
       delete require.cache[modulePath];
       const runtime = require(modulePath);
-      assert.equal(runtime.pgPool, pools.at(-1));
+      const [applicationPool, readinessPool] = pools.slice(-2);
+      assert.equal(runtime.pgPool, applicationPool);
       assert.equal(adapter.pool, runtime.pgPool);
       assert.equal(adapter.options.schema, 'private');
       assert.equal(runtime.pgPool.options.max, 1);
+      assert.equal(readinessPool.options.max, 1);
+      assert.equal(readinessPool.options.connectionTimeoutMillis, 2000);
+      assert.equal(readinessPool.options.statement_timeout, 2000);
       const client = await runtime.pgPool.connect();
       client.release();
       client.emit('error', new Error('secret driver payload'));
       if (shouldFail) await assert.rejects(runtime.disconnectDatabase(), /synthetic disconnect failure/);
       else await runtime.disconnectDatabase();
       assert.equal(runtime.pgPool.ended, true);
+      assert.equal(readinessPool.ended, true);
     }
-    assert.equal(pools.length, 2); // One pool per module instance, never a separate Prisma pool.
+    assert.equal(pools.length, 4);
     assert.equal(disconnects, 2);
     assert.equal(messages.length, 2);
     assert.ok(messages.every((message) => !message.includes('secret')));

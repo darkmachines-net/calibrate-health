@@ -1,4 +1,4 @@
-/** @file Regression coverage for notification realtime: notification realtime publisher fans out only to the subscribed user and cleans up. */
+/** @file Verifies notification fanout, per-user stream isolation, and hosted stream cleanup. */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -164,6 +164,40 @@ test('notification stream writes user-scoped events and releases its subscriptio
 
   response.emit('close');
   assert.equal(realtime.getNotificationRealtimeSubscriberCount(91), 0);
+});
+
+test('hosted notification streams end and clean up before successive 60-second deadlines', (t) => {
+  const previous = { NODE_ENV: process.env.NODE_ENV, CALIBRATE_HOSTED_SERVICE: process.env.CALIBRATE_HOSTED_SERVICE };
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  process.env.NODE_ENV = 'production';
+  process.env.CALIBRATE_HOSTED_SERVICE = 'true';
+  delete require.cache[require.resolve('../src/services/notificationRealtime')];
+  const realtime = require('../src/services/notificationRealtime');
+  const handleStream = routeHandler(loadNotificationsRouter(), '/stream');
+  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const response = new EventEmitter();
+    response.status = () => response;
+    response.set = () => response;
+    response.write = t.mock.fn();
+    response.end = t.mock.fn();
+    handleStream({ user: { id: 91 } }, response);
+    assert.equal(realtime.getNotificationRealtimeSubscriberCount(91), 1);
+
+    t.mock.timers.tick(25_000);
+    assert.equal(response.write.mock.calls[1].arguments[0], ': heartbeat\n\n');
+    assert.equal(response.end.mock.callCount(), 0);
+    t.mock.timers.tick(34_999);
+    assert.equal(response.end.mock.callCount(), 1);
+    assert.equal(response.write.mock.callCount(), 2);
+    assert.equal(realtime.getNotificationRealtimeSubscriberCount(91), 0);
+  }
 });
 
 test('in-app notification mutations publish realtime updates when rows change', async () => {

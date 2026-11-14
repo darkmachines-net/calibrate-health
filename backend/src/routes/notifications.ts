@@ -1,8 +1,9 @@
-/** @file Account notification history, read/dismiss actions, push subscriptions, and realtime stream endpoints. */
+/** @file Account notification history, push subscriptions, and realtime updates with a hosted stream lifetime. */
 
 import express from 'express';
 import { NativePushPlatform, NativePushProvider } from '@prisma/client';
 import prisma from '../config/database';
+import { isHostedServiceDeployment } from '../config/emailDelivery';
 import { NATIVE_PUSH_MODES, resolveNativePushMode } from '../config/nativePush';
 import {
   listActiveInAppNotificationsForUser,
@@ -27,6 +28,8 @@ import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/au
  */
 const router = express.Router();
 const SSE_HEARTBEAT_INTERVAL_MS = 25_000; // Keep intermediaries from closing otherwise-idle notification streams.
+// Leave room for request authentication and session persistence before Cloud Run's 60-second deadline.
+const HOSTED_SSE_LIFETIME_MS = 45_000;
 
 /** Web Push is owned by a persisted cookie session, never by a native bearer session. */
 const isBrowserSession = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -42,31 +45,20 @@ const isBrowserSession = (req: express.Request, res: express.Response, next: exp
 router.use(requireAuthenticatedUser);
 
 /**
- * Stream per-user notification state changes to the authenticated browser session.
+ * Stream per-user invalidations. Hosted responses end cleanly before the proxy deadline,
+ * giving the browser a chance to reconnect and fetch changes made between streams.
  */
 router.get('/stream', (req, res) => {
   const user = getAuthenticatedUser(req);
 
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.status(200);
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.set({
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     Connection: 'keep-alive',
     'X-Accel-Buffering': 'no'
   });
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.flushHeaders?.();
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.write(': connected\n\n');
 
   const writeEvent = (payload: unknown) => {
@@ -82,24 +74,22 @@ router.get('/stream', (req, res) => {
   const heartbeatId = setInterval(() => {
     res.write(': heartbeat\n\n');
   }, SSE_HEARTBEAT_INTERVAL_MS);
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   heartbeatId.unref();
 
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
-  res.once('close', () => {
-    /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
+  const lifetimeId = isHostedServiceDeployment() ? setTimeout(() => {
+    res.off('close', cleanup);
+    cleanup();
+    res.end();
+  }, HOSTED_SSE_LIFETIME_MS) : undefined;
+  lifetimeId?.unref();
+
+  function cleanup() {
+    clearTimeout(lifetimeId);
     clearInterval(heartbeatId);
-    /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
     unsubscribe();
-  });
+  }
+
+  res.once('close', cleanup);
 });
 
 /**
