@@ -1,4 +1,4 @@
-# Prepare development candidates on master, approve beta delivery, and keep public-store delivery manual.
+# Prepare development candidates and approve beta; the pinned toolkit checks signing before delivery.
 name: Release
 run-name: ${{ inputs.profile == 'production' && 'Public-store release' || 'Development preview and approved beta release' }}
 on:
@@ -12,6 +12,6 @@ permissions: { contents: read }
 jobs:
   release:
     permissions: { contents: write, deployments: write, packages: write, id-token: write }
-    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@5a9175108ba6c72cb7bd72faa62cc70ec6c7fc2a
+    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@ed621e6fbe1a35fd18e43391409d3673344a23c5
     with: { profile: '${{ inputs.profile || ''beta'' }}', rebuild: '${{ inputs.rebuild || false }}' }
     secrets: inherit

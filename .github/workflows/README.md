@@ -67,7 +67,9 @@ The shared EAS worker verifies the iOS build identity and submits to TestFlight 
 `app.calibratehealth.mobile`, App Store Connect app `6826924944`. The iOS build number
 is the reserved phone code; automatic build-number increments stay disabled.
 
-After approval, selected server and native artifacts can build concurrently. Server
+After approval, server builds and OTA exports proceed after reservation; selected
+native builds and backend deployment also wait for live iOS signing readiness.
+Artifact builds can overlap once signing passes. Server
 changes require successful Cloud SQL migration, verified Cloud Run rollout and
 revision-pinned Firebase Hosting health before dependent client publication. Both
 profiles deploy to `https://calibratehealth.app`. Production retains its environment
@@ -111,7 +113,9 @@ ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
 strings. GCP deployment uses the environment's `GCP_WORKLOAD_IDENTITY_PROVIDER`
 and `GCP_RELEASE_SERVICE_ACCOUNT` variables; no long-lived Google key is needed.
 EAS also needs the existing iOS distribution certificate, provisioning profile and
-assigned App Store Connect submission key. The ios-beta and ios-production submit
+assigned App Store Connect team API key. The [shared iOS signing contract](https://github.com/darkmachines-net/expo-release-template/blob/main/src/README.md#ios-store-signing)
+owns provisioning permissions, automatic profile refresh and operator renewal requirements.
+The ios-beta and ios-production submit
 profiles both upload to TestFlight; App Store public release remains a separate provider action.
 
 Keep EAS preview and production public variables aligned with their matching
