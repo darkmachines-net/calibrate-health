@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": {
-    "version": "0.40.3",
+    "version": "0.40.8",
     "api": {
       "current": "v1",
       "supported": [

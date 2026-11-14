@@ -2035,7 +2035,7 @@ export interface components {
             /** @constant */
             platform?: "web";
             /** @enum {unknown} */
-            version?: "0.40.3" | "0.40.2";
+            version?: "0.40.8" | "0.40.3";
         } | {
             /** @constant */
             platform?: "android_phone";
