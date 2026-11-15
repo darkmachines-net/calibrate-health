@@ -139,13 +139,12 @@ export class FirebaseAuthority {
   }
 
   /**
-   * Exchange a native credential through Firebase and resolve only its verified project/UID.
-   * Google registration requires explicit consent on hosted servers. Apple is limited to existing bindings.
+   * Exchange a native Google credential through Firebase and resolve only its verified project/UID.
+   * New accounts require an explicit registration intent and current consent on hosted servers.
    * Provider credentials remain ephemeral and the returned security generation guards session issuance.
    */
   async authenticateSocial(credential: SocialCredential, registration: boolean, hosted: boolean): Promise<{ userId: number; version: number }> {
-    const postBody = new URLSearchParams({ providerId: credential.provider, id_token: credential.idToken });
-    if (credential.nonce) postBody.set('nonce', credential.nonce);
+    const postBody = new URLSearchParams({ providerId: SOCIAL_AUTH_PROVIDERS.GOOGLE, id_token: credential.idToken });
     const signed = await this.request('signInWithIdp', {
       requestUri: this.settings.origin, postBody: postBody.toString(), returnSecureToken: true
     });
@@ -160,14 +159,12 @@ export class FirebaseAuthority {
     const now = Math.floor(Date.now() / 1000);
     const email = normalizeEmailCredential(token.email);
     if (token.uid !== signed.localId || token.aud !== this.settings.projectId ||
-        token.firebase?.sign_in_provider !== credential.provider || token.firebase?.tenant ||
+        token.firebase?.sign_in_provider !== SOCIAL_AUTH_PROVIDERS.GOOGLE || token.firebase?.tenant ||
         !Number.isFinite(token.auth_time) || token.auth_time < now - 60 || token.auth_time > now + 30 ||
         !email || token.email_verified !== true) throw new SocialAuthRejected();
     const key = { project_id_uid: { project_id: this.settings.projectId, uid: token.uid } };
     let identity = await this.database.firebaseIdentity.findUnique({ where: key });
     if (!identity) {
-      // Older iOS clients can still authenticate existing accounts, but cannot create new Apple accounts in Calibrate.
-      if (credential.provider === SOCIAL_AUTH_PROVIDERS.APPLE) throw new SocialAuthRejected();
       if (!registration) throw new SocialAuthRejected('SOCIAL_REGISTRATION_REQUIRED');
       const collision = await this.database.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
       if (collision) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');

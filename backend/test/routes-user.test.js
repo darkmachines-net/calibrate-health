@@ -500,7 +500,7 @@ test('user route: provider deletion requires the current account and does not is
   const previousProvider = process.env.AUTH_PROVIDER;
   const previousEnabled = process.env.FIREBASE_SOCIAL_PROVIDERS;
   process.env.AUTH_PROVIDER = 'firebase';
-  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com,apple.com';
+  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com';
   let deleted = null;
   let verifiedId = 8;
   const exchanges = [];

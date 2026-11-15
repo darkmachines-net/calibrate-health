@@ -26,8 +26,8 @@ test('provider account deletion retains bearer authorization and sends proof in 
         baseUrl: 'https://calibrate.example', getAccessToken: () => 'current-session',
         fetchImpl: async (_input, init) => { request = init; return new Response(null, { status: 204 }); }
     });
-    await client.deleteAccount({ provider: 'apple.com', id_token: 'ephemeral', nonce: 'raw-nonce' });
+    await client.deleteAccount({ provider: 'google.com', id_token: 'ephemeral' });
     assert.equal(request?.method, 'DELETE');
     assert.equal(new Headers(request?.headers).get('Authorization'), 'Bearer current-session');
-    assert.deepEqual(JSON.parse(String(request?.body)), { provider_credential: { provider: 'apple.com', id_token: 'ephemeral', nonce: 'raw-nonce' } });
+    assert.deepEqual(JSON.parse(String(request?.body)), { provider_credential: { provider: 'google.com', id_token: 'ephemeral' } });
 });

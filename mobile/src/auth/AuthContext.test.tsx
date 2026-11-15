@@ -19,7 +19,7 @@ const mockClientOptions: Array<{ onRequestError?: (error: unknown) => void; fetc
 const mockGetClientConfig = jest.fn();
 const mockRefreshMobile = jest.fn();
 const mockLoginMobile = jest.fn();
-const mockSocialProviders = jest.fn(async () => ({ providers: ['google.com', 'apple.com'] }));
+const mockSocialProviders = jest.fn(async () => ({ providers: ['google.com'] }));
 const mockSocialAuth = jest.fn();
 const mockSocialCredential = jest.fn();
 jest.mock('./nativeSocialAuth', () => ({ acquireSocialCredential: (...args: unknown[]) => mockSocialCredential(...args) }));

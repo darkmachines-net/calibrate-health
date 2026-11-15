@@ -485,7 +485,7 @@ paths:
     get:
       operationId: getMobileSocialProviders
       security: []
-      description: Explicitly enabled Firebase providers; local-password deployments return an empty list. No-store.
+      description: Advertises Google when enabled for Firebase sign-in. Local-password deployments return an empty list. No-store.
       responses:
         '200':
           description: Native provider availability; the client also checks device support and build configuration.
@@ -497,12 +497,12 @@ paths:
                 properties:
                   providers:
                     type: array
-                    items: { type: string, enum: [google.com, apple.com] }
+                    items: { type: string, enum: [google.com] }
   /auth/mobile/social:
     post:
       operationId: authenticateMobileSocial
       security: []
-      description: Exchange a native provider credential through Firebase for a Calibrate device session. Google registration requires current hosted legal consent. Apple credentials are accepted only for legacy clients with existing Calibrate identity bindings. Never links SQL accounts by email.
+      description: Exchange a native Google credential through Firebase for a Calibrate device session. Registration requires current hosted legal consent. Account identity is resolved by Firebase project and UID.
       requestBody:
         required: true
         content:
@@ -511,9 +511,8 @@ paths:
               type: object
               required: [provider, id_token, intent, device_id]
               properties:
-                provider: { type: string, enum: [google.com, apple.com] }
+                provider: { type: string, enum: [google.com] }
                 id_token: { type: string, minLength: 1, maxLength: 16384, writeOnly: true }
-                nonce: { type: string, minLength: 32, maxLength: 128, description: Raw nonce required for Apple; its SHA-256 hash was supplied to the native authorization request., writeOnly: true }
                 intent: { type: string, enum: [login, register] }
                 device_id: { type: string }
                 device_platform: { type: string, enum: [android_phone, ios] }
@@ -1550,12 +1549,11 @@ paths:
                   minLength: 1
                 provider_credential:
                   type: object
-                  description: Native provider proof must resolve to the currently authenticated Firebase UID; never creates or switches accounts.
+                  description: Native Google proof must resolve to the currently authenticated Firebase UID.
                   required: [provider, id_token]
                   properties:
-                    provider: { type: string, enum: [google.com, apple.com] }
+                    provider: { type: string, enum: [google.com] }
                     id_token: { type: string, minLength: 1, maxLength: 16384, writeOnly: true }
-                    nonce: { type: string, minLength: 32, maxLength: 128, writeOnly: true }
       responses:
         '204':
           description: Account, sessions, and all user-owned data were deleted.

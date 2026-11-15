@@ -323,7 +323,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Explicitly enabled Firebase providers; local-password deployments return an empty list. No-store. */
+        /** @description Advertises Google when enabled for Firebase sign-in. Local-password deployments return an empty list. No-store. */
         get: operations["getMobileSocialProviders"];
         put?: never;
         post?: never;
@@ -342,7 +342,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Exchange a native provider credential through Firebase for a Calibrate device session. Google registration requires current hosted legal consent. Apple credentials are accepted only for legacy clients with existing Calibrate identity bindings. Never links SQL accounts by email. */
+        /** @description Exchange a native Google credential through Firebase for a Calibrate device session. Registration requires current hosted legal consent. Account identity is resolved by Firebase project and UID. */
         post: operations["authenticateMobileSocial"];
         delete?: never;
         options?: never;
@@ -3454,7 +3454,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        providers: ("google.com" | "apple.com")[];
+                        providers: "google.com"[];
                     };
                 };
             };
@@ -3471,10 +3471,8 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    provider: "google.com" | "apple.com";
+                    provider: "google.com";
                     id_token: string;
-                    /** @description Raw nonce required for Apple; its SHA-256 hash was supplied to the native authorization request. */
-                    nonce?: string;
                     /** @enum {string} */
                     intent: "login" | "register";
                     device_id: string;
@@ -4924,12 +4922,11 @@ export interface operations {
             content: {
                 "application/json": {
                     current_password?: string;
-                    /** @description Native provider proof must resolve to the currently authenticated Firebase UID; never creates or switches accounts. */
+                    /** @description Native Google proof must resolve to the currently authenticated Firebase UID. */
                     provider_credential?: {
                         /** @enum {string} */
-                        provider: "google.com" | "apple.com";
+                        provider: "google.com";
                         id_token: string;
-                        nonce?: string;
                     };
                 } & (unknown | unknown);
             };

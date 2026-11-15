@@ -20,15 +20,8 @@ enable user creation for `signInWithIdp`; Firebase-only identities cannot access
 Calibrate without an explicit consent-gated SQL registration. The
 [mobile guide](../mobile/README.md#native-google-sign-in) owns Google client configuration.
 
-On deployments that already supported Apple, retain `apple.com` in the backend
-flag and keep its Firebase configuration enabled while Apple-only users still
-need access through older iOS builds. Apple credentials can authenticate or confirm
-deletion only for an existing Calibrate binding. A newer build has no Apple prompt.
-Confirm a working recovery route for these users, including private relay addresses,
-before retiring the older builds or disabling Apple in Firebase.
-
-`GET /auth/mobile/providers` advertises the enabled subset. `POST /auth/mobile/social`
-exchanges a native provider ID token (and Apple's raw nonce) with Firebase's
+`GET /auth/mobile/providers` advertises Google when enabled. `POST /auth/mobile/social`
+exchanges a native Google ID token with Firebase's
 `accounts:signInWithIdp`, then verifies the resulting Firebase ID token with revocation
 checking. Only verified email and matching project, UID, provider and recent auth
 claims are accepted. SQL identity is resolved exclusively by project/UID. New Google
@@ -42,9 +35,8 @@ refresh rotation, logout and onboarding. A new Google identity discovered during
 login opens the account confirmation step before creating a SQL account or recording consent.
 Canceled/failed registration can leave an unbound Firebase identity; a later explicit
 registration may bind that same verified UID without deleting a remote identity.
-Account deletion also accepts fresh provider proof, but requires it to resolve to
-the already authenticated account. A different valid Google/Apple account cannot
-authorize deletion. The mobile UI retains the exact destructive confirmation and
+Account deletion also accepts fresh Google proof for the already authenticated
+account. The mobile UI retains the exact destructive confirmation and
 all existing offline, watch and device cleanup.
 
 ## Authentication and account isolation

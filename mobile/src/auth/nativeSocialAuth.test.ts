@@ -47,7 +47,3 @@ test('Google cancellation does not produce a token or error', async () => {
     jest.mocked(GoogleSignin.signIn).mockResolvedValue({ type: 'cancelled', data: null } as never);
     expect(await acquireSocialCredential('google.com')).toBeNull();
 });
-test('legacy Apple input cannot open a provider prompt on a current iOS build', async () => {
-    await expect(acquireSocialCredential('apple.com')).rejects.toThrow('Provider unavailable on this device.');
-    expect(GoogleSignin.signIn).not.toHaveBeenCalled();
-});

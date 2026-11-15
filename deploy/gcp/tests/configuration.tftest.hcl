@@ -135,7 +135,7 @@ run "firebase_social_registration_preserves_application_deletion" {
   variables {
     auth_provider = "firebase"
     application_environment = {
-      FIREBASE_SOCIAL_PROVIDERS = "google.com,apple.com"
+      FIREBASE_SOCIAL_PROVIDERS = "google.com"
     }
   }
   assert {
@@ -143,8 +143,22 @@ run "firebase_social_registration_preserves_application_deletion" {
     error_message = "Provider identities need signup enabled; application deletion must still go through Calibrate."
   }
   assert {
-    condition     = local.runtime_environment.FIREBASE_SOCIAL_PROVIDERS == "google.com,apple.com"
+    condition     = local.runtime_environment.FIREBASE_SOCIAL_PROVIDERS == "google.com"
     error_message = "The runtime provider allowlist and Firebase signup configuration must agree."
+  }
+}
+
+run "unsupported_provider_leaves_firebase_signup_disabled" {
+  command = plan
+  variables {
+    auth_provider = "firebase"
+    application_environment = {
+      FIREBASE_SOCIAL_PROVIDERS = "apple.com"
+    }
+  }
+  assert {
+    condition     = google_identity_platform_config.auth[0].client[0].permissions[0].disabled_user_signup
+    error_message = "Only the Google provider may enable Firebase signup."
   }
 }
 
