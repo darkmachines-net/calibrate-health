@@ -3,22 +3,18 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { SocialAuthButtons } from './SocialAuthButtons';
 const mockProviders = jest.fn();
 jest.mock('@calibrate/api-client', () => ({ CalibrateApiClient: class { getMobileSocialProviders = () => mockProviders(); } }));
-jest.mock('./nativeSocialAuth', () => ({ nativeSocialProviders: async () => ['google.com', 'apple.com'] }));
+jest.mock('./nativeSocialAuth', () => ({ supportsNativeGoogleSignIn: () => true }));
 jest.mock('@react-native-google-signin/google-signin', () => {
     const GoogleSigninButton = (props: object) => require('react').createElement(require('react-native').Button, { ...props, title: 'Google' });
     GoogleSigninButton.Size = { Wide: 1 };
     GoogleSigninButton.Color = { Light: 1 };
     return { GoogleSigninButton };
 });
-jest.mock('expo-apple-authentication', () => ({
-    AppleAuthenticationButton: (props: object) => require('react').createElement(require('react-native').Button, { ...props, title: 'Apple' }),
-    AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, WHITE_OUTLINE: 1 }
-}));
 beforeEach(() => { jest.useFakeTimers(); mockProviders.mockReset(); });
 afterEach(() => { jest.useRealTimers(); });
 
-test('shows the server-enabled subset and forwards the provider action', async () => {
-    mockProviders.mockResolvedValue({ providers: ['google.com'] });
+test('shows Google alone when the backend also offers the legacy Apple provider', async () => {
+    mockProviders.mockResolvedValue({ providers: ['google.com', 'apple.com'] });
     const onPress = jest.fn();
     const screen = await render(<SocialAuthButtons serverUrl="https://one.example" disabled={false} onPress={onPress} />);
     await act(async () => { jest.advanceTimersByTime(300); });
@@ -26,6 +22,12 @@ test('shows the server-enabled subset and forwards the provider action', async (
     expect(screen.queryByText('Apple')).toBeNull();
     await fireEvent.press(screen.getByText('Google'));
     expect(onPress).toHaveBeenCalledWith('google.com');
+});
+test('a backend with only legacy Apple support shows no provider controls', async () => {
+    mockProviders.mockResolvedValue({ providers: ['apple.com'] });
+    const screen = await render(<SocialAuthButtons serverUrl="https://one.example" disabled={false} onPress={jest.fn()} />);
+    await act(async () => { jest.advanceTimersByTime(300); });
+    expect(screen.queryByRole('button')).toBeNull();
 });
 test('an old server response cannot enable provider controls for a new server', async () => {
     let resolveOld!: (value: unknown) => void;

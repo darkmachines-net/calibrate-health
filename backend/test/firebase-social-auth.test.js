@@ -69,13 +69,19 @@ test('Google credentials exchange through Firebase and resolve exclusively by pr
   assert.equal(body.idToken, undefined);
   assert.equal(calls.creates.length, 0);
 });
-test('Apple uses the raw nonce and verified token email, including private relay accounts', async () => {
-  const { authority, calls } = fixture({ identity: null, token: { email: 'private@privaterelay.appleid.com', firebase: { sign_in_provider: 'apple.com' } } });
-  await authority.authenticateSocial({ provider: 'apple.com', idToken: 'apple-token', nonce: 'a'.repeat(64) }, true, true);
+const apple = { provider: 'apple.com', idToken: 'apple-token', nonce: 'a'.repeat(64) };
+const appleClaims = { email: 'private@privaterelay.appleid.com', firebase: { sign_in_provider: 'apple.com' } };
+
+test('legacy Apple accounts can authenticate by their existing binding with the original nonce', async () => {
+  const { authority, calls } = fixture({ token: appleClaims });
+  assert.deepEqual(await authority.authenticateSocial(apple, false, true), { userId: 7, version: 3 });
   assert.equal(new URLSearchParams(calls.requests[0].body.postBody).get('nonce'), 'a'.repeat(64));
-  assert.equal(calls.creates[0].data.email, 'private@privaterelay.appleid.com');
-  assert.ok(calls.creates[0].data.legal_acceptances.create.terms_version);
-  assert.equal(calls.creates[0].data.firebase_identity.create.uid, 'provider-uid');
+  assert.equal(calls.creates.length, 0);
+});
+test('legacy Apple clients cannot register an unbound identity even with valid credentials and consent', async () => {
+  const { authority, calls } = fixture({ identity: null, token: appleClaims });
+  await assert.rejects(authority.authenticateSocial(apple, true, true), { code: 'SOCIAL_AUTH_REJECTED' });
+  assert.equal(calls.creates.length, 0);
 });
 test('login never creates an unregistered SQL user and registration never adopts an email collision', async () => {
   const login = fixture({ identity: null });
@@ -86,8 +92,10 @@ test('login never creates an unregistered SQL user and registration never adopts
   assert.equal(conflict.calls.creates.length, 0);
 });
 test('concurrent same-UID registration can recover a unique conflict', async () => {
-  const { authority } = fixture({ identity: null, createError: { code: 'P2002' } });
+  const { authority, calls } = fixture({ identity: null, createError: { code: 'P2002' } });
   assert.deepEqual(await authority.authenticateSocial(google, true, true), { userId: 8, version: 3 });
+  assert.ok(calls.creates[0].data.legal_acceptances.create.terms_version);
+  assert.equal(calls.creates[0].data.firebase_identity.create.uid, 'provider-uid');
 });
 for (const token of [
   { uid: 'other' }, { aud: 'other-project' }, { email_verified: false }, { email: undefined },

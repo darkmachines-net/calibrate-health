@@ -342,7 +342,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Exchange a native provider credential through Firebase for a Calibrate device session. Registration requires current hosted legal consent. Never links SQL accounts by email. */
+        /** @description Exchange a native provider credential through Firebase for a Calibrate device session. Google registration requires current hosted legal consent. Apple credentials are accepted only for legacy clients with existing Calibrate identity bindings. Never links SQL accounts by email. */
         post: operations["authenticateMobileSocial"];
         delete?: never;
         options?: never;

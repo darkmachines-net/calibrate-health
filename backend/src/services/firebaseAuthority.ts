@@ -8,6 +8,7 @@ import { CredentialProviderUnavailable } from './credentialVerification';
 import { revokeAccountCredentials } from './accountRevocation';
 import { USER_CLIENT_SELECT } from '../utils/userSerialization';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../../../shared/legalVersions';
+import { SOCIAL_AUTH_PROVIDERS } from '../../../shared/socialAuth';
 import { MS_PER_MINUTE } from '../utils/time';
 import { normalizeEmailCredential } from '../utils/authCredentials';
 import { SocialAuthRejected, type SocialCredential } from './socialAuth';
@@ -138,8 +139,8 @@ export class FirebaseAuthority {
   }
 
   /**
-   * Exchange a native Google/Apple credential through Firebase, then resolve only its verified project/UID.
-   * New SQL accounts require explicit registration consent; email collisions never link local accounts.
+   * Exchange a native credential through Firebase and resolve only its verified project/UID.
+   * Google registration requires explicit consent on hosted servers. Apple is limited to existing bindings.
    * Provider credentials remain ephemeral and the returned security generation guards session issuance.
    */
   async authenticateSocial(credential: SocialCredential, registration: boolean, hosted: boolean): Promise<{ userId: number; version: number }> {
@@ -165,6 +166,8 @@ export class FirebaseAuthority {
     const key = { project_id_uid: { project_id: this.settings.projectId, uid: token.uid } };
     let identity = await this.database.firebaseIdentity.findUnique({ where: key });
     if (!identity) {
+      // Older iOS clients can still authenticate existing accounts, but cannot create new Apple accounts in Calibrate.
+      if (credential.provider === SOCIAL_AUTH_PROVIDERS.APPLE) throw new SocialAuthRejected();
       if (!registration) throw new SocialAuthRejected('SOCIAL_REGISTRATION_REQUIRED');
       const collision = await this.database.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
       if (collision) throw new SocialAuthRejected('SOCIAL_ACCOUNT_CONFLICT');

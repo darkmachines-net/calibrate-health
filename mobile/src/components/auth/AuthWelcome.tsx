@@ -37,7 +37,7 @@ export function AuthWelcome({ browser = false, params }: Props) {
     const { serverUrl, authError, signInWithProvider } = useAuth();
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
-    const [pending, setPending] = useState<{ provider: SocialAuthProvider; registration: PendingProviderRegistration } | null>(null);
+    const [pending, setPending] = useState<PendingProviderRegistration | null>(null);
     const attempt = useRef<AbortController | null>(null);
     const wide = browser && width >= TABLET_LAYOUT_BREAKPOINT;
 
@@ -54,7 +54,7 @@ export function AuthWelcome({ browser = false, params }: Props) {
             const registration = await signInWithProvider(provider, controller.signal);
             if (registration && !controller.signal.aborted) {
                 awaitingRegistration = true;
-                setPending({ provider, registration });
+                setPending(registration);
             }
         } catch (failure) {
             if (!controller.signal.aborted) setError(socialAuthErrorMessage(failure));
@@ -65,7 +65,7 @@ export function AuthWelcome({ browser = false, params }: Props) {
     }
 
     function cancelRegistration() {
-        pending?.registration.cancel();
+        pending?.cancel();
         attempt.current?.abort();
         attempt.current = null;
         setPending(null);
@@ -73,7 +73,7 @@ export function AuthWelcome({ browser = false, params }: Props) {
 
     if (pending) {
         return <ProviderRegistration
-            {...pending}
+            registration={pending}
             onCancel={cancelRegistration}
             onFailure={(message) => { cancelRegistration(); setError(message); }}
         />;

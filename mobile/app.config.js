@@ -21,10 +21,8 @@ function createExpoConfig({ config }) {
   config = {
     ...config,
     ...(iosClientId ? { extra: { ...config.extra, googleIosClientId: iosClientId } } : {}),
-    ios: { ...config.ios, usesAppleSignIn: true },
     plugins: [
       ...(config.plugins ?? []),
-      'expo-apple-authentication',
       ...(iosClientId ? [['@react-native-google-signin/google-signin', {
         iosUrlScheme: iosClientId.split('.').reverse().join('.')
       }]] : [])
