@@ -111,7 +111,9 @@ ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
 strings. GCP deployment uses the environment's `GCP_WORKLOAD_IDENTITY_PROVIDER`
 and `GCP_RELEASE_SERVICE_ACCOUNT` variables; no long-lived Google key is needed.
 EAS also needs the existing iOS distribution certificate, provisioning profile and
-assigned App Store Connect submission key. The ios-beta and ios-production submit
+assigned App Store Connect team API key with provisioning access for EAS's built-in
+[iOS profile repair](https://github.com/darkmachines-net/expo-release-template/blob/main/src/README.md#ios-store-signing).
+The ios-beta and ios-production submit
 profiles both upload to TestFlight; App Store public release remains a separate provider action.
 
 Keep EAS preview and production public variables aligned with their matching
