@@ -1,4 +1,4 @@
-# Prepare development candidates on master, approve beta delivery, and keep public-store delivery manual.
+# Prepare development candidates, then gate delivery on Terraform planning and any reviewed apply.
 name: Release
 run-name: ${{ inputs.profile == 'production' && 'Public-store release' || 'Development preview and approved beta release' }}
 on:
@@ -12,6 +12,6 @@ permissions: { contents: read }
 jobs:
   release:
     permissions: { contents: write, deployments: write, packages: write, id-token: write }
-    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@0de52669cf7412021de933270c76fd1fa05e5f39
+    uses: darkmachines-net/expo-release-template/.github/workflows/release.yml@d4be3a84b1f53df4a5a906e0a1030dbcdee82856
     with: { profile: '${{ inputs.profile || ''beta'' }}', rebuild: '${{ inputs.rebuild || false }}' }
     secrets: inherit

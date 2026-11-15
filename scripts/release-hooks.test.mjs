@@ -1,4 +1,4 @@
-/** @file Guard metadata stamping, native compatibility, GCP deployment and isolated development/beta/store destinations. */
+/** @file Guard metadata stamping, native compatibility, Terraform selection and isolated development/beta/store destinations. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,6 +11,7 @@ import { stamp } from './release-hooks.mjs';
 import { applicationIdentity } from './release-inputs.mjs';
 import { checkRepository, validateManifest, validateClientDiagnosticVersionContract } from './release-metadata.mjs';
 import { sourceEnvironment } from '@mchartier/expo-release';
+import { selectRelease } from '@mchartier/expo-release/engine';
 import { parse as parseYaml } from 'yaml';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const config=JSON.parse(fs.readFileSync(path.join(root,'release.config.json')));
@@ -119,6 +120,58 @@ test('configured identity, approval environments and destinations remain explici
   assert.equal(eas.build.development.developmentClient,true);
   assert.equal(eas.build.development.channel,undefined);
   assert.equal(config.server.metadataOnNative,true);
+});
+
+test('both GCP profiles require the same locked infrastructure and a separate apply approval', () => {
+  const terraform = { directory: 'deploy/gcp', version: '1.13.5',
+    planEnvironment: 'gcp-production-plan', applyEnvironment: 'gcp-production-apply' };
+  for (const profile of Object.values(config.profiles)) {
+    assert.deepEqual(profile.terraform, terraform);
+    for (const environment of [profile.approvalEnvironment, profile.deployEnvironment,
+      profile.signingEnvironment, profile.submitEnvironment, terraform.planEnvironment,
+      config.development.approvalEnvironment, config.development.promotionEnvironment]) {
+      assert.notEqual(terraform.applyEnvironment, environment);
+    }
+  }
+  assert.ok(fs.existsSync(path.join(root, terraform.directory, '.terraform.lock.hcl')));
+  const backend = fs.readFileSync(path.join(root, terraform.directory, 'versions.tf'), 'utf8');
+  assert.match(backend, /backend "gcs"\s*\{\s*bucket = "calibrate-health-tfstate-234661857427"\s*prefix = "application"\s*\}/);
+  const workflow = parseYaml(fs.readFileSync(path.join(root, '.github/workflows/release.yml'), 'utf8'));
+  assert.equal(workflow.jobs.release.permissions['id-token'], 'write');
+});
+
+test('infrastructure-only releases check drift without bumping versions or deploying unchanged apps', () => {
+  const value = { ...config, mobile: { ...config.mobile, platforms: ['android', 'ios'] } };
+  const fingerprints = { android: 'android-native', ios: 'ios-native' };
+  const observation = { family: 'native-family', server: 'server-source', js: { android: 'android-js', ios: 'ios-js' },
+    fingerprints: { beta: fingerprints, production: fingerprints } };
+  const versions = { mobile: config.mobile.versionFloor, server: config.server.versionFloor };
+  const runtime = versions.mobile.split('.')[0];
+  for (const profile of Object.keys(config.profiles)) {
+    const history = { mobile: { version: versions.mobile, family: observation.family },
+      server: { version: versions.server }, baselines: {} };
+    history.baselines[`${profile}/deploy/server`] = { input: observation.server };
+    for (const target of config.mobile.targets) {
+      history.baselines[`${profile}/build/${target.id}`] = { runtime, fingerprint: fingerprints[target.platform] };
+      history.baselines[`${profile}/js/${target.platform}`] = { input: observation.js[target.platform] };
+    }
+    for (const state of ['pending', 'failure', 'success']) {
+      history.baselines[`${profile}/apply/terraform`] = { state };
+      const plan = selectRelease(value, profile, observation, history);
+      assert.equal(plan.terraform, true);
+      assert.equal(plan.noop, false);
+      assert.equal(plan.server, false);
+      assert.equal(plan.native, false);
+      assert.equal(plan.pair, null);
+      assert.deepEqual(plan.ota, []);
+      assert.deepEqual(plan.versions, versions);
+      assert.deepEqual(plan.operations, [`${profile}/apply/terraform`]);
+    }
+    const serverChange = selectRelease(value, profile, { ...observation, server: 'changed-server' }, history);
+    assert.equal(serverChange.server, true);
+    assert.equal(serverChange.terraform, true);
+    assert.deepEqual(serverChange.operations, [`${profile}/apply/terraform`, `${profile}/publish/server`, `${profile}/deploy/server`]);
+  }
 });
 
 test('platform-specific bundle edits select only their platform while shared edits select both', t => {

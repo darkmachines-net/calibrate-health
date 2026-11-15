@@ -8,7 +8,9 @@ Calibrate project. `auth_provider="firebase"` enables Firebase Authentication wh
 preserving native application identities. Both release profiles deploy to the production
 GCP endpoint at `https://calibratehealth.app`; beta distributes native apps to testers.
 
-Terraform owns infrastructure and the initial image/revision configuration. No
+Terraform owns infrastructure and the initial image/revision configuration. Release
+plans the application module before delivery and applies changes after a separate
+infrastructure review. Bootstrap remains an operator task. No
 application is deployed by default: `image=""`, `serve=false`, `public_access=false`
 and `custom_domain=""`. Supplying an image creates only the migration job; serving,
 public invocation and claiming a domain are separate steps. Provider locks match
@@ -27,7 +29,7 @@ npm run gcp:test:authentication
 ```
 
 `gcp:check` checks formatting, initializes locked providers with the backend disabled,
-validates both modules and runs mocked plans. It copies only authored Terraform,
+validates bootstrap, release access and application modules and runs mocked plans. It copies only authored Terraform,
 tests and provider locks into temporary directories; local tfvars, state and backend
 configuration are excluded. Provider downloads need network access, but no GCP
 credentials or cloud resources are used. Set `TERRAFORM_BIN` to an absolute executable
@@ -104,20 +106,26 @@ protection. It never creates a project or changes billing. Keep its local state 
 plan protected; securely back up the bootstrap state to the new bucket. Do not delete
 or recreate an already managed project/resource to resolve an import conflict.
 
-Copy `backend.hcl.example` to ignored `backend.hcl`, using the bucket output.
+The application's `versions.tf` commits the existing production GCS backend:
+`calibrate-health-tfstate-234661857427`, prefix `application`, default workspace.
+Both release profiles initialize this exact backend without overrides. For a separate
+installation, copy `backend.hcl.example` to ignored `backend.hcl` using its bootstrap
+bucket output, and explicitly pass `-backend-config=backend.hcl` to local initialization.
+Changing the committed backend requires an explicit state-migration review.
 Copy `terraform.tfvars.example` to ignored `terraform.tfvars` and fill in the same
 project identity. Leave image/serving/domain defaults unchanged for foundations:
 
 ```text
-terraform -chdir=deploy/gcp init -backend-config=backend.hcl
+terraform -chdir=deploy/gcp init
 terraform -chdir=deploy/gcp plan -out=foundation.tfplan
 terraform -chdir=deploy/gcp apply foundation.tfplan
 ```
 
 GCS owns state locking. State contains generated database and session credentials;
-restrict state-bucket access to infrastructure operators and back it up securely.
-The release service account receives no state access. Keep the two modules' state
-separate. If Firebase, its default Hosting site or other named resources already
+restrict state-bucket access to infrastructure operators and the dedicated Terraform
+identities described below, and back it up securely.
+The release service account receives no state access. Keep bootstrap, release-access
+and application state separate. If Firebase, its default Hosting site or other named resources already
 exist, import them into the matching resource address before applying; do not replace
 existing application identities. SQL, secrets and state reject accidental destruction.
 
@@ -312,10 +320,10 @@ confirmed digest verification, revision-pinned Hosting, retry evidence and serve
 ordering. Terraform ignores release-owned images, traffic and client metadata; revision
 names remain unset so infrastructure configuration changes can create fresh revisions.
 
-Terraform already prepares federation for immutable owner `347558273`, repository
-`1102078034` (`darkmachines-net/calibrate-health`), `refs/heads/master` and the exact
-`gcp-production` environment. It uses repository ID claims, so it does not require
-changing GitHub's subject customization. This follows Google's
+Terraform already prepares deployment federation for immutable owner `347558273`,
+repository `1102078034` (`darkmachines-net/calibrate-health`), `refs/heads/master`
+and the exact `gcp-production` environment. It uses repository ID claims, so it does
+not require changing GitHub's subject customization. This follows Google's
 [deployment federation guidance](https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines).
 
 Configure `gcp-production` in GitHub, restrict it to master and set
@@ -324,3 +332,58 @@ Terraform outputs. Retain the existing upstream release approvals; the deploymen
 environment should have no additional reviewer or wait timer. Both profiles share this
 server while retaining separate native/OTA channels and success baselines. Preserve Calibrate's phone/Wear pair,
 iOS signing, application IDs, version floors and protected production delivery.
+
+### Terraform release environments
+
+Both profiles configure Terraform **1.13.5** in `deploy/gcp`, with
+`gcp-production-plan` and `gcp-production-apply`. Every delivery refreshes and plans
+the full application state, even when only infrastructure changed or application
+inputs are unchanged. Exit 0 skips apply; exit 2 requires approval of the saved plan;
+any failure blocks server deployment, store submission and OTA. Builds can proceed
+in parallel. The shared workflow owns execution, encrypted artifacts and retry
+receipts; Calibrate supplies configuration and preserves live images/traffic.
+
+Complete this one-time setup before merging an enabled profile or dispatching its
+first release. Existing `gcp-production` federation authorizes deployment only and
+cannot authenticate either new Terraform environment.
+
+1. Create `gcp-production-plan` without reviewers and `gcp-production-apply` with
+   required reviewers. Restrict both to `master`. Keep apply separate from the
+   existing `production` beta-promotion approval and `gcp-production` deployment
+   environment. Do not add an infrastructure gate to the deployment environment.
+2. Plan and apply the separate operator-owned [release-access module](release-access/README.md).
+   It provisions `calibrate-tf-plan` and `calibrate-tf-apply`, separate federation
+   pools and scoped state access, retaining `calibrate-release` unchanged. State
+   contains generated credentials, so these identities are privileged even when
+   planning. The release workflow applies only the application module; bootstrap
+   and release-access provisioning remain operator tasks.
+3. Set each environment's `GCP_TERRAFORM_WORKLOAD_IDENTITY_PROVIDER` and
+   `GCP_TERRAFORM_SERVICE_ACCOUNT` variables to its own provider/account. Keep
+   deployment's existing `GCP_WORKLOAD_IDENTITY_PROVIDER` and
+   `GCP_RELEASE_SERVICE_ACCOUNT` unchanged.
+4. Set `TERRAFORM_VARS_JSON` in **planning only** to the complete JSON form of the
+   current production tfvars, including every `*.auto.tfvars.json` file such as
+   `dns.auto.tfvars.json`. Preserve the project identity, verified image,
+   `serve`, `public_access`, authentication, domain, DNS records, application
+   settings, pinned secret versions and monitoring/billing inputs. The
+   foundation-only example is not a production input file: its defaults would
+   remove serving resources. Supply secret references/versions, never provider
+   credential values. Keep confidential Terraform inputs marked `sensitive`,
+   since the human-readable plan is shown for review.
+5. Generate a random 32-byte key, encode it as base64 and store the same value as
+   `TERRAFORM_PLAN_KEY` in **both** environments. Keep an operator-controlled copy
+   for diagnosis and keep it stable until outstanding runs finish. Never print
+   the key or commit it. Before first delivery, verify the plan refresh with the
+   planning identity against the current production inputs and review every
+   change; missing inputs or privileges must be corrected before apply.
+
+The workflow applies only the encrypted saved plan reviewed in that run, with the
+committed provider lockfile and state locking; it does not replan after approval.
+No-change plans require no infrastructure approval. Infrastructure-only delivery
+does not allocate new app versions. Confirmed apply receipts are reused on job
+retries; after a failed/partial apply or stale plan, start a fresh release to refresh
+and review again. Coordinate operator changes while an approved release is queued.
+Failed commands retain encrypted diagnostics for three days; authorized operators
+can follow the [toolkit's Terraform contract](https://github.com/darkmachines-net/expo-release-template/blob/d4be3a84b1f53df4a5a906e0a1030dbcdee82856/src/README.md#terraform-before-delivery)
+to decrypt them privately. Bootstrap APIs/state provisioning, new projects and
+billing attachment remain outside the release workflow.
