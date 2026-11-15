@@ -1,7 +1,11 @@
 # Infrastructure state contains generated database/session credentials; use the private bootstrap bucket.
 terraform {
   required_version = ">= 1.9, < 2.0"
-  backend "gcs" {}
+  # Release initializes without backend overrides; both profiles use the existing production state.
+  backend "gcs" {
+    bucket = "calibrate-health-tfstate-234661857427"
+    prefix = "application"
+  }
   required_providers {
     google = {
       source  = "hashicorp/google"

@@ -1,3 +1,4 @@
-# Use the state_bucket bootstrap output. Keep the actual backend.hcl ignored.
+# Optional local override for a different installation; hosted release uses the backend committed in versions.tf.
+# Use that installation's state_bucket bootstrap output and keep the actual backend.hcl ignored.
 bucket = "REPLACE_WITH_BOOTSTRAP_STATE_BUCKET"
 prefix = "application"

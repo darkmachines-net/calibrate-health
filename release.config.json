@@ -12,6 +12,12 @@
       "signingEnvironment": "native-release-signing",
       "submitEnvironment": "play-internal",
       "deployEnvironment": "gcp-production",
+      "terraform": {
+        "directory": "deploy/gcp",
+        "version": "1.13.5",
+        "planEnvironment": "gcp-production-plan",
+        "applyEnvironment": "gcp-production-apply"
+      },
       "publicEnvironment": {
         "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",
@@ -34,6 +40,12 @@
       "signingEnvironment": "native-release-signing",
       "submitEnvironment": "play-production",
       "deployEnvironment": "gcp-production",
+      "terraform": {
+        "directory": "deploy/gcp",
+        "version": "1.13.5",
+        "planEnvironment": "gcp-production-plan",
+        "applyEnvironment": "gcp-production-apply"
+      },
       "publicEnvironment": {
         "EXPO_PUBLIC_CALIBRATE_SERVER_URL": "https://calibratehealth.app",
         "EXPO_PUBLIC_EAS_PROJECT_ID": "fda8f8c5-e646-47ac-82fb-35003c9cbec7",

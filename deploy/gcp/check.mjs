@@ -1,4 +1,4 @@
-/** @file Credential-free Terraform formatting/schema/mock checks in disposable directories, never an operator's real backend or tfvars. */
+/** @file Check authored Terraform formatting, schemas and mocked plans in isolation, excluding operator backend/state/tfvars from every check. */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,10 +30,10 @@ function copyConfiguration(source, target) {
 }
 
 try {
-  run(['fmt', '-check', '-recursive', directory], directory);
-  for (const module of ['bootstrap', '.']) {
+  for (const module of ['bootstrap', 'release-access', '.']) {
     const target = path.join(temporary, module === '.' ? 'application' : module);
     copyConfiguration(path.join(directory, module), target);
+    run(['fmt', '-check', '-recursive'], target);
     run(['init', '-backend=false', '-input=false', '-lockfile=readonly'], target);
     run(['validate'], target);
     run(['test'], target);

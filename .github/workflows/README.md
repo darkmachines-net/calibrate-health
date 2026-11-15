@@ -67,12 +67,17 @@ The shared EAS worker verifies the iOS build identity and submits to TestFlight 
 `app.calibratehealth.mobile`, App Store Connect app `6826924944`. The iOS build number
 is the reserved phone code; automatic build-number increments stay disabled.
 
-After approval, selected server and native artifacts can build concurrently. Server
-changes require successful Cloud SQL migration, verified Cloud Run rollout and
+After approval, selected server and native artifacts can build concurrently. Both
+profiles refresh and plan the shared production Terraform state on every delivery,
+including infrastructure-only changes and live drift. A plan with changes waits for
+the separate `gcp-production-apply` review, then applies that exact saved plan;
+an unchanged plan skips apply. Infrastructure failure blocks server deployment,
+store submission and OTA publication. Server changes then require successful Cloud SQL migration, verified Cloud Run rollout and
 revision-pinned Firebase Hosting health before dependent client publication. Both
 profiles deploy to `https://calibratehealth.app`. Production retains its environment
 approval. The [GCP deployment guide](../../deploy/gcp/README.md) owns infrastructure,
-federation and rollout boundaries.
+federation, [Terraform environment setup](../../deploy/gcp/README.md#terraform-release-environments)
+and rollout boundaries. Infrastructure-only checks do not bump application versions.
 
 Use **Re-run failed jobs** after correcting a failure. Retries keep the original plan,
 versions and completed artifacts, reuse accepted EAS builds, and skip confirmed
