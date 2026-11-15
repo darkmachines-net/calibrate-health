@@ -13,6 +13,7 @@ const METRIC_REPLAY_QUERY_KEYS = [
     ['mobile-metrics-trend'],
     ['mobile-profile'],
     ['mobile-goal'],
+    ['mobile-goal-status'],
     ['mobile-in-app-notifications'],
     calibrationStatusQueryKey
 ] as const;
@@ -37,7 +38,8 @@ export async function invalidateQueriesAfterOfflineReplay(
 
     const queryKeys = [
         ...(replayedMetricMutation ? METRIC_REPLAY_QUERY_KEYS : [calibrationStatusQueryKey]),
-        ...(replayedTrackingMutation ? [foodTrackingPauseQueryKey, foodDayRangeQueryRoot, ['mobile-food-day']] : [])
+        ...(replayedTrackingMutation ? [foodTrackingPauseQueryKey, foodDayRangeQueryRoot, ['mobile-food-day'],
+            ...(replayedMetricMutation ? [] : [['mobile-goal-status']])] : [])
     ];
     await Promise.all(queryKeys.map((queryKey) =>
         queryClient.invalidateQueries({ queryKey: [...queryKey] })

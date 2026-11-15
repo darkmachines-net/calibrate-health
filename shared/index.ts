@@ -7,6 +7,7 @@ export * from './domain';
 export * from './goalDeficit';
 export * from './caloriePolicy';
 export * from './goalProgress';
+export * from './goalAssessment';
 export * from './inAppNotifications';
 export * from './notificationDelivery';
 export * from './designTokens';

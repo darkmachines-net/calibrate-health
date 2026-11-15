@@ -29,6 +29,7 @@ import { AsyncRetryLiveStatus, useOnlineStatus } from './AsyncStateBoundary';
 import { BottomSheetModal } from './BottomSheetModal';
 import { SectionHeader } from './SectionHeader';
 import { WeightSaveResult } from '../weightEntry/WeightSaveResult';
+import { goalStatusQueryKey, useMaintenanceCapability } from '../progress/useGoalStatus';
 import { WeightValueInput } from './WeightValueInput';
 import {
     formatWeightInput,
@@ -69,6 +70,8 @@ type SheetPhase =
     | 'delete-confirm';
 
 type ResultState = {
+    trendCompleted?: boolean;
+    trendCompletionSupported?: boolean;
     action: 'save' | 'delete';
     queued: boolean;
     savedWeight?: number;
@@ -98,6 +101,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
     const [weight, setWeight] = useState('');
     const [validationError, setValidationError] = useState<string | null>(null);
     const [result, setResult] = useState<ResultState | null>(null);
+    const maintenanceCapability = useMaintenanceCapability(visible);
     const weightUnit = formatWeightUnit(user?.weight_unit);
 
     const metricsQuery = useTrackingMetrics(visible);
@@ -122,6 +126,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
             queryClient.invalidateQueries({ queryKey: ['mobile-metrics-trend'] }),
             queryClient.invalidateQueries({ queryKey: ['mobile-profile'] }),
             queryClient.invalidateQueries({ queryKey: ['mobile-goal'] }),
+            queryClient.invalidateQueries({ queryKey: goalStatusQueryKey }),
             queryClient.invalidateQueries({ queryKey: ['mobile-in-app-notifications'] }),
             queryClient.invalidateQueries({ queryKey: calibrationStatusQueryKey })
         ]);
@@ -155,6 +160,8 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
                 action: 'save',
                 queued,
                 savedWeight,
+                trendCompleted: !!response?.goal_completion,
+                trendCompletionSupported: response?.goal_completion !== undefined,
                 progressUpdate: response?.progress_update
             });
             setPhase(queued ? 'queued-result' : 'synced-result');
@@ -237,9 +244,9 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
     const weightRangeError = parsedWeight !== null && !isWeightWithinPolicy(parsedWeight, user?.weight_unit)
         ? getWeightPolicyError(user?.weight_unit)
         : null;
-    const didReachGoal = result?.action === 'save' && result.progressUpdate?.recognitions.some(
-        (recognition) => recognition.type === 'goal_reached'
-    ) === true;
+    const usesTrendCompletion = maintenanceCapability.data === true || result?.trendCompletionSupported === true;
+    const didReachGoal = result?.action === 'save' && (result.trendCompleted || (!usesTrendCompletion &&
+        result.progressUpdate?.recognitions.some(recognition => recognition.type === 'goal_reached') === true));
     const isUnchanged = Boolean(
         existingMetric
         && parsedWeight !== null
@@ -317,7 +324,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
 
     function handleSetNextGoal() {
         onClose();
-        router.replace({ pathname: '/progress', params: { openNextGoal: 'true' } });
+        router.replace({ pathname: '/progress', params: { openNextGoal: result?.trendCompleted ? 'trend' : 'true' } });
     }
 
     const closeButton = !isBusy && (
@@ -410,6 +417,8 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
             <>
                 <View style={styles.resultCloseRow}>{closeButton}</View>
                 <WeightSaveResult
+                    trendCompleted={result.trendCompleted}
+                    rawMilestoneOnly={usesTrendCompletion}
                     action={result.action}
                     queued={result.queued}
                     savedWeight={result.savedWeight}
@@ -510,7 +519,7 @@ export const WeightEntrySheet: React.FC<WeightEntrySheetProps> = ({ visible, dat
         ) : didReachGoal ? (
             <View style={footerRowStyle}>
                 <AppButton title="Done" variant="secondary" onPress={handleClose} style={styles.footerButton} />
-                <AppButton title="Set next goal" onPress={handleSetNextGoal} style={styles.footerButton} />
+                <AppButton title={result?.trendCompleted ? 'Choose your next goal' : 'Set next goal'} onPress={handleSetNextGoal} style={styles.footerButton} />
             </View>
         ) : (
             <View style={footerRowStyle}>

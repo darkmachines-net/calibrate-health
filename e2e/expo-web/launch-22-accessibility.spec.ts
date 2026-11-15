@@ -3,7 +3,7 @@
 import type { Page, TestInfo } from '@playwright/test';
 import { ROUTE_IDS, ROUTE_REGISTRY } from '../../mobile/src/navigation/routeRegistry';
 import { expect, hideTransientPwaNotices, test } from './fixtures';
-import { fillOnboardingDetails, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';
+import { chooseGoalPace, fillOnboardingDetails, installOnboardingAccount } from './onboarding.fixture';
 import { installAccessibilityApiExtensions, locatorForContract, waitForReadySurface } from './ux-surface-fixtures';
 import {
   attachAccessibilitySummary,
@@ -247,7 +247,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByRole('radio', { name: 'Lose', exact: true }).click();
     await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('82');
-    await goalPaceOption(page, 500).click();
+    await chooseGoalPace(page, 500);
     await expectNoBlockingAccessibilityViolations(page, testInfo, { kind: 'route', surfaceId: `onboarding-plan-${scheme}` });
   });
 }

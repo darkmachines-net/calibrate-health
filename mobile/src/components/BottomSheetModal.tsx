@@ -1,4 +1,4 @@
-/** @file Content-sized mobile sheets and adaptive dialogs with bounded scrolling, focus isolation, and dismissal. */
+/** @file Content-sized mobile sheets and adaptive dialogs with semantic headings, bounded scrolling, and focus isolation. */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -40,6 +40,7 @@ export type BottomSheetModalProps = {
     maxHeight?: ViewStyle['maxHeight'];
     accessibilityLabel?: string;
     showCloseButton?: boolean;
+    closeAccessibilityLabel?: string;
     showHandle?: boolean;
     scrollable?: boolean;
     fillAvailableHeight?: boolean;
@@ -50,6 +51,7 @@ export type BottomSheetModalProps = {
     onShow?: () => void;
     size?: BottomSheetModalSize;
     title?: string;
+    titleVariant?: 'section' | 'page';
     description?: string;
     initialFocusRef?: React.RefObject<ModalFocusableTarget | null>;
     returnFocusRef?: React.RefObject<ModalFocusableTarget | null>;
@@ -178,6 +180,7 @@ export function resolveSheetEntranceOffset(viewportHeight: number, isDialog: boo
 
 /**
  * Fits content up to a viewport ceiling, scrolling the body independently of fixed controls and footer.
+ * Centers a pinned title-only header alongside the close button and supports a page-sized heading for prominent decisions.
  * Use fillAvailableHeight for list workspaces that need a definite viewport of their own.
  * Keep independently managed work in a registered route.
  */
@@ -188,6 +191,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     maxHeight = '88%',
     accessibilityLabel = 'Details',
     showCloseButton = false,
+    closeAccessibilityLabel,
     showHandle = true,
     scrollable = true,
     fillAvailableHeight = false,
@@ -198,6 +202,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     onShow,
     size = 'standard',
     title,
+    titleVariant = 'section',
     description,
     initialFocusRef,
     returnFocusRef,
@@ -322,7 +327,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     const closeButton = showCloseButton && (
         <AppIconButton
             icon="close"
-            accessibilityLabel={`Close ${modalAccessibilityLabel.toLowerCase()}`}
+            accessibilityLabel={closeAccessibilityLabel ?? `Close ${modalAccessibilityLabel.toLowerCase()}`}
             variant="ghost"
             disabled={dismissDisabled}
             onPress={() => { void requestDismiss(); }}
@@ -344,7 +349,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     const modalHeader = title || description ? (
         <View style={[styles.modalHeader, hasPinnedHeader && styles.pinnedHeaderCopy]}>
             {title && (
-                <AppText nativeID={titleId} variant="section" accessibilityRole="header">
+                <AppText nativeID={titleId} variant={titleVariant} accessibilityRole="header">
                     {title}
                 </AppText>
             )}
@@ -357,7 +362,7 @@ export const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
     ) : null;
     let sheetTopControl: React.ReactNode = null;
     if (hasPinnedHeader) {
-        sheetTopControl = <View style={styles.pinnedHeader}>{modalHeader}{closeButton}</View>;
+        sheetTopControl = <View style={[styles.pinnedHeader, !description && styles.pinnedTitleRow]}>{modalHeader}{closeButton}</View>;
     } else if (closeButton) {
         sheetTopControl = <View style={styles.closeRow}>{closeButton}</View>;
     } else if (showHandle && !isDialog) {
@@ -569,6 +574,7 @@ function createStyles(theme: AppTheme) {
         borderBottomColor: theme.colors.outlineVariant,
         borderBottomWidth: StyleSheet.hairlineWidth
     },
+    pinnedTitleRow: { alignItems: 'center' },
     pinnedHeaderCopy: {
         flex: 1,
         minWidth: 0

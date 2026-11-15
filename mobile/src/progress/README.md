@@ -1,5 +1,28 @@
 # Progress and Plan check
 
+On servers advertising maintenance goals, Today and Progress use the server's goal
+status for completion and maintenance. A completed goal keeps its last calorie plan
+until the user sets another goal. Progress shows the milestone in an inset notice above the chart.
+Both actions in the next-goal sheet open the full-page `/goal-setup` editor. Goal setup
+starts on Lose unless requested with `mode=maintain` or `mode=gain`. The maintenance
+shortcut opens Maintain with the completed target or the saved range after a return goal.
+Switching to Maintain in the editor uses the same defaults. Saving Lose or Gain turns on
+calorie tracking. Maintain defaults to weight only. Turning on calorie tracking
+shows the estimated maintenance budget for review.
+Back returns to the originating tab and asks before discarding an edited draft.
+Goal setup keeps Save goal below the scrollable form. The footer explains what to
+correct and the affected weight fields are highlighted. A new maintenance range must
+include the same starting weight used to validate loss and gain targets.
+Range guidance lets users review a return goal,
+recenter maintenance, or continue monitoring. Set a target and a symmetric distance
+with a live preview of both limits. New distances use 0.5 lb steps from 1 to 5 lb
+or 0.25 kg steps from 0.5 to 3 kg. Recenter previews preserve saved distances,
+including unequal sides until the user chooses a symmetric range, and keep the
+current tracking choice.
+The trend chart
+shades the confirmed maintenance range. Maintenance replaces Plan check on the overview.
+Turning calorie tracking on or off uses the same food-tracking state as Today.
+
 Keep the compact Snapshot on the page background, with paired weight/date metrics, goal progress, current
 target and one Edit goal action. For an active loss/gain goal, Edit goal contains the pace controls and an intentional Set a new goal action. Trend's heading, decorative fullscreen icon, and graph form one
 full-width tap target with a shared hover/focus treatment. Trend fills the middle and expands in place

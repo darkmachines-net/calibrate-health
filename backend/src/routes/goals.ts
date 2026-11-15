@@ -18,6 +18,9 @@ import {
 import { getAuthenticatedUser, requireAuthenticatedUser } from '../middleware/authenticatedUser';
 import { evaluateCaloriePlan, isPolicyWeight, projectGoalEndDate } from '../../../shared/caloriePolicy';
 import { buildStoredCaloriePlanningSnapshot, getStoredCaloriePlanningSnapshot, projectionWire } from '../services/caloriePlanning';
+import prisma from '../config/database';
+import { commitGoalChange, getGoalStatusSnapshot } from '../services/maintenanceGoals';
+import { resolveInactiveReminderNotificationsForUser } from '../services/inAppNotifications';
 
 /**
  * Goal endpoints for creating and fetching the current goal.
@@ -27,6 +30,54 @@ import { buildStoredCaloriePlanningSnapshot, getStoredCaloriePlanningSnapshot, p
 const router = express.Router();
 
 router.use(requireAuthenticatedUser);
+
+router.get('/status', async (req, res) => {
+    const { id } = getAuthenticatedUser(req);
+    try {
+        const status = await prisma.$transaction(async tx => {
+            await lockCaloriePlanningInputs(tx, id);
+            return getGoalStatusSnapshot(tx, id, new Date());
+        });
+        res.set('Cache-Control', 'no-store');
+        return res.json(status?.wire ?? null);
+    } catch {
+        return res.status(503).json({ message: 'Goal status could not be refreshed. Try again.', retryable: true });
+    }
+});
+
+async function saveReviewedGoal(req: express.Request, res: express.Response, editId: number | null) {
+    const { id, timezone } = getAuthenticatedUser(req);
+    const operationId = parseClientOperationId(req.get?.('x-client-operation-id') ?? req.headers?.['x-client-operation-id']);
+    const change = req.body;
+    if (!operationId || !change || typeof change !== 'object' || Array.isArray(change) ||
+        typeof change.expected_version !== 'string' || !/^[a-f0-9]{64}$/.test(change.expected_version) ||
+        (editId !== null && (!Number.isSafeInteger(editId) || editId <= 0))) {
+        return res.status(400).json({ message: 'Review the current goal before saving.' });
+    }
+    try {
+        const result = await executeIdempotentMutation<unknown>({
+            userId: id, operationId, operationKind: editId === null ? 'goal.transition' : 'goal.maintenance',
+            requestPayload: { editId, change },
+            mutate: async (tx, claimedOperationId) => {
+                await lockCaloriePlanningInputs(tx, id);
+                return commitGoalChange(tx, id, change, editId, new Date(), claimedOperationId);
+            }
+        });
+        if (result.status === 200 && change.tracking === false) {
+            const account = await prisma.user.findUnique({ where: { id }, select: { timezone: true } });
+            await resolveInactiveReminderNotificationsForUser({ userId: id, timeZone: account?.timezone ?? timezone ?? 'UTC', now: new Date() });
+        }
+        return res.status(result.status).json(result.body);
+    } catch (error) {
+        if (error instanceof ClientOperationConflictError) {
+            return res.status(409).json({ message: error.message, code: error.code, retryable: error.code === 'OPERATION_IN_PROGRESS' });
+        }
+        return res.status(503).json({ message: 'Could not confirm the goal change. Retry to check the same change.', retryable: true });
+    }
+}
+
+router.post('/transition', (req, res) => saveReviewedGoal(req, res, null));
+router.patch('/:id/maintenance', (req, res) => saveReviewedGoal(req, res, Number(req.params.id)));
 
 router.get('/', async (req, res) => {
     const user = getAuthenticatedUser(req);
@@ -143,6 +194,7 @@ router.post('/', async (req, res) => {
                         target_weight_grams,
                         target_date: parsedTargetDate,
                         daily_deficit: parsedDailyDeficit,
+                        predecessor_goal_id: snapshot.goal?.id,
                         calorie_plan_review_status: 'CLEAR',
                         calorie_plan_review_reason: null
                     }
@@ -161,13 +213,14 @@ router.post('/', async (req, res) => {
                     dailyDeficit: goal.daily_deficit,
                     weightUnit: snapshot.user.weight_unit
                 });
-                const { start_weight_grams: createdStartWeightGrams, target_weight_grams: createdTargetWeightGrams, ...createdGoal } = goal;
                 return {
                     status: 200,
                     body: {
-                        ...createdGoal,
-                        start_weight: gramsToWeight(createdStartWeightGrams, weightUnit),
-                        target_weight: gramsToWeight(createdTargetWeightGrams, weightUnit),
+                        id: goal.id, user_id: goal.user_id, daily_deficit: goal.daily_deficit,
+                        target_date: goal.target_date, created_at: goal.created_at,
+                        calorie_plan_review_status: goal.calorie_plan_review_status, calorie_plan_review_reason: goal.calorie_plan_review_reason,
+                        start_weight: gramsToWeight(goal.start_weight_grams, weightUnit),
+                        target_weight: gramsToWeight(goal.target_weight_grams, weightUnit),
                         plan_status: evaluation.status,
                         plan_reason_code: evaluation.reasonCode,
                         projection: projectionWire(projection)
@@ -227,7 +280,7 @@ router.patch('/:id/pace', async (req, res) => {
                 await lockCaloriePlanningInputs(tx, user.id);
                 const now = new Date();
                 const snapshot = await buildStoredCaloriePlanningSnapshot(tx, user.id, now);
-                if (!snapshot?.goal || snapshot.goal.id !== goalId || goalPaceVersion(snapshot) !== version) {
+                if (!snapshot?.goal || snapshot.goal.completed_on || snapshot.goal.id !== goalId || goalPaceVersion(snapshot) !== version) {
                     return { status: 409, body: { message: 'Your goal or calorie plan changed. Refresh the plan check before saving.',
                         code: 'GOAL_PLAN_CHANGED', retryable: false } };
                 }

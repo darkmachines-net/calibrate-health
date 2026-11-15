@@ -12,6 +12,7 @@ export function goalWire(snapshot: StoredCaloriePlanningSnapshot) {
     const { start_weight_grams, target_weight_grams, ...goal } = snapshot.goal;
     return {
         ...goal,
+        completed_on: goal.completed_on?.toISOString().slice(0, 10) ?? null,
         start_weight: gramsToWeight(start_weight_grams, snapshot.user.weight_unit),
         target_weight: gramsToWeight(target_weight_grams, snapshot.user.weight_unit),
         plan_status: snapshot.evaluation.status,
@@ -43,7 +44,7 @@ export function goalPaceOptions(snapshot: StoredCaloriePlanningSnapshot, now: Da
         const futureSafe = snapshot.futureRevisions.every(revision => revision.calorie_plan_review_status === 'CLEAR' && Number.isInteger(revision.target_adjustment_kcal) &&
             candidate.tdee !== null && candidate.minimumDailyCalorieTarget !== null &&
             Math.round(candidate.tdee - option.dailyDeficit + revision.target_adjustment_kcal) >= candidate.minimumDailyCalorieTarget);
-        const available = evaluation.status === 'available' && candidate.status === 'available' && futureSafe &&
+        const available = evaluation.status === 'available' && candidate.status === 'available' && futureSafe && !goal?.completed_on &&
             goal !== null && Math.sign(option.dailyDeficit) === Math.sign(goal.daily_deficit);
         return { dailyDeficit: option.dailyDeficit, available,
             dailyCalorieTarget: available ? candidate.dailyCalorieTarget : null,

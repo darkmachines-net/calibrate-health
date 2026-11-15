@@ -170,6 +170,19 @@ object WatchSnapshotMapper {
         } else {
             require(goalProjectedEndDate == null) { "Only a projected goal may include an end date." }
         }
+        val lifecycle = root.values["goal_lifecycle"] as? JsonValue.Object
+        val maintenanceStatus = lifecycle?.optionalString("maintenance_status")
+            ?.takeIf { it in setOf("within_range", "above_range", "below_range", "range_required", "insufficient", "stale", "unavailable") }
+        val trendCompleted = lifecycle?.requiredBoolean("completed")
+        val maintenanceTarget = if (maintenanceStatus != null && lifecycle?.values?.containsKey("maintenance_target_grams") == true) {
+            lifecycle.optionalLong("maintenance_target_grams")?.also { require(it in MIN_WEIGHT_GRAMS..MAX_WEIGHT_GRAMS) }
+        } else null
+        val goalDisplayStatus = when {
+            maintenanceStatus != null -> "maintenance_$maintenanceStatus"
+            trendCompleted == true -> "reached_trend"
+            trendCompleted == false && goalProjectionStatus == "reached" -> "awaiting_trend"
+            else -> goalProjectionStatus
+        }
 
         val quickAdds = root.requiredArray("quick_add")
         require(quickAdds.size <= WearCacheLimits.QUICK_ADD_ITEMS) { "Too many quick-add items." }
@@ -230,13 +243,13 @@ object WatchSnapshotMapper {
                 latestWeightDate = latestWeightDate,
                 weightUnit = weightUnit,
                 goalStartWeightGrams = goalStartWeight,
-                goalTargetWeightGrams = goalTargetWeight,
+                goalTargetWeightGrams = maintenanceTarget ?: goalTargetWeight,
                 goalCurrentWeightGrams = goalCurrentWeight,
-                goalDailyDeficit = goalDailyDeficit,
+                goalDailyDeficit = if (maintenanceStatus != null) 0 else goalDailyDeficit,
                 goalProgressPercent = goalProgressPercent,
                 goalRemainingWeightGrams = goalRemainingWeight,
-                goalIsComplete = goalIsComplete,
-                goalProjectionStatus = goalProjectionStatus,
+                goalIsComplete = trendCompleted ?: goalIsComplete,
+                goalProjectionStatus = goalDisplayStatus,
                 goalProjectedEndDate = goalProjectedEndDate,
                 undoFoodLogId = undoFoodLogId,
                 undoName = undoName,

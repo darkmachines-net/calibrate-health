@@ -29,6 +29,8 @@ type GoalProgressCardProps = ViewProps & {
     weightChangePending?: boolean;
     onEditGoal?: () => void;
     onSetNextGoal?: () => void;
+    useTrendCompletion?: boolean;
+    trendWeight?: number | null;
 };
 
 function formatMetricDate(value: string | null | undefined): string {
@@ -69,6 +71,8 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
     weightChangePending = false,
     onEditGoal,
     onSetNextGoal,
+    useTrendCompletion = false,
+    trendWeight,
     style,
     ...props
 }) => {
@@ -112,17 +116,20 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
         timezone: user?.timezone
     });
     const serverProjection = goal.projection;
-    const hasReachedGoal = planIsAvailable && serverProjection?.status === 'reached';
+    const hasReachedGoal = !useTrendCompletion && planIsAvailable && serverProjection?.status === 'reached';
     const progress = isMaintenance || hasReachedGoal
         ? null
         : computeGoalProgress({
             startWeight: goal.start_weight,
             targetWeight: goal.target_weight,
-            currentWeight
+            currentWeight: useTrendCompletion ? trendWeight ?? null : currentWeight
         });
-    const projection = planIsAvailable && serverProjection?.status === 'projected' && serverProjection.projected_end_date
-        ? formatDateOnlyForDisplay(serverProjection.projected_end_date)
-        : 'Unavailable';
+    let projection = 'Unavailable';
+    if (planIsAvailable && serverProjection?.status === 'projected' && serverProjection.projected_end_date) {
+        projection = formatDateOnlyForDisplay(serverProjection.projected_end_date);
+    } else if (useTrendCompletion && serverProjection?.status === 'reached') {
+        projection = 'Awaiting trend';
+    }
 
     let goalAction: React.ReactNode = null;
     if (weightChangePending) {
@@ -209,7 +216,9 @@ export const GoalProgressCard: React.FC<GoalProgressCardProps> = ({
                     )}
                     <AppText variant="muted" style={[styles.supporting, styles.endpoint, styles.goalEndpoint]}>Goal {formatWeight(goal.target_weight, user?.weight_unit)}</AppText>
                 </View>
-                {!progress && <AppText variant="muted" style={styles.supporting}>Log weight on Today to calculate progress.</AppText>}
+                {!progress && <AppText variant="muted" style={styles.supporting}>
+                    {useTrendCompletion ? 'Keep weighing in to establish your progress trend.' : 'Log weight on Today to calculate progress.'}
+                </AppText>}
             </>
         );
     }

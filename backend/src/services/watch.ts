@@ -20,6 +20,7 @@ import { lockCaloriePlanningInputs } from './caloriePlanningLock';
 import { observeFoodActivityPlan, retainDailyCaloriePlan } from './dailyCaloriePlans';
 import { correctSameDayGoalStartingWeight, recordCorrectedGoalStartingWeight } from './goalStartingWeight';
 import { calculateCanonicalGoalProgress } from '../../../shared/goalProgress';
+import { maintenanceAssessment, readGoalTrend, reconcileGoalsAfterWeight } from './goalAssessment';
 import { isPolicyWeight, localDateInTimeZone } from '../../../shared/caloriePolicy';
 
 export class WatchTimezoneInvalidError extends Error {
@@ -403,6 +404,7 @@ export async function executeWatchMutation(options: {
           timezone: user.timezone, today
         });
         await markCurrentCaloriePlanForReviewIfUnsafe(tx, options.userId);
+        await reconcileGoalsAfterWeight(tx, options.userId, user.timezone, today, claimedOperationId, mutation.metricDate);
         if (correctedGoal) await recordCorrectedGoalStartingWeight(tx, options.userId, correctedGoal.id, claimedOperationId);
         return {
           status: 200,
@@ -648,6 +650,13 @@ async function readWatchSnapshot(options: WatchSnapshotOptions) {
     const safeTodayWeight = todayWeight && isPolicyWeight(todayWeight.weight_grams) ? todayWeight : null;
     const safeGoal = caloriePlan.status === 'available' ? goal : null;
     const goalProgress = buildWatchGoalSnapshot(safeGoal, safeLatestWeight?.weight_grams ?? null);
+    const maintenanceStatus = goal?.daily_deficit === 0
+      ? maintenanceAssessment(goal, await readGoalTrend(tx, options.userId, localDate))
+      : null;
+    const lifecycle = goal ? {
+      completed: !!goal.completed_on, maintenance_status: maintenanceStatus,
+      maintenance_target_grams: maintenanceStatus !== null ? goal.target_weight_grams : null
+    } : null;
 
     const recentMyFoodIds = Array.from(new Set(
       recent.map((item) => item.my_food_id).filter((id): id is number => id !== null)
@@ -690,7 +699,7 @@ async function readWatchSnapshot(options: WatchSnapshotOptions) {
     }
     const reminders = [...reminderByType.values()]
       .filter((reminder) => {
-        if (effectiveFoodDayStatus === 'PAUSED') return false;
+        if (effectiveFoodDayStatus === 'PAUSED') return maintenanceStatus !== null && reminder.type === 'LOG_WEIGHT_REMINDER';
         return effectiveFoodDayStatus === 'OPEN' || reminder.type !== 'LOG_FOOD_REMINDER';
       })
       .map((reminder) => ({
@@ -724,6 +733,7 @@ async function readWatchSnapshot(options: WatchSnapshotOptions) {
         ...goalProgress,
         projection: { status: goalProjection.status, projected_end_date: goalProjection.projectedEndDate, reason_code: goalProjection.reasonCode }
       } : null,
+      ...(lifecycle ? { goal_lifecycle: lifecycle } : {}),
       quick_add: quickAdd,
       reminders,
       undo_candidate: undoCandidate

@@ -14,6 +14,7 @@ describe('profile planning query invalidation', () => {
         expect(receivedQueryKeys).toEqual([
             ['mobile-profile'],
             ['mobile-goal'],
+            ['mobile-goal-status'],
             ['mobile-calibration-status']
         ]);
     });

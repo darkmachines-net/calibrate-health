@@ -13,6 +13,8 @@ is Mifflin-St Jeor BMR times activity multiplier; baseline target subtracts the 
 deficit. User-approved calibration can add a bounded correction without changing TDEE
 or configured deficit. Activity never earns back calories. Goal projection uses the
 fixed energy conversion and maintenance has no projected date.
+The goal assessment policy compares current trend estimates with directional targets
+and inclusive maintenance bounds.
 
 [release.json](release.json) owns canonical server/native identity; package, Expo,
 Gradle, diagnostic and API values are mirrors checked by `npm run release:check`.

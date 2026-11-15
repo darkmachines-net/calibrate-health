@@ -21,9 +21,9 @@ const FORM: OnboardingFormState = {
 };
 
 describe('onboarding measurements and completion', () => {
-    it('starts with no inferred sex, activity, goal direction or pace', () => {
+    it('defaults the goal type to Lose and leaves sex, activity, and pace open', () => {
         expect(createInitialOnboardingForm(USER, METRIC_DEVICE)).toEqual(expect.objectContaining({
-            sex: null, activityLevel: null, goalMode: null, dailyChangeAbs: '',
+            sex: null, activityLevel: null, goalMode: 'lose', dailyChangeAbs: '',
             currentWeightGrams: null, heightMillimeters: null
         }));
     });

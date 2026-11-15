@@ -8,11 +8,11 @@ const MM_PER_CM = 10;
 const INCHES_PER_FOOT = 12;
 const CM_PER_INCH = 2.54;
 
-/** Formats canonical grams in the selected weight unit, returning blank for absent or zero values. */
-export function gramsToDisplayWeight(grams: number | null, unit: WeightUnit): string {
+/** Formats canonical grams with the requested precision, returning blank for absent or zero values. */
+export function gramsToDisplayWeight(grams: number | null, unit: WeightUnit, fractionDigits = 1): string {
     if (!grams) return '';
     const value = unit === WEIGHT_UNITS.LB ? grams / GRAMS_PER_LB : grams / GRAMS_PER_KG;
-    return value.toFixed(1);
+    return value.toFixed(fractionDigits);
 }
 
 /** Formats millimeters as centimeters to one decimal place, returning blank when absent. */

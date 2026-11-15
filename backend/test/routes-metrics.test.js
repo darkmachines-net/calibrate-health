@@ -1693,8 +1693,9 @@ test('metrics route: POST / evaluates goal recognition from pre-save history ins
   const prismaStub = {
     bodyMetric: {
       findUnique: async () => null,
-      findFirst: async () => ({ id: 8, weight_grams: 79_000 }),
-      findMany: async ({ where }) => {
+      findFirst: async () => ({ id: 8, weight_grams: 79_000, date: today }),
+      findMany: async ({ where, select }) => {
+        if (select?.id) return [{ id: 8, user_id: 7, date: priorDate, weight_grams: 85_000 }, upsertedRow];
         historyWhere = where;
         return [{ date: priorDate, weight_grams: 85000 }];
       },
@@ -1724,6 +1725,7 @@ test('metrics route: POST / evaluates goal recognition from pre-save history ins
   );
 
   assert.equal(res.statusCode, 200);
+  assert.equal(res.body.goal_completion, null, 'a scale milestone with sparse history does not complete the trend goal');
   assert.deepEqual(historyWhere, {
     user_id: 7,
     date: { gte: addUtcDays(today, -30), lte: today }

@@ -1,4 +1,4 @@
-/** @file use Browser Route Focus: Direct entries preserve browser focus so the skip link remains the first Tab target. Client-side route changes move focus to the new route heading. */
+/** @file Preserves direct-entry focus and focuses the visible heading on client-side route changes. */
 
 import { useEffect, useRef } from 'react';
 
@@ -6,7 +6,9 @@ const ROUTE_FOCUS_TITLE_ID = 'route-focus-title';
 const ROUTE_FOCUS_FALLBACK_MS = 5_000;
 
 function focusRouteTitle(): boolean {
-    const title = document.getElementById(ROUTE_FOCUS_TITLE_ID);
+    // Retained tab screens can still have a copy of the shell heading in the DOM.
+    const title = Array.from(document.querySelectorAll<HTMLElement>(`[id="${ROUTE_FOCUS_TITLE_ID}"]`))
+        .find(element => element.getClientRects().length > 0 && !element.closest('[aria-hidden="true"]'));
     if (!title) return false;
     title.tabIndex = -1;
     title.focus({ preventScroll: true });

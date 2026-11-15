@@ -6,6 +6,7 @@ import prisma from '../config/database';
 import { isPolicyWeight } from '../../../shared/caloriePolicy';
 import { markCurrentCaloriePlanForReviewIfUnsafe } from '../services/caloriePlanReview';
 import { lockCaloriePlanningInputs } from '../services/caloriePlanningLock';
+import { reconcileGoalsAfterWeight } from '../services/goalAssessment';
 import { correctSameDayGoalStartingWeight, recordCorrectedGoalStartingWeight } from '../services/goalStartingWeight';
 import {
     gramsToWeight,
@@ -1040,6 +1041,9 @@ router.post('/', async (req, res) => {
                 }
 
                 const { weight_grams: savedWeightGrams, ...savedMetric } = metric;
+                const completion = saveKind && saveKind !== 'unchanged'
+                    ? await reconcileGoalsAfterWeight(tx, user.id, acceptedTimeZone, acceptedToday, claimedOperationId, metricDate)
+                    : null;
                 const progressUpdate =
                     saveKind === null || (updateData.weight_grams !== undefined && planningAfterWeight?.goal && planningAfterWeight.evaluation.status !== 'available')
                         ? null
@@ -1058,6 +1062,8 @@ router.post('/', async (req, res) => {
                     body: {
                         ...savedMetric,
                         weight: gramsToWeight(savedWeightGrams, weightUnit),
+                        ...(completion && savedLocalDate === acceptedLocalDate ? { goal_completion: completion } :
+                            progressUpdate?.recognitions.some(item => item.type === 'goal_reached') ? { goal_completion: null } : {}),
                         ...(progressUpdate === null ? {} : { progress_update: progressUpdate })
                     }
                 };
@@ -1116,7 +1122,8 @@ router.delete('/:id', async (req, res) => {
                     action: 'delete',
                     operationId: claimedOperationId
                 });
-                await markCurrentCaloriePlanForReviewIfUnsafe(tx, user.id);
+                const planning = await markCurrentCaloriePlanForReviewIfUnsafe(tx, user.id);
+                if (planning?.localToday) await reconcileGoalsAfterWeight(tx, user.id, planning.user.timezone, parseLocalDateOnly(planning.localToday), claimedOperationId);
                 return { status: 204, body: null };
             }
         });

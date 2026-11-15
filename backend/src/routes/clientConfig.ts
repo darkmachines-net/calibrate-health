@@ -41,7 +41,8 @@ router.get('/', (_req, res) => {
       native_push: nativePushMode === NATIVE_PUSH_MODES.EXPO,
       web_push: webPushEnabled,
       health_connect_activity: true,
-      wear_os_ready: true
+      wear_os_ready: true,
+      maintenance_goals: true
     }
   });
 });

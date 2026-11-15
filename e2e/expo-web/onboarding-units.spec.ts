@@ -2,7 +2,7 @@
 
 import type { Locator } from '@playwright/test';
 import { expect, hideTransientPwaNotices, test } from './fixtures';
-import { fillOnboardingDetails, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';
+import { chooseGoalPace, fillOnboardingDetails, installOnboardingAccount } from './onboarding.fixture';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -71,7 +71,7 @@ test('unit choices and physical quantities survive restart and a target-unit swi
   const target = page.getByRole('textbox', { name: 'Target weight (kg)', exact: true });
   await expect(target).toHaveValue('82.3');
   await expectCompactUnitControl(target, page.getByRole('button', { name: 'Weight unit: kg. Switch to lb', exact: true }));
-  await goalPaceOption(page, 500).click();
+  await chooseGoalPace(page, 500);
   await page.getByRole('button', { name: 'Start tracking', exact: true }).click();
   await expect(page).toHaveURL(/\/today$/);
   expect(account.completions[0]).toMatchObject({

@@ -281,6 +281,7 @@ router.post('/pause', async (req, res) => {
       operationKind: 'food_tracking_pause.start',
       requestPayload: req.body,
       mutate: async (tx, claimedOperationId) => {
+        await lockCaloriePlanningInputs(tx, user.id);
         const pause = await startFoodTrackingPause({
           tx,
           userId: user.id,
@@ -321,6 +322,7 @@ router.patch('/pause', async (req, res) => {
       operationKind: 'food_tracking_pause.set_expected_resume',
       requestPayload: req.body,
       mutate: async (tx, claimedOperationId) => {
+        await lockCaloriePlanningInputs(tx, user.id);
         const pause = await updateFoodTrackingPauseExpectation({
           tx,
           userId: user.id,
@@ -354,6 +356,7 @@ router.post('/resume', async (req, res) => {
       operationKind: 'food_tracking_pause.resume',
       requestPayload: req.body,
       mutate: async (tx, claimedOperationId) => {
+        await lockCaloriePlanningInputs(tx, user.id);
         const resumed = await resumeFoodTracking({
           tx,
           userId: user.id,

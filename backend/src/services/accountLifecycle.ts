@@ -32,7 +32,8 @@ const ACCOUNT_EXPORT_SELECT = {
   profile_image: true,
   profile_image_mime_type: true,
   goals: {
-    orderBy: [{ created_at: 'asc' as const }, { id: 'asc' as const }]
+    orderBy: [{ created_at: 'asc' as const }, { id: 'asc' as const }],
+    include: { maintenance_revisions: { orderBy: { id: 'asc' as const } } }
   },
   metrics: {
     orderBy: [{ date: 'asc' as const }, { id: 'asc' as const }]
@@ -116,6 +117,20 @@ export type AccountExport = {
     target_weight_grams: number;
     target_date: string | null;
     daily_deficit: number;
+    maintenance_lower_grams?: number | null;
+    maintenance_upper_grams?: number | null;
+    predecessor_goal_id?: number | null;
+    recovery_maintenance_goal_id?: number | null;
+    start_from_trend?: boolean;
+    completed_on?: string | null;
+    completion_source_revision?: string | null;
+    maintenance_revisions?: Array<{
+      target_weight_grams: number;
+      lower_weight_grams: number | null;
+      upper_weight_grams: number | null;
+      effective_local_date: string;
+      created_at: string;
+    }>;
     calorie_plan_review_status: string;
     calorie_plan_review_reason: string | null;
     created_at: string;
@@ -288,6 +303,7 @@ export type AccountExport = {
     source_goal_id: number;
     recommendation_id: number | null;
     configured_daily_deficit: number | null;
+    manual_maintenance?: boolean;
     target_adjustment_kcal: number;
     calorie_plan_review_status: string;
     calorie_plan_review_reason: string | null;
@@ -356,6 +372,21 @@ export function serializeAccountExport(user: AccountExportRow, now = new Date())
       target_weight_grams: goal.target_weight_grams,
       target_date: goal.target_date ? toIsoDateTime(goal.target_date) : null,
       daily_deficit: goal.daily_deficit,
+      ...(goal.maintenance_lower_grams != null || goal.completed_on || goal.predecessor_goal_id != null ||
+        goal.start_from_trend || goal.maintenance_revisions?.length ? {
+          maintenance_lower_grams: goal.maintenance_lower_grams,
+          maintenance_upper_grams: goal.maintenance_upper_grams,
+          predecessor_goal_id: goal.predecessor_goal_id,
+          recovery_maintenance_goal_id: goal.recovery_maintenance_goal_id,
+          start_from_trend: goal.start_from_trend,
+          completed_on: goal.completed_on ? toIsoDate(goal.completed_on) : null,
+          completion_source_revision: goal.completion_source_revision,
+          maintenance_revisions: (goal.maintenance_revisions ?? []).map(revision => ({
+            target_weight_grams: revision.target_weight_grams, lower_weight_grams: revision.lower_weight_grams,
+            upper_weight_grams: revision.upper_weight_grams, effective_local_date: toIsoDate(revision.effective_local_date),
+            created_at: toIsoDateTime(revision.created_at)
+          }))
+        } : {}),
       calorie_plan_review_status: goal.calorie_plan_review_status,
       calorie_plan_review_reason: goal.calorie_plan_review_reason,
       created_at: toIsoDateTime(goal.created_at)
@@ -529,6 +560,7 @@ export function serializeAccountExport(user: AccountExportRow, now = new Date())
       source_goal_id: revision.source_goal_id,
       recommendation_id: revision.recommendation_id,
       configured_daily_deficit: revision.configured_daily_deficit ?? null,
+      ...(revision.manual_maintenance ? { manual_maintenance: true } : {}),
       target_adjustment_kcal: revision.target_adjustment_kcal,
       calorie_plan_review_status: revision.calorie_plan_review_status,
       calorie_plan_review_reason: revision.calorie_plan_review_reason,

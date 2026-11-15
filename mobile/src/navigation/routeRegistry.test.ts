@@ -1,4 +1,4 @@
-/** @file Regression coverage for route Registry: route registry. */
+/** @file Tests canonical navigation metadata and parent fallbacks for app routes. */
 
 import {
   REGISTERED_ROUTE_PATHS,
@@ -66,6 +66,7 @@ describe('route registry', () => {
       'connected-apps': 'settings-connections',
       'food-log': 'today',
       'weight-trend': 'progress',
+      'goal-setup': 'progress',
       activity: 'settings-connections',
       'my-foods': 'settings-data',
       about: 'settings-help',

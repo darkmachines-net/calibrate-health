@@ -26,7 +26,8 @@ export function formatWeightInput(value: number): string {
     return value.toFixed(MAX_WEIGHT_DECIMAL_PLACES).replace(/\.0$/, '');
 }
 
-function weightInputToCanonicalGrams(value: number, unit: WeightUnit | undefined): number {
+/** Converts a parsed display weight to integer grams without rounding the display value first. */
+export function weightInputToCanonicalGrams(value: number, unit: WeightUnit | undefined): number {
     const grams = unit === 'LB' ? value * 453.59237 : value * 1_000;
     return Math.round(grams);
 }

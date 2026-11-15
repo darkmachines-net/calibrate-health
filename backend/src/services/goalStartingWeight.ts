@@ -13,7 +13,7 @@ export async function correctSameDayGoalStartingWeight(
     const goal = input.goal === undefined
         ? await tx.goal.findFirst({ where: { user_id: input.userId }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
         : input.goal;
-    if (!goal || goal.start_weight_grams === input.weightGrams
+    if (!goal || goal.start_from_trend || goal.completed_on || goal.start_weight_grams === input.weightGrams
         || getSafeUtcTodayDateOnlyInTimeZone(input.timezone, goal.created_at).getTime() !== input.today.getTime()) return null;
     return tx.goal.update({ where: { id: goal.id }, data: { start_weight_grams: input.weightGrams } });
 }

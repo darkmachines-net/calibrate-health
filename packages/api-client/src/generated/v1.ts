@@ -122,6 +122,54 @@ export interface paths {
         patch: operations["updateUserPreferences"];
         trace?: never;
     };
+    "/api/v1/goals/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGoalStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transitionGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals/{id}/maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["editMaintenanceGoal"];
+        trace?: never;
+    };
     "/api/v1/goals/pace-options": {
         parameters: {
             query?: never;
@@ -1092,7 +1140,86 @@ export interface components {
             minimumDailyCalorieTarget: number | null;
             planOptions: components["schemas"]["CaloriePlanOption"][];
         };
+        MaintenanceRange: {
+            target_weight_grams: number;
+            lower_weight_grams: number;
+            upper_weight_grams: number;
+        };
+        GoalCompletion: {
+            goal_id: number;
+            /** Format: date */
+            completed_on: string;
+        };
+        GoalChange: {
+            expected_version: string;
+            target_weight_grams: number;
+            lower_weight_grams?: number;
+            upper_weight_grams?: number;
+            /**
+             * @description Zero confirms review of the estimated maintenance budget on an existing goal.
+             * @enum {integer}
+             */
+            offset_kcal?: 0;
+            daily_deficit?: number;
+            tracking?: boolean;
+            return_to_target?: boolean;
+        };
+        GoalChangeReceipt: {
+            goal_id: number;
+        };
+        GoalStatus: {
+            expected_version: string;
+            goal: {
+                id: number;
+                daily_deficit: number;
+                target_weight_grams: number;
+                /** Format: date */
+                completed_on: string | null;
+            } | null;
+            /** @enum {string} */
+            weight_unit: "KG" | "LB";
+            tracking: boolean;
+            starting_weight_grams: number | null;
+            trend: {
+                /** Format: date */
+                date: string;
+                weight_grams: number;
+                lower_grams: number;
+                upper_grams: number;
+            } | null;
+            /** @enum {string} */
+            evidence: "current" | "insufficient" | "stale" | "unavailable";
+            maintenance: {
+                range: components["schemas"]["MaintenanceRange"];
+                /** @enum {string} */
+                status: "range_required" | "within_range" | "above_range" | "below_range" | "insufficient" | "stale" | "unavailable";
+                /**
+                 * @deprecated
+                 * @description Current servers always return zero.
+                 * @enum {integer}
+                 */
+                offset_kcal: -250 | 0 | 250;
+                /**
+                 * @deprecated
+                 * @description Current servers always return false.
+                 */
+                return_to_neutral: boolean;
+            } | null;
+            recovery_range: components["schemas"]["MaintenanceRange"] | null;
+            target_kcal: number | null;
+            /** @description Current servers offer only the estimated maintenance budget at a zero offset. */
+            budget_options: {
+                /** @enum {integer} */
+                offset_kcal: -250 | 0 | 250;
+                target_kcal: number | null;
+            }[];
+            pace_options: components["schemas"]["CaloriePlanOption"][];
+        };
         GoalEntry: {
+            /** Format: date */
+            completed_on?: string | null;
+            maintenance_lower_grams?: number | null;
+            maintenance_upper_grams?: number | null;
             id: number;
             user_id: number;
             start_weight: number;
@@ -1240,6 +1367,8 @@ export interface components {
             body_fat_percent?: number | null;
             weight: number;
             progress_update?: components["schemas"]["MetricProgressUpdate"];
+            /** @description Null identifies a scale milestone without trend completion. Older servers omit this field. */
+            goal_completion?: components["schemas"]["GoalCompletion"] | null;
         };
         MetricProgressUpdate: {
             /** @enum {string} */
@@ -1344,6 +1473,23 @@ export interface components {
             accepted_at: string;
         };
         AccountExportGoal: {
+            maintenance_lower_grams?: number | null;
+            maintenance_upper_grams?: number | null;
+            predecessor_goal_id?: number | null;
+            recovery_maintenance_goal_id?: number | null;
+            start_from_trend?: boolean;
+            /** Format: date */
+            completed_on?: string | null;
+            completion_source_revision?: string | null;
+            maintenance_revisions?: {
+                target_weight_grams: number;
+                lower_weight_grams: number | null;
+                upper_weight_grams: number | null;
+                /** Format: date */
+                effective_local_date: string;
+                /** Format: date-time */
+                created_at: string;
+            }[];
             id: number;
             start_weight_grams: number;
             target_weight_grams: number;
@@ -1642,6 +1788,7 @@ export interface components {
             applied_at: string | null;
         };
         AccountExportCaloriePlanRevision: {
+            manual_maintenance?: boolean;
             id: number;
             source_goal_id: number;
             recommendation_id: number | null;
@@ -1939,6 +2086,8 @@ export interface components {
             days: components["schemas"]["ActivityDay"][];
         };
         OnboardingCompleteData: {
+            maintenance_lower_grams?: number;
+            maintenance_upper_grams?: number;
             /** @enum {string} */
             weight_unit: "KG" | "LB";
             /** @enum {string} */
@@ -2181,6 +2330,7 @@ export interface components {
                 web_push?: boolean;
                 health_connect_activity: boolean;
                 wear_os_ready: boolean;
+                maintenance_goals?: boolean;
             };
         };
         AccountAccess: {
@@ -2431,6 +2581,11 @@ export interface components {
             draft: components["schemas"]["WatchFoodDraft"];
         };
         WatchSnapshot: {
+            goal_lifecycle?: {
+                completed: boolean;
+                maintenance_status: string | null;
+                maintenance_target_grams?: number | null;
+            };
             /** Format: date-time */
             server_time: string;
             timezone: string;
@@ -3001,6 +3156,94 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiError"];
                 };
+            };
+        };
+    };
+    getGoalStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current goal decisions, budget options and review version. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalStatus"] | null;
+                };
+            };
+        };
+    };
+    transitionGoal: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-client-operation-id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalChange"];
+            };
+        };
+        responses: {
+            /** @description Accepted goal transition. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalChangeReceipt"];
+                };
+            };
+            /** @description The reviewed goal inputs changed or the operation ID conflicted. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    editMaintenanceGoal: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-client-operation-id": string;
+            };
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalChange"];
+            };
+        };
+        responses: {
+            /** @description Accepted maintenance settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalChangeReceipt"];
+                };
+            };
+            /** @description The reviewed goal inputs changed or the operation ID conflicted. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

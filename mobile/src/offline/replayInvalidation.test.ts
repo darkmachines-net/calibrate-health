@@ -47,6 +47,7 @@ describe('offline replay query invalidation', () => {
             ['mobile-metrics-trend'],
             ['mobile-profile'],
             ['mobile-goal'],
+            ['mobile-goal-status'],
             ['mobile-in-app-notifications'],
             ['mobile-calibration-status']
         ]);
