@@ -1,4 +1,4 @@
-/** @file Express startup, rate-limited password/provider auth, browser/MCP routing, readiness and process lifecycle. */
+/** @file Starts Express, wires browser and MCP authentication, and exposes liveness and bounded database readiness. */
 
 import 'dotenv/config';
 import { markVerifiedBrowserLogin, serializeBrowserLoginUser } from './utils/browserLoginCredentials';
@@ -13,7 +13,7 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { resolveBrowserOriginPolicy } from './config/cors';
-import prisma, { pgPool } from './config/database';
+import prisma, { checkDatabaseReadiness, pgPool } from './config/database';
 import { isProductionOrStagingEnv } from './config/environment';
 import { getNativePushModeConfigurationWarning } from './config/nativePush';
 import { resolveMcpConfiguration } from './config/mcp';
@@ -57,7 +57,6 @@ import {
 } from './middleware/security';
 import { startReminderScheduler } from './services/reminderScheduler';
 import { createCalibrateMcpHttpApp, isCalibrateMcpRequest } from './mcp/server';
-import { checkDatabaseReadiness } from './services/readiness';
 import release from '../../shared/release.json';
 import { normalizeEmailCredential } from './utils/authCredentials';
 import { autoLoginTestUser } from './utils/devAuth';
@@ -184,6 +183,21 @@ const bootstrap = async (): Promise<void> => {
     isProductionOrStaging,
     useSecureRequestOrigin: useSecureCookies
   })));
+
+  // Health requests must not wait for the session store, even when a browser sends a cookie.
+  app.get(['/api/v1/healthz', '/api/healthz'], (_req, res) => {
+    res.json({ ok: true });
+  });
+  app.get(['/api/v1/readyz', '/api/readyz'], async (_req, res) => {
+    const ready = await checkDatabaseReadiness();
+    res.status(ready ? 200 : 503).json({
+      ok: ready,
+      status: ready ? 'ok' : 'unavailable',
+      version: release.server.version,
+      revision: process.env.K_REVISION ?? null
+    });
+  });
+
   app.use(['/api/v1/client-diagnostics', '/api/client-diagnostics'], clientDiagnosticsRateLimiter);
   app.use('/auth/register', authRateLimiters.registration);
   app.use('/auth/mobile/register', authRateLimiters.registration);
@@ -293,20 +307,6 @@ const bootstrap = async (): Promise<void> => {
   // Versioned clients use /api/v1; /api remains a compatibility alias during migration.
   app.use('/api/v1', apiRouter);
   app.use('/api', apiRouter);
-
-  apiRouter.get('/healthz', (_req, res) => {
-    res.json({ ok: true });
-  });
-
-  apiRouter.get('/readyz', async (_req, res) => {
-    const ready = await checkDatabaseReadiness(() => pgPool.query('SELECT 1'));
-    res.status(ready ? 200 : 503).json({
-      ok: ready,
-      status: ready ? 'ok' : 'unavailable',
-      version: release.server.version,
-      revision: process.env.K_REVISION ?? null
-    });
-  });
 
   apiRouter.use('/client-config', clientConfigRoutes);
   apiRouter.use('/server-settings', serverSettingsRoutes);

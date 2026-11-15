@@ -1,4 +1,4 @@
-/** @file Browser Expo root: shared providers, responsive shell, route metadata, PWA lifecycle, and error recovery. */
+/** @file Browser Expo root for shared providers, responsive layout, and signed-in browser runtimes. */
 
 import 'react-native-gesture-handler';
 // Record browser history before any lazily loaded editor can register a discard guard.
@@ -90,7 +90,7 @@ const WebSkipLink: React.FC = () => {
     );
 };
 
-/** Web keeps native-only notification, Health Connect, and Wear runtime hooks out of startup. */
+/** Own browser notification updates and offline replay for the signed-in account. */
 const BrowserRuntime: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { serverUrl, user } = useAuth();
     const queryClient = useQueryClient();
@@ -100,7 +100,7 @@ const BrowserRuntime: React.FC<{ children: React.ReactNode }> = ({ children }) =
             invalidateQueriesAfterOfflineReplay(queryClient, result),
         [queryClient]
     );
-    useBrowserNotificationStream({ enabled: Boolean(user && hasFullAccountAccess(user)), serverUrl, queryClient });
+    useBrowserNotificationStream({ accountId: hasFullAccountAccess(user) ? user?.id : undefined, serverUrl, queryClient });
     return (
         <OfflineOutboxProvider executeMutation={executeMutation} onReplayCompleted={onReplayCompleted}>
             <HealthConnectProvider>{children}</HealthConnectProvider>
