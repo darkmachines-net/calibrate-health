@@ -148,13 +148,6 @@ export function getPastDateRangeDates(timeZone: string, days: number, now: Date 
 }
 
 /**
- * Return an array of UTC-normalized DATE values covering the past week in the provided time zone.
- */
-export function getPastWeekDates(timeZone: string, now: Date = new Date()): Date[] {
-  return getPastDateRangeDates(timeZone, 7, now);
-}
-
-/**
  * Return a deterministic seeded scale weight with visible day-to-day volatility and multi-month trend shifts.
  *
  * The generated pattern intentionally includes:

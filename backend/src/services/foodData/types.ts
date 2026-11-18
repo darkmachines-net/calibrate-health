@@ -19,7 +19,7 @@ export interface FoodMeasure {
     unit?: string;
 }
 
-export interface NutrientsForQuantity {
+interface NutrientsForQuantity {
     grams: number;
     nutrients: Nutrients;
     note?: string;

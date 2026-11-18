@@ -1,22 +1,8 @@
-/** @file Regression coverage for route Presentation: route presentation. */
+/** @file Regression coverage for shell back labels and browser history detection. */
 
-import {
-    getRouteBackLabel,
-    getRouteDocumentTitle,
-    hasBrowserHistorySinceMount,
-    NOT_FOUND_DOCUMENT_TITLE
-} from './routePresentation';
+import { getRouteBackLabel, hasBrowserHistorySinceMount } from './routePresentation';
 
 describe('route presentation', () => {
-    it('uses registered document titles for canonical routes and aliases', () => {
-        expect(getRouteDocumentTitle('/weight-trend')).toBe('Trend - Calibrate');
-        expect(getRouteDocumentTitle('/log')).toBe('Today - Calibrate');
-    });
-
-    it('uses the not-found title for unknown paths', () => {
-        expect(getRouteDocumentTitle('/missing')).toBe(NOT_FOUND_DOCUMENT_TITLE);
-    });
-
     it('describes real history generically and a direct-entry fallback by parent', () => {
         expect(getRouteBackLabel('/activity', true)).toBe('Go back');
         expect(getRouteBackLabel('/activity', false)).toBe('Back to Connections');

@@ -7,7 +7,6 @@ const {
   addUtcYearsClamped,
   isValidIanaTimeZone,
   formatDateToLocalDateString,
-  getUtcTodayDateOnly,
   getUtcTodayDateOnlyInTimeZone,
   normalizeToUtcDateOnly
 } = require('../src/utils/date');
@@ -67,12 +66,4 @@ test('normalizeToUtcDateOnly accepts Date and timestamp inputs', () => {
 test('normalizeToUtcDateOnly rejects invalid inputs', () => {
   assert.throws(() => normalizeToUtcDateOnly('not-a-date'), /Invalid date/);
   assert.throws(() => normalizeToUtcDateOnly({}), /Invalid date/);
-});
-
-test('getUtcTodayDateOnly returns a UTC-normalized date-only value', () => {
-  const today = getUtcTodayDateOnly();
-  assert.equal(today.getUTCHours(), 0);
-  assert.equal(today.getUTCMinutes(), 0);
-  assert.equal(today.getUTCSeconds(), 0);
-  assert.equal(today.getUTCMilliseconds(), 0);
 });

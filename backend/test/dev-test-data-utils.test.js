@@ -11,7 +11,6 @@ const {
   DEV_SEED_FOOD_HISTORY_DAYS,
   getPastDateRangeDates,
   getMealTemplatesForSeedDayIndex,
-  getPastWeekDates,
   getSeedUserCreatedAt,
   getSeedWeightGramsForDayIndex
 } = require('../src/services/devTestDataUtils');
@@ -76,10 +75,10 @@ test('devTestDataUtils: addUtcDays adds days using UTC math without mutating the
   assert.equal(result.toISOString(), '2025-01-17T12:34:56.000Z');
 });
 
-test('devTestDataUtils: getPastWeekDates returns 7 UTC date-only values ending on the local day', () => {
+test('devTestDataUtils: getPastDateRangeDates returns 7 UTC date-only values ending on the local day', () => {
   // 05:00Z is prior local day in America/Los_Angeles (UTC-8 in winter).
   const now = new Date('2025-01-02T05:00:00Z');
-  const dates = getPastWeekDates('America/Los_Angeles', now);
+  const dates = getPastDateRangeDates('America/Los_Angeles', 7, now);
 
   assert.equal(dates.length, 7);
 

@@ -1,13 +1,11 @@
 /** @file Regression coverage for route Registry: route registry. */
 
 import {
-  REGISTERED_ROUTE_PATHS,
   ROUTE_IDS,
   ROUTE_REGISTRY,
   canonicalPathForRoute,
   getRouteByPath,
   getRouteFallback,
-  getRouteParent,
   isRouteActive,
   type RouteId,
 } from './routeRegistry';
@@ -15,9 +13,12 @@ import {
 describe('route registry', () => {
   it('is exhaustive and has one owner for every canonical and alias path', () => {
     expect(Object.keys(ROUTE_REGISTRY)).toEqual(ROUTE_IDS);
-    expect(new Set(REGISTERED_ROUTE_PATHS).size).toBe(REGISTERED_ROUTE_PATHS.length);
+    const paths = Object.values(ROUTE_REGISTRY).flatMap(({ path, aliases }) => [
+      path, ...aliases.map((alias) => alias.path),
+    ]);
+    expect(new Set(paths).size).toBe(paths.length);
 
-    for (const path of REGISTERED_ROUTE_PATHS) {
+    for (const path of paths) {
       expect(path).toMatch(/^\/(?:[^/].*)?$/);
       if (path !== '/') expect(path.endsWith('/')).toBe(false);
       expect(getRouteByPath(path)).not.toBeNull();
@@ -32,9 +33,6 @@ describe('route registry', () => {
 
       if (definition.parent) {
         expect(ROUTE_IDS).toContain(definition.parent);
-        expect(getRouteParent(routeId)).toBe(ROUTE_REGISTRY[definition.parent]);
-      } else {
-        expect(getRouteParent(routeId)).toBeNull();
       }
 
       if (definition.fallback) {

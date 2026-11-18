@@ -7,8 +7,6 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const WEIGHT_TREND_MODEL_VERSION = WEIGHT_TREND_PARAMETER_MANIFEST.modelVersion;
 export const WEIGHT_TREND_SEGMENT_RESET_DAYS = WEIGHT_TREND_PARAMETER_MANIFEST.filter.segmentResetDays;
 export const WEIGHT_TREND_HUBER_K = WEIGHT_TREND_PARAMETER_MANIFEST.filter.huberK;
-/** Default exact-window pace scope used by calibration scenarios and tuning gates. */
-export const WEIGHT_TREND_RATE_WINDOW_DAYS = WEIGHT_TREND_PARAMETER_MANIFEST.calibrationWindowAverageRate.defaultWindowDays;
 export const WEIGHT_TREND_MIN_RATE_WINDOW_DAYS = WEIGHT_TREND_PARAMETER_MANIFEST.calibrationWindowAverageRate.minimumWindowDays;
 export const WEIGHT_TREND_MAX_RATE_WINDOW_DAYS = WEIGHT_TREND_PARAMETER_MANIFEST.calibrationWindowAverageRate.maximumWindowDays;
 

@@ -9,8 +9,6 @@ import {
 import { isAppForeground, subscribeAppForeground } from '../platform/appForeground.web';
 import { invalidateNotificationQueries } from './query';
 
-export { MOBILE_NOTIFICATION_QUERY_KEY } from './query';
-
 // Reconnect after transient server or network failures without creating a tight request loop.
 export const NOTIFICATION_STREAM_RECONNECT_MS = 5_000;
 

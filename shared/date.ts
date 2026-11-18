@@ -1,4 +1,4 @@
-/** @file Canonical IANA-timezone local-day arithmetic and date-only parsing shared by server and clients. */
+/** @file IANA-timezone local-day formatting and date-only wire validation shared by server and clients. */
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -31,16 +31,4 @@ export function formatDateOnlyInTimeZone(date: Date, timeZone: string): string {
  */
 export function isDateOnly(value: unknown): value is string {
     return typeof value === 'string' && DATE_ONLY_PATTERN.test(value);
-}
-
-/**
- * Parse a date-only string into a UTC-midnight Date suitable for Prisma `@db.Date` fields.
- */
-export function parseDateOnlyAsUtcDate(value: string): Date | null {
-    if (!isDateOnly(value)) {
-        return null;
-    }
-
-    const parsed = new Date(`${value}T00:00:00.000Z`);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

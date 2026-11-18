@@ -45,7 +45,6 @@ export const WEIGHT_TREND_PARAMETER_MANIFEST = {
         steadyRateKgPerWeek: 0.05
     }
 } as const;
-
 /**
  * Fingerprint of the approved v2 numeric parameters, excluding manifest/model versions.
  * Keep this baseline pinned while evaluating a candidate; numeric changes pass governance
@@ -55,5 +54,3 @@ export const WEIGHT_TREND_APPROVED_NUMERIC_PARAMETER_BASELINE = {
     modelVersion: 2,
     sha256: '848378b772e64d0e40cfa8974a26ec5bc798b77cc6fdc785bd83462b7199c195'
 } as const;
-
-export type WeightTrendParameterManifest = typeof WEIGHT_TREND_PARAMETER_MANIFEST;

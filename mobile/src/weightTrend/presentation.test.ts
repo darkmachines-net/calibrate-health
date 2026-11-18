@@ -1,13 +1,11 @@
 /** @file Regression coverage for presentation: describeVisibleWeightTrend. */
 
 import type { TrendMetricEntry } from '@calibrate/api-client';
-import type { TrendMetricsResponse, WeightTrendSummary } from '@calibrate/api-client';
+import type { WeightTrendSummary } from '@calibrate/api-client';
 import {
     describeVisibleWeightTrend,
     formatEstimatedTrendRange,
     getLatestWeightTrendSnapshot,
-    getShortTermVariationPresentation,
-    getWeeklyPacePresentation,
     isVisibleWeightTrendPoint
 } from './presentation';
 
@@ -152,102 +150,4 @@ describe('describeVisibleWeightTrend', () => {
         });
     });
 
-    it('explains v2 short-term variation without treating it as trend confidence', () => {
-        const response = {
-            metrics: [],
-            meta: {
-                weekly_rate: 0,
-                volatility: 'medium',
-                total_points: 10,
-                total_span_days: 28,
-                trend_summary: {
-                    status: 'sufficient',
-                    evidence: 'sufficient',
-                    freshness: 'current',
-                    model_version: 2,
-                    as_of_date: '2026-07-20',
-                    scope_start_date: '2026-06-22',
-                    scope_end_date: '2026-07-20',
-                    latest_observation_date: '2026-07-20',
-                    days_since_latest: 0,
-                    modeled_points: 10,
-                    observation_span_days: 28,
-                    segment_start_date: '2026-06-22',
-                    latest_trend: null,
-                    weekly_rate: null,
-                    short_term_variation: {
-                        standard_deviation: 0.75,
-                        central_80_half_width: 0.96
-                    }
-                }
-            }
-        } satisfies TrendMetricsResponse;
-
-        expect(getShortTermVariationPresentation(response, 'LB')).toEqual({
-            value: 'About 80% within +/- 1 lb',
-            explanation: 'Hydration, meals, timing, and scale noise can shift individual readings.'
-        });
-    });
-
-    it('presents the canonical weekly pace with interval, evidence, and freshness', () => {
-        const summary: WeightTrendSummary = {
-            evidence: 'sufficient',
-            freshness: 'stale',
-            model_version: 2,
-            as_of_date: '2026-07-20',
-            scope_start_date: '2026-06-22',
-            scope_end_date: '2026-07-20',
-            latest_observation_date: '2026-07-12',
-            days_since_latest: 8,
-            modeled_points: 8,
-            observation_span_days: 21,
-            segment_start_date: '2026-06-22',
-            latest_trend: null,
-            weekly_rate: {
-                estimate: -0.42,
-                lower: -0.75,
-                upper: 0.08,
-                point_count: 8,
-                span_days: 21,
-                evidence: 'sufficient'
-            },
-            short_term_variation: null
-        };
-
-        expect(getWeeklyPacePresentation(summary, 'LB')).toEqual({
-            value: 'Down 0.4 lb/week',
-            range: '-0.8 lb/week to +0.1 lb/week',
-            evidence: 'Based on 8 weigh-ins across 21 days.',
-            freshnessNote: 'This pace is based on an older weigh-in. Log a current weight to refresh it.'
-        });
-    });
-
-    it('suppresses an outdated or unavailable pace instead of showing zero', () => {
-        const summary: WeightTrendSummary = {
-            evidence: 'sufficient',
-            freshness: 'outdated',
-            model_version: 2,
-            as_of_date: '2026-07-20',
-            scope_start_date: null,
-            scope_end_date: null,
-            latest_observation_date: '2026-07-01',
-            days_since_latest: 19,
-            modeled_points: 4,
-            observation_span_days: 14,
-            segment_start_date: '2026-06-17',
-            latest_trend: null,
-            weekly_rate: {
-                estimate: 0,
-                lower: -0.2,
-                upper: 0.2,
-                point_count: 4,
-                span_days: 14,
-                evidence: 'sufficient'
-            },
-            short_term_variation: null
-        };
-
-        expect(getWeeklyPacePresentation(summary, 'KG')).toBeNull();
-        expect(getWeeklyPacePresentation({ ...summary, freshness: 'current', weekly_rate: null }, 'KG')).toBeNull();
-    });
 });

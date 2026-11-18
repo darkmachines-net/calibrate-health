@@ -350,8 +350,6 @@ export type AccountExport = {
     }>;
 };
 
-export type DeleteAccountRequest = { current_password: string } | { provider_credential: NativeProviderCredential };
-
 export type MobileAuthRequest = {
     email: string;
     password: string;

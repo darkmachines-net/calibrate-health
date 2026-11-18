@@ -3,7 +3,6 @@
 import { ROUTE_IDS, getRouteDefinition } from './routeRegistry';
 import {
     ROUTE_ROBOTS_POLICIES,
-    getCanonicalRouteMetadata,
     resolveRouteMetadata
 } from './routeMetadata';
 
@@ -23,8 +22,9 @@ describe('route metadata', () => {
     });
 
     it('gives every canonical route a non-empty unique title and description', () => {
-        const metadata = getCanonicalRouteMetadata();
-        expect(metadata).toHaveLength(ROUTE_IDS.length);
+        const metadata = ROUTE_IDS.map((routeId) =>
+            resolveRouteMetadata(getRouteDefinition(routeId).path, { authenticated: false })
+        );
         expect(new Set(metadata.map((entry) => entry.title)).size).toBe(metadata.length);
         expect(new Set(metadata.map((entry) => entry.description)).size).toBe(metadata.length);
         metadata.forEach((entry) => {
@@ -35,9 +35,11 @@ describe('route metadata', () => {
 
     it('canonicalizes aliases and keeps private/authentication routes out of search indexes', () => {
         expect(resolveRouteMetadata('/log?date=2026-08-09', { authenticated: true })).toMatchObject({
+            title: 'Today - Calibrate',
             canonicalPath: '/today',
             robots: ROUTE_ROBOTS_POLICIES.PRIVATE
         });
+        expect(resolveRouteMetadata('/weight-trend', { authenticated: false }).title).toBe('Trend - Calibrate');
         expect(resolveRouteMetadata('/login', { authenticated: false }).robots).toBe(ROUTE_ROBOTS_POLICIES.PRIVATE);
         expect(resolveRouteMetadata('/privacy', { authenticated: false }).robots).toBe(ROUTE_ROBOTS_POLICIES.PUBLIC);
     });

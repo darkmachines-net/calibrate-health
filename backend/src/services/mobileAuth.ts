@@ -37,14 +37,12 @@ export {
   exchangeWearPairingCredential,
   issueWearPairingCredential,
   normalizePairingServerOrigin,
-  parseWearPublicKeySpki,
   WEAR_PAIRING_PROTOCOL_VERSION
 } from './wearPairing';
 export type {
   MobileAuthSessionPayload,
   MobileSessionSummary,
   WearAuthPrincipal,
-  WearPairingCredentialPayload,
   WearPairingErrorCode,
   WearPairingExchangeResult,
   WearPairingIssueResult

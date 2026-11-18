@@ -15,30 +15,6 @@ export function parsePositiveInteger(value: unknown): number | null {
 }
 
 /**
- * Parse a value into a non-negative integer (>= 0).
- *
- * This is used for fields like calories where callers may provide numbers or numeric strings.
- * Returns `null` for invalid inputs rather than throwing so callers can map to 400s.
- */
-export function parseNonNegativeInteger(value: unknown): number | null {
-  if (typeof value === 'string' && value.trim().length === 0) {
-    return null;
-  }
-
-  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
-  if (!Number.isFinite(numeric)) {
-    return null;
-  }
-
-  const parsed = Math.trunc(numeric);
-  if (parsed < 0) {
-    return null;
-  }
-
-  return parsed;
-}
-
-/**
  * Parse a value into a non-negative number (>= 0), allowing decimals.
  *
  * Intended for payloads like servings or calories-per-serving where fractional values are meaningful.

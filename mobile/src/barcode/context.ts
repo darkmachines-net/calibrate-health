@@ -58,7 +58,6 @@ function firstString(value: unknown): string | null {
     const candidate = Array.isArray(value) ? value[0] : value;
     return typeof candidate === 'string' ? candidate : null;
 }
-
 function isCalendarDateOnly(value: unknown): value is string {
     if (!isDateOnly(value)) return false;
     const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -125,14 +124,4 @@ export function parseBarcodeResumeContext(
         resumeStep,
         ...(barcode ? { barcode } : {})
     };
-}
-
-/** Build a purpose-bound barcode return path suitable for auth and other temporary detours. */
-export function getBarcodeResumePath(resume: BarcodeResumeContext): string {
-    const params = serializeBarcodeWorkflowContext(resume, resume);
-    const query = Object.entries(params)
-        .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&');
-    return `/barcode?${query}`;
 }

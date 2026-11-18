@@ -3,7 +3,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { InAppNotification } from '@calibrate/api-client';
 
-export const MOBILE_NOTIFICATION_QUERY_KEY = ['mobile-in-app-notifications'] as const;
+const MOBILE_NOTIFICATION_QUERY_KEY = ['mobile-in-app-notifications'] as const;
 export const ACTIVE_NOTIFICATION_LIMIT = 5;
 
 export type NotificationListPage = {
