@@ -170,8 +170,11 @@ const RATE_PROCESS_VARIANCE_PER_DAY = RATE_PROCESS_STD_KG_PER_DAY_SQRT_DAY ** 2;
 /**
  * Estimate latent weight level and local rate with a forward-only robust Kalman filter.
  *
- * Inputs and outputs are kilograms. A gap greater than 14 days starts an independent
- * segment so stale momentum and confidence never bridge a long logging break.
+ * Weights are in kilograms. Invalid observations and observations after a valid
+ * as-of instant are discarded; the remaining observations are sorted by time.
+ * A gap greater than the manifest's reset threshold starts an independent segment
+ * so stale momentum and confidence never bridge a long logging break. An empty
+ * input yields an empty result with insufficient evidence.
  */
 export function computeWeightTrend(
     observations: WeightTrendObservation[],
@@ -222,7 +225,11 @@ export function computeWeightTrend(
     };
 }
 
-/** Preserve the v1 summary behavior for already-materialized level-only points. */
+/**
+ * Summarize already-materialized level-only points using the v1 endpoint rate
+ * and median uncertainty rules. Invalid points are discarded and valid points
+ * are sorted; fewer than two points yield a zero weekly rate.
+ */
 export function summarizeWeightTrend(points: WeightTrendSummaryInput[]): WeightTrendSummary {
     const normalized = points
         .filter((point) => validDate(point.date) && Number.isFinite(point.trendWeight) && Number.isFinite(point.trendStd))
@@ -283,7 +290,10 @@ export function summarizeWeightTrendEvidence(points: WeightTrendPoint[]): Weight
     };
 }
 
-/** Grade the latest uninterrupted segment by observation count and elapsed days, not observation index spacing. */
+/**
+ * Grade an uninterrupted segment by observation count and elapsed days. The
+ * effective count is retained for compatibility but does not affect the grade.
+ */
 export function classifyWeightTrendEvidence(
     pointCount: number,
     spanDays: number,

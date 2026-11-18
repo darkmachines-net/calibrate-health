@@ -1,4 +1,4 @@
-/** @file Regression coverage for today add food. */
+/** @file Verifies explicit day reopening, add-food submission, and focus restoration on Today. */
 
 import { expect, test, hideTransientPwaNotices, type AuthenticatedApiOptions } from './fixtures';
 

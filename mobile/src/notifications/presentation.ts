@@ -1,4 +1,4 @@
-/** @file presentation: Uses stored notification copy when complete, otherwise fills missing text from the notification type. */
+/** @file Notification display copy with type-specific fallbacks and local date formatting. */
 
 import type { InAppNotification } from '@calibrate/api-client';
 import { IN_APP_NOTIFICATION_TYPES } from '@calibrate/shared/inAppNotifications';
@@ -28,7 +28,7 @@ export function getNotificationText(notification: InAppNotification): { title: s
     }
 }
 
-/** Formats a local date without treating midnight as a UTC instant; invalid dates retain their input. */
+/** Format year, month, and day as a local month/day label. Preserve input if it cannot be parsed as a Date. */
 export function formatNotificationDate(value: string): string {
     const [yearString, monthString, dayString] = value.split('-');
     const date = new Date(Number(yearString), Number(monthString) - 1, Number(dayString));

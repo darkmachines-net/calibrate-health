@@ -1,4 +1,4 @@
-/** @file Strict reusable request parsers for bounded numeric and textual API inputs. */
+/** @file Shared numeric request parsers and best-effort language selection. */
 
 /**
  * Parse a value into a positive integer (>= 1).

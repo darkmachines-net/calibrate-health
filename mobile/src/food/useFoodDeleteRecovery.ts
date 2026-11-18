@@ -39,13 +39,17 @@ export type FoodDeleteRecoveryFailure = Readonly<{
 export type UseFoodDeleteRecoveryOptions = {
     date?: string;
     entries?: readonly FoodLogEntry[];
+    /** Delete the server entry using the supplied stable operation ID. */
     deleteFoodLog: (entryId: number, operationId: string) => Promise<void>;
     outbox: FoodDeleteOutboxBindings;
+    /** Observe a direct or queued delete after the controller accepts it. */
     onCommitted?: (
         ticket: FoodDeleteTicket<FoodLogEntry>,
         outcome: OutboxMutationResult<void>
     ) => void | Promise<void>;
+    /** Generate an ID for a new deletion; retries retain the ticket's ID. */
     createOperationId?: () => string;
+    /** Supply the current time in milliseconds for undo expiry. */
     now?: () => number;
     undoWindowMs?: number;
 };

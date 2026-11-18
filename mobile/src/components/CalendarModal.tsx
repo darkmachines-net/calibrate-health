@@ -5,6 +5,7 @@ import { BottomSheetModal } from './BottomSheetModal';
 
 export type CalendarModalProps = {
     visible: boolean;
+    /** Close the calendar in response to a sheet dismissal. */
     onRequestClose: () => void;
     children: React.ReactNode;
 };

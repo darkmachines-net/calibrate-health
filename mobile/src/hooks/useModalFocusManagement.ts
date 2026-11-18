@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { Platform } from 'react-native';
 
 export type ModalFocusableTarget = {
+    /** Move focus to this modal target when the platform supports it. */
     focus?: () => void;
 };
 

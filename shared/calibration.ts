@@ -894,9 +894,10 @@ function attachAssessment(
 /**
  * Evaluate recent intake and weight evidence without mutating state.
  *
- * Missing or suspicious food days are represented as conservative intake ranges instead of
- * being silently discarded. The shortest window with a sufficiently narrow interval wins;
- * otherwise the longest available window powers a descriptive, non-actionable insight.
+ * Missing or suspicious food days within the active tracking period contribute conservative
+ * intake ranges. A pause starts a new evidence period. Choose the shortest window that
+ * satisfies all recommendation criteria, or the longest evaluated window for a descriptive
+ * result. The pace assessment may use a shorter window with continuous weight evidence.
  */
 export function evaluateCalibration(sourceInput: CalibrationInput): CalibrationResult {
     const period = getCalibrationPeriod(sourceInput);

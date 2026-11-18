@@ -75,7 +75,10 @@ const activityMultipliers: Record<ActivityLevel, number> = {
 };
 const roundOneDecimal = (value: number): number => Math.round(value * 10) / 10;
 
-/** Parse a date-only value without allowing JavaScript calendar rollover. */
+/**
+ * Normalize a valid Date to its UTC calendar day or validate a YYYY-MM-DD string
+ * without calendar rollover. Return null for invalid dates or other inputs.
+ */
 export function normalizeDateOfBirth(value: unknown): string | null {
     if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
     if (typeof value !== 'string') return null;
@@ -188,7 +191,12 @@ function legacyMissing(reason: CaloriePlanReasonCode | null): string[] {
     return [];
 }
 
-/** Build server-owned calorie-plan fields. Unsafe values become unavailable, never clamped. */
+/**
+ * Evaluate profile prerequisites, signed goal choices, and an optional target
+ * adjustment. An unsafe or review-required goal has no usable daily target;
+ * values are never clamped. BMR and TDEE remain profile estimates, and the base
+ * target may still be reported when an adjustment makes the revision unsafe.
+ */
 export function evaluateCaloriePlan(options: {
     profile: CaloriePolicyProfile;
     latestWeightGrams?: number | null;
@@ -253,7 +261,11 @@ export type GoalProjection = {
     reasonCode: CaloriePlanReasonCode | null;
 };
 
-/** Build a steady-rate projection from the configured deficit, never inferred TDEE. */
+/**
+ * Project from the account-local date and current weight using the configured
+ * signed deficit and the selected unit's energy conversion. Unavailable plans,
+ * maintenance goals, and reached goals return no projected date.
+ */
 export function projectGoalEndDate(options: {
     planStatus: CaloriePlanStatus; planReasonCode: CaloriePlanReasonCode | null; localDate: string | null;
     currentWeightGrams: number | null; targetWeightGrams: number; dailyDeficit: number; weightUnit: 'KG' | 'LB';

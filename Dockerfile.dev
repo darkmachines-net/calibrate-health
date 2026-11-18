@@ -1,3 +1,4 @@
+# Development image for the Compose Watch stack, with workspace dependencies and the generated Prisma client.
 FROM node:22.14.0-bookworm
 
 WORKDIR /workspace

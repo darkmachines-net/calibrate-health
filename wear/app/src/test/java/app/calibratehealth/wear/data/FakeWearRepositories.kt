@@ -1,4 +1,4 @@
-/** Regression tests and fixtures for Fake Wear Repositories. */
+/** In-memory Wear repository and credential-store doubles for persistence and synchronization tests. */
 
 package app.calibratehealth.wear.data
 

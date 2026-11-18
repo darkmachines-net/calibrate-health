@@ -1,4 +1,4 @@
-/** @file Signed goal direction, steady-rate projection, and weight-progress calculations. */
+/** @file Signed goal direction and canonical weight-progress calculations. */
 
 export type GoalProgressMode = 'lose' | 'gain' | 'maintain';
 
@@ -16,7 +16,7 @@ export type CanonicalGoalProgress = {
     isComplete: boolean;
 };
 
-/** Derive the product's goal direction from the signed calorie target adjustment. */
+/** Derive loss, gain, or maintenance from the configured signed daily deficit. */
 export function getGoalProgressMode(dailyDeficit: number): GoalProgressMode {
     if (dailyDeficit > 0) return 'lose';
     if (dailyDeficit < 0) return 'gain';
@@ -27,7 +27,8 @@ export function getGoalProgressMode(dailyDeficit: number): GoalProgressMode {
  * Calculate bounded goal progress using canonical grams.
  *
  * Maintenance is intentionally ongoing and neutral: it has no completion percentage or
- * terminal state. Loss and gain use mirrored direction-aware calculations.
+ * terminal state. Loss and gain use mirrored direction-aware calculations. A missing
+ * current weight or incoherent goal direction yields no progress percentage.
  */
 export function calculateCanonicalGoalProgress(
     goal: CanonicalGoal,

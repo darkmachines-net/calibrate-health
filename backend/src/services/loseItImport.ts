@@ -139,7 +139,8 @@ export function inferLoseItWeightUnit(profile: Record<string, string>, fallback:
 /**
  * Convert a date-only string into a stable UTC timestamp used for imported log entries.
  *
- * We choose midday UTC to keep date-only logs consistent across time zones.
+ * Imported logs keep their supplied day in local_date. This timestamp is a
+ * separate midday UTC placeholder because the source supplies only a date.
  */
 export function buildImportTimestamp(localDateValue: Date): Date {
   const timestamp = new Date(localDateValue);

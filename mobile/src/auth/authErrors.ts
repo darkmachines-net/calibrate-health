@@ -1,8 +1,8 @@
-/** @file auth Errors: A missing local seed account is an expected miss for debug auto-login. */
+/** @file Debug auto-login error classification and safe session-restoration guidance. */
 
 import { ApiError } from '@calibrate/api-client';
 
-/** A missing local seed account is an expected miss for debug auto-login. */
+/** Treat a 401 response as an expected debug auto-login miss. */
 export function isExpectedDevAutoLoginMiss(error: unknown): boolean {
     return error instanceof ApiError && error.status === 401;
 }

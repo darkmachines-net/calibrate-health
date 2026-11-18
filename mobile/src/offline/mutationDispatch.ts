@@ -5,9 +5,16 @@ import { withMutationLock } from './mutationLock';
 import type { QueuedMutation } from './queuedMutation';
 
 type Enqueue = (operation: string, payload: unknown, operationId?: string) => Promise<unknown>;
+/**
+ * Run an operation under its account namespace lock with durable enqueue,
+ * queue-required state, pending intent, and acknowledgement recording available.
+ */
 export type OutboxDispatch = <T>(work: (enqueue: Enqueue, mustQueue: boolean, pending: readonly QueuedMutation[], record: (operation: string, payload: unknown, id: string) => Promise<void>) => Promise<T>) => Promise<T>;
 
-/** Read durable state under the same lock used by all direct attempts and enqueue producers. */
+/**
+ * Read durable state under the mutation lock and reject if the account scope changed.
+ * When exclusive ownership is unavailable or pending work exists, require callers to queue.
+ */
 export function createOutboxDispatch(namespace: string, list: () => Promise<QueuedMutation[]>, enqueue: Enqueue, isCurrent: () => boolean, receipts = false, onReceipts?: (rows: QueuedMutation[]) => void): OutboxDispatch {
     return work => withMutationLock(namespace, async exclusive => {
         if (!isCurrent()) throw new Error('The tracking account changed. Reopen this action.');

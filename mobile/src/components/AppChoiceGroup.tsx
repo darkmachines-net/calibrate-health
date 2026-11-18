@@ -19,6 +19,7 @@ export type AppChoiceGroupProps<T extends string> = {
     label: string;
     options: ReadonlyArray<AppChoiceOption<T>>;
     value: T | null;
+    /** Report the enabled choice selected by the user. */
     onChange: (value: T) => void;
     errorText?: string;
     focusError?: boolean;

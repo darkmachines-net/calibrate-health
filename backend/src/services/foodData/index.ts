@@ -1,4 +1,4 @@
-/** @file Configured provider selection, credential-aware sequential fallback, and stable paginated food search. */
+/** @file Configured food provider selection, readiness, fallback order, and cached provider instances. */
 
 import FatSecretFoodDataProvider from './fatSecretProvider';
 import OpenFoodFactsProvider from './openFoodFactsProvider';
@@ -142,7 +142,8 @@ export const getPrimaryFoodDataProviderName = (): FoodDataSource => {
 };
 
 /**
- * List enabled providers in fallback order while preserving primary metadata.
+ * List ready providers in fallback order, alongside the configured primary's
+ * metadata even when that provider is missing credentials.
  */
 export const getEnabledFoodDataProviders = (): EnabledFoodDataProviders => {
     const providers = listFoodDataProviders();
@@ -179,7 +180,8 @@ export const getEnabledFoodDataProviders = (): EnabledFoodDataProviders => {
 };
 
 /**
- * Resolve a provider by name, returning a friendly error when configuration is missing.
+ * Resolve and cache a provider by name, returning an error when required
+ * credentials are missing. Cached instances retain their original configuration.
  */
 export const getFoodDataProviderByName = (name: FoodDataSource): FoodDataProviderResolution => {
     const cached = providerCache[name];

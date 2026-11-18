@@ -7,6 +7,7 @@ import type { FocusableFormControl } from './FormField';
 export type DatePickerFieldProps = ViewProps & {
     label: string;
     value: string;
+    /** Report the selected date as a date-only string. */
     onChangeDate: (value: string) => void;
     placeholder?: string;
     helperText?: string;

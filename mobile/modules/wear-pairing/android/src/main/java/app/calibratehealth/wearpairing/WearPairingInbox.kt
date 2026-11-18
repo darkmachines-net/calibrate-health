@@ -1,4 +1,4 @@
-/** Phone-side storage and dispatch of bounded watch coordination messages. */
+/** Persistent phone-side inbox for bounded watch coordination messages. */
 
 package app.calibratehealth.wearpairing
 
@@ -8,7 +8,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-/** Small durable inbox so process death cannot drop a one-time pairing request. */
+/** Retains recent inbound messages across process death until acknowledged or evicted by the size cap. */
 internal object WearPairingInbox {
     private const val PREFERENCES = "calibrate_wear_pairing_inbox"
     private const val MESSAGES = "messages"

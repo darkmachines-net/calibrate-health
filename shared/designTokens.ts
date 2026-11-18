@@ -1,11 +1,10 @@
-/** @file design Tokens: Cross-platform visual identity for Calibrate. */
+/** @file Semantic visual tokens shared by the Expo web and native themes. */
 
 /**
  * Cross-platform visual identity for Calibrate.
  *
- * Platform layers translate these semantic roles into MUI or React Native
- * component themes. Keeping raw component styling out of this module lets the
- * web and native apps share a brand without forcing identical layouts.
+ * The Expo theme translates these roles into component colors, spacing, and
+ * typography for web and native without forcing identical layouts.
  */
 export const calibrateDesignTokens = {
     brand: {

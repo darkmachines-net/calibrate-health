@@ -5,6 +5,7 @@ import type { FoodLogEntry } from '@calibrate/api-client';
 export type FoodLogEditableAmount = {
     amount: number;
     unitLabel: string;
+    /** Convert an edited amount in the displayed unit back to snapshot servings. */
     toServings: (amount: number) => number;
 };
 

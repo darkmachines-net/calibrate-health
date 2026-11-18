@@ -1,4 +1,4 @@
-/** @file provider: Own per-account Health Connect consent choices without coupling them to server sync. */
+/** @file Account-scoped Health Connect preferences, permission handling, and foreground sync orchestration. */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -62,7 +62,7 @@ function errorMessage(error: unknown, fallback: string): string {
     return getSafeActionErrorMessage(error, fallback);
 }
 
-/** Own per-account Health Connect consent choices without coupling them to server sync. */
+/** Coordinate account consent, Android permissions, and eligible foreground imports to the server. */
 export function HealthConnectProvider({ children }: { children: React.ReactNode }) {
     const { api, serverUrl, user: authenticatedUser } = useAuth();
     const user = hasFullAccountAccess(authenticatedUser) ? authenticatedUser : null;

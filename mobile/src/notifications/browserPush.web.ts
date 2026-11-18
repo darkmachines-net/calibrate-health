@@ -23,7 +23,7 @@ export type BrowserPushEnvironment = {
     getPermission(): NotificationPermission;
     /** Requests notification permission through the browser's user-facing permission flow. */
     requestPermission(): Promise<NotificationPermission>;
-    /** Returns the active service-worker registration or null when none is available. */
+    /** Find a service-worker registration for push, or return null when none is available. */
     getRegistration(): Promise<ServiceWorkerRegistration | null>;
     /** Decodes the URL-safe public VAPID key into bytes for PushManager. */
     decodeApplicationServerKey(value: string): Uint8Array<ArrayBuffer>;
@@ -62,7 +62,7 @@ function pickBestServiceWorkerRegistration(
         ?? registrations[0];
 }
 
-/** Resolve an active registration without allowing browser notification UI to hang forever. */
+/** Wait briefly for a ready registration, then fall back to registrations already known to the browser. */
 export async function resolveBrowserServiceWorkerRegistration(
     timeoutMs: number = SERVICE_WORKER_READY_TIMEOUT_MS
 ): Promise<ServiceWorkerRegistration | null> {
@@ -113,6 +113,7 @@ export function serializeBrowserPushSubscription(
     };
 }
 
+/** Live browser implementation of the permission, registration, and message-listener contract. */
 export const browserPushEnvironment: BrowserPushEnvironment = {
     isSupported: () => typeof window !== 'undefined'
         && 'Notification' in window

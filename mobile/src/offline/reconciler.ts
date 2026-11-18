@@ -8,6 +8,10 @@ import type { QueuedMutation } from './queuedMutation';
 import { isRetryableMutationError } from './retryability';
 
 type CurrentControlState = { day?: Pick<FoodLogDay, 'date' | 'status'>; pause?: FoodTrackingPause };
+/**
+ * Replay one queued mutation, rejecting on failure. Food-day and pause operations
+ * must return freshly read control state when reconciliation uses a namespace.
+ */
 export type QueuedMutationExecutor = (mutation: QueuedMutation) => Promise<void | { currentControl: CurrentControlState }>;
 
 export const OUTBOX_RETRY_BASE_DELAY_MS = 5_000;

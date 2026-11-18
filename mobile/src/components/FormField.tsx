@@ -13,6 +13,7 @@ import { type AppTheme, useAppTheme } from '../theme';
 import { AppText } from './AppText';
 
 export type FocusableFormControl = {
+    /** Move focus to the underlying form control. */
     focus: () => void;
 };
 
@@ -30,6 +31,7 @@ type FormControlAccessibilityProps = {
 
 export type FormFieldProps = {
     label: string;
+    /** Render the control with the supplied label, state, and description relationships. */
     children: (controlProps: FormControlAccessibilityProps) => React.ReactNode;
     helperText?: string;
     errorText?: string;

@@ -2,6 +2,7 @@
 # Creates encrypted PostgreSQL backups and prunes only this backup directory's retained archives.
 set -eu
 
+# Reject an invalid numeric setting before starting the backup loop.
 require_positive_integer() {
   name="$1"
   value="$2"
@@ -32,12 +33,14 @@ chmod 0700 "$BACKUP_DIRECTORY"
 
 plaintext=''
 partial=''
+# Remove this attempt's temporary dump and any unpromoted encrypted file.
 cleanup() {
   [ -z "$plaintext" ] || rm -f -- "$plaintext"
   [ -z "$partial" ] || rm -f -- "$partial"
 }
 trap cleanup EXIT INT TERM HUP
 
+# Publish only a completed encrypted dump, then prune old archives and record success.
 run_backup() {
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
   destination="$BACKUP_DIRECTORY/calibrate-$timestamp.dump.age"

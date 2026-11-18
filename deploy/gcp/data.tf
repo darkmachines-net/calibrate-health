@@ -1,4 +1,4 @@
-# Owns durable SQL and generated credentials; operator-provided provider secrets never enter Terraform.
+# Owns the image registry, Cloud SQL, and secret resources. Operators supply optional secret values separately.
 resource "google_artifact_registry_repository" "application" {
   project       = data.google_project.app.project_id
   repository_id = "application"

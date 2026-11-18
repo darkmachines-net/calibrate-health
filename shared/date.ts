@@ -3,7 +3,8 @@
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * Return an ISO local-date label (`YYYY-MM-DD`) for the given date/time and IANA timezone.
+ * Return a local-date label (`YYYY-MM-DD`) for the given instant and timezone.
+ * If formatting fails, use the instant's UTC date; an invalid Date still throws.
  */
 export function formatDateOnlyInTimeZone(date: Date, timeZone: string): string {
     try {
@@ -27,7 +28,7 @@ export function formatDateOnlyInTimeZone(date: Date, timeZone: string): string {
 }
 
 /**
- * Validate the date-only wire format used by food logs, metrics, and day completion.
+ * Check only the YYYY-MM-DD wire format; this does not validate the calendar date.
  */
 export function isDateOnly(value: unknown): value is string {
     return typeof value === 'string' && DATE_ONLY_PATTERN.test(value);

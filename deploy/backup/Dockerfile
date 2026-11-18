@@ -1,3 +1,4 @@
+# PostgreSQL backup and restore image with age encryption. The default command runs scheduled backups.
 FROM postgres:16-alpine
 
 RUN apk add --no-cache age tzdata

@@ -6,5 +6,6 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 export const WEB_NAVIGATION_RAIL_WIDTH = 88;
 
 export type WebNavigationRailProps = BottomTabBarProps & {
+    /** Report the rendered rail width so adjacent content can reserve space. */
     onWidthChange: (width: number) => void;
 };
