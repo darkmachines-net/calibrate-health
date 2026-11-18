@@ -23,7 +23,7 @@ export type MobileAuthSessionPayload = MobileTokenPair & {
   user: MobileAuthPrincipal;
 };
 
-export type WearPairingCredentialPayload = {
+type WearPairingCredentialPayload = {
   pairingToken: string;
   serverOrigin: string;
   watchDeviceId: string;

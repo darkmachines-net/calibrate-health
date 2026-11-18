@@ -518,11 +518,6 @@ const trimRoutePath = (pathname: string): string => {
   return pathOnly.replace(/\/+$/, '') || '/';
 };
 
-export const REGISTERED_ROUTE_PATHS = ROUTE_IDS.flatMap((routeId) => {
-  const definition = ROUTE_REGISTRY[routeId];
-  return [definition.path, ...definition.aliases.map((alias) => alias.path)];
-});
-
 /** Reads the canonical definition for a typed route identifier. */
 export function getRouteDefinition(routeId: RouteId): RouteDefinition {
   return ROUTE_REGISTRY[routeId];
@@ -563,12 +558,6 @@ export function getRouteByPath(pathname: string): RouteMatch | null {
 /** Tests route identity after alias normalization. */
 export function isRouteActive(pathname: string, routeId: RouteId): boolean {
   return getRouteByPath(pathname)?.routeId === routeId;
-}
-
-/** Returns the declared parent route or null for a root route. */
-export function getRouteParent(routeId: RouteId): RouteDefinition | null {
-  const parent = ROUTE_REGISTRY[routeId].parent;
-  return parent ? ROUTE_REGISTRY[parent] : null;
 }
 
 /** Returns the declared fallback destination or null when none is configured. */

@@ -4,7 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  parseNonNegativeInteger,
   parseNonNegativeNumber,
   parsePositiveInteger,
   parsePositiveNumber,
@@ -23,26 +22,6 @@ test('requestParsing: parsePositiveInteger accepts only finite integers >= 1', (
   assert.equal(parsePositiveInteger(null), null);
   assert.equal(parsePositiveInteger(undefined), null);
   assert.equal(parsePositiveInteger(Number.POSITIVE_INFINITY), null);
-});
-
-test('requestParsing: parseNonNegativeInteger accepts finite integers >= 0 (truncating numbers)', () => {
-  assert.equal(parseNonNegativeInteger(0), 0);
-  assert.equal(parseNonNegativeInteger('0'), 0);
-  assert.equal(parseNonNegativeInteger(10), 10);
-  assert.equal(parseNonNegativeInteger('10'), 10);
-
-  // Route payloads may include floats; we truncate to align with current API behavior.
-  assert.equal(parseNonNegativeInteger(10.9), 10);
-  assert.equal(parseNonNegativeInteger('10.9'), 10);
-
-  assert.equal(parseNonNegativeInteger(-1), null);
-  assert.equal(parseNonNegativeInteger('-1'), null);
-  assert.equal(parseNonNegativeInteger(''), null);
-  assert.equal(parseNonNegativeInteger('10 calories'), null);
-  assert.equal(parseNonNegativeInteger('not-a-number'), null);
-  assert.equal(parseNonNegativeInteger({}), null);
-  assert.equal(parseNonNegativeInteger(Number.NaN), null);
-  assert.equal(parseNonNegativeInteger(Number.POSITIVE_INFINITY), null);
 });
 
 test('requestParsing: parseNonNegativeNumber accepts finite numbers >= 0 (including decimals)', () => {

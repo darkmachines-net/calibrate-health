@@ -41,11 +41,6 @@ export function addUtcYearsClamped(date: Date, deltaYears: number): Date {
   return new Date(Date.UTC(targetYear, month, Math.min(day, lastDayOfTargetMonth)));
 }
 
-/** Return today's UTC date-only value for UTC-scoped tasks, not user-local tracking calculations. */
-export function getUtcTodayDateOnly(): Date {
-  return normalizeToUtcDateOnly(new Date());
-}
-
 /**
  * Format a Date into a calendar date string ("YYYY-MM-DD") for the supplied IANA time zone.
  *

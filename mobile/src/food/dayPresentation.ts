@@ -31,21 +31,6 @@ export function shouldShowCalorieComparison({
     return status === 'OPEN' && (isToday || hasFoodEntries);
 }
 
-/** Emphasizes a pause only on an empty, fully loaded current day. */
-export function shouldEmphasizePausedStatus({
-    status,
-    isToday,
-    hasFoodEntries,
-    isContentLoading
-}: {
-    status: FoodLogDayStatus | undefined;
-    isToday: boolean;
-    hasFoodEntries: boolean;
-    isContentLoading: boolean;
-}) {
-    return status === 'PAUSED' && isToday && !hasFoodEntries && !isContentLoading;
-}
-
 /** Fallbacks are presentation only; they must never become saved comparisons or calendar bands. */
 export function getFoodDayCaloriePresentation({ day, isToday, currentTarget, hasFoodEntries = false }: {
     day: FoodLogDay | undefined;

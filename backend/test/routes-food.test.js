@@ -103,7 +103,7 @@ function getRouteHandler(router, method, path) {
 test('food route: rejects unauthenticated requests via router.use middleware', async () => {
   const router = loadFoodRouter({
     prismaStub: {},
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const isAuthenticated = getIsAuthenticatedMiddleware(router);
 
@@ -123,7 +123,7 @@ test('food route: rejects unauthenticated requests via router.use middleware', a
 test('food route: GET /search requires query or barcode', async () => {
   const router = loadFoodRouter({
     prismaStub: {},
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
 
   const handler = getRouteHandler(router, 'get', '/search');
@@ -309,9 +309,6 @@ test('food route: GET /search falls back to the next provider for barcode lookup
   const router = loadFoodRouter({
     prismaStub: {},
     foodDataStub: {
-      getFoodDataProvider: () => {
-        throw new Error('getFoodDataProvider should not be called for barcode searches');
-      },
       getEnabledFoodDataProviders: () => ({
         primary: { name: 'fatsecret', label: 'FatSecret', supportsBarcodeLookup: true, ready: true },
         providers: [
@@ -355,9 +352,6 @@ test('food route: GET /search returns empty results when barcode providers retur
   const router = loadFoodRouter({
     prismaStub: {},
     foodDataStub: {
-      getFoodDataProvider: () => {
-        throw new Error('getFoodDataProvider should not be called for barcode searches');
-      },
       getEnabledFoodDataProviders: () => ({
         primary: { name: 'fatsecret', label: 'FatSecret', supportsBarcodeLookup: true, ready: true },
         providers: [
@@ -406,9 +400,6 @@ test('food route: GET /search skips providers that disable barcode lookup at run
   const router = loadFoodRouter({
     prismaStub: {},
     foodDataStub: {
-      getFoodDataProvider: () => {
-        throw new Error('getFoodDataProvider should not be called for barcode searches');
-      },
       getEnabledFoodDataProviders: () => ({
         primary: { name: 'fatsecret', label: 'FatSecret', supportsBarcodeLookup: true, ready: true },
         providers: [
@@ -455,9 +446,6 @@ test('food route: GET /search returns 500 when all barcode providers fail', asyn
   const router = loadFoodRouter({
     prismaStub: {},
     foodDataStub: {
-      getFoodDataProvider: () => {
-        throw new Error('getFoodDataProvider should not be called for barcode searches');
-      },
       getEnabledFoodDataProviders: () => ({
         primary: { name: 'fatsecret', label: 'FatSecret', supportsBarcodeLookup: true, ready: true },
         providers: [
@@ -541,7 +529,7 @@ test('food route: GET /recent returns deduped recent food suggestions', async ()
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'get', '/recent');
 
@@ -598,7 +586,7 @@ test('food route: GET /recent prioritizes foods frequently logged for the select
   };
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'get', '/recent');
   const req = {
@@ -624,7 +612,7 @@ test('food route: GET /recent rejects an invalid meal period', async () => {
   };
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'get', '/recent');
   const req = { user: { id: 7 }, query: { meal_period: 'BRUNCH' } };
@@ -647,7 +635,7 @@ test('food route: GET / validates local_date/date query params', async () => {
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'get', '/');
 
@@ -672,7 +660,7 @@ test('food route: GET / passes local_date filter through to Prisma', async () =>
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'get', '/');
 
@@ -703,7 +691,7 @@ test('food route: POST / creates a manual log after validating inputs', async ()
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/');
 
@@ -745,7 +733,7 @@ test('food route: POST / rejects writes when the canonical day is paused', async
   };
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/');
   const req = {
@@ -779,7 +767,7 @@ test('food route: POST / stores external serving snapshots for search-backed log
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/');
 
@@ -844,7 +832,7 @@ test('food route: POST / can create a my_food-backed log with snapshots', async 
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/');
 
@@ -867,7 +855,7 @@ test('food route: POST / can create a my_food-backed log with snapshots', async 
 test('food route: POST /copy requires a valid operation ID and local-date payload', async () => {
   const router = loadFoodRouter({
     prismaStub: {},
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/copy');
   const res = createRes();
@@ -938,7 +926,7 @@ test('food route: POST /copy executes the owned copy in one idempotent transacti
   };
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'post', '/copy');
   const res = createRes();
@@ -995,7 +983,7 @@ test('food route: PATCH /:id validates and computes updateData', async () => {
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'patch', '/:id');
 
@@ -1022,7 +1010,7 @@ test('food route: DELETE /:id validates ids and returns 204 on delete', async ()
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'delete', '/:id');
 
@@ -1048,7 +1036,7 @@ test('food route: DELETE /:id treats an already-absent owned log as idempotent s
 
   const router = loadFoodRouter({
     prismaStub,
-    foodDataStub: { getFoodDataProvider: () => ({}) }
+    foodDataStub: {}
   });
   const handler = getRouteHandler(router, 'delete', '/:id');
   const res = createRes();

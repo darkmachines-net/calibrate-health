@@ -9,7 +9,7 @@ const FLOAT_TOLERANCE = 1e-9;
 const {
   addUtcDays,
   addUtcYearsClamped,
-  getUtcTodayDateOnly
+  getUtcTodayDateOnlyInTimeZone
 } = require('../src/utils/date');
 const { computeWeightTrend } = require('../../shared/weightTrend.ts');
 const {
@@ -257,7 +257,7 @@ test('metrics baseline: same-day first weight and correction preserve the goal a
 });
 
 test('metrics baseline: an older goal or historical metric never changes the baseline', async () => {
-  const yesterday = addUtcDays(getUtcTodayDateOnly(), -1);
+  const yesterday = addUtcDays(getUtcTodayDateOnlyInTimeZone('UTC'), -1);
   const older = baselineFixture({ goalDate: yesterday });
   assert.equal((await older.save({ weight: 85 })).statusCode, 200);
   assert.equal(older.goal.start_weight_grams, 90000);
@@ -327,7 +327,7 @@ test('metrics baseline: timezone committed while waiting determines eligibility 
 
 test('metrics baseline: reads the goal created by a writer that held the planning guard first', async () => {
   let firstLock = true;
-  const fixture = baselineFixture({ goalDate: addUtcDays(getUtcTodayDateOnly(), -3), onLock: () => {
+  const fixture = baselineFixture({ goalDate: addUtcDays(getUtcTodayDateOnlyInTimeZone('UTC'), -3), onLock: () => {
     if (firstLock) { firstLock = false; fixture.startNewGoal(); }
   } });
   assert.equal((await fixture.save({ weight: 85 })).statusCode, 200);
@@ -446,7 +446,7 @@ test('metrics route: GET / validates range query values', async () => {
 });
 
 test('metrics route: GET / uses inclusive comparison endpoints for relative ranges', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const cases = [
     {
       range: 'week',
@@ -674,7 +674,7 @@ test('metrics route: GET / returns trend-augmented payload when include_trend=tr
 });
 
 test('metrics route: GET / adds scoped v2 evidence and freshness metadata', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const rows = Array.from({ length: 10 }, (_unused, index) => {
     const date = addUtcDays(today, index - 9);
     const weightGrams = 81000 - index * 80;
@@ -743,7 +743,7 @@ test('metrics route: GET / adds scoped v2 evidence and freshness metadata', asyn
 });
 
 test('metrics route: GET / derives point bands and summary from one raw source revision', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const rows = Array.from({ length: 10 }, (_unused, index) => ({
     id: index + 1,
     user_id: 7,
@@ -784,7 +784,7 @@ test('metrics route: GET / derives point bands and summary from one raw source r
 });
 
 test('metrics route: GET / preserves raw measurements and marks trend unavailable after refresh failure', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const rows = [
     {
       id: 1,
@@ -870,7 +870,7 @@ test('metrics route: GET / preserves raw measurements and marks trend unavailabl
 });
 
 test('metrics route: GET / degrades after a same-day source edit when read-time refitting still fails', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const oldMetric = {
     id: 1,
     user_id: 7,
@@ -941,7 +941,7 @@ test('metrics route: GET / degrades after a same-day source edit when read-time 
 });
 
 test('metrics route: GET / catches a fitting race and still returns raw measurements', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   let weightReads = 0;
   const row = {
     id: 1,
@@ -987,7 +987,7 @@ test('metrics route: GET / catches a fitting race and still returns raw measurem
 });
 
 test('metrics route: GET / keeps legacy fallback when last-known-good trends do not cover newest raw data', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const rows = [
     {
       id: 1,
@@ -1047,7 +1047,7 @@ test('metrics route: GET / keeps legacy fallback when last-known-good trends do 
 });
 
 test('metrics route: GET / excludes future rows and suppresses outdated pace', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const oldEnd = addUtcDays(today, -20);
   const rows = [
     ...Array.from({ length: 5 }, (_unused, index) => ({
@@ -1093,7 +1093,7 @@ test('metrics route: GET / excludes future rows and suppresses outdated pace', a
 });
 
 test('metrics route: GET / applies current, stale, and outdated freshness boundaries', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const cases = [
     { ageDays: 7, freshness: 'current', hasRate: true },
     { ageDays: 8, freshness: 'stale', hasRate: true },
@@ -1139,7 +1139,7 @@ test('metrics route: GET / applies current, stale, and outdated freshness bounda
 });
 
 test('metrics route: GET / keeps stale as-of metadata when a narrow range has no returned weigh-ins', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const latestDate = addUtcDays(today, -8);
   const rows = Array.from({ length: 8 }, (_unused, index) => {
     const weightGrams = 80000 - index * 60;
@@ -1227,7 +1227,7 @@ test('metrics route: GET / recomputes a bounded historical trend as of the reque
 });
 
 test('metrics route: paged trend history reads only the display page and shared model window', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const rows = Array.from({ length: 602 }, (_, index) => ({
     id: index + 1,
     user_id: 7,
@@ -1522,7 +1522,7 @@ test('metrics route: POST / rejects future account-local weight dates', async ()
   const prismaStub = { bodyMetric: {} };
   const router = loadMetricsRouter(prismaStub);
   const handler = getRouteHandler(router, 'post', '/');
-  const futureDate = formatDateOnly(addUtcDays(getUtcTodayDateOnly(), 1));
+  const futureDate = formatDateOnly(addUtcDays(getUtcTodayDateOnlyInTimeZone('UTC'), 1));
   const res = createRes();
 
   await handler(
@@ -1679,7 +1679,7 @@ test('metrics route: POST / upserts metrics when weight is provided', async () =
 });
 
 test('metrics route: POST / evaluates goal recognition from pre-save history inside the transaction', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const todayKey = formatDateOnly(today);
   const priorDate = addUtcDays(today, -1);
   let historyWhere = null;
@@ -1790,7 +1790,7 @@ test('metrics route: DELETE /:id returns 204 when a row is deleted', async () =>
 });
 
 test('metrics route: POST / saves a bounded weight but suppresses an unsafe goal progress receipt and marks review', async () => {
-  const today = getUtcTodayDateOnly();
+  const today = getUtcTodayDateOnlyInTimeZone('UTC');
   const todayKey = formatDateOnly(today);
   let goalReview = null;
   const goal = {

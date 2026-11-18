@@ -49,7 +49,6 @@ const DEFAULT_PROVIDER: FoodDataSource = 'fatsecret';
 const DEFAULT_PROVIDER_ORDER: FoodDataSource[] = ['fatsecret', 'usda', 'openFoodFacts'];
 
 const providerCache: Partial<Record<FoodDataSource, FoodDataProvider>> = {};
-let providerInstance: FoodDataProvider | null = null;
 let primaryProviderSelection: PrimaryProviderSelection | null = null;
 
 type PrimaryProviderSelection = {
@@ -128,13 +127,6 @@ const buildProviderOrder = (primary: FoodDataSource): FoodDataSource[] => {
     }
 
     return order;
-};
-
-/**
- * Pick the first provider in fallback order that has the environment it needs.
- */
-const getFirstReadyProviderName = (primary: FoodDataSource): FoodDataSource | null => {
-    return buildProviderOrder(primary).find((name) => getMissingProviderEnvVars(name).length === 0) ?? null;
 };
 
 export type EnabledFoodDataProviders = {
@@ -248,46 +240,6 @@ export const listFoodDataProviders = (): FoodDataProviderInfo[] => {
             ready: true
         };
     });
-};
-
-/**
- * Resolve the configured primary food data provider with a safe fallback.
- */
-export const getFoodDataProvider = (): FoodDataProvider => {
-    if (providerInstance) {
-        return providerInstance;
-    }
-
-    const { normalized } = resolvePrimaryProviderSelection();
-
-    const resolution = getFoodDataProviderByName(normalized);
-    if (resolution.provider) {
-        providerInstance = resolution.provider;
-        return providerInstance;
-    }
-
-    const fallbackName = getFirstReadyProviderName(normalized) ?? 'openFoodFacts';
-    const fallbackLabel = providerRegistry[fallbackName].label;
-    const missing = getMissingProviderEnvVars(normalized);
-    if (missing.length > 0) {
-        const config = providerRegistry[normalized];
-        const action = missing.length === 1
-            ? `Set ${missing[0]} to enable ${config.label}.`
-            : `Set ${missing.join(', ')} to enable ${config.label}.`;
-        console.warn(
-            `The configured food data provider cannot start because ${formatMissingEnvSentence(missing)}. ` +
-                `${action} Falling back to ${fallbackLabel}.`
-        );
-    } else {
-        console.warn(
-            'The configured food data provider failed to initialize. ' +
-                `Check the provider configuration and credentials. Falling back to ${fallbackLabel}.`
-        );
-    }
-
-    const fallback = getFoodDataProviderByName(fallbackName);
-    providerInstance = fallback.provider ?? new OpenFoodFactsProvider();
-    return providerInstance;
 };
 
 export * from './types';
