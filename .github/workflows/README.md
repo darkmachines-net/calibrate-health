@@ -95,7 +95,9 @@ commands, promotion commands or historical recovery runners.
 Keep the package, lockfile and both workflow callers at the same reviewed full toolkit SHA. The
 repository is darkmachines-net/calibrate-health; the toolkit is
 [darkmachines-net/expo-release-template](https://github.com/darkmachines-net/expo-release-template).
-Keep the existing Expo project, app/store IDs and signing identity. Publish server
+Calibrate uses the Expo project `@dark-machines/calibrate-health-app`. Keep its
+project ID, app/store IDs and signing identity when updating the Expo owner in
+`mobile/app.json` and `release.config.json`. Publish server
 images to `ghcr.io/darkmachines-net/calibrate-health` under the repository's current
 organization, where its Actions token can own the package. The old personal-namespace
 image remains available to existing self-hosted deployments. GCP copies and verifies
@@ -109,8 +111,11 @@ reviewer rule. Public-store publication retains `production` approval and submis
 use the existing protected `play-production` environment.
 Both release profiles use `native-release-signing` and `gcp-production`;
 beta submissions retain `play-internal`. Keep their existing protections and restrict
-protected operations to master. Configure EXPO_TOKEN and the existing assigned Play
-credential for phone-beta, wear-beta, phone-production and wear-production submit profiles. Paired
+protected operations to master. The Development and Release workflows inherit the
+repository's `EXPO_TOKEN`. Its identity must have access to the `dark-machines`
+Expo organization and permission to run EAS builds, updates and submissions for
+Calibrate. Keep the assigned Play credential for `phone-beta`, `wear-beta`,
+`phone-production` and `wear-production`. Paired
 command builds use ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
 ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. Public Expo inputs must be readable
 strings. GCP deployment uses the environment's `GCP_WORKLOAD_IDENTITY_PROVIDER`
