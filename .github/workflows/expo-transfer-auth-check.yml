@@ -1,0 +1,39 @@
+# Verify the repository token against the transferred project without running release code.
+name: Verify Expo transfer access
+on:
+  push:
+    branches: [mchartier/expo-organization-transfer-auth-check]
+permissions: {}
+jobs:
+  authenticate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install the release workflow's pinned EAS CLI
+        run: npm install --prefix "$RUNNER_TEMP/eas" --no-audit --no-fund eas-cli@25.3.0
+      - name: Verify access to Calibrate and its EAS environments
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_NO_VCS: '1'
+          NO_COLOR: '1'
+        run: |
+          set -euo pipefail
+          test -n "$EXPO_TOKEN" || { echo 'Repository EXPO_TOKEN is missing'; exit 1; }
+          export EAS_PROJECT_ROOT="$RUNNER_TEMP/expo-transfer-check"
+          mkdir -p "$EAS_PROJECT_ROOT"
+          cd "$EAS_PROJECT_ROOT"
+          printf '%s\n' '{"name":"expo-transfer-check","version":"1.0.0","private":true}' > package.json
+          printf '%s\n' '{"expo":{"name":"Calibrate","owner":"dark-machines","slug":"calibrate-health-app","extra":{"eas":{"projectId":"fda8f8c5-e646-47ac-82fb-35003c9cbec7"}}}}' > app.json
+          eas="$RUNNER_TEMP/eas/node_modules/.bin/eas"
+          role="$("$eas" whoami 2>/dev/null | sed -nE '
+            s/^[^[:alnum:]]*dark-machines \(Role: (Owner|Admin|Release Manager|Developer)\)$/\1/p
+            s/^[^[:alnum:]]*dark-machines \(Role: [^,]*, limited to (Owner|Admin|Release Manager|Developer) by the current credentials\)$/\1/p
+          ')"
+          test -n "$role" || { echo 'Repository token lacks an Expo release-capable organization role'; exit 1; }
+          "$eas" project:info | grep -Fq '@dark-machines/calibrate-health-app'
+          for environment in preview production; do
+            values="$("$eas" env:list "$environment" --scope project --format short)"
+            grep -Fxq 'EXPO_PUBLIC_EAS_PROJECT_ID=fda8f8c5-e646-47ac-82fb-35003c9cbec7' <<< "$values"
+            grep -Fxq 'EXPO_PUBLIC_CALIBRATE_SERVER_URL=https://calibratehealth.app' <<< "$values"
+          done
+          echo "Repository EXPO_TOKEN has the $role role in dark-machines and can read Calibrate's EAS project and both release environments."
