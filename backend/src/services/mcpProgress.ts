@@ -142,6 +142,8 @@ export type WeightTrendSnapshot = {
     direction: 'weight_loss' | 'weight_gain' | 'maintenance';
     start_weight: number;
     target_weight: number;
+    completed_on?: string | null;
+    maintenance_range?: { lower: number; upper: number };
     configured_daily_deficit_kcal: number;
     configured_target_date: string | null;
     projection_status: 'projected' | 'maintenance' | 'reached' | 'unavailable';
@@ -517,6 +519,10 @@ export async function getWeightTrend(
           direction: goalDirection(goal.daily_deficit),
           start_weight: gramsToWeight(goal.start_weight_grams, weightUnit),
           target_weight: gramsToWeight(goal.target_weight_grams, weightUnit),
+          completed_on: goal.completed_on ? dateKey(goal.completed_on) : null,
+          ...(goal.daily_deficit === 0 && goal.maintenance_lower_grams != null && goal.maintenance_upper_grams != null ? {
+            maintenance_range: { lower: gramsToWeight(goal.maintenance_lower_grams, weightUnit), upper: gramsToWeight(goal.maintenance_upper_grams, weightUnit) }
+          } : {}),
           configured_daily_deficit_kcal: goal.daily_deficit,
           configured_target_date: goal.target_date ? dateKey(goal.target_date) : null,
           projection_status: projection?.status ?? 'unavailable',

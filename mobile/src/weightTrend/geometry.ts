@@ -44,6 +44,7 @@ export type WeightTrendChartGeometry = {
     modelBoundaryPoint: WeightTrendModelBoundary | null;
     missingRegions: Array<{ x: number; width: number }>;
     yTicks: Array<{ value: number; y: number }>;
+    maintenanceBand?: { top: number; bottom: number };
     xTicks: Array<{
         key: string;
         dateKey: string;
@@ -80,6 +81,7 @@ type WeightTrendChartGeometryOptions = {
     dateWindow?: { start: number; end: number };
     missingWindows?: Array<{ start: number; end: number }>;
     fixedWeightTicks?: number[];
+    maintenanceRange?: { lower: number; upper: number };
 };
 
 /**
@@ -244,6 +246,10 @@ export function buildWeightTrendChartGeometry(
         minimum = Math.min(minimum, value);
         maximum = Math.max(maximum, value);
     }
+    if (options.maintenanceRange) {
+        minimum = Math.min(minimum, options.maintenanceRange.lower);
+        maximum = Math.max(maximum, options.maintenanceRange.upper);
+    }
     const requestedRange = Math.max(maximum - minimum, options.minWeightSpan);
     let axisMinimum: number;
     let axisMaximum: number;
@@ -346,5 +352,8 @@ export function buildWeightTrendChartGeometry(
         ? downsampleWeightTrendMeasurements(points, drawableWidth, options.padding.left)
         : points;
 
-    return { width, height, points, measurementPoints, trendSegments, modelBoundaryPoint, missingRegions, yTicks, xTicks };
+    const maintenanceBand = options.maintenanceRange && {
+        top: yForValue(options.maintenanceRange.upper), bottom: yForValue(options.maintenanceRange.lower)
+    };
+    return { width, height, points, measurementPoints, trendSegments, modelBoundaryPoint, missingRegions, yTicks, xTicks, maintenanceBand };
 }

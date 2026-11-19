@@ -15,6 +15,8 @@ The shared tokens own both light and dark palettes and the platform system type 
   without introducing another floating card. Always include text explaining the state.
 - Keep `AppCard` for intentional independent containment, never as the default page wrapper. Inputs,
   selection controls, chart interaction areas, dialogs, and sheets retain their own boundaries.
+- Editable text, numeric, and date fields and enabled dropdowns use the theme's `surface` fill.
+  Read-only fields and disabled dropdowns use `surfaceContainer`.
 
 ## Rhythm and emphasis
 
@@ -68,6 +70,8 @@ hover/pressed state if needed, instead of a Pressable style callback that the sl
 `BottomSheetModal` fits its content up to the available height. The body scrolls on overflow while
 fixed controls and any footer stay outside it. Opt into `fillAvailableHeight` for a virtualized
 results workspace that needs a definite list viewport. Short editors use the sheet's own scroller.
+Pinned title-only headers center the title alongside the close action. Use the page title variant
+for a prominent milestone or decision heading.
 
 The modal follows the unobscured viewport as the keyboard resizes it. The sheet scroller measures
 the focused input against the body, scrolling only as far as needed to bring it into view. The

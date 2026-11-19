@@ -213,6 +213,53 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ApiError' }
+  /api/v1/goals/status:
+    get:
+      operationId: getGoalStatus
+      responses:
+        '200':
+          description: Current goal decisions, budget options and review version.
+          content:
+            application/json:
+              schema:
+                oneOf: [{ $ref: '#/components/schemas/GoalStatus' }, { type: 'null' }]
+  /api/v1/goals/transition:
+    post:
+      operationId: transitionGoal
+      parameters:
+        - { name: x-client-operation-id, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoalChange' }
+      responses:
+        '200':
+          description: Accepted goal transition.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GoalChangeReceipt' }
+        '409':
+          description: The reviewed goal inputs changed or the operation ID conflicted.
+  /api/v1/goals/{id}/maintenance:
+    patch:
+      operationId: editMaintenanceGoal
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: x-client-operation-id, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoalChange' }
+      responses:
+        '200':
+          description: Accepted maintenance settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GoalChangeReceipt' }
+        '409':
+          description: The reviewed goal inputs changed or the operation ID conflicted.
   /api/v1/goals/pace-options:
     get:
       operationId: getGoalPaceOptions
@@ -1836,10 +1883,94 @@ components:
         planOptions:
           type: array
           items: { $ref: '#/components/schemas/CaloriePlanOption' }
+    MaintenanceRange:
+      type: object
+      required: [target_weight_grams, lower_weight_grams, upper_weight_grams]
+      properties:
+        target_weight_grams: { type: integer }
+        lower_weight_grams: { type: integer }
+        upper_weight_grams: { type: integer }
+    GoalCompletion:
+      type: object
+      required: [goal_id, completed_on]
+      properties:
+        goal_id: { type: integer }
+        completed_on: { type: string, format: date }
+    GoalChange:
+      type: object
+      required: [expected_version, target_weight_grams]
+      properties:
+        expected_version: { type: string }
+        target_weight_grams: { type: integer }
+        lower_weight_grams: { type: integer }
+        upper_weight_grams: { type: integer }
+        offset_kcal:
+          type: integer
+          enum: [0]
+          description: Zero confirms review of the estimated maintenance budget on an existing goal.
+        daily_deficit: { type: integer }
+        tracking: { type: boolean }
+        return_to_target: { type: boolean }
+    GoalChangeReceipt:
+      type: object
+      required: [goal_id]
+      properties:
+        goal_id: { type: integer }
+    GoalStatus:
+      type: object
+      required: [expected_version, goal, weight_unit, tracking, starting_weight_grams, trend, evidence, maintenance, recovery_range, target_kcal, budget_options, pace_options]
+      properties:
+        expected_version: { type: string }
+        goal:
+          type: [object, 'null']
+          required: [id, daily_deficit, target_weight_grams, completed_on]
+          properties:
+            id: { type: integer }
+            daily_deficit: { type: integer }
+            target_weight_grams: { type: integer }
+            completed_on: { type: [string, 'null'], format: date }
+        weight_unit: { type: string, enum: [KG, LB] }
+        tracking: { type: boolean }
+        starting_weight_grams: { type: [integer, 'null'] }
+        trend:
+          type: [object, 'null']
+          required: [date, weight_grams, lower_grams, upper_grams]
+          properties:
+            date: { type: string, format: date }
+            weight_grams: { type: integer }
+            lower_grams: { type: integer }
+            upper_grams: { type: integer }
+        evidence: { type: string, enum: [current, insufficient, stale, unavailable] }
+        maintenance:
+          type: [object, 'null']
+          required: [range, status, offset_kcal, return_to_neutral]
+          properties:
+            range: { $ref: '#/components/schemas/MaintenanceRange' }
+            status: { type: string, enum: [range_required, within_range, above_range, below_range, insufficient, stale, unavailable] }
+            offset_kcal: { type: integer, enum: [-250, 0, 250], deprecated: true, description: Current servers always return zero. }
+            return_to_neutral: { type: boolean, deprecated: true, description: Current servers always return false. }
+        recovery_range:
+          oneOf: [{ $ref: '#/components/schemas/MaintenanceRange' }, { type: 'null' }]
+        target_kcal: { type: [integer, 'null'] }
+        budget_options:
+          type: array
+          description: Current servers offer only the estimated maintenance budget at a zero offset.
+          items:
+            type: object
+            required: [offset_kcal, target_kcal]
+            properties:
+              offset_kcal: { type: integer, enum: [-250, 0, 250] }
+              target_kcal: { type: [integer, 'null'] }
+        pace_options:
+          type: array
+          items: { $ref: '#/components/schemas/CaloriePlanOption' }
     GoalEntry:
       type: object
       required: [id, user_id, start_weight, target_weight, target_date, daily_deficit, calorie_plan_review_status, calorie_plan_review_reason, created_at, plan_status, plan_reason_code, projection]
       properties:
+        completed_on: { type: [string, 'null'], format: date }
+        maintenance_lower_grams: { type: [integer, 'null'] }
+        maintenance_upper_grams: { type: [integer, 'null'] }
         id: { type: integer }
         user_id: { type: integer }
         start_weight: { type: number }
@@ -2031,6 +2162,9 @@ components:
         body_fat_percent: { type: [number, 'null'] }
         weight: { type: number, exclusiveMinimum: 0 }
         progress_update: { $ref: '#/components/schemas/MetricProgressUpdate' }
+        goal_completion:
+          description: Null identifies a scale milestone without trend completion. Older servers omit this field.
+          oneOf: [{ $ref: '#/components/schemas/GoalCompletion' }, { type: 'null' }]
     MetricProgressUpdate:
       type: object
       additionalProperties: false
@@ -2198,6 +2332,24 @@ components:
       type: object
       required: [id, start_weight_grams, target_weight_grams, target_date, daily_deficit, calorie_plan_review_status, calorie_plan_review_reason, created_at]
       properties:
+        maintenance_lower_grams: { type: [integer, 'null'] }
+        maintenance_upper_grams: { type: [integer, 'null'] }
+        predecessor_goal_id: { type: [integer, 'null'] }
+        recovery_maintenance_goal_id: { type: [integer, 'null'] }
+        start_from_trend: { type: boolean }
+        completed_on: { type: [string, 'null'], format: date }
+        completion_source_revision: { type: [string, 'null'] }
+        maintenance_revisions:
+          type: array
+          items:
+            type: object
+            required: [target_weight_grams, lower_weight_grams, upper_weight_grams, effective_local_date, created_at]
+            properties:
+              target_weight_grams: { type: integer }
+              lower_weight_grams: { type: [integer, 'null'] }
+              upper_weight_grams: { type: [integer, 'null'] }
+              effective_local_date: { type: string, format: date }
+              created_at: { type: string, format: date-time }
         id: { type: integer }
         start_weight_grams: { type: integer }
         target_weight_grams: { type: integer }
@@ -2477,6 +2629,7 @@ components:
       type: object
       required: [id, source_goal_id, recommendation_id, configured_daily_deficit, target_adjustment_kcal, effective_local_date, calorie_plan_review_status, calorie_plan_review_reason, created_at]
       properties:
+        manual_maintenance: { type: boolean }
         id: { type: integer }
         source_goal_id: { type: integer }
         recommendation_id: { type: [integer, 'null'] }
@@ -2859,6 +3012,8 @@ components:
       additionalProperties: false
       required: [weight_unit, height_unit, timezone, date_of_birth, sex, height_mm, activity_level, current_weight_grams, target_weight_grams, daily_deficit]
       properties:
+        maintenance_lower_grams: { type: integer }
+        maintenance_upper_grams: { type: integer }
         weight_unit: { type: string, enum: [KG, LB] }
         height_unit: { type: string, enum: [CM, FT_IN] }
         timezone: { type: string, minLength: 1, maxLength: 100 }
@@ -3115,6 +3270,8 @@ components:
             health_connect_activity:
               type: boolean
             wear_os_ready:
+              type: boolean
+            maintenance_goals:
               type: boolean
     AccountAccess:
       type: object
@@ -3520,6 +3677,13 @@ components:
       additionalProperties: false
       required: [server_time, timezone, local_date, weight_unit, revision, plan, calories, food_day, weight, quick_add, reminders, undo_candidate]
       properties:
+        goal_lifecycle:
+          type: object
+          required: [completed, maintenance_status]
+          properties:
+            completed: { type: boolean }
+            maintenance_status: { type: [string, 'null'] }
+            maintenance_target_grams: { type: [integer, 'null'] }
         server_time: { type: string, format: date-time }
         timezone: { type: string }
         local_date: { type: string, format: date }

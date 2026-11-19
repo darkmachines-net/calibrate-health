@@ -32,6 +32,9 @@ import type {
     FoodSearchResponse,
     GoalEntry,
     GoalPaceOptions,
+    GoalStatus,
+    GoalChange,
+    GoalChangeReceipt,
     GoalPaceRequest,
     HealthConnectSyncPayload,
     HealthConnectSyncResponse,
@@ -739,6 +742,21 @@ export class CalibrateApiClient {
             headers: buildOperationHeaders(operationId),
             json: payload
         });
+    }
+
+    /** Read the current goal lifecycle and the version of its reviewed inputs. */
+    getGoalStatus(): Promise<GoalStatus | null> {
+        return this.request('/api/goals/status', { cache: 'no-store' });
+    }
+
+    /** Replace the active goal and apply its tracking choice atomically. */
+    transitionGoal(payload: GoalChange, operationId: string): Promise<GoalChangeReceipt> {
+        return this.request('/api/goals/transition', { method: 'POST', headers: buildOperationHeaders(operationId), json: payload });
+    }
+
+    /** Save reviewed settings on the same maintenance goal, using a stable ID on retry. */
+    editMaintenanceGoal(id: number, payload: GoalChange, operationId: string): Promise<GoalChangeReceipt> {
+        return this.request(`/api/goals/${id}/maintenance`, { method: 'PATCH', headers: buildOperationHeaders(operationId), json: payload });
     }
 
     /** Reads currently permitted goal paces without reusing a cached policy response. */

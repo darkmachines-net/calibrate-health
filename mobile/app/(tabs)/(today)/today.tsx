@@ -1,4 +1,4 @@
-/** @file today: Composes today's calorie comparison, food summary, day status, and contextual logging actions. */
+/** @file Composes Today's logging, compact goal guidance, and contextual maintenance actions. */
 
 import { useTrackingFood, useTrackingMetrics } from '../../../src/offline/useTrackingQueries';
 import React, { useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ import { ExpansionRegion } from '../../../src/components/PageExpansion';
 import { DayStatusCard, useFoodDayStatus } from '../../../src/components/FoodTrackingStatus';
 import { SkeletonBlock } from '../../../src/components/SkeletonBlock';
 import { TodayFoodPreview } from '../../../src/today/TodayFoodPreview';
+import { GoalCompletionAction } from '../../../src/today/GoalCompletionAction';
 import { PausedDayMessage } from '../../../src/today/PausedDayMessage';
 import { TodayWeightCard } from '../../../src/components/TodayWeightCard';
 import { WeightEntrySheet } from '../../../src/components/WeightEntrySheet';
@@ -35,6 +36,9 @@ import { usePendingWeightMutation } from '../../../src/offline/usePendingWeightM
 import { hasTodayDashboardFailure, resolveTodayDashboardState } from '../../../src/today/dashboardState';
 import { useBarcodeSearchHandoff } from '../../../src/barcode/useBarcodeSearchHandoff';
 import { spacing, useAppTheme } from '../../../src/theme';
+import { GoalGuidance, NextGoalChoices } from '../../../src/progress/GoalGuidance';
+import { MaintenanceGoalEditor, type GoalEditorIntent, type GoalEditorOptions } from '../../../src/progress/MaintenanceGoalEditor';
+import { useGoalStatus } from '../../../src/progress/useGoalStatus';
 
 const FoodLogContent = React.lazy(() => import('../../../src/food/FoodLogContent'));
 
@@ -48,6 +52,10 @@ export default function TodayScreen() {
     const setLogDate = dateNavigation.setDate;
     const { request: addFoodRequest, consumeRequest: consumeAddFoodRequest } = useAddFoodRequest();
     const selectedDate = dateNavigation.selectedDate;
+    const lifecycle = useGoalStatus(dateNavigation.isToday);
+    const goalStatus = dateNavigation.isToday ? lifecycle.data : null;
+    const [goalEditor, setGoalEditor] = useState<GoalEditorOptions | null>(null);
+    const [nextChoicesOpen, setNextChoicesOpen] = useState(false);
     const [addFoodMeal, setAddFoodMeal] = useState<MealPeriod | null | undefined>(undefined);
     const [isWeightEntryOpen, setIsWeightEntryOpen] = useState(false);
     const [isFoodExpanded, setIsFoodExpanded] = useState(false);
@@ -114,6 +122,10 @@ export default function TodayScreen() {
     function openWeightEntry() {
         setIsWeightEntryOpen(true);
     }
+    function editGoal(intent: GoalEditorIntent) {
+        if (!goalStatus) return;
+        setGoalEditor({ status: goalStatus, intent });
+    }
 
     function handlePlanAction() {
         if (planPresentation.actionKind === 'weight') {
@@ -134,7 +146,11 @@ export default function TodayScreen() {
     const dayStatus = foodDayQuery.data;
     const comparison = getFoodDayCaloriePresentation({ day: dayStatus, isToday, currentTarget, hasFoodEntries: entries.length > 0 });
     const target = comparison.target;
-    const comparisonLabels = { saved: 'Compared with saved target', fallback: 'Compared with current target', current: undefined, unavailable: undefined };
+    const completedGoal = Boolean(goalStatus?.goal?.completed_on);
+    const comparisonLabels = {
+        saved: 'Compared with saved target', fallback: 'Compared with current target',
+        current: completedGoal ? 'Previous calorie plan' : undefined, unavailable: undefined
+    };
     const showCalorieComparison = shouldShowCalorieComparison({
         status: dayStatus?.status,
         isToday,
@@ -152,6 +168,12 @@ export default function TodayScreen() {
     let balanceSupportingLabel: string | undefined;
     if (contentLoading) balanceSupportingLabel = 'Loading your food log';
     else if (foodIsUnavailable) balanceSupportingLabel = 'Food log unavailable';
+
+    const completionAction = completedGoal && <GoalCompletionAction onChoose={() => setNextChoicesOpen(true)} />;
+    const goalGuidance = goalStatus?.maintenance && <FixedPageColumn style={styles.goalGuidance}>
+        <GoalGuidance status={goalStatus} onEdit={editGoal} onWeighIn={openWeightEntry}
+            pending={hasPendingWeightChange} canReview={isOnline && !lifecycle.isError} compact />
+    </FixedPageColumn>;
 
     return (
         <>
@@ -177,9 +199,12 @@ export default function TodayScreen() {
                     compact
                     unified
                     style={styles.dateNavigation}
-                    pickerFooter={(closePicker) => <DayStatusCard date={selectedDate} isToday={isToday} presentation="controls" onActionComplete={closePicker} />}
+                    pickerFooter={(closePicker) => <DayStatusCard date={selectedDate} isToday={isToday} presentation="controls" onActionComplete={closePicker}
+                        onPauseTracking={goalStatus?.maintenance ? () => { closePicker(); editGoal('pause'); } : undefined} />}
                 />}
-            context={!isPaused && <>
+            context={<>
+                {isPaused && completedGoal && <View style={styles.goalGuidance}>{completionAction}</View>}
+                {!isPaused && <>
                 <CalorieBalanceCard
                     totalCalories={calories}
                     targetCalories={!contentLoading && !foodIsUnavailable && showCalorieComparison ? target : null}
@@ -188,15 +213,21 @@ export default function TodayScreen() {
                     comparisonLabel={!contentLoading && !foodIsUnavailable && showCalorieComparison
                         ? comparisonLabels[comparison.source]
                         : undefined}
+                    contextAction={completionAction}
                     compact
                     open
                 />
                 {!contentLoading && !foodIsUnavailable && isToday && dayStatus?.status !== 'COMPLETE' && !isPaused && !hasPendingWeightChange && !planIsAvailable && <View style={styles.planAction}>
                     <AppText variant="muted">{planPresentation.message}</AppText>
-                    <AppButton title={planPresentation.actionLabel} variant="ghost" onPress={handlePlanAction} />
+                    <AppButton title={planPresentation.actionLabel} variant="ghost"
+                        onPress={goalStatus?.maintenance && planPresentation.actionKind !== 'weight' && planPresentation.actionKind !== 'profile'
+                            ? () => editGoal('budget') : handlePlanAction} />
                 </View>}
+                </>}
             </>}
-            footer={({ enlargedText }) => dayStatus ? <DayStatusCard date={selectedDate} isToday={isToday} failed={dashboardHasFailedResource} loading={contentLoading} stackActions={enlargedText} presentation="dock" onAddFood={canAddFood ? () => setAddFoodMeal(null) : undefined} /> : <View style={styles.loadingActions}>
+            footer={({ enlargedText }) => isPaused && goalStatus?.maintenance ? <View style={styles.maintenanceDock}>
+                <AppButton title="Start calorie tracking" variant="secondary" onPress={() => editGoal('enable')} />
+            </View> : dayStatus ? <DayStatusCard date={selectedDate} isToday={isToday} failed={dashboardHasFailedResource} loading={contentLoading} stackActions={enlargedText} presentation="dock" onAddFood={canAddFood ? () => setAddFoodMeal(null) : undefined} /> : <View style={styles.loadingActions}>
                 <AppButton title="Add food" disabled style={styles.loadingAction} />
                 <AppButton title="Complete day" variant="secondary" disabled style={styles.loadingAction} />
             </View>}
@@ -214,10 +245,12 @@ export default function TodayScreen() {
                 suppressStaleNotice
             >
                 {isPaused ? <PausedDayBody expanded={expanded}>
-                    <PausedDayMessage isToday={isToday} />
+                    {!goalStatus?.maintenance && <PausedDayMessage isToday={isToday} />}
+                    {goalGuidance}
                     <TodayWeightCard metric={selectedDateMetric} weightUnit={user?.weight_unit} isToday={isToday} onPress={openWeightEntry} style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.outline }} />
                 </PausedDayBody> : <>
                     <ExpansionRegion id="weight" order={1}>
+                        {goalGuidance}
                         <TodayWeightCard metric={selectedDateMetric} weightUnit={user?.weight_unit} isToday={isToday} onPress={openWeightEntry} />
                     </ExpansionRegion>
                     <ExpansionRegion id="food" order={2} style={[styles.body, expanded && styles.bodyExpanded]}>
@@ -226,6 +259,8 @@ export default function TodayScreen() {
                 </>}
             </AsyncStateBoundary>}
         </FixedPage>
+            {nextChoicesOpen && goalStatus && <NextGoalChoices status={goalStatus} onClose={() => setNextChoicesOpen(false)} />}
+            {goalEditor && <MaintenanceGoalEditor {...goalEditor} onClose={() => setGoalEditor(null)} />}
             <AddFoodSheet
                 visible={addFoodMeal !== undefined && canAddFood}
                 date={selectedDate}
@@ -264,6 +299,9 @@ const styles = StyleSheet.create({
     pausedBody: { flexGrow: 1 },
     dateNavigation: { paddingTop: spacing.xs, paddingBottom: spacing.sm },
     planAction: { paddingBottom: spacing.md, gap: spacing.sm },
+    // Match the vertical inset of Today's logging controls.
+    goalGuidance: { paddingVertical: spacing.md },
+    maintenanceDock: { paddingVertical: spacing.md },
     loadingActions: { flexDirection: 'row', paddingVertical: spacing.md, gap: spacing.sm },
     loadingAction: { flex: 1 },
     loadingWeight: { minHeight: 72, justifyContent: 'center', gap: spacing.xs },

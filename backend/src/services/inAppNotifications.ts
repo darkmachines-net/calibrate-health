@@ -34,6 +34,7 @@ const ACTION_URL_BY_TYPE: Record<InAppNotificationType, string> = {
 };
 
 type InAppNotificationClient = {
+    goal?: Pick<typeof prisma.goal, 'findFirst'>;
     inAppNotification: {
         findMany: typeof prisma.inAppNotification.findMany;
         updateMany: typeof prisma.inAppNotification.updateMany;
@@ -315,12 +316,16 @@ export const getReminderMissingStatusForDate = async ({
               select: { id: true }
           })
         : null;
-    if (activePause) {
+    const maintenance = activePause && db.goal ? await db.goal.findFirst({
+        where: { user_id: userId }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }], select: { daily_deficit: true }
+    }) : null;
+    if (activePause && maintenance?.daily_deficit !== 0) {
         return { missingWeight: false, missingFood: false };
     }
+    const checkFood = reminderLogFoodEnabled && !activePause;
 
     const [foodCount, weightCount, foodDay] = await Promise.all([
-        reminderLogFoodEnabled
+        checkFood
             ? db.foodLog.count({
                   where: {
                       user_id: userId,
@@ -336,7 +341,7 @@ export const getReminderMissingStatusForDate = async ({
                   }
               })
             : Promise.resolve(1),
-        reminderLogFoodEnabled && db.foodLogDay
+        checkFood && db.foodLogDay
             ? db.foodLogDay.findUnique({
                   where: { user_id_local_date: { user_id: userId, local_date: localDate } },
                   select: { status: true }
@@ -347,7 +352,7 @@ export const getReminderMissingStatusForDate = async ({
     return {
         missingWeight: reminderLogWeightEnabled && weightCount === 0,
         missingFood:
-            reminderLogFoodEnabled &&
+            checkFood &&
             foodCount === 0 &&
             (foodDay === null || foodDay.status === 'OPEN')
     };

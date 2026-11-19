@@ -6,6 +6,7 @@ import { calibrationStatusQueryKey } from '../calibration/queryKeys';
 const PROFILE_PLANNING_QUERY_KEYS = [
     ['mobile-profile'],
     ['mobile-goal'],
+    ['mobile-goal-status'],
     calibrationStatusQueryKey
 ] as const;
 

@@ -77,6 +77,7 @@ type ChartLayoutOptions = {
     dateWindow?: { start: number; end: number };
     missingWindows?: Array<{ start: number; end: number }>;
     fixedWeightTicks?: number[];
+    maintenanceRange?: { lower: number; upper: number };
 };
 
 /** Builds chart geometry with shared padding, weight-span bounds, and text-scale-aware date ticks. */
@@ -149,6 +150,10 @@ export function WeightTrendChart({
                 <Rect key={x} x={x} width={width} y={padding.top}
                     height={chartLayout.height - padding.top - padding.bottom} fill={theme.colors.surfaceContainerLow} />
             ))}
+            {chartLayout.maintenanceBand && <Rect x={padding.left} y={chartLayout.maintenanceBand.top}
+                width={chartLayout.width - padding.left - padding.right}
+                height={chartLayout.maintenanceBand.bottom - chartLayout.maintenanceBand.top}
+                fill={theme.colors.primary} opacity={0.12} />}
             {chartLayout.yTicks.map((tick) => (
                 <React.Fragment key={tick.value}>
                     <Line

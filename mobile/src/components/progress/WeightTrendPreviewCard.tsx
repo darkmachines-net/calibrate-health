@@ -30,6 +30,7 @@ type WeightTrendPreviewCardProps = {
     onMinimumHeightChange?: (height: number) => void;
     suppressStaleNotice?: boolean;
     expanded?: boolean;
+    maintenanceRange?: { lower: number; upper: number };
 };
 
 type PreviewCanvasSize = {
@@ -46,7 +47,7 @@ function formatPreviewDate(value: string): string {
 }
 
 /** Loads and renders the compact weight trend preview with responsive chart measurements. */
-export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ onPress, onLogWeight, onMinimumHeightChange, suppressStaleNotice, expanded = false }) => {
+export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ onPress, onLogWeight, onMinimumHeightChange, suppressStaleNotice, expanded = false, maintenanceRange }) => {
     const { api, user } = useAuth();
     const theme = useAppTheme();
     const { width } = useWindowDimensions();
@@ -109,9 +110,10 @@ export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ 
             width: canvasSize.width,
             height: canvasSize.height,
             minHeight: chartMinHeight,
-            padding: axisPadding
+            padding: axisPadding,
+            maintenanceRange
         }),
-        [axisPadding, canvasSize, chartMinHeight, metrics]
+        [axisPadding, canvasSize, chartMinHeight, maintenanceRange, metrics]
     );
     const points = chartLayout.points;
     const hasWeightHistory = (trendQuery.data?.meta.total_points ?? 0) > 0;
@@ -203,7 +205,8 @@ export const WeightTrendPreviewCard: React.FC<WeightTrendPreviewCardProps> = ({ 
                             )}
                             {!estimateIsSuppressed && points.length !== 1 && (
                                 <WeightTrendChart
-                                    accessibleChartSummary="Four-week underlying weight trend with scale readings and 95% estimated range"
+                                    accessibleChartSummary={maintenanceRange ? 'Four-week weight trend and maintenance range' :
+                                        'Four-week underlying weight trend with scale readings and 95% estimated range'}
                                     chartLayout={chartLayout}
                                     unit={user?.weight_unit}
                                     padding={axisPadding}

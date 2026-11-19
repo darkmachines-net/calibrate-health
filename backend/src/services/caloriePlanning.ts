@@ -1,4 +1,4 @@
-/** @file Transaction-consistent profile, goal, and calibration inputs for authoritative daily calorie planning. */
+/** @file Transaction-consistent profile, goal, and calibration inputs for current daily calorie planning. Retired maintenance offsets stay in history. */
 
 import { Prisma } from '@prisma/client';
 import {
@@ -18,6 +18,7 @@ type StoredPlanningRevision = {
   id: number;
   recommendation_id: number | null;
   configured_daily_deficit: number | null;
+  manual_maintenance: boolean;
   target_adjustment_kcal: number;
   calorie_plan_review_status: 'CLEAR' | 'REQUIRES_REVIEW';
   calorie_plan_review_reason: string | null;
@@ -40,6 +41,9 @@ export type StoredCaloriePlanningSnapshot = {
     start_weight_grams: number;
     target_weight_grams: number;
     daily_deficit: number;
+    completed_on: Date | null;
+    maintenance_lower_grams: number | null;
+    maintenance_upper_grams: number | null;
     target_date: Date | null;
     created_at: Date;
     calorie_plan_review_status: 'CLEAR' | 'REQUIRES_REVIEW';
@@ -89,6 +93,9 @@ export async function buildStoredCaloriePlanningSnapshot(
       start_weight_grams: true,
       target_weight_grams: true,
       daily_deficit: true,
+      completed_on: true,
+      maintenance_lower_grams: true,
+      maintenance_upper_grams: true,
       target_date: true,
       created_at: true,
       calorie_plan_review_status: true,
@@ -108,19 +115,21 @@ export async function buildStoredCaloriePlanningSnapshot(
     id: true,
     recommendation_id: true,
     configured_daily_deficit: true,
+    manual_maintenance: true,
     target_adjustment_kcal: true,
     calorie_plan_review_status: true,
     calorie_plan_review_reason: true,
     effective_local_date: true
   } as const;
+  // Manual maintenance offsets are historical records and no longer change the current estimate.
   const [effectiveRevision, futureRevisions] = goal && localTodayDate ? await Promise.all([
     database.caloriePlanRevision.findFirst({
-      where: { user_id: userId, source_goal_id: goal.id, effective_local_date: { lte: localTodayDate } },
+      where: { user_id: userId, source_goal_id: goal.id, manual_maintenance: false, effective_local_date: { lte: localTodayDate } },
       orderBy: [{ effective_local_date: 'desc' }, { id: 'desc' }],
       select: revisionSelect
     }),
     database.caloriePlanRevision.findMany({
-      where: { user_id: userId, source_goal_id: goal.id, effective_local_date: { gt: localTodayDate } },
+      where: { user_id: userId, source_goal_id: goal.id, manual_maintenance: false, effective_local_date: { gt: localTodayDate } },
       orderBy: [{ effective_local_date: 'asc' }, { id: 'asc' }],
       select: revisionSelect
     })

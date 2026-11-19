@@ -148,6 +148,13 @@ test('completion parser accepts one complete payload and rejects incomplete or u
   assert.deepEqual(underage.fieldErrors, {
     date_of_birth: ['Calibrate accounts require age 18 or older.']
   });
+
+  const maintenance = { ...COMPLETE_DATA, daily_deficit: 0, target_weight_grams: 84000,
+    maintenance_lower_grams: 83000, maintenance_upper_grams: 85000 };
+  const outsideRange = parseCompleteOnboardingBody({ data: maintenance });
+  assert.equal(outsideRange.ok, false);
+  assert.deepEqual(outsideRange.fieldErrors, { target_weight_grams: ['Adjust the target or range to include your current weight.'] });
+  assert.equal(parseCompleteOnboardingBody({ data: { ...maintenance, maintenance_lower_grams: 82000 } }).ok, true);
 });
 
 test('atomic completion uses the submitted timezone day and updates an existing goal without duplication', async () => {

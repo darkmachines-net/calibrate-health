@@ -15,6 +15,7 @@ sealed interface ContinueOnPhoneRequest {
     data class FoodLog(val localDate: String) : ContinueOnPhoneRequest
     data object Privacy : ContinueOnPhoneRequest
     data object AccountDeletion : ContinueOnPhoneRequest
+    data object Progress : ContinueOnPhoneRequest
 }
 
 fun interface ContinueOnPhoneMessenger {
@@ -69,6 +70,7 @@ internal fun buildContinueOnPhonePayload(session: SecureSession, request: Contin
         }
         ContinueOnPhoneRequest.Privacy -> accountScope + "\"destination\":\"privacy\"}"
         ContinueOnPhoneRequest.AccountDeletion -> accountScope + "\"destination\":\"account_deletion\"}"
+        ContinueOnPhoneRequest.Progress -> accountScope + "\"destination\":\"progress\"}"
     }
 }
 

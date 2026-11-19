@@ -10,6 +10,7 @@ import {
 } from '../utils/date';
 import { CURRENT_ACCOUNT_ACCESS_WHERE } from '../utils/accountAccessSerialization';
 import { type MutationDatabase, recordSyncChange } from './clientOperations';
+import { lockCaloriePlanningInputs } from './caloriePlanningLock';
 
 export const FOOD_DAY_STATUSES = ['OPEN', 'COMPLETE', 'INCOMPLETE', 'PAUSED'] as const;
 export type FoodDayStatus = (typeof FOOD_DAY_STATUSES)[number];
@@ -85,7 +86,8 @@ function serializeStoredDay(day: {
   };
 }
 
-function serializePause(pause: {
+/** Serialize a stored pause relative to the current local day for API and sync consumers. */
+export function serializePause(pause: {
   id: number;
   starts_on: Date;
   expected_resume_on: Date | null;
@@ -472,12 +474,16 @@ export async function materializeActiveFoodTrackingPauses(
       resumed_on: null,
       user: { is: CURRENT_ACCOUNT_ACCESS_WHERE }
     },
-    include: { user: { select: { timezone: true } } }
+    select: { id: true, user_id: true, materialized_through: true, user: { select: { timezone: true } } }
   });
   for (const pause of pauses) {
-    const today = getSafeUtcTodayDateOnlyInTimeZone(pause.user.timezone, now);
+    if (pause.materialized_through >= getSafeUtcTodayDateOnlyInTimeZone(pause.user.timezone, now)) continue;
     await db.$transaction(async (tx) => {
-      await materializePauseThrough({ tx, pause, through: today });
+      await lockCaloriePlanningInputs(tx, pause.user_id);
+      const current = await tx.foodTrackingPause.findUnique({ where: { id: pause.id }, include: { user: { select: { timezone: true } } } });
+      if (!current || current.resumed_on) return;
+      const today = getSafeUtcTodayDateOnlyInTimeZone(current.user.timezone, now);
+      await materializePauseThrough({ tx, pause: current, through: today });
     });
   }
 }

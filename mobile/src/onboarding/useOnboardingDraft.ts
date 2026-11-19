@@ -1,4 +1,4 @@
-/** @file use Onboarding Draft: Hydrate once per account, keeping transient form state separate from completed server data. */
+/** @file Onboarding drafts with account-scoped hydration and defaults for previously unset goal types. */
 
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { UserClientPayload } from '@calibrate/api-client';
@@ -25,7 +25,7 @@ type DraftState = {
     storageError: string | null;
 };
 
-/** Hydrate once per account, keeping transient form state separate from completed server data. */
+/** Hydrate the account's saved draft, applying the initial goal type only if it is unset. */
 export function useOnboardingDraft({ serverUrl, user }: { serverUrl: string; user: UserClientPayload }) {
     const key = onboardingDraftStorageKey(serverUrl, user.id);
     const latestUser = useRef(user);
@@ -60,7 +60,7 @@ export function useOnboardingDraft({ serverUrl, user }: { serverUrl: string; use
             if (!isCurrent()) return;
             setState({
                 key,
-                form: draft?.form ?? initialForm,
+                form: draft ? { ...draft.form, goalMode: draft.form.goalMode ?? initialForm.goalMode } : initialForm,
                 step: draft?.step ?? 'about',
                 isHydrating: false,
                 revision: 0,

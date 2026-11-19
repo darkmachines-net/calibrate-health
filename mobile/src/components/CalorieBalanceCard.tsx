@@ -1,4 +1,4 @@
-/** @file Calorie Balance Card: Empty and populated days share one summary so changing dates does not move the food section below it. */
+/** @file Stable daily calorie summary with room for an independently focusable contextual action. */
 
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions, type ViewProps } from 'react-native';
@@ -15,6 +15,7 @@ type CalorieBalanceCardProps = ViewProps & {
     unavailableLabel?: string;
     supportingLabel?: string;
     comparisonLabel?: string;
+    contextAction?: React.ReactNode;
     compact?: boolean;
     open?: boolean;
 };
@@ -32,6 +33,9 @@ const HERO_STACK_BREAKPOINT = 320;
 // Reflow before accessibility-sized copy competes with the fixed gauge width.
 const LARGE_TEXT_STACK_FONT_SCALE = 1.6;
 const OPEN_BALANCE_GAP = 20; // Aligns the supporting ring and focal metric in the full-bleed phone summary.
+// Leave room for the ring and metric on one side and a two-line action on the other.
+const BALANCE_SUMMARY_BASIS = 256;
+const BALANCE_ACTION_BASIS = 216;
 
 function getBalanceTone(remaining: number | null): 'primary' | 'danger' {
     if (remaining === null) return 'primary';
@@ -40,8 +44,8 @@ function getBalanceTone(remaining: number | null): 'primary' | 'danger' {
 }
 
 /**
- * Empty and populated days share one summary so changing dates
- * does not move the food section below it.
+ * Reserve the same metric space for empty and populated days. An optional action
+ * wraps below the summary on narrow screens and has a separate accessibility focus stop.
  */
 export const CalorieBalanceCard: React.FC<CalorieBalanceCardProps> = ({
     totalCalories,
@@ -49,6 +53,7 @@ export const CalorieBalanceCard: React.FC<CalorieBalanceCardProps> = ({
     unavailableLabel = 'Target unavailable',
     supportingLabel,
     comparisonLabel,
+    contextAction,
     compact = false,
     open = false,
     style,
@@ -65,6 +70,7 @@ export const CalorieBalanceCard: React.FC<CalorieBalanceCardProps> = ({
     const balanceValue = remaining === null ? '-' : formatNumber(Math.abs(remaining), 0);
     const balanceLabel = remaining === null ? unavailableLabel : isOver ? 'kcal over target' : 'kcal remaining';
     const balanceSummary = remaining === null ? balanceLabel : `${balanceValue} ${balanceLabel}`;
+    const hasContextAction = Boolean(contextAction);
     const stackHero = width < HERO_STACK_BREAKPOINT || fontScale >= LARGE_TEXT_STACK_FONT_SCALE;
     // Reserve the focal metric's line so unresolved days do not collapse the summary.
     const useFullMetric = open && width >= NARROW_PHONE_BREAKPOINT;
@@ -74,15 +80,16 @@ export const CalorieBalanceCard: React.FC<CalorieBalanceCardProps> = ({
         <AppCard
             {...props}
             density={compact ? 'compact' : 'comfortable'}
-            accessible
-            accessibilityLabel={hasTarget
-                ? `Daily balance. ${balanceSummary}. ${formatNumber(totalCalories, 0)} eaten out of ${formatNumber(targetCalories, 0)} calorie target.${comparisonLabel ? ` ${comparisonLabel}.` : ''}`
-                : `Daily balance. ${balanceSummary}. ${supportingLabel ?? `${formatNumber(totalCalories, 0)} calories logged`}.`}
-            style={[styles.surface, open && styles.open, style]}
+            style={[styles.surface, open && styles.open, hasContextAction && styles.withAction, style]}
         >
             <View
                 testID="calorie-balance-hero"
-                style={[styles.hero, compact && styles.heroCompact, useFullMetric && { gap: OPEN_BALANCE_GAP }, stackHero && styles.heroStacked]}
+                accessible
+                accessibilityLabel={hasTarget
+                    ? `Daily balance. ${balanceSummary}. ${formatNumber(totalCalories, 0)} eaten out of ${formatNumber(targetCalories, 0)} calorie target.${comparisonLabel ? ` ${comparisonLabel}.` : ''}`
+                    : `Daily balance. ${balanceSummary}. ${supportingLabel ?? `${formatNumber(totalCalories, 0)} calories logged`}.`}
+                style={[styles.hero, compact && styles.heroCompact, useFullMetric && { gap: OPEN_BALANCE_GAP }, stackHero && styles.heroStacked,
+                    hasContextAction && styles.summaryWithAction, hasContextAction && stackHero && styles.fullRow]}
             >
                 <CalorieGauge value={progressValue} tone={tone} compact={compact} narrow={width < NARROW_PHONE_BREAKPOINT} colors={colors} styles={styles} />
                 <View style={[
@@ -109,6 +116,7 @@ export const CalorieBalanceCard: React.FC<CalorieBalanceCardProps> = ({
                     {hasTarget && comparisonLabel && <AppText variant="caption" style={styles.comparisonLabel}>{comparisonLabel}</AppText>}
                 </View>
             </View>
+            {hasContextAction && <View style={[styles.actionSlot, stackHero && styles.fullRow]}>{contextAction}</View>}
         </AppCard>
     );
 };
@@ -179,6 +187,10 @@ function createStyles(colors: AppThemeColors) {
             color: colors.primary
         },
         open: { backgroundColor: 'transparent', borderWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingTop: spacing.sm, paddingBottom: spacing.lg, minHeight: 112 },
+        withAction: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
+        summaryWithAction: { flexBasis: BALANCE_SUMMARY_BASIS, flexGrow: 2, flexShrink: 1, minWidth: 0, maxWidth: '100%' },
+        actionSlot: { flexBasis: BALANCE_ACTION_BASIS, flexGrow: 1, flexShrink: 1, minWidth: 0, maxWidth: '100%' },
+        fullRow: { flexBasis: '100%' },
         openHeading: { fontWeight: '600' },
         dangerText: {
             color: colors.danger

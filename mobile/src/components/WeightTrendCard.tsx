@@ -47,6 +47,7 @@ type WeightTrendCardProps = ViewProps & {
     title?: string | null;
     description?: string;
     footer?: React.ReactNode;
+    maintenanceRange?: { lower: number; upper: number };
 };
 
 // Provides initial geometry until the chart canvas is measured.
@@ -100,6 +101,7 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
     title = 'Weight trend',
     description,
     footer,
+    maintenanceRange,
     style,
     ...props
 }) => {
@@ -147,9 +149,10 @@ export const WeightTrendCard: React.FC<WeightTrendCardProps> = ({
             modelStartDate: trendSummary?.modeled_start_date,
             dateWindow: { start, end },
             missingWindows: history.missingWindows,
-            fixedWeightTicks: panPreview?.weightTicks
+            fixedWeightTicks: panPreview?.weightTicks,
+            maintenanceRange
         }),
-        [axisPadding, chartCanvasWidth, chartHeight, chartMinHeight, end, history.missingWindows, metrics, panPreview, range, start, trendSummary?.modeled_start_date]
+        [axisPadding, chartCanvasWidth, chartHeight, chartMinHeight, end, history.missingWindows, maintenanceRange, metrics, panPreview, range, start, trendSummary?.modeled_start_date]
     );
     const chartPoints = chartLayout.points;
     const selectedPointIndex = useMemo(() => {

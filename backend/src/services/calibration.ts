@@ -324,6 +324,18 @@ async function buildCalibrationStatusSnapshot(
     }
 
     const goal = planning.goal!;
+    if (goal.completed_on) {
+        if (persistRecommendation) await stalePendingRecommendations(database, userId);
+        return {
+            generatedAt, inputFingerprint: null, recommendation: null, scheduledChange: null,
+            planStatus: planning.evaluation.status, planReasonCode: planning.evaluation.reasonCode,
+            evaluation: buildUnavailableEvaluation({
+                asOfDate: unavailableAsOfDateKey, headline: 'Goal reached',
+                summary: 'Choose your next goal to start a new plan check.',
+                missingCriteria: [], weightUnit: user.weight_unit, configuredDailyDeficitKcal: goal.daily_deficit
+            })
+        };
+    }
 
     const todayCompletion = await database.foodLogDay.findUnique({
         where: { user_id_local_date: { user_id: userId, local_date: today } },
@@ -340,7 +352,7 @@ async function buildCalibrationStatusSnapshot(
     } : null;
     const [scheduledRevision, logs, completionDays, weightRows] = await Promise.all([
         database.caloriePlanRevision.findFirst({
-            where: { user_id: userId, source_goal_id: goal.id, effective_local_date: { gt: today } },
+            where: { user_id: userId, source_goal_id: goal.id, manual_maintenance: false, effective_local_date: { gt: today } },
             orderBy: [{ effective_local_date: 'asc' }, { id: 'asc' }],
             select: { recommendation_id: true, target_adjustment_kcal: true, effective_local_date: true, calorie_plan_review_status: true, calorie_plan_review_reason: true }
         }),

@@ -1,6 +1,8 @@
 /** @file Validated profile and initial-goal setup committed atomically under account planning guards. */
 
 import { observeCurrentCaloriePlan } from './dailyCaloriePlans';
+import { serializePause, startFoodTrackingPause, updateFoodTrackingPauseExpectation } from './foodTracking';
+import { assessMaintenanceRange, isMaintenanceRange } from '../../../shared/goalAssessment';
 import type {
   ActivityLevel,
   HeightUnit,
@@ -23,7 +25,7 @@ import {
   USER_CLIENT_SELECT,
   type UserClientPayload
 } from '../utils/userSerialization';
-import type { MutationDatabase, MutationResult } from './clientOperations';
+import { recordSyncChange, type MutationDatabase, type MutationResult } from './clientOperations';
 
 const MIN_ACCOUNT_AGE_YEARS = 18;
 
@@ -38,6 +40,8 @@ type CompleteOnboardingData = {
   current_weight_grams: number;
   target_weight_grams: number;
   daily_deficit: number;
+  maintenance_lower_grams?: number;
+  maintenance_upper_grams?: number;
 };
 
 export type CompleteOnboardingInput = {
@@ -134,6 +138,19 @@ function parseCompleteData(value: unknown): OnboardingParseResult<CompleteOnboar
   if (!isPolicyDailyDeficit(value.daily_deficit)) {
     return invalidField('daily_deficit', 'Choose an available calorie plan option.');
   }
+  const maintenanceRangeRequested = value.maintenance_lower_grams !== undefined || value.maintenance_upper_grams !== undefined;
+  if (maintenanceRangeRequested) {
+    const lower = value.maintenance_lower_grams;
+    const upper = value.maintenance_upper_grams;
+    if (value.daily_deficit !== 0 || !isPolicyWeight(lower) || !isPolicyWeight(upper) ||
+      !isMaintenanceRange(value.target_weight_grams, lower, upper)) {
+      return invalidField('target_weight_grams', 'Choose lower and upper maintenance limits around the target.');
+    }
+    const range = { target_weight_grams: value.target_weight_grams, lower_weight_grams: lower, upper_weight_grams: upper };
+    if (assessMaintenanceRange(value.current_weight_grams, range) !== 'within_range') {
+      return invalidField('target_weight_grams', 'Adjust the target or range to include your current weight.');
+    }
+  }
   if (
     (value.daily_deficit > 0 && value.current_weight_grams <= value.target_weight_grams) ||
     (value.daily_deficit < 0 && value.current_weight_grams >= value.target_weight_grams)
@@ -151,7 +168,10 @@ function parseCompleteData(value: unknown): OnboardingParseResult<CompleteOnboar
     activity_level: value.activity_level,
     current_weight_grams: value.current_weight_grams,
     target_weight_grams: value.target_weight_grams,
-    daily_deficit: value.daily_deficit
+    daily_deficit: value.daily_deficit,
+    ...(maintenanceRangeRequested ? {
+      maintenance_lower_grams: value.maintenance_lower_grams as number, maintenance_upper_grams: value.maintenance_upper_grams as number
+    } : {})
   };
   const evaluation = evaluateCaloriePlan({
     profile: {
@@ -176,7 +196,7 @@ function parseCompleteData(value: unknown): OnboardingParseResult<CompleteOnboar
   ) {
     return invalidField('date_of_birth', 'Calibrate accounts require age 18 or older.');
   }
-  if (evaluation.status !== 'available') {
+  if (!maintenanceRangeRequested && evaluation.status !== 'available') {
     return invalidField('daily_deficit', 'Choose an available calorie plan option.');
   }
 
@@ -292,6 +312,8 @@ export async function completeOnboardingInTransaction(
     target_weight_grams: input.data.target_weight_grams,
     target_date: null,
     daily_deficit: input.data.daily_deficit,
+    maintenance_lower_grams: input.data.maintenance_lower_grams ?? null,
+    maintenance_upper_grams: input.data.maintenance_upper_grams ?? null,
     calorie_plan_review_status: 'CLEAR' as const,
     calorie_plan_review_reason: null
   };
@@ -299,6 +321,16 @@ export async function completeOnboardingInTransaction(
     ? await tx.goal.update({ where: { id: existingGoal.id }, data: goalData })
     : await tx.goal.create({ data: { user_id: userId, ...goalData } });
   await options.afterWrite?.('goal');
+  if (input.data.maintenance_lower_grams !== undefined) {
+    const pause = await tx.foodTrackingPause.findFirst({ where: { user_id: userId, resumed_on: null } });
+    if (pause && pause.starts_on > metricDate) {
+      const canceled = await tx.foodTrackingPause.update({ where: { id: pause.id }, data: { resumed_on: pause.starts_on, resumed_at: now } });
+      await recordSyncChange({ tx, userId, entityType: 'food_tracking_pause', entityId: canceled.id,
+        action: 'upsert', operationId, payload: serializePause(canceled, metricDate) });
+    }
+    if (!pause || pause.starts_on > metricDate) await startFoodTrackingPause({ tx, userId, startsOn: metricDate, expectedResumeOn: null, now, operationId });
+    else if (pause.expected_resume_on) await updateFoodTrackingPauseExpectation({ tx, userId, expectedResumeOn: null, today: metricDate, operationId });
+  }
 
   const completedAt = now.toISOString();
   const syncMarker = await tx.syncChange.create({

@@ -1,4 +1,4 @@
-/** @file progress: Coordinates goal management, weight-trend preview, and expandable plan-check content. */
+/** @file Composes Progress milestones and trends, and hands off new goals to the setup page. */
 
 import { useTrackingMetrics } from '../../../src/offline/useTrackingQueries';
 import { GoalPaceSheet } from '../../../src/progress/GoalPaceSheet';
@@ -47,6 +47,10 @@ import {
     getWeightPolicyError,
     isWeightWithinPolicy
 } from '../../../src/weightEntry/input';
+
+import { GoalCompletionNotice, GoalGuidance, NextGoalChoices } from '../../../src/progress/GoalGuidance';
+import { MaintenanceGoalEditor, type GoalEditorIntent, type GoalEditorOptions } from '../../../src/progress/MaintenanceGoalEditor';
+import { getMaintenanceChartRange, useGoalStatus } from '../../../src/progress/useGoalStatus';
 
 const ProgressExpansionContent = React.lazy(() => import('../../../src/progress/ProgressExpansionContent'));
 
@@ -103,6 +107,18 @@ export default function ProgressScreen() {
     });
     const isOnline = useOnlineStatus();
     const hasPendingWeightChange = usePendingWeightMutation();
+    const lifecycle = useGoalStatus();
+    const goalStatus = lifecycle.data;
+    const [guidedEditor, setGuidedEditor] = useState<GoalEditorOptions | null>(null);
+    const [showNextChoices, setShowNextChoices] = useState(false);
+    function openGuidedEditor(intent: GoalEditorIntent) {
+        if (!goalStatus) return;
+        if (intent === 'new') {
+            router.push('/goal-setup');
+            return;
+        }
+        setGuidedEditor({ status: goalStatus, intent });
+    }
     const progressQueries = [goalQuery, profileQuery, metricsQuery, trendSummaryQuery] as const;
     const failedProgressQueries = progressQueries.filter((query) => query.isError);
     const allProgressDataResolved = progressQueries.every((query) => query.data !== undefined);
@@ -271,9 +287,21 @@ export default function ProgressScreen() {
     }, [goalQuery.data, latestMetric?.weight, latestTrendMetric?.trend_weight, profileQuery.data?.latest_weight_grams, user?.weight_unit]);
 
     function editCurrentGoal() {
+        if (lifecycle.supported && !goalStatus) {
+            void lifecycle.refetch();
+            return;
+        }
+        if (goalStatus?.maintenance) {
+            openGuidedEditor('edit');
+            return;
+        }
         const currentGoal = goalQuery.data;
         if (currentGoal?.plan_status === 'available' && currentGoal.daily_deficit !== 0) {
             setPaceGoal(currentGoal);
+            return;
+        }
+        if (goalStatus) {
+            openGuidedEditor('new');
             return;
         }
         openGoalEditor();
@@ -329,24 +357,37 @@ export default function ProgressScreen() {
     }, [dailyChangeAbs, goalMode, planOptionsQuery.data, selectedPlanOption?.available]);
 
     useEffect(() => {
-        if (routeParams.openNextGoal !== 'true') {
+        const confirmedTrend = routeParams.openNextGoal === 'trend';
+        if (routeParams.openNextGoal !== 'true' && !confirmedTrend) {
             handledNextGoalRouteRef.current = false;
             return;
         }
-        if (handledNextGoalRouteRef.current || !getDefaultStartWeight()) return;
+        if (handledNextGoalRouteRef.current || !getDefaultStartWeight() || ((confirmedTrend || lifecycle.supported) && !goalStatus)) return;
         handledNextGoalRouteRef.current = true;
+        if (lifecycle.supported && goalStatus?.goal?.completed_on) {
+            setShowNextChoices(true);
+            return;
+        }
         openNextGoalEditor();
-    }, [getDefaultStartWeight, openNextGoalEditor, routeParams.openNextGoal]);
+    }, [getDefaultStartWeight, goalStatus, lifecycle.supported, openNextGoalEditor, routeParams.openNextGoal]);
 
     useEffect(() => {
         if (routeParams.openPlanReview !== 'true') {
             handledPlanReviewRouteRef.current = false;
             return;
         }
-        if (handledPlanReviewRouteRef.current || !getDefaultStartWeight()) return;
+        if (handledPlanReviewRouteRef.current || !getDefaultStartWeight() || (lifecycle.supported && !goalStatus)) return;
         handledPlanReviewRouteRef.current = true;
+        if (goalStatus?.goal?.completed_on) {
+            setShowNextChoices(true);
+            return;
+        }
+        if (goalStatus?.maintenance) {
+            setGuidedEditor({ status: goalStatus, intent: goalStatus.tracking ? 'budget' : 'enable' });
+            return;
+        }
         openGoalEditor();
-    }, [getDefaultStartWeight, openGoalEditor, routeParams.openPlanReview]);
+    }, [getDefaultStartWeight, goalStatus, lifecycle.supported, openGoalEditor, routeParams.openPlanReview]);
 
     return (
         <>
@@ -364,7 +405,7 @@ export default function ProgressScreen() {
                     onRestore: id => { if (id === 'trend' || id === 'plan') setExpandedSection(id); },
                     focused: pathname === '/progress',
                     renderContent: section => <React.Suspense fallback={<View style={styles.snapshotLoading}><SkeletonBlock height={120} /></View>}>
-                        <ProgressExpansionContent section={section} />
+                        <ProgressExpansionContent section={section} maintenanceStatus={goalStatus} />
                     </React.Suspense>
                 }}
                 context={(
@@ -385,7 +426,9 @@ export default function ProgressScreen() {
                         retrying={failedProgressQueries.some((query) => query.isFetching)}
                         suppressStaleNotice
                     >
-                        <GoalProgressCard
+                        {goalStatus?.maintenance ? <GoalGuidance status={goalStatus} onEdit={openGuidedEditor}
+                            onWeighIn={() => router.push('/weight')} pending={hasPendingWeightChange} canReview={isOnline && !lifecycle.isError} /> : goalStatus?.goal?.completed_on ?
+                            <GoalCompletionNotice status={goalStatus} onChoose={() => setShowNextChoices(true)} /> : <GoalProgressCard
                             testID="progress-snapshot-card"
                             latestMetric={latestMetric}
                             metrics={metricsQuery.data}
@@ -393,16 +436,19 @@ export default function ProgressScreen() {
                             user={user}
                             onEditGoal={editCurrentGoal}
                             onSetNextGoal={openNextGoalEditor}
+                            useTrendCompletion={lifecycle.supported}
+                            trendWeight={goalStatus?.evidence === 'current' && goalStatus.trend && !hasPendingWeightChange
+                                ? goalStatus.trend.weight_grams / (goalStatus.weight_unit === 'LB' ? 453.59237 : 1000) : null}
                             weightChangePending={hasPendingWeightChange}
                             targetCalories={!hasPendingWeightChange && profileQuery.data?.calorieSummary.planStatus === 'available'
                                 ? profileQuery.data.calorieSummary.dailyCalorieTarget
                                 : null}
-                        />
+                        />}
                     </AsyncStateBoundary>
                 )}
                 fullWidthFooter
                 fullWidthBody
-                footer={<PlanCheckSummary
+                footer={!goalStatus?.maintenance && !goalStatus?.goal?.completed_on && <PlanCheckSummary
                     onPress={() => setExpandedSection('plan')}
                     planAvailable={profileQuery.data ? profileQuery.data.calorieSummary.planStatus === 'available' : undefined}
                 />}
@@ -413,15 +459,19 @@ export default function ProgressScreen() {
                     suppressStaleNotice
                     onPress={() => setExpandedSection('trend')}
                     onLogWeight={() => router.push('/weight')}
+                    maintenanceRange={getMaintenanceChartRange(goalStatus)}
                 />}
             </FixedPage>
 
+            {showNextChoices && goalStatus && <NextGoalChoices status={goalStatus} onClose={() => setShowNextChoices(false)} />}
+            {guidedEditor && <MaintenanceGoalEditor {...guidedEditor} onClose={() => setGuidedEditor(null)} />}
             {paceGoal && <GoalPaceSheet
                 goal={paceGoal}
                 onClose={() => setPaceGoal(null)}
                 onStartNewGoal={() => {
                     setPaceGoal(null);
-                    openGoalEditor();
+                    if (lifecycle.supported && goalStatus) openGuidedEditor('new');
+                    else openGoalEditor();
                 }}
             />}
             <BottomSheetModal

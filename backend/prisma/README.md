@@ -18,6 +18,10 @@ intent to those immutable mappings. Firebase runtime selection is explicit; it
 revokes local credential families when provider security changes. Retained bcrypt
 hashes cannot authenticate in Firebase mode.
 
+Migration 0048 adds nullable goal metadata and maintenance settings history. Existing
+maintenance users keep their tracking state and confirm their own range. Prior settings
+belong to the goal they revised and are removed with it on account deletion.
+
 ## Disposable validation
 
 `npm run test:db:upgrade` migrates a random isolated schema, seeds representative

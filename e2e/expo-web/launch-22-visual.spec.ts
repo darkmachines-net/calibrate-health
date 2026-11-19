@@ -8,7 +8,7 @@ import type { Page, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { installSavedFoodsFixture } from './saved-foods.fixture';
 import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
-import { fillOnboardingDetails, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';
+import { chooseGoalPace, fillOnboardingDetails, installOnboardingAccount } from './onboarding.fixture';
 
 const SCREENSHOT_OPTIONS = {
   animations: 'disabled',
@@ -229,7 +229,7 @@ async function captureOnboardingSteps(page: Page, appearance: string) {
   await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
   await page.getByRole('radio', { name: 'Lose', exact: true }).click();
   await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('82');
-  await goalPaceOption(page, 500).click();
+  await chooseGoalPace(page, 500);
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeEnabled();
   await page.getByRole('heading', { name: 'Your plan', exact: true }).scrollIntoViewIfNeeded();
   await captureOnboardingViewport(page, `onboarding-plan-${appearance}.png`);
