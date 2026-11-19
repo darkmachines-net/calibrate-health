@@ -52,7 +52,6 @@ test.describe('Launch 22 accessibility coverage contracts', () => {
       'historical-calendar',
       'goal-editor',
       'goal-daily-calorie-options',
-      'plan-check-adjustment-review',
       'notifications-drawer',
       'profile-time-zone-options',
       'profile-photo',

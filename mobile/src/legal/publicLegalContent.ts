@@ -79,7 +79,7 @@ export const SUPPORT_SECTIONS: PublicLegalSection[] = [
     }
 ];
 
-export const PRIVACY_LAST_UPDATED = 'August 19, 2026';
+export const PRIVACY_LAST_UPDATED = 'November 7, 2026';
 export const PRIVACY_INTRO = [
     'Calibrate Health ("Calibrate", "we", "us", or "our") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and the choices you have when you use the Calibrate Health application at https://calibratehealth.app.',
     'Calibrate Health is a calorie and weight-tracking tool. It is not a medical service and does not provide medical advice.'
@@ -108,6 +108,7 @@ export const PRIVACY_SECTIONS: PublicLegalSection[] = [
         title: '2. How We Use Your Information',
         paragraphs: [
             'We use information only to operate and improve the Service. We do not sell or rent data or use it for targeted advertising.',
+            'When your server enables weekly AI progress reports, Calibrate sends OpenAI an aggregate summary of your recent calorie logging, weight changes, goal, preferred units, and language after you accept this Privacy Policy. Requests exclude your name, email, account ID, date of birth, and food names. We request that OpenAI not store the response; OpenAI may retain API data under its own policies. Reports are informational, may contain mistakes, and do not change your calorie target. Saved reports and the aggregate evidence used to create them are included in account export and removed with account deletion.',
             'When you explicitly authorize a connected assistant, Calibrate responds to that assistant with only the food-log or weight-progress data covered by the approved read-only scopes. The assistant never receives your Calibrate password. Once data reaches the assistant, its provider handles that copy under its own terms and privacy policy. You can revoke a connection from Calibrate at any time.'
         ],
         bullets: [

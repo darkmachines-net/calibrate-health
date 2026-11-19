@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/plan-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read completed 7/14/28-day tracking summaries and up to 12 saved Sunday reports. Missing food days are excluded from averages; weight rates require a weigh-in today or yesterday and readings spanning half the window. Never changes calorie planning. */
+        get: operations["getPlanCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/server-settings": {
         parameters: {
             query?: never;
@@ -755,7 +772,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Lazily evaluate bounded food and weight history and materialize any current actionable suggestion. */
+        /**
+         * @deprecated
+         * @description Compatibility response for older clients. Returns no new assessment or recommendation; use plan-check for descriptive progress.
+         */
         get: operations["getCalibrationStatus"];
         put?: never;
         post?: never;
@@ -774,7 +794,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Revalidate and accept a current recommendation as a next-local-day target revision. */
+        /**
+         * @deprecated
+         * @description Retired. All new applications return 409 without changing the calorie plan.
+         */
         post: operations["applyCalibrationRecommendation"];
         delete?: never;
         options?: never;
@@ -791,7 +814,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Cancel a calibration revision before its effective local date and restore the recommendation for review. */
+        /** @description Cancel a previously accepted calibration revision before its effective local date. New recommendations are retired. */
         post: operations["cancelCalibrationRecommendation"];
         delete?: never;
         options?: never;
@@ -935,6 +958,57 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PlanCheckWindow: {
+            /** @enum {integer} */
+            days: 7 | 14 | 28;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            loggedFoodDays: number;
+            completeFoodDays: number;
+            averageLoggedCalories: number | null;
+            weighIns: number;
+            weightSpanDays: number;
+            weightChangeKg: number | null;
+            weeklyWeightChangeKg: number | null;
+        };
+        WeeklyProgressReport: {
+            /** Format: date */
+            reportDate: string;
+            /** Format: date-time */
+            generatedAt: string;
+            summary: string;
+            highlights: string[];
+            nextStep: string;
+        };
+        PlanCheckResponse: {
+            /** Format: date */
+            localDate: string;
+            /** Format: date */
+            trackingSince: string | null;
+            trackingDays: number;
+            /** @enum {string} */
+            weightUnit: "KG" | "LB";
+            /** Format: date */
+            latestWeighInDate: string | null;
+            needsWeighIn: boolean;
+            windows: components["schemas"]["PlanCheckWindow"][];
+            weeklyReportsEnabled: boolean;
+            weeklyReports: components["schemas"]["WeeklyProgressReport"][];
+        };
+        AccountExportWeeklyProgressReport: {
+            /** Format: date */
+            report_date: string;
+            timezone: string;
+            /** Format: date-time */
+            generated_at: string;
+            model: string;
+            summary: string;
+            highlights: string[];
+            next_step: string;
+            evidence: unknown;
+        };
         InAppNotification: {
             id: number;
             /** @enum {string} */
@@ -1286,7 +1360,7 @@ export interface components {
             /** @constant */
             format: "calibrate-account-export";
             /** @constant */
-            version: 11;
+            version: 12;
             /** Format: date-time */
             exported_at: string;
             account: components["schemas"]["AccountExportProfile"];
@@ -1303,6 +1377,7 @@ export interface components {
             activity_day_summaries: components["schemas"]["AccountExportActivityDaySummary"][];
             calibration_recommendations: components["schemas"]["AccountExportCalibrationRecommendation"][];
             calorie_plan_revisions: components["schemas"]["AccountExportCaloriePlanRevision"][];
+            weekly_progress_reports: components["schemas"]["AccountExportWeeklyProgressReport"][];
         };
         AccountExportProfile: {
             id: number;
@@ -2683,6 +2758,27 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getPlanCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account-local descriptive progress, including coverage and report history. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanCheckResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getServerSettings: {
         parameters: {
             query?: never;
@@ -4626,7 +4722,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Current deterministic calibration status. */
+            /** @description Legacy non-actionable status. New recommendations are retired; accepted future changes remain visible. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4666,7 +4762,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description Recommendation is stale, already applied, or conflicts with another operation. */
+            /** @description New calibration recommendations have been retired. */
             409: {
                 headers: {
                     [name: string]: unknown;

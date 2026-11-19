@@ -117,8 +117,8 @@ test('calibration lab uses the same React presentation as Progress', async () =>
   const labMain = await readFile(new URL('../tools/calibration-lab/main.tsx', import.meta.url), 'utf8');
   assert.match(labMain, /import \{ PlanCheckCardView \}/);
   assert.match(labMain, /<PlanCheckCardView/);
-  assert.match(labMain, /onApplyRecommendation=\{applyRecommendation\}/);
-  assert.match(labMain, /onCancelScheduledChange=\{cancelScheduledChange\}/);
+  assert.match(labMain, /summarizeTracking/);
+  assert.doesNotMatch(labMain, /onApplyRecommendation=/);
   assert.doesNotMatch(labMain, /Estimated budget difference/);
 });
 

@@ -25,6 +25,7 @@ import type {
     EligibilityStatus as SharedEligibilityStatus
 } from '@calibrate/shared/caloriePolicy';
 import type { CalibrationResult } from '@calibrate/shared/calibration';
+export type { PlanCheckResponse, PlanCheckSummary, PlanCheckWindow, WeeklyProgressReport } from '@calibrate/shared/planCheck';
 import type { InAppNotificationType } from '@calibrate/shared/inAppNotifications';
 
 export type EligibilityStatus = SharedEligibilityStatus;
@@ -150,7 +151,7 @@ export type OnboardingCompleteResponse = {
 
 export type AccountExport = {
     format: 'calibrate-account-export';
-    version: 10;
+    version: 12;
     exported_at: string;
     account: {
         id: number;
@@ -347,6 +348,10 @@ export type AccountExport = {
         calorie_plan_review_reason: string | null;
         effective_local_date: string;
         created_at: string;
+    }>;
+    weekly_progress_reports: Array<{
+        report_date: string; timezone: string; generated_at: string; model: string;
+        summary: string; highlights: string[]; next_step: string; evidence: unknown;
     }>;
 };
 

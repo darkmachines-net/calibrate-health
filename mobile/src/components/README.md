@@ -54,7 +54,7 @@ Keep the overview mounted and preserve its scroll position. Hide its controls fr
 accessibility while expanded. Focus Back after opening and restore the source's keyboard focus
 after closing. Escape and native system Back collapse; nested dialogs handle dismissal first. Browser
 Back/Forward traverses the expansion without changing the route URL. Food editing, copy, recipes,
-date selection, and Add food, plus Trend controls and Plan check review/apply/undo retain their behavior.
+date selection, and Add food, plus Trend controls and Plan check report history retain their behavior.
 
 Disabled selection explanations must remain readable; do not fade the entire option row. Busy indicators
 must contrast with the actual disabled button surface. Recovery pages must scroll at enlarged text sizes,

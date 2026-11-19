@@ -5,7 +5,7 @@ import prisma from '../config/database';
 import { firebaseAuthority } from './firebaseAuthority';
 
 export const ACCOUNT_EXPORT_FORMAT = 'calibrate-account-export';
-export const ACCOUNT_EXPORT_VERSION = 11;
+export const ACCOUNT_EXPORT_VERSION = 12;
 
 // Auth sessions, password hashes, push endpoints/tokens, and internal replay metadata are
 // deliberately absent. User-visible account, tracking, and derived plan history is exported.
@@ -71,6 +71,10 @@ const ACCOUNT_EXPORT_SELECT = {
   },
   calorie_plan_revisions: {
     orderBy: [{ effective_local_date: 'asc' as const }, { id: 'asc' as const }]
+  },
+  weekly_progress_reports: {
+    where: { status: 'READY' },
+    orderBy: { report_date: 'asc' as const }
   },
   legal_acceptances: {
     orderBy: [{ accepted_at: 'asc' as const }, { id: 'asc' as const }]
@@ -293,6 +297,16 @@ export type AccountExport = {
     calorie_plan_review_reason: string | null;
     effective_local_date: string;
     created_at: string;
+  }>;
+  weekly_progress_reports: Array<{
+    report_date: string;
+    timezone: string;
+    generated_at: string;
+    model: string;
+    summary: string;
+    highlights: string[];
+    next_step: string;
+    evidence: unknown;
   }>;
 };
 
@@ -523,6 +537,11 @@ export function serializeAccountExport(user: AccountExportRow, now = new Date())
       result_snapshot: recommendation.result_snapshot,
       created_at: toIsoDateTime(recommendation.created_at),
       applied_at: recommendation.applied_at ? toIsoDateTime(recommendation.applied_at) : null
+    })),
+    weekly_progress_reports: user.weekly_progress_reports.map(report => ({
+      report_date: toIsoDate(report.report_date), timezone: report.timezone,
+      generated_at: toIsoDateTime(report.generated_at!), model: report.model!, summary: report.summary!,
+      highlights: report.highlights as string[], next_step: report.next_step!, evidence: report.evidence
     })),
     calorie_plan_revisions: user.calorie_plan_revisions.map((revision) => ({
       id: revision.id,

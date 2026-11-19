@@ -131,24 +131,6 @@ export const UX_ACCESSIBILITY_OVERLAY_CASES: readonly UxAccessibilityOverlayCase
     },
   },
   {
-    id: 'plan-check-adjustment-review',
-    routeId: 'progress',
-    path: ROUTE_REGISTRY.progress.path,
-    fixtureState: 'populated',
-    open: [{ kind: 'test-id', value: 'plan-check-summary' }, {
-      kind: 'role',
-      role: 'button',
-      name: 'Review suggested 1,750 calorie daily target',
-      exact: true,
-    }],
-    ready: {
-      kind: 'role',
-      role: 'dialog',
-      name: 'Review calorie target',
-      exact: true,
-    },
-  },
-  {
     id: 'notifications-drawer',
     routeId: 'today',
     path: ROUTE_REGISTRY.today.path,

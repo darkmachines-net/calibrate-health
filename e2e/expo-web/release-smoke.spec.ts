@@ -1,5 +1,6 @@
 /** @file Regression coverage for release smoke: production export boots to the signed-out shell at each release viewport. */
 
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import type { Page, Route } from '@playwright/test';
 import {
   activateFixtureOffline,
@@ -298,6 +299,7 @@ async function stubAuthenticatedApi(page: Page, options: AuthenticatedApiOptions
     if (pathname === '/api/v1/user/tracking-history') {
       return fulfillJson(route, { tracking_start_date: '2026-01-01' });
     }
+    if (pathname === '/api/v1/plan-check') return fulfillJson(route, PLAN_CHECK_STATUS);
     if (pathname === '/api/v1/calibration/status') {
       return fulfillJson(route, {
         ...CALIBRATION_STATUS_RESPONSE,
