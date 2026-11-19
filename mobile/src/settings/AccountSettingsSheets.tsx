@@ -217,7 +217,7 @@ export function DeleteAccountSheet({
                 />
             </View>
             {visible && <SocialAuthButtons
-                label="Or permanently delete this account by confirming with your sign-in provider:"
+                label="If you signed in with Google, you can confirm deletion with that account."
                 serverUrl={serverUrl}
                 disabled={isDeleting || confirmation !== DELETE_ACCOUNT_CONFIRMATION}
                 onPress={onProviderConfirm}

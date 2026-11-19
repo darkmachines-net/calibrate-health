@@ -363,7 +363,6 @@ export type MobileRegistrationRequest = MobileAuthRequest & Partial<Registration
 export type NativeProviderCredential = {
     provider: SocialAuthProvider;
     id_token: string;
-    nonce?: string;
 };
 
 export type MobileSocialAuthRequest = Omit<MobileAuthRequest, 'email' | 'password'> & Partial<RegistrationLegalAcceptance> & NativeProviderCredential & {

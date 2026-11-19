@@ -51,11 +51,11 @@ test('Google iOS selects separate development and store clients within the share
   assert.equal(createExpoConfig({ config: appConfig.expo }).extra.googleIosClientId, '123-store.apps.googleusercontent.com');
 });
 
-test('native provider config enables Apple and uses the matching reversed Google iOS scheme', () => {
+test('native provider config uses the reversed Google iOS scheme and omits the Apple entitlement', () => {
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = '123-native.apps.googleusercontent.com';
   const result = createExpoConfig({ config: appConfig.expo });
-  assert.equal(result.ios.usesAppleSignIn, true);
-  assert.ok(result.plugins.includes('expo-apple-authentication'));
+  assert.equal(result.ios.usesAppleSignIn, undefined);
+  assert.ok(!result.plugins.includes('expo-apple-authentication'));
   assert.deepEqual(result.plugins.find(plugin => Array.isArray(plugin) && plugin[0] === '@react-native-google-signin/google-signin'), [
     '@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.123-native' }
   ]);

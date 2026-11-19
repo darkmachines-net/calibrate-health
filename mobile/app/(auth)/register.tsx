@@ -1,8 +1,8 @@
-/** @file Password/native provider registration with explicit legal acceptance on the configured backend. */
+/** @file Email registration with explicit legal acceptance on the configured backend. */
 
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Link, type Href } from 'expo-router';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { AppButton } from '../../src/components/AppButton';
 import { AppSection } from '../../src/components/AppSection';
@@ -13,11 +13,9 @@ import { SectionHeader } from '../../src/components/SectionHeader';
 import { TextField } from '../../src/components/TextField';
 import { LegalConsentFields } from '../../src/components/legal/LegalConsentFields';
 import { useAuth } from '../../src/auth/AuthContext';
+import { authEntryHref, type AuthEntryParams } from '../../src/auth/authEntryHref';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
-import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
-import { SocialAuthButtons } from '../../src/auth/SocialAuthButtons';
-import { socialAuthErrorMessage } from '../../src/auth/socialAuthErrors';
 import { requiresHostedLegalAcceptance } from '../../src/auth/accountAccess';
 import {
     MAX_AUTH_PASSWORD_BYTES,
@@ -29,7 +27,8 @@ import {
 /** Presents account creation with explicit legal acceptance on the configured backend. */
 export default function RegisterScreen() {
     const { colors } = useAppTheme();
-    const { register, signInWithProvider, serverUrl, authError } = useAuth();
+    const params = useLocalSearchParams<AuthEntryParams>();
+    const { register, serverUrl, authError } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -79,27 +78,17 @@ export default function RegisterScreen() {
         }
     }
 
-    async function handleProvider(provider: SocialAuthProvider) {
-        if (isSubmitting) return;
-        if (legalConsentRequired && (!termsAccepted || !privacyAccepted)) {
-            setConsentError('Review and accept both legal documents to create an account.');
-            return;
-        }
-        setIsSubmitting(true);
-        setError(null);
-        setConsentError(null);
-        try {
-            await signInWithProvider(provider, 'register', { acceptTerms: termsAccepted, acceptPrivacy: privacyAccepted });
-        } catch (err) { setError(socialAuthErrorMessage(err)); }
-        finally { setIsSubmitting(false); }
-    }
-
     return (
         <Screen contentWidth="form" safeTop style={styles.screen}>
+            <Link href={authEntryHref('welcome', params)} dismissTo asChild>
+                <Pressable accessibilityRole="link" style={styles.backTarget}>
+                    <AppText style={[styles.link, { color: colors.primary }]}>Back to welcome</AppText>
+                </Pressable>
+            </Link>
             <AuthBrand description="Track food, weight, and progress against a personalized calorie target." />
 
             <AppSection>
-                <SectionHeader title="Create account" description="Choose how to create your Calibrate account." />
+                <SectionHeader title="Create account" description="Use your email to get started." />
                 <TextField
                     label="Email"
                     autoCapitalize="none"
@@ -149,16 +138,15 @@ export default function RegisterScreen() {
                 />}
                 {(error || authError) && <AppText accessibilityRole="alert" style={{ color: colors.danger }}>{error ?? authError}</AppText>}
                 <AppButton title={isSubmitting ? 'Creating...' : 'Create account'} disabled={isSubmitting} onPress={() => void handleRegister()} />
-                <SocialAuthButtons serverUrl={serverUrl} disabled={isSubmitting} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             <View style={styles.footerLinks}>
                 <Link
-                    href="/(auth)/login"
+                    href={authEntryHref('email', params)}
                     asChild
                 >
                     <Pressable accessibilityRole="link" style={styles.linkTarget}>
-                        <AppText style={[styles.link, { color: colors.primary }]}>Back to sign in</AppText>
+                        <AppText style={[styles.link, { color: colors.primary }]}>Sign in with email</AppText>
                     </Pressable>
                 </Link>
                 <Link href={CALIBRATE_PRODUCT_LINKS.support as Href} asChild>
@@ -177,6 +165,11 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         width: '100%',
         alignSelf: 'center'
+    },
+    backTarget: {
+        minHeight: 48,
+        alignSelf: 'flex-start',
+        justifyContent: 'center'
     },
     linkTarget: {
         minHeight: 48,

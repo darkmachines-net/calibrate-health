@@ -5,13 +5,13 @@ Expo React Native client for calibrate on Android and iOS.
 The app tracks the latest stable Expo release and currently uses Expo SDK 58 with React Native 0.88 and React 19.3. Development
 builds are the primary native workflow; Expo Go is useful for lightweight checks but is not the release runtime.
 
-## Native Google and Apple sign-in
+## Native Google sign-in
 
-Google sign-in is available on Android and iOS; Apple sign-in uses the native iOS
-authorization sheet. The [Firebase backend](../backend/README.md#native-provider-sign-in)
-exchanges provider credentials and continues to issue Calibrate's rotating device
-sessions. No Firebase client session or provider refresh token is stored on the device.
-Browser email/password sign-in remains available.
+The Android and iOS welcome screen offers Google sign-in when the configured
+backend and build support it. Email sign-in and account creation are available
+on Android, iOS, and the web. The [Firebase backend](../backend/README.md#native-provider-sign-in)
+exchanges Google credentials for Calibrate's rotating device sessions. The
+device stores only the Calibrate session.
 
 Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to the Firebase project's Google **Web** OAuth
 client ID. Set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` for the store iOS bundle and
@@ -23,25 +23,26 @@ public configuration, not secrets. Local native launch reads them from root `.en
 
 Register Android package/signing-certificate combinations and iOS bundle IDs in the
 same Firebase/Google project. Include both store and development application IDs,
-local signing certificates and Play App Signing certificates as applicable. Enable
-Sign in with Apple for each Apple App ID and regenerate provisioning profiles;
-the Expo Apple plugin adds the entitlement. Register the iOS apps with Firebase and
-enable Apple in Firebase Authentication. Apple private-relay email is accepted;
-configure Apple's email relay for Firebase recovery mail if it is used.
+local signing certificates and Play App Signing certificates as applicable.
 
-These native dependencies require rebuilt development/store binaries. Expo Go and
-existing binaries without the modules cannot exercise the flow. Follow the existing
-major-runtime release policy when shipping the native compatibility change; this
-feature does not change release numbers itself. Provider buttons are shown only
-when the configured backend enables them and this build/device supports them. Canceling
-leaves the user signed out. Registration uses the same explicit legal consent and
-profile/goal onboarding as email/password registration.
+Rebuild development and store binaries when native dependencies change. Follow the
+existing major-runtime release policy for native compatibility changes. Before
+submitting an iOS build with Google sign-in, review
+[App Review guideline 4.8](https://developer.apple.com/app-store/review/guidelines/#login-services).
+It requires an equivalent privacy-preserving login unless an exception applies,
+including a way to keep the user's email private during account setup.
+
+One Google action handles both returning users and new accounts. A returning
+user receives a Calibrate session immediately after the verified provider exchange.
+When the server requires registration, the app asks for confirmation and the
+current hosted Terms and Privacy Policy before submitting the same credential.
+That credential stays in memory and expires after five minutes or when the user
+leaves the flow. New users continue through profile and goal onboarding.
 
 Validate on signed Android and iOS builds: new registration, returning sign-in,
-Google account selection after logout, Apple cancellation and repeat sign-in
-(including hidden email), missing provider configuration, email collisions, and
-session restore after app restart. Native provider sheets require real provider
-accounts; unit tests use synthetic credentials.
+Google account selection after logout, cancellation, missing provider configuration,
+email collisions, and session restore after app restart. Native provider sheets
+require real accounts. Unit tests use synthetic credentials.
 
 ## Development
 

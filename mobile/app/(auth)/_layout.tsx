@@ -22,7 +22,7 @@ export default function AuthLayout() {
         return <Redirect href={resolveBarcodeAuthDestination(params) ?? '/today'} />;
     }
 
-    if (accountDeletionCleanupNotice && segments[0] !== 'login') {
+    if (accountDeletionCleanupNotice && segments.at(-1) !== 'login') {
         return <Redirect href="/(auth)/login" />;
     }
 

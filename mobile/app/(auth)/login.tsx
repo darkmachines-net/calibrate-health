@@ -1,30 +1,39 @@
-/** @file Password/native provider sign-in on the configured backend with account-deletion cleanup guidance. */
+/** @file Native welcome and direct email sign-in with account-deletion cleanup guidance. */
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Link, type Href } from 'expo-router';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
 import { CALIBRATE_PRODUCT_LINKS } from '@calibrate/shared/product';
 import { AppButton } from '../../src/components/AppButton';
 import { AppSection } from '../../src/components/AppSection';
 import { AppNotice } from '../../src/components/AppNotice';
 import { AppText } from '../../src/components/AppText';
 import { AuthBrand } from '../../src/components/auth/AuthBrand';
+import { AuthWelcome } from '../../src/components/auth/AuthWelcome';
 import { Screen } from '../../src/components/Screen';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { TextField } from '../../src/components/TextField';
 import { useAuth } from '../../src/auth/AuthContext';
 import { accountDeletionCleanupGuidance } from '../../src/account/accountDeletionNotice';
+import { authEntryHref, EMAIL_SIGN_IN_METHOD, type AuthEntryParams } from '../../src/auth/authEntryHref';
 import { spacing, useAppTheme } from '../../src/theme';
 import { getAuthActionErrorMessage } from '../../src/errors/presentation';
-import type { SocialAuthProvider } from '@calibrate/shared/socialAuth';
-import { SocialAuthButtons } from '../../src/auth/SocialAuthButtons';
-import { socialAuthErrorMessage } from '../../src/auth/socialAuthErrors';
 
-/** Presents sign-in and blocks authentication until pending account-deletion cleanup is acknowledged. */
+/** Use the native welcome by default and keep the browser's direct email sign-in URL. */
 export default function LoginScreen() {
+    const params = useLocalSearchParams<AuthEntryParams>();
+    const { accountDeletionCleanupNotice } = useAuth();
+    if (Platform.OS !== 'web' && params.method !== EMAIL_SIGN_IN_METHOD && !accountDeletionCleanupNotice) {
+        return <AuthWelcome params={params} />;
+    }
+    return <EmailLogin params={params} />;
+}
+
+/** Present the password form and require acknowledgement of any pending device cleanup. */
+function EmailLogin({ params }: { params: AuthEntryParams }) {
     const { colors } = useAppTheme();
     const {
-        login, signInWithProvider, serverUrl, authError,
+        login, authError,
         accountDeletionCleanupNotice, acknowledgeAccountDeletionCleanupNotice
     } = useAuth();
     const [email, setEmail] = useState('');
@@ -45,17 +54,13 @@ export default function LoginScreen() {
         }
     }
 
-    async function handleProvider(provider: SocialAuthProvider) {
-        if (accountDeletionCleanupNotice || isSubmitting) return;
-        setIsSubmitting(true);
-        setError(null);
-        try { await signInWithProvider(provider, 'login'); }
-        catch (err) { setError(socialAuthErrorMessage(err)); }
-        finally { setIsSubmitting(false); }
-    }
-
     return (
         <Screen contentWidth="form" safeTop style={styles.screen}>
+            {!accountDeletionCleanupNotice && <Link href={authEntryHref('welcome', params)} dismissTo asChild>
+                <Pressable accessibilityRole="link" style={styles.inlineLinkTarget}>
+                    <AppText style={[styles.link, { color: colors.primary }]}>Back to welcome</AppText>
+                </Pressable>
+            </Link>}
             <AuthBrand description="Track food, weight, and progress against a personalized calorie target." />
 
             {accountDeletionCleanupNotice && (
@@ -107,12 +112,11 @@ export default function LoginScreen() {
                     disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)}
                     onPress={() => void handleLogin()}
                 />
-                <SocialAuthButtons serverUrl={serverUrl} disabled={isSubmitting || Boolean(accountDeletionCleanupNotice)} onPress={provider => void handleProvider(provider)} />
             </AppSection>
 
             {!accountDeletionCleanupNotice && (
                 <Link
-                    href="/(auth)/register"
+                    href={authEntryHref('register', params)}
                     asChild
                 >
                     <Pressable accessibilityRole="link" style={styles.linkTarget}>
