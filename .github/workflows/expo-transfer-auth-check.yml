@@ -25,15 +25,17 @@ jobs:
           printf '%s\n' '{"name":"expo-transfer-check","version":"1.0.0","private":true}' > package.json
           printf '%s\n' '{"expo":{"name":"Calibrate","owner":"dark-machines","slug":"calibrate-health-app","extra":{"eas":{"projectId":"fda8f8c5-e646-47ac-82fb-35003c9cbec7"}}}}' > app.json
           eas="$RUNNER_TEMP/eas/node_modules/.bin/eas"
+          "$eas" project:info | grep -Fq '@dark-machines/calibrate-health-app'
+          echo 'Repository token can access the transferred project.'
+          for environment in preview production; do
+            values="$("$eas" env:list "$environment" --scope project --format short)"
+            grep -Fxq 'EXPO_PUBLIC_EAS_PROJECT_ID=fda8f8c5-e646-47ac-82fb-35003c9cbec7' <<< "$values"
+            grep -Fxq 'EXPO_PUBLIC_CALIBRATE_SERVER_URL=https://calibratehealth.app' <<< "$values"
+            echo "Repository token can read Calibrate's $environment EAS environment."
+          done
           role="$("$eas" whoami 2>/dev/null | sed -nE '
             s/^[^[:alnum:]]*dark-machines \(Role: (Owner|Admin|Release Manager|Developer)\)$/\1/p
             s/^[^[:alnum:]]*dark-machines \(Role: [^,]*, limited to (Owner|Admin|Release Manager|Developer) by the current credentials\)$/\1/p
           ')"
           test -n "$role" || { echo 'Repository token lacks an Expo release-capable organization role'; exit 1; }
-          "$eas" project:info | grep -Fq '@dark-machines/calibrate-health-app'
-          for environment in preview production; do
-            values="$("$eas" env:list "$environment" --scope project --format short)"
-            grep -Fxq 'EXPO_PUBLIC_EAS_PROJECT_ID=fda8f8c5-e646-47ac-82fb-35003c9cbec7' <<< "$values"
-            grep -Fxq 'EXPO_PUBLIC_CALIBRATE_SERVER_URL=https://calibratehealth.app' <<< "$values"
-          done
           echo "Repository EXPO_TOKEN has the $role role in dark-machines and can read Calibrate's EAS project and both release environments."
