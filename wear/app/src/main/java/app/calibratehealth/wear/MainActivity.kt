@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
         runOnUiThread { refreshPairingState() }
     }
 
+    /** Connect cached repositories and action handling before rendering the watch shell. */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val database = CalibrateWearDatabase.get(this)
@@ -115,6 +116,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Observe pairing while visible and schedule a foreground refresh when the pairing state allows it. */
     override fun onStart() {
         super.onStart()
         PairingStateEvents.addListener(pairingStateChanged)
@@ -129,17 +131,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Accept a fresh reminder destination even when the activity is already open. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         acceptReminderDeepLink(intent)
     }
 
+    /** Detach pairing observation while the activity is hidden. */
     override fun onStop() {
         PairingStateEvents.removeListener(pairingStateChanged)
         super.onStop()
     }
 
+    /** Cancel the activity-owned controller scope on teardown. */
     override fun onDestroy() {
         controllerScope.cancel()
         super.onDestroy()

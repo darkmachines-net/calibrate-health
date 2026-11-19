@@ -1,4 +1,4 @@
-/** @file Development-only helpers for the explicitly enabled seeded-account workflow. */
+/** @file Development food-provider comparisons, notification diagnostics, and reminder test controls. */
 
 import express from 'express';
 import { InAppNotificationType } from '@prisma/client';

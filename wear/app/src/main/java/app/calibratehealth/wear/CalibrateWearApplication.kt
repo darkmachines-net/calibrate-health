@@ -10,6 +10,7 @@ import app.calibratehealth.wear.pairing.PairingStateStore
 import app.calibratehealth.wear.pairing.PairingUiState
 
 class CalibrateWearApplication : Application() {
+    /** Recover a pending phone invalidation first, then schedule reminder refresh for paired watches. */
     override fun onCreate() {
         super.onCreate()
         // Recover persisted mutations if the process died between the Room commit and WorkManager enqueue.

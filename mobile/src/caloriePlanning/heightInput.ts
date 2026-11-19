@@ -1,4 +1,4 @@
-/** @file height Input: Converts valid metric or imperial height inputs into rounded canonical millimeters, otherwise null. */
+/** @file Metric and imperial height conversion, policy validation, and field guidance. */
 
 import {
     HEIGHT_UNITS,
@@ -11,7 +11,10 @@ const MILLIMETERS_PER_CENTIMETER = 10;
 const MILLIMETERS_PER_INCH = 25.4;
 const INCHES_PER_FOOT = 12;
 
-/** Converts valid metric or imperial height inputs into rounded canonical millimeters, otherwise null. */
+/**
+ * Convert finite centimeters or whole feet and inches to rounded millimeters.
+ * Return null for malformed input. Range validation is a separate step.
+ */
 export function heightInputToCanonicalMillimeters(args: {
     unit: HeightUnit;
     centimeters?: number;

@@ -99,7 +99,11 @@ test('public function documentation covers named, default, arrow, CommonJS, and 
     ['shared/probe.ts', 'export const read = () => 1;'],
     ['shared/probe.ts', 'function read() { return 1; } export { read };'],
     ['shared/probe.ts', 'export class Reader { read() { return 1; } }'],
+    ['shared/probe.ts', 'export class Reader { read = () => 1; }'],
+    ['shared/probe.ts', 'export class Reader { read = function() { return 1; }; }'],
     ['shared/probe.ts', 'export interface Reader { read(): number; }'],
+    ['shared/probe.ts', 'export type Reader = { read: () => number; };'],
+    ['shared/probe.ts', 'export type Reader = { read: (() => number) | null; };'],
     ['shared/probe.ts', 'export declare function read(): number;'],
     ['scripts/probe.cjs', 'module.exports = function read() { return 1; };'],
   ]) {
@@ -117,9 +121,16 @@ test('documented exports pass while private implementation helpers remain option
     /** Holds the fixture reader. */
     export class Reader {
       private internal() { return 1; }
+      private internalArrow = () => 1;
       /** Returns the fixture value. */
       read() { return this.internal(); }
+      /** Reads the value through a bound callback. */
+      readBound = () => this.internal();
     }
+    export type Callbacks = {
+      /** Reads a value when the callback is present. */
+      read: (() => number) | null;
+    };
   `, { filePath: 'shared/probe.ts' });
   assert.deepEqual(result.messages, []);
 });

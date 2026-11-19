@@ -1,4 +1,4 @@
-/** @file Versioned account notification SSE event shapes and payload construction. */
+/** @file Shared account notification SSE event names, reasons, and payload helpers. */
 
 export const NOTIFICATION_REALTIME_EVENT_NAME = 'notification-update';
 
@@ -21,7 +21,7 @@ export type NotificationRealtimePayload = {
 const NOTIFICATION_REALTIME_REASON_VALUES = new Set<string>(Object.values(NOTIFICATION_REALTIME_REASONS));
 
 /**
- * Build the wire payload used by the SSE notification stream.
+ * Build an SSE notification payload with the supplied reason and an ISO timestamp.
  */
 export const buildNotificationRealtimePayload = (
     reason: NotificationRealtimeReason,
@@ -31,7 +31,7 @@ export const buildNotificationRealtimePayload = (
     updated_at: now.toISOString()
 });
 
-/** Accept only recognized reminder invalidation reasons with a nonempty update timestamp. */
+/** Accept recognized notification reasons paired with a nonempty timestamp string. */
 export const isNotificationRealtimePayload = (value: unknown): value is NotificationRealtimePayload => {
     if (!value || typeof value !== 'object') {
         return false;

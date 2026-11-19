@@ -24,25 +24,34 @@ import { SocialAuthButtons } from '../auth/SocialAuthButtons';
 
 export type ProfileEditorContentProps = {
     timezone: string;
+    /** Update the draft account timezone. */
     onTimezoneChange: (value: string) => void;
     dateOfBirth: string;
+    /** Update the draft birth date as a date-only string. */
     onDateOfBirthChange: (value: string) => void;
     sex: Sex | null;
+    /** Update the draft sex used for calorie calculations. */
     onSexChange: (value: Sex | null) => void;
     activityLevel: ActivityLevel | null;
+    /** Update the draft activity level used for calorie calculations. */
     onActivityLevelChange: (value: ActivityLevel | null) => void;
     heightUnit: HeightUnit;
     heightCm: string;
+    /** Update the metric height input without coercing its in-progress text. */
     onHeightCmChange: (value: string) => void;
     heightFeet: string;
+    /** Update the feet portion of the imperial height input. */
     onHeightFeetChange: (value: string) => void;
     heightInches: string;
+    /** Update the inches portion of the imperial height input. */
     onHeightInchesChange: (value: string) => void;
     calorieTarget?: number | null;
     validationError?: string | null;
     saveError: Error | null;
     isSaving: boolean;
+    /** Discard or close the current profile edit. */
     onCancel: () => void;
+    /** Submit the current profile draft for validation and saving. */
     onSave: () => void;
 };
 

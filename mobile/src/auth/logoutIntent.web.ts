@@ -1,4 +1,4 @@
-/** @file Browser cross-tab logout intent persistence and subscription for account-session teardown. */
+/** @file Persistent browser logout intent and cookie-session revocation, coordinated across tabs when Web Locks are available. */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalibrateApiClient } from '@calibrate/api-client';

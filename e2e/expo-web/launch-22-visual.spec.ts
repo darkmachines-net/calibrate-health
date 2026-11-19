@@ -1,4 +1,4 @@
-/** @file Regression coverage for launch 22 visual: onboarding imperial measurements with enlarged text. */
+/** @file Browser visual baselines for responsive tracking, onboarding, saved foods, and recoverable data states. */
 
 import { applyTwoHundredPercentText } from './text-scaling';
 import { existsSync } from 'node:fs';

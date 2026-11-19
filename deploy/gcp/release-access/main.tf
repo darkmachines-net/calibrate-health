@@ -1,4 +1,4 @@
-# Operator-owned release identities. This separate state never participates in application delivery.
+# Operator-managed Terraform plan and apply identities, kept in state separate from application infrastructure.
 terraform {
   required_version = ">= 1.9, < 2.0"
   backend "gcs" {

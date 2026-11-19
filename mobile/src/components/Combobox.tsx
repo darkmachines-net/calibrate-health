@@ -31,8 +31,11 @@ export type ListboxProps<T extends string> = {
     options: ReadonlyArray<ComboboxOption<T>>;
     value?: T;
     activeValue?: T;
+    /** Report keyboard or pointer movement to another enabled option. */
     onActiveChange?: (value: T) => void;
+    /** Report the selected enabled option. */
     onSelect: (value: T) => void;
+    /** Request dismissal without selecting an option. */
     onDismiss: () => void;
     initialTypeahead?: string;
     focusInitialOption?: boolean;
@@ -43,6 +46,7 @@ export type ComboboxProps<T extends string> = {
     label: string;
     options: ReadonlyArray<ComboboxOption<T>>;
     value?: T;
+    /** Report a user's selected option value. */
     onChange: (value: T) => void;
     placeholder?: string;
     helperText?: string;
@@ -54,6 +58,7 @@ export type ComboboxProps<T extends string> = {
     focusError?: boolean;
     searchable?: boolean;
     open?: boolean;
+    /** Report requested open-state changes for a controlled combobox. */
     onOpenChange?: (open: boolean) => void;
     containerStyle?: StyleProp<ViewStyle>;
     testID?: string;
@@ -252,7 +257,7 @@ export function Listbox<T extends string>({
     );
 }
 
-/** Accessible single-value selection with an optional searchable native modal. */
+/** Render accessible single-value selection in a shared sheet with optional search. */
 export function Combobox<T extends string>({
     label,
     options,

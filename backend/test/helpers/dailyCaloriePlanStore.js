@@ -1,4 +1,4 @@
-/** @file Regression coverage for daily Calorie Plan Store. */
+/** @file In-memory daily calorie plan delegate for transaction fixtures. */
 
 // Small stateful delegate for tests that use in-memory transaction doubles.
 /** Create an isolated mutable daily-plan delegate for transaction doubles, including account/date uniqueness behavior. */

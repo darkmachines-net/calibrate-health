@@ -1,4 +1,4 @@
-/** @file account Data: Download a browser Blob directly; Expo Sharing and cache-file APIs are native-only. */
+/** @file Browser account deletion cleanup and direct Blob export downloads. */
 
 import type { AccountExport } from '@calibrate/api-client';
 import {
@@ -28,7 +28,10 @@ export async function shareAccountExport(accountExport: AccountExport): Promise<
     URL.revokeObjectURL(href);
 }
 
-/** Browser logout has no device credentials or native account scopes to clean up. */
+/**
+ * Delete the server account, attempt each account-data cleanup, then clear the
+ * browser session. Cleanup failures are ignored; deletion and session failures propagate.
+ */
 export async function deleteAccountAndClearLocalData(
     currentPassword: string,
     dependencies: AccountDeletionDependencies

@@ -21,6 +21,7 @@ type SupportedClientDiagnosticPlatform = Extract<ClientDiagnosticPlatform, 'web'
 export type ClientDiagnosticSignal = Omit<ClientDiagnosticInput, 'platform' | 'version'>;
 export type ClientDiagnosticWireInput = ClientDiagnosticInput;
 
+/** Submit a validated diagnostic to the configured server and return its acknowledgement. */
 export type ClientDiagnosticReporter = (
     input: ClientDiagnosticWireInput
 ) => Promise<ClientDiagnosticResponse>;

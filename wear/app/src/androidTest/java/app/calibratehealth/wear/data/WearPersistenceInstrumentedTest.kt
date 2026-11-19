@@ -1,4 +1,4 @@
-/** Regression tests and fixtures for Wear Persistence Instrumented. */
+/** On-device checks for Room migrations, FIFO persistence, and Android Keystore session storage. */
 
 package app.calibratehealth.wear.data
 
@@ -37,7 +37,7 @@ class WearPersistenceInstrumentedTest {
     private val preferencesName = "wear-secure-session-test"
     private val keyAlias = "calibrate_wear_session_test"
 
-    /** Closes owned stores and removes test account state after each instrumentation scenario. */
+    /** Remove the test databases, preferences, and Keystore entry after each scenario. */
     @After
     fun cleanUp() {
         context.deleteDatabase(databaseName)

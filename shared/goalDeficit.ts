@@ -1,4 +1,4 @@
-/** @file goal Deficit: Allowed daily calorie deficit/surplus magnitudes (kcal/day). */
+/** @file Supported signed calorie changes and normalization of non-maintenance UI choices. */
 
 /**
  * Allowed daily calorie deficit/surplus magnitudes (kcal/day).
@@ -43,7 +43,9 @@ export const DEFAULT_DAILY_DEFICIT_CHOICE_STRING = DEFAULT_DAILY_DEFICIT_CHOICE_
  * - zero => maintenance
  * - negative => surplus (gain weight)
  *
- * Only allows standard deficit/surplus magnitudes to keep projections stable.
+ * Accepts numbers and strings converted with `Number`; other inputs, non-finite
+ * values, non-integers, and unsupported magnitudes return null. In particular,
+ * an empty or whitespace-only string converts to zero (maintenance).
  */
 export function parseDailyDeficit(input: unknown): number | null {
     const numeric = typeof input === 'number' ? input : typeof input === 'string' ? Number(input) : Number.NaN;
@@ -62,7 +64,9 @@ export function parseDailyDeficit(input: unknown): number | null {
 /**
  * Normalize a daily-deficit UI selection to one of the allowed non-maintenance choices.
  *
- * Returns an absolute magnitude (kcal/day). Inputs outside the allowed set fall back to the default.
+ * Accepts numbers and strings converted with `Number`, returning an absolute
+ * magnitude in kcal/day. Zero, unsupported values, and other inputs fall back
+ * to the default non-maintenance choice.
  */
 export function normalizeDailyDeficitChoiceAbsValue(input: unknown): number {
     const numeric = typeof input === 'number' ? input : typeof input === 'string' ? Number(input) : Number.NaN;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Production container entrypoint.
+# Self-hosted container entrypoint. Apply pending migrations with bounded retries before starting Express.
 #
 # We avoid storing a full DATABASE_URL secret by injecting DB components (host/user/password)
 # separately. Prisma migrations still require DATABASE_URL, so we compose it here before

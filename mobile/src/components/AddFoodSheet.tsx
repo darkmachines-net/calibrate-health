@@ -1,4 +1,4 @@
-/** @file Add Food Sheet: Selects the compact add-food composition below the shared tablet breakpoint. */
+/** @file Food search, quick entry, serving selection, and direct or queued logging in an adaptive sheet. */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, Linking, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';

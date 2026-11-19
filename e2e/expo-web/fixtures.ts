@@ -1,4 +1,4 @@
-/** @file fixtures: Keep unrelated late PWA lifecycle notices from intercepting feature-test actions. */
+/** @file Playwright fixtures for authenticated browser states, transitions, and expected diagnostics. */
 
 import {
   expect,
@@ -71,7 +71,9 @@ export type ApiResourceFixtureState = (typeof API_RESOURCE_FIXTURE_STATES)[numbe
 export type ApiResourceFixture = {
   pathname: string;
   state: ApiResourceFixtureState;
+  /** Response body for populated states, or a factory receiving the requested URL. */
   content: unknown | ((url: URL) => unknown);
+  /** Response body for the empty state, or a factory receiving the requested URL. */
   empty: unknown | ((url: URL) => unknown);
   method?: string;
   /** Match a query-bearing resource without coupling the fixture to parameter order. */

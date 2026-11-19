@@ -36,7 +36,7 @@ export function getAccountAccessState(user: UserClientPayload | null | undefined
     return user?.account_access?.state ?? ACCOUNT_ACCESS_STATES.FULL;
 }
 
-/** Reports whether authentication, email verification, and legal acceptance permit full account access. */
+/** Check for a reported account restriction. Callers must verify the user is signed in separately. */
 export function hasFullAccountAccess(user: UserClientPayload | null | undefined): boolean {
     return getAccountAccessState(user) === ACCOUNT_ACCESS_STATES.FULL;
 }

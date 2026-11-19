@@ -27,7 +27,7 @@ export type ClientUpgradeRequirement = {
 
 const VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
-/** Compare the numeric SemVer core; debug/internal suffixes remain compatible with their release version. */
+/** Compare the numeric version cores, ignoring suffixes. Return null if either version cannot be parsed. */
 export function compareClientVersions(left: string, right: string): number | null {
     const leftParts = parseVersion(left);
     const rightParts = parseVersion(right);

@@ -1,4 +1,4 @@
-/** @file Native logout-intent platform contract; browser cross-tab coordination is supplied by the web module. */
+/** @file Secure native logout journal and deferred revocation for device refresh tokens. */
 
 import * as SecureStore from 'expo-secure-store';
 import { CalibrateApiClient } from '@calibrate/api-client';

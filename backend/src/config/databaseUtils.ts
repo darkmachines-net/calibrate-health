@@ -9,10 +9,9 @@ type PgConnectionConfig = Pick<PoolConfig, 'host' | 'port' | 'database' | 'user'
 /**
  * Resolve the Prisma/pg connection string for the current runtime.
  *
- * Local development prefers `DATABASE_URL` directly (via `.env`). For hosted
- * runtimes we often inject DB components (host/user/password/name) as
- * separate environment variables, so we can compose a URL without storing the
- * full connection string as a secret.
+ * Use `DATABASE_URL` as supplied when present. Otherwise compose it from the
+ * `DB_*` settings and throw if required components are missing. The full
+ * connection resolver applies socket, TLS, and pool validation separately.
  */
 export function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string {
   const directUrl = env.DATABASE_URL;
@@ -246,7 +245,7 @@ export function resolveDatabaseConnection(env: NodeJS.ProcessEnv = process.env):
   return { url: url.toString(), schema, poolConfig };
 }
 
-/** Schema-only commands remain usable without any live database credentials. */
+/** Supply a placeholder URL for generate, format, and validate when DATABASE_URL is unset. */
 export function resolvePrismaCliUrl(
   env: NodeJS.ProcessEnv = process.env,
   argv: string[] = process.argv

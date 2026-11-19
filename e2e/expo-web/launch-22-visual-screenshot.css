@@ -1,3 +1,4 @@
+/* Hide transient PWA lifecycle notices during screenshot comparison. */
 [data-testid="pwa-back-online"],
 [data-testid="pwa-update-ready"],
 [data-testid="pwa-update-error"] {

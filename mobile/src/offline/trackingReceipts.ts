@@ -1,11 +1,11 @@
-/** @file tracking Receipts: Persist acknowledged rows before removing their durable intent, including partial replay failures. */
+/** @file Apply tracking receipts to the in-memory query cache during offline replay. */
 
 import type { QueryClient } from '@tanstack/react-query';
 import type { FoodLogEntry, MetricEntry } from '@calibrate/api-client';
 import type { QueuedMutation } from './queuedMutation';
 import type { LocalEntry } from './trackingProjection';
 
-/** Persist acknowledged rows before removing their durable intent, including partial replay failures. */
+/** Update cached day, pause, food, or weight data from an acknowledged replay before its queued row is removed. */
 export function applyTrackingReceipt(client: QueryClient, mutation: QueuedMutation, response: unknown) {
     const payload = mutation.payload as Record<string, any>;
     const result = response as Record<string, any>;

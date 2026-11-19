@@ -1,4 +1,4 @@
-/** @file use Log Date Navigation: Native counterpart to the PWA local-day navigation model. */
+/** @file Account-local log-day selection and bounded history navigation. */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -15,9 +15,13 @@ export type LogDateNavigation = {
     isToday: boolean;
     canGoBack: boolean;
     canGoForward: boolean;
+    /** Select the previous local day, clamped to the available history. */
     goToPreviousDate: () => void;
+    /** Select the next local day, clamped to today. */
     goToNextDate: () => void;
+    /** Select the current account-local day. */
     goToToday: () => void;
+    /** Select a date-only day within the available bounds. */
     setDate: (date: string) => void;
 };
 

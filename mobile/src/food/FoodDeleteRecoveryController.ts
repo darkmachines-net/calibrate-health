@@ -16,13 +16,20 @@ export type FoodDeleteCommitResult<TEntry extends FoodDeleteEntry, TOutcome> =
     | Readonly<{ status: 'failed'; failure: FoodDeleteFailure<TEntry> }>;
 
 export type FoodDeleteRecoveryControllerOptions<TEntry extends FoodDeleteEntry, TOutcome> = {
+    /** Persist a delete with the ticket's stable operation ID; reject when it can be retried. */
     commit: (ticket: FoodDeleteTicket<TEntry>) => Promise<TOutcome>;
+    /** Observe a successful commit; failures here do not turn it into a failed delete. */
     onCommitted?: (ticket: FoodDeleteTicket<TEntry>, outcome: TOutcome) => void | Promise<void>;
+    /** Create an operation ID for a new ticket; retries reuse the existing ID. */
     createOperationId?: () => string;
+    /** Supply the current time in milliseconds for ticket expiry. */
     now?: () => number;
     undoWindowMs?: number;
+    /** Schedule the pending ticket's automatic commit after the undo window. */
     schedule?: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
+    /** Cancel a previously scheduled automatic commit. */
     cancelScheduled?: (timer: ReturnType<typeof setTimeout>) => void;
+    /** Convert a commit failure into text suitable for recovery UI. */
     describeError?: (error: unknown) => string;
 };
 
@@ -39,13 +46,16 @@ export class FoodDeleteRecoveryController<TEntry extends FoodDeleteEntry, TOutco
     /** Binds the deletion persistence, undo timing, and state callbacks supplied by the caller. */
     constructor(private readonly options: FoodDeleteRecoveryControllerOptions<TEntry, TOutcome>) {}
 
+    /** Return the current readonly recovery state for external-store consumers. */
     getSnapshot = (): FoodDeleteRecoveryState<TEntry> => this.state;
 
+    /** Register a state-change listener and return its unsubscribe function. */
     subscribe = (listener: Listener): (() => void) => {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     };
 
+    /** Start an undo window, flushing an earlier pending delete; existing tickets are reused or retried. */
     requestDelete = (entry: TEntry): FoodDeleteTicket<TEntry> => {
         const existing = this.findActiveTicket(entry.id);
         if (existing) return existing;
@@ -73,6 +83,7 @@ export class FoodDeleteRecoveryController<TEntry extends FoodDeleteEntry, TOutco
         return ticket;
     };
 
+    /** Cancel the matching pending delete, returning false once it is no longer undoable. */
     undo = (operationId = this.state.pending?.operationId): boolean => {
         if (!operationId || this.state.pending?.operationId !== operationId) return false;
         this.cancelTimer();
@@ -80,6 +91,7 @@ export class FoodDeleteRecoveryController<TEntry extends FoodDeleteEntry, TOutco
         return true;
     };
 
+    /** Commit the pending ticket in order, or resolve undefined if there is none. */
     flush = (): Promise<FoodDeleteCommitResult<TEntry, TOutcome> | undefined> => {
         const ticket = this.state.pending;
         if (!ticket) return Promise.resolve(undefined);
@@ -92,6 +104,7 @@ export class FoodDeleteRecoveryController<TEntry extends FoodDeleteEntry, TOutco
         return this.queueCommit(ticket);
     };
 
+    /** Retry a failed ticket with its original operation ID, or resolve undefined if it is absent. */
     retry = (operationId: string): Promise<FoodDeleteCommitResult<TEntry, TOutcome> | undefined> => {
         const failure = this.state.failures.find(({ ticket }) => ticket.operationId === operationId);
         if (!failure) return Promise.resolve(undefined);

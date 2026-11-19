@@ -5,6 +5,7 @@ import { AccessibilityInfo, findNodeHandle, View, type TextStyle } from 'react-n
 import { AppText } from './AppText';
 
 export type FormErrorSummaryHandle = {
+    /** Focus and announce the current error summary for assistive technology. */
     focus: () => void;
 };
 
@@ -15,6 +16,7 @@ type FormErrorSummaryProps = {
 
 type FocusableView = React.ComponentRef<typeof View> & { focus?: () => void };
 
+/** Render the current submission error as an alert with an imperative focus target. */
 export const FormErrorSummary = forwardRef<FormErrorSummaryHandle, FormErrorSummaryProps>(
     function FormErrorSummary({ message, style }, ref) {
         const summaryRef = useRef<React.ComponentRef<typeof View>>(null);

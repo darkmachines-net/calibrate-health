@@ -1,4 +1,4 @@
-/** @file Regression coverage for design review. */
+/** @file Captures design review screenshots of representative browser routes and overlays in both color schemes. */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
