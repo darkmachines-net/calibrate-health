@@ -1,9 +1,9 @@
-/** @file Calibrate Android/iOS metadata and bundle identities, paired Gradle builder and Android artifact assertions. */
+/** @file Provide Calibrate metadata, bundle identities, paired Gradle build hooks, and artifact checks to the release toolkit. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { hash, trackedIdentity } from '@mchartier/expo-release';
+import { hash, trackedIdentity } from '@darkmachines-net/expo-release';
 import { applicationIdentity } from './release-inputs.mjs';
 import { checkRepository, createServerReleaseReplacements, createNativeReleaseReplacements, SERVER_RELEASE_FILE_PATHS, NATIVE_RELEASE_FILE_PATHS } from './release-metadata.mjs';
 import { NATIVE_RELEASE_ARTIFACT_CONTRACTS } from './native-release-evidence.mjs';

@@ -1,7 +1,7 @@
-/** @file Native compatibility includes application inputs but excludes allocated version metadata. */
+/** @file Combine shared Expo normalization with Calibrate's native and Wear inputs, excluding allocated versions. */
 const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
-const { fingerprintTransform } = require('@mchartier/expo-release/expo');
+const { fingerprintTransform } = require('@darkmachines-net/expo-release/expo');
 const pairing = 'modules/wear-pairing/';
 const normalized = file => readFileSync(resolve(__dirname, file), 'utf8')
   .replace(/^version\s*=\s*['"][^'"]+['"]/gm, "version = '<allocated>'")

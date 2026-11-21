@@ -1,4 +1,4 @@
-/** @file Guard metadata stamping, native compatibility, Terraform selection and isolated development/beta/store destinations. */
+/** @file Verify metadata stamping, native compatibility, destination isolation, and matching toolkit pins. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,8 +10,8 @@ import { execFileSync } from 'node:child_process';
 import { stamp } from './release-hooks.mjs';
 import { applicationIdentity } from './release-inputs.mjs';
 import { checkRepository, validateManifest, validateClientDiagnosticVersionContract } from './release-metadata.mjs';
-import { sourceEnvironment } from '@mchartier/expo-release';
-import { selectRelease } from '@mchartier/expo-release/engine';
+import { sourceEnvironment } from '@darkmachines-net/expo-release';
+import { selectRelease } from '@darkmachines-net/expo-release/engine';
 import { parse as parseYaml } from 'yaml';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const config=JSON.parse(fs.readFileSync(path.join(root,'release.config.json')));
@@ -232,9 +232,9 @@ test('beta promotion and public-store delivery preserve paired reservations and 
 test('both workflow callers and the installed package remain pinned to one immutable toolkit commit', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
-  const pin = pkg.devDependencies['@mchartier/expo-release'].split('#')[1];
+  const pin = pkg.devDependencies['@darkmachines-net/expo-release'].split('#')[1];
   assert.match(pin, /^[a-f0-9]{40}$/);
-  assert.ok(lock.packages['node_modules/@mchartier/expo-release'].resolved.endsWith(`#${pin}`));
+  assert.ok(lock.packages['node_modules/@darkmachines-net/expo-release'].resolved.endsWith(`#${pin}`));
   for (const name of ['release', 'development']) {
     const workflow = fs.readFileSync(path.join(root, `.github/workflows/${name}.yml`), 'utf8');
     assert.ok(workflow.includes(`darkmachines-net/expo-release-template/.github/workflows/${name}.yml@${pin}`));

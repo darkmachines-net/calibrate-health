@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-/** @file Start the isolated Expo development client with the current worktree backend and public native OAuth configuration. */
+/** @file Launch the isolated Expo development client through the toolkit with worktree URLs and public OAuth inputs. */
 
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { developmentServer } from "@mchartier/expo-release/development";
+import { developmentServer } from "@darkmachines-net/expo-release/development";
 import { createExpoCliEnvironment } from "./expo-cli-environment.mjs";
 import { readDotenv, resolveDevConfig } from "./dev-config.mjs";
 
