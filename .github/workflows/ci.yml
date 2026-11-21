@@ -1,4 +1,5 @@
 # Keep pull requests to three checks; platform compilation and operational rehearsals are dispatched separately.
+# Use a Node release whose npm supports root-only Git dependencies in the three required checks.
 name: Check
 
 on:
@@ -24,7 +25,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.14.0
+          node-version: 24.19.0
           cache: npm
       - uses: actions/setup-java@v4
         with:
@@ -49,7 +50,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.14.0
+          node-version: 24.19.0
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -112,7 +113,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24.14.0
+          node-version: 24.19.0
           cache: npm
           cache-dependency-path: |
             package-lock.json
