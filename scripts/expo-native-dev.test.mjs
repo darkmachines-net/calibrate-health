@@ -1,4 +1,4 @@
-/** @file Check worktree API selection, public OAuth forwarding and credential-free Metro configuration for dev clients. */
+/** @file Verify that the toolkit's Metro launch receives worktree API and public OAuth settings without credentials. */
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { developmentServer } from "@mchartier/expo-release/development";
+import { developmentServer } from "@darkmachines-net/expo-release/development";
 import {
   parseExpoNativeDevArgs,
   resolveExpoNativeBackendUrl,

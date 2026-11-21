@@ -1,4 +1,4 @@
-/** @file Execute the real entry and shared gate with native stubs to prove incompatible clients never load Router. */
+/** @file Verify with native stubs that the real app entry and toolkit gate block Router on incompatible clients. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -20,13 +20,13 @@ function start({ platform = 'android', client = true, installed = 'current', req
     if (name === 'expo-modules-core') return { requireOptionalNativeModule: () => ({ runtimeVersion: installed }) };
     if (name === 'react') return { createElement: () => null };
     if (name === 'expo') return { registerRootComponent: component => registered.push(['main', component]) };
-    if (name === '@mchartier/expo-release/register') return gate.exports;
+    if (name === '@darkmachines-net/expo-release/register') return gate.exports;
     if (name === 'expo-router/build/qualified-entry') return { App: root };
     if (['@expo/metro-runtime', 'expo-router/entry'].includes(name)) return {};
     throw new Error(`Unexpected startup import: ${name}`);
   };
   const context = { require: requireStub, module: gate, console: { warn() {} } };
-  vm.runInNewContext(fs.readFileSync(require.resolve('@mchartier/expo-release/register'), 'utf8'), context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('@darkmachines-net/expo-release/register'), 'utf8'), context);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8'), { ...context });
   return { loaded, registered, root };
 }

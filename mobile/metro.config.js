@@ -1,4 +1,4 @@
-/** @file Metro resolution for workspace sources, hoisted runtimes and the shared development startup gate. */
+/** @file Resolve workspace sources and hoisted packages, including the toolkit's development startup gate. */
 
 const path = require('node:path');
 const fs = require('node:fs');
@@ -9,7 +9,7 @@ const workspaceRoot = path.resolve(projectRoot, '..');
 const apiClientRoot = path.resolve(workspaceRoot, 'packages/api-client');
 const sharedRoot = path.resolve(workspaceRoot, 'shared');
 const hoistedRuntimeModules = [
-  '@mchartier/expo-release',
+  '@darkmachines-net/expo-release',
   '@babel/runtime',
   '@expo/image-utils',
   '@expo/vector-icons',

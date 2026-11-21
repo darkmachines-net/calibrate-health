@@ -1,5 +1,5 @@
-/** @file Calibrate server and platform bundle boundaries with version-mirror normalization; orchestration stays shared. */
-import { trackedIdentity } from '@mchartier/expo-release';
+/** @file Define Calibrate server and platform input boundaries for the shared engine and normalize version mirrors. */
+import { trackedIdentity } from '@darkmachines-net/expo-release';
 const IGNORED = /(^|\/)(__tests__|__mocks__|fixtures|e2e|docs)(\/|$)|(^|\/)src\/(test|androidTest)\/|\.(test|spec)\.[^/]+$|(^|\/)(README[^/]*|AGENTS\.md)$/i;
 const SERVER_FILES = /^(backend\/|shared\/|packages\/|mobile\/|Dockerfile\.app$|\.dockerignore$|package(?:-lock)?\.json$|scripts\/expo-(?:cli-environment|web-build|web-release)\.mjs$)/;
 const PHONE_FILES = /^(mobile\/|shared\/|packages\/api-client\/|package(?:-lock)?\.json$)/;

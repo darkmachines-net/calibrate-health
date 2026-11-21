@@ -1,7 +1,7 @@
-/** @file Configure native provider callbacks, release updates and separate development clients without changing store identities. */
+/** @file Configure native callbacks and store identities with shared release and development variants. */
 
 /** Resolve the native Expo project, update channel, and automatic runtime compatibility. */
-const { runtimeVersion, developmentConfig } = require('@mchartier/expo-release/expo');
+const { runtimeVersion, developmentConfig } = require('@darkmachines-net/expo-release/expo');
 const release = require('./release-version.json');
 const PROJECT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHANNEL_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;

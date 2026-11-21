@@ -1,8 +1,8 @@
-/** @file Calibrate metadata mappings, diagnostic compatibility windows and application-specific release assertions. */
+/** @file Map Calibrate release metadata and apply shared version ordering to diagnostic compatibility checks. */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { compareVersions as compareSemver } from '@mchartier/expo-release/engine';
+import { compareVersions as compareSemver } from '@darkmachines-net/expo-release/engine';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 

@@ -1,4 +1,4 @@
-/** @file Regression coverage for native setup: setup flags keep check read-only and reject unknown or conflicting options. */
+/** @file Verify read-only native setup checks, argument validation, and discovery of the installed release toolkit. */
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -275,7 +275,7 @@ test('archive extraction handles literal Windows paths and rejects entries outsi
 
 test('local setup provides the shared artifact inspector alongside phone and Wear compiler tools', () => {
   const require = createRequire(import.meta.url);
-  const shared = path.dirname(require.resolve('@mchartier/expo-release/package.json'));
+  const shared = path.dirname(require.resolve('@darkmachines-net/expo-release/package.json'));
   const tools = fs.readFileSync(path.join(shared, 'bin/android-tools.mjs'), 'utf8');
   const inspectorBuildTools = tools.match(/ANDROID_BUILD_TOOLS_VERSION=([\d.]+)/)?.[1];
   // The shared inspector can retain Wear's reviewed tools while SDK 58 uses newer phone compilation tools.

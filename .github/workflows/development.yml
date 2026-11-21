@@ -1,4 +1,4 @@
-# Build a separate phone development client with a compatible preview, or update an existing client.
+# Build or update a phone development preview with the same package-pinned toolkit as Release.
 name: Development
 on:
   workflow_dispatch:
@@ -10,6 +10,6 @@ permissions: { contents: read }
 jobs:
   development:
     permissions: { contents: read, deployments: write }
-    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@d4be3a84b1f53df4a5a906e0a1030dbcdee82856
+    uses: darkmachines-net/expo-release-template/.github/workflows/development.yml@863743087e3012bbc35ca783b58ccceb63110055
     with: { operation: '${{ inputs.operation }}', platform: '${{ inputs.platform }}', source: '${{ inputs.source }}' }
     secrets: inherit
