@@ -1,4 +1,4 @@
-/** @file profile Image: Helpers for parsing and serializing small profile images. */
+/** @file Parse and serialize inline profile-image data URLs; callers enforce the processed-image size cap. */
 
 /**
  * Helpers for parsing and serializing small profile images.
@@ -21,7 +21,8 @@ export type ParsedBase64DataUrl = {
 /**
  * Parse a `data:<mimeType>;base64,<payload>` string into raw bytes.
  *
- * Returns null when the string is malformed or contains an unsupported MIME type.
+ * Returns null when the data URL shape or MIME type is unsupported, or decoding
+ * produces no bytes. This does not validate canonical base64 or enforce the size cap.
  */
 export const parseBase64DataUrl = (dataUrl: string): ParsedBase64DataUrl | null => {
   const trimmed = dataUrl.trim();
@@ -44,7 +45,7 @@ export const parseBase64DataUrl = (dataUrl: string): ParsedBase64DataUrl | null 
 };
 
 /**
- * Build a base64 data URL suitable for `<img src="...">` / MUI `<Avatar src="...">`.
+ * Build an inline base64 data URL from a MIME type and image bytes.
  */
 export const buildBase64DataUrl = (opts: { mimeType: string; bytes: Uint8Array }): string => {
   return `data:${opts.mimeType};base64,${Buffer.from(opts.bytes).toString('base64')}`;

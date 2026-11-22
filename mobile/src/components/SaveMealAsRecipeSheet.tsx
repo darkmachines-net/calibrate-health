@@ -30,7 +30,7 @@ type SaveMealAsRecipeSheetProps = {
     onSaved: (recipeName: string) => void;
 };
 
-/** Create a reusable immutable recipe from selected entries in one logged meal. */
+/** Create an editable saved recipe from snapshots of the selected entries in one logged meal. */
 export const SaveMealAsRecipeSheet: React.FC<SaveMealAsRecipeSheetProps> = ({
     visible,
     date,

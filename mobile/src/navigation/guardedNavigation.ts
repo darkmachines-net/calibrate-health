@@ -1,6 +1,7 @@
 /** @file Focused-editor navigation guards and explicitly permitted transitions after save or discard. */
 
 type Navigate = () => void;
+/** Prepare for a guarded transition; resolve false to keep the current route open. */
 export type PrepareNavigation = () => Promise<boolean>;
 
 type NavigationGuard = (navigate: Navigate, prepare?: PrepareNavigation) => Promise<void>;

@@ -1,4 +1,4 @@
-/** @file Regression coverage for goal pace. */
+/** @file Browser coverage for preserving goal progress during a pace change and resetting it for a new goal. */
 
 import { test, expect, expectApiFailure, hideTransientPwaNotices } from './fixtures';
 import { applyTwoHundredPercentText } from './text-scaling';

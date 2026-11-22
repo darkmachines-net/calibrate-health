@@ -9,7 +9,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.tasks.await
 
-/** Narrow Expo bridge for capability discovery and short-lived pairing coordination. */
+/** Expo entry point for discovery, bounded messages, the durable inbox, and relay authorization. */
 class CalibrateWearPairingModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("CalibrateWearPairing")

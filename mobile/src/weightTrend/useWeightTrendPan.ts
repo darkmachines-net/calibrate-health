@@ -8,8 +8,11 @@ import type { ComponentRef, Ref } from 'react';
 const WEIGHT_TREND_DRAG_THRESHOLD = 6;
 
 export type WeightTrendPanCallbacks = {
+    /** Begin a recognized horizontal drag or browser wheel gesture. */
     begin: () => void;
+    /** Report horizontal displacement in pixels since the gesture began. */
     move: (pixels: number) => void;
+    /** Finish the gesture on release, termination, or wheel inactivity. */
     end: () => void;
 };
 

@@ -1,4 +1,4 @@
-/** @file VAPID configuration, browser push subscription lifecycle, and bounded delivery handling. */
+/** @file Web push VAPID configuration, public-key discovery, and delivery to stored subscriptions. */
 
 import webpush, { type PushSubscription } from 'web-push';
 
@@ -45,7 +45,8 @@ export function resolveWebPushConfig(env: NodeJS.ProcessEnv = process.env): WebP
 }
 
 /**
- * Ensure web-push has been configured with VAPID details before sending.
+ * Apply the configured VAPID details to web-push. Missing settings return an
+ * error result. Invalid details rejected by web-push throw.
  */
 export function ensureWebPushConfigured(env: NodeJS.ProcessEnv = process.env): { ok: boolean; error?: string } {
   const { config, error } = resolveWebPushConfig(env);

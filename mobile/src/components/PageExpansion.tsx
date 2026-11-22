@@ -22,8 +22,11 @@ export type PageExpansionConfig = {
     id: string | null;
     title: string;
     backLabel: string;
+    /** Request collapse of the expanded page. */
     onClose: () => void;
+    /** Restore the specified expanded region when navigating forward through history. */
     onRestore: (id: string) => void;
+    /** Render detail content for the active region ID. */
     renderContent: (id: string) => React.ReactNode;
     focused?: boolean;
 };

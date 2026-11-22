@@ -45,12 +45,12 @@ const parsePort = (value: string | undefined): number | null => {
   return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 65535 ? parsed : null;
 };
 
-/** The official hosted service owns email delivery and legal-consent policy. */
+/** Check whether a deployed environment opted into the hosted-service policy. */
 export const isHostedServiceDeployment = (env: NodeJS.ProcessEnv = process.env): boolean =>
   env.CALIBRATE_HOSTED_SERVICE?.trim().toLowerCase() === 'true' &&
   isProductionOrStagingEnv(env.NODE_ENV);
 
-/** Resolve provider-neutral SMTP configuration without exposing any credentials. */
+/** Resolve internal SMTP settings, including credentials when supplied. Disable delivery if required settings are incomplete. */
 export function resolveEmailDeliveryConfig(env: NodeJS.ProcessEnv = process.env): EmailDeliveryConfig {
   const hostedRequired = isHostedServiceDeployment(env);
   const publicAppOrigin = normalizeOrigin(env.PUBLIC_APP_ORIGIN) ??

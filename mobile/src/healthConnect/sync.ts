@@ -82,6 +82,7 @@ export type HealthConnectSyncOptions = {
     storage?: Storage;
     native?: NativeAdapter;
     now?: Date;
+    /** Return false to cancel the sync at its next scope check, such as after an account switch. */
     shouldContinue?: () => boolean;
 };
 
@@ -473,7 +474,10 @@ function isTokenMismatch(error: unknown): boolean {
         && (body as { code?: unknown }).code === 'HEALTH_CONNECT_TOKEN_MISMATCH');
 }
 
-/** Run read-only foreground reconciliation without allowing Health Connect errors to escape the provider. */
+/**
+ * Read Health Connect and reconcile the selected data with the server. Advance
+ * checkpoints only after acknowledgement. Cancellation and sync failures reject.
+ */
 export async function synchronizeHealthConnect(
     options: HealthConnectSyncOptions
 ): Promise<HealthConnectSyncResult> {

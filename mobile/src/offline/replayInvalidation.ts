@@ -1,4 +1,4 @@
-/** @file replay Invalidation: Refresh every surface whose server-owned state may change after a queued weigh-in replays. */
+/** @file Query invalidation for replayed weight, food-log, and day-control changes. */
 
 import type { QueryClient } from '@tanstack/react-query';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';
@@ -17,7 +17,7 @@ const METRIC_REPLAY_QUERY_KEYS = [
     calibrationStatusQueryKey
 ] as const;
 
-/** Refresh every surface whose server-owned state may change after a queued weigh-in replays. */
+/** Invalidate calibration evidence and the affected weight or food-day query groups after replay. */
 export async function invalidateQueriesAfterOfflineReplay(
     queryClient: Pick<QueryClient, 'invalidateQueries'>,
     result: ReconcileResult

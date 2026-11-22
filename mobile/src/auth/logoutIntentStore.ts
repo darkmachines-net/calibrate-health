@@ -1,9 +1,13 @@
-/** @file logout Intent Store: Serialize invalidation and account switching; completed logout still suppresses automatic sign-in. */
+/** @file Server-scoped logout intent, durable revocation retry, and automatic sign-in suppression. */
 
 type Intent = { signedOut: boolean; pending: boolean; refreshTokens?: string[] };
 type Storage = { get: (key: string) => Promise<string | null>; set: (key: string, value: string) => Promise<void>; remove: (key: string) => Promise<void> };
 
-/** Serialize invalidation and account switching; completed logout still suppresses automatic sign-in. */
+/**
+ * Create a per-server logout journal backed by the supplied storage and optional
+ * cross-context lock. Browser revocation uses the cookie session. Native
+ * revocation retains the refresh tokens still awaiting acknowledgement.
+ */
 export function createLogoutIntentStore(storage: Storage, revoke: (server: string, token?: string) => Promise<unknown>, browser: boolean, lock: <T>(key: string, work: () => Promise<T>) => Promise<T> = (_key, work) => work()) {
     const pending = new Map<string, Promise<unknown>>();
     const unsaved = new Map<string, Intent>();
@@ -25,7 +29,9 @@ export function createLogoutIntentStore(storage: Storage, revoke: (server: strin
         unsaved.delete(k);
     };
     return {
+        /** Check whether explicit sign-out still suppresses automatic sign-in for this server. */
         hasExplicitLogout: (server: string) => serial(server, async k => Boolean((await read(k))?.signedOut)),
+        /** Record sign-out and any pending cookie-session or refresh-token revocation. */
         beginExplicitLogout: (server: string, token?: string) => serial(server, async k => {
             const previous = await read(k).catch(() => { unreadable.add(k); return null; });
             const tokens = browser ? [] : [...new Set([...(previous?.refreshTokens ?? []), ...(token ? [token] : [])])];
@@ -37,6 +43,7 @@ export function createLogoutIntentStore(storage: Storage, revoke: (server: strin
             const previous = await read(k);
             await save(k, { signedOut: previous?.signedOut ?? false, pending: true, refreshTokens: [...new Set([...(previous?.refreshTokens ?? []), token])] });
         }),
+        /** Revoke outstanding credentials in order, preserving sign-out and retaining pending work on failure. */
         flushExplicitLogout: (server: string) => serial(server, async k => {
             const intent = await read(k);
             if (!intent?.pending) return;
@@ -52,6 +59,7 @@ export function createLogoutIntentStore(storage: Storage, revoke: (server: strin
                 }
             }
         }),
+        /** Clear sign-out suppression after a new login while retaining any pending revocation. */
         finishExplicitLogin: (server: string) => serial(server, async k => {
             const intent = await read(k);
             if (intent?.pending) await save(k, { ...intent, signedOut: false });

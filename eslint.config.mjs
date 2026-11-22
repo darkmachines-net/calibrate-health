@@ -35,6 +35,10 @@ export default defineConfig([
         contexts: [
           'TSDeclareFunction',
           'TSMethodSignature',
+          'PropertyDefinition[value.type=ArrowFunctionExpression]',
+          'PropertyDefinition[value.type=FunctionExpression]',
+          'TSPropertySignature[typeAnnotation.typeAnnotation.type=TSFunctionType]',
+          'TSPropertySignature[typeAnnotation.typeAnnotation.type=TSUnionType]:has(TSFunctionType)',
         ],
       }],
     },

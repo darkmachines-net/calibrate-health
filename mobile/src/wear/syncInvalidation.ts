@@ -14,6 +14,7 @@ const INVALIDATION_TTL_MS = 10 * 60 * 1000;
 const MAX_IDENTIFIER_LENGTH = 256;
 
 type SyncInvalidationTransport = {
+    /** Send a payload to the specified Wear node and return the Data Layer request ID. */
     sendMessage(nodeId: string, path: string, payload: string): Promise<number>;
 };
 
@@ -210,7 +211,7 @@ export function flushWearSyncInvalidation(options: {
     });
 }
 
-/** Exposed only for account cleanup tests and future explicit unpair flows. */
+/** Delete the pending watch invalidation for the specified server and account during device cleanup. */
 export async function clearWearSyncInvalidation(serverOrigin: string, userId: number): Promise<void> {
     await AsyncStorage.removeItem(storageKey(canonicalOrigin(serverOrigin), userId));
 }

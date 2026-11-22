@@ -35,6 +35,7 @@ export type BottomSheetModalSize = 'standard' | 'wide';
 
 export type BottomSheetModalProps = {
     visible: boolean;
+    /** Close the sheet after an allowed dismissal request. */
     onRequestClose: () => void;
     children: React.ReactNode;
     maxHeight?: ViewStyle['maxHeight'];
@@ -47,6 +48,7 @@ export type BottomSheetModalProps = {
     footer?: React.ReactNode;
     dismissDisabled?: boolean;
     contentKey?: React.Key;
+    /** Notify the caller after the modal is shown and initial focus is requested. */
     onShow?: () => void;
     size?: BottomSheetModalSize;
     title?: string;
@@ -54,6 +56,7 @@ export type BottomSheetModalProps = {
     initialFocusRef?: React.RefObject<ModalFocusableTarget | null>;
     returnFocusRef?: React.RefObject<ModalFocusableTarget | null>;
     isDirty?: boolean;
+    /** Decide whether to discard dirty content; false keeps the sheet open. */
     confirmDismiss?: () => boolean | Promise<boolean>;
     contentStyle?: StyleProp<ViewStyle>;
     keyboardContextRef?: React.RefObject<React.ComponentRef<typeof View> | null>;

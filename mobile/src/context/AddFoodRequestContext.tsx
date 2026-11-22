@@ -13,7 +13,9 @@ export type AddFoodRequestInput = Omit<AddFoodRequest, 'id'>;
 
 export type AddFoodRequestContextValue = {
     request: AddFoodRequest | null;
+    /** Replace the pending add-food intent, optionally specifying its date and meal. */
     requestAddFood: (input?: AddFoodRequestInput) => void;
+    /** Consume the request only if its ID still matches the pending intent. */
     consumeRequest: (id: number) => void;
 };
 

@@ -1,4 +1,4 @@
-/** @file account Data: Prevent an unavailable platform service from retaining deleted-account credentials indefinitely. */
+/** @file Native account deletion cleanup and temporary-file export sharing. */
 
 import type { AccountExport } from '@calibrate/api-client';
 import type { AccountDeletionCleanupNotice } from './accountDeletionNotice';
@@ -77,7 +77,10 @@ async function withCleanupTimeout(cleanup: () => Promise<void>): Promise<void> {
     }
 }
 
-/** Attempts every account-scoped cleanup and always clears credentials after confirmed server deletion. */
+/**
+ * After server deletion, attempt bounded device cleanup and record any recovery
+ * needed. Throw if local sign-in credentials cannot be cleared.
+ */
 export async function deleteAccountAndClearLocalData(
     currentPassword: string,
     dependencies: AccountDeletionDependencies

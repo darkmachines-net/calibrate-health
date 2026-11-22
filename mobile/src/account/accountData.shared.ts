@@ -1,4 +1,4 @@
-/** @file Credential-free account export validation and portable serialization shared by browser and native download flows. */
+/** @file Shared account-export validation, deletion confirmation, and cleanup dependency contracts. */
 
 import type { AccountExport } from '@calibrate/api-client';
 import type { AccountDeletionCleanupNotice } from './accountDeletionNotice';
@@ -15,11 +15,17 @@ const FORBIDDEN_EXPORT_KEYS = new Set([
 ]);
 
 export type AccountDeletionDependencies = {
+    /** Delete the server account using the supplied password; rejection prevents local cleanup. */
     deleteRemoteAccount: (currentPassword: string) => Promise<void>;
+    /** Remove queued account-scoped mutations from the device. */
     discardOfflineChanges: () => Promise<void>;
+    /** Remove locally stored Health Connect account data. */
     clearHealthConnectData: () => Promise<void>;
+    /** Remove paired Wear account data, including on the watch where reachable. */
     clearWearData: () => Promise<void>;
+    /** Persist instructions for cleanup that could not be completed after deletion. */
     persistCleanupNotice: (notice: AccountDeletionCleanupNotice) => Promise<void>;
+    /** Remove local session credentials and account-scoped state after server deletion. */
     clearLocalSession: () => Promise<void>;
 };
 
@@ -40,7 +46,7 @@ function assertNoCredentialFields(value: unknown, seen: Set<object>): void {
     });
 }
 
-/** Serialize only after recursively verifying that the server response contains no credentials. */
+/** Reject any forbidden credential field in the export before serializing its JSON. */
 export function serializeAccountExport(accountExport: AccountExport): string {
     assertNoCredentialFields(accountExport, new Set());
     return JSON.stringify(accountExport, null, 2);
@@ -51,7 +57,7 @@ export function canSubmitAccountDeletion(currentPassword: string, confirmation: 
     return currentPassword.length > 0 && confirmation === DELETE_ACCOUNT_CONFIRMATION;
 }
 
-/** Builds a dated JSON export filename, using today when the export timestamp is invalid. */
+/** Build a JSON export filename from the UTC date, using the current UTC date for an invalid timestamp. */
 export function buildAccountExportFilename(exportedAt: string): string {
     const parsed = new Date(exportedAt);
     const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;

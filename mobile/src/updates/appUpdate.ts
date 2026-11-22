@@ -1,4 +1,4 @@
-/** @file Running native bundle identity and server compatibility checks coordinated with Expo-owned updates. */
+/** @file Running bundle diagnostics and manual Expo update checks and downloads. */
 
 import * as Application from 'expo-application';
 import * as Updates from 'expo-updates';
@@ -43,14 +43,17 @@ type AppVersionInfoInput = {
 export type AppUpdateCheckOutcome = 'available' | 'rollback' | 'current';
 
 export type AppUpdateRuntime = {
+    /** Check the configured update service for a newer bundle or rollback to the embedded bundle. */
     checkForUpdateAsync: () => Promise<{
         isAvailable: boolean;
         isRollBackToEmbedded: boolean;
     }>;
+    /** Fetch an offered update or prepare an embedded rollback for a later reload. */
     fetchUpdateAsync: () => Promise<{
         isNew: boolean;
         isRollBackToEmbedded: boolean;
     }>;
+    /** Reload the app using the update selected by the runtime. */
     reloadAsync: () => Promise<void>;
 };
 

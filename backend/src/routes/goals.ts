@@ -20,9 +20,9 @@ import { evaluateCaloriePlan, isPolicyWeight, projectGoalEndDate } from '../../.
 import { buildStoredCaloriePlanningSnapshot, getStoredCaloriePlanningSnapshot, projectionWire } from '../services/caloriePlanning';
 
 /**
- * Goal endpoints for creating and fetching the current goal.
- *
- * We store weights in grams and always return the latest goal, converted to the user's unit preference.
+ * Goal endpoints for current-goal reads, creation, and pace changes. A read
+ * returns null when there is no active goal. Storage uses grams and responses
+ * use the account's weight unit.
  */
 const router = express.Router();
 

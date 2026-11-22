@@ -1,4 +1,4 @@
-/** @file Regression coverage for tablet layout. */
+/** @file Checks that tablet Add Food dialogs stay within the viewport and retain Quick and Search controls. */
 
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';

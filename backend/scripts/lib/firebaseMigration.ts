@@ -167,7 +167,9 @@ export interface MigrationRunOptions {
   apply?: boolean;
   batchSize?: number;
   checkpoint: MigrationCheckpoint;
+  /** Durably save each checkpoint before an import or after its outcome; rejection stops the run. */
   saveCheckpoint: (checkpoint: MigrationCheckpoint) => Promise<void>;
+  /** Read the frozen source accounts so the plan can be checked for changes. */
   readSource: () => Promise<MigrationAccount[]>;
   destination: MigrationDestination;
 }

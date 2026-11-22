@@ -34,9 +34,8 @@ const buildExpoError = (message: string, statusCode?: number): ExpoPushError => 
 };
 
 /**
- * Send a notification through the configured native provider.
- *
- * Expo tokens are supported first because Expo development builds are the native-client baseline.
+ * Submit a notification to Expo Push. Reject unsupported providers, failed HTTP
+ * requests, and rejected push tickets.
  */
 export async function sendNativePushNotification(
   subscription: NativePushSubscriptionForDelivery,

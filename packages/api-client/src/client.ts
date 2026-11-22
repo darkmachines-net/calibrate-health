@@ -155,10 +155,13 @@ export type ApiClientOptions = {
     baseUrl: string;
     /** Native identity is attached to every request so a self-host can enforce release floors continuously. */
     clientIdentity?: NativeClientIdentity;
+    /** Observe a server-required client upgrade before the request error is returned. */
     onClientUpgradeRequired?: (requirement: ClientUpgradeRequirement) => void | Promise<void>;
+    /** Supply the current bearer token for authenticated requests; null sends no bearer token. */
     getAccessToken?: () => string | null | Promise<string | null>;
-    /** Refresh native credentials after a protected request returns 401. */
+    /** Refresh native credentials after a protected 401; true permits one retry of the request. */
     refreshAccessToken?: () => boolean | Promise<boolean>;
+    /** Handle a protected 401 that cannot be recovered through a refresh. */
     onUnauthorized?: () => void | Promise<void>;
     /** Observes completed failures, including parsed server errors and client-generated timeouts. */
     onRequestError?: (error: unknown) => void;
@@ -868,7 +871,7 @@ export class CalibrateApiClient {
         });
     }
 
-    /** Searches the configured food provider with trimmed text or barcode input. */
+    /** Search with trimmed text or barcode input and return results from the server-selected provider. */
     searchFood(query: string, barcode?: string): Promise<FoodSearchResponse> {
         const params = new URLSearchParams();
         if (query.trim()) params.set('q', query.trim());
