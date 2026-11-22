@@ -48,15 +48,15 @@ function fixture(options = {}) {
 const google = { provider: 'google.com', idToken: 'opaque+provider&token' };
 
 test('providers are opt-in and unavailable under the local authority', () => {
-  assert.deepEqual(enabledSocialProviders({ AUTH_PROVIDER: 'local', FIREBASE_SOCIAL_PROVIDERS: 'google.com,apple.com' }), []);
+  assert.deepEqual(enabledSocialProviders({ AUTH_PROVIDER: 'local', FIREBASE_SOCIAL_PROVIDERS: 'google.com' }), []);
   assert.deepEqual(enabledSocialProviders({ AUTH_PROVIDER: 'firebase' }), []);
-  assert.deepEqual(enabledSocialProviders({ AUTH_PROVIDER: 'firebase', FIREBASE_SOCIAL_PROVIDERS: 'google.com, apple.com,google.com,unknown' }), ['google.com', 'apple.com']);
+  assert.deepEqual(enabledSocialProviders({ AUTH_PROVIDER: 'firebase', FIREBASE_SOCIAL_PROVIDERS: 'google.com, apple.com,google.com,unknown' }), ['google.com']);
 });
-test('credential parsing rejects unsupported providers, oversize tokens and missing Apple nonce', () => {
-  for (const body of [null, {}, { provider: 'password', id_token: 'x' }, { provider: 'google.com', id_token: 'x'.repeat(16385) }, { provider: 'apple.com', id_token: 'x' }]) {
+test('credential parsing rejects unsupported providers and oversize tokens', () => {
+  for (const body of [null, {}, { provider: 'password', id_token: 'x' }, { provider: 'google.com', id_token: 'x'.repeat(16385) }]) {
     assert.equal(parseSocialCredential(body), null);
   }
-  assert.deepEqual(parseSocialCredential({ provider: 'apple.com', id_token: 'x', nonce: 'a'.repeat(64), email: 'untrusted' }), { provider: 'apple.com', idToken: 'x', nonce: 'a'.repeat(64) });
+  assert.deepEqual(parseSocialCredential({ provider: 'google.com', id_token: 'x', email: 'untrusted' }), { provider: 'google.com', idToken: 'x' });
 });
 test('Google credentials exchange through Firebase and resolve exclusively by project/UID', async () => {
   const { authority, calls } = fixture();
@@ -69,14 +69,6 @@ test('Google credentials exchange through Firebase and resolve exclusively by pr
   assert.equal(body.idToken, undefined);
   assert.equal(calls.creates.length, 0);
 });
-test('Apple uses the raw nonce and verified token email, including private relay accounts', async () => {
-  const { authority, calls } = fixture({ identity: null, token: { email: 'private@privaterelay.appleid.com', firebase: { sign_in_provider: 'apple.com' } } });
-  await authority.authenticateSocial({ provider: 'apple.com', idToken: 'apple-token', nonce: 'a'.repeat(64) }, true, true);
-  assert.equal(new URLSearchParams(calls.requests[0].body.postBody).get('nonce'), 'a'.repeat(64));
-  assert.equal(calls.creates[0].data.email, 'private@privaterelay.appleid.com');
-  assert.ok(calls.creates[0].data.legal_acceptances.create.terms_version);
-  assert.equal(calls.creates[0].data.firebase_identity.create.uid, 'provider-uid');
-});
 test('login never creates an unregistered SQL user and registration never adopts an email collision', async () => {
   const login = fixture({ identity: null });
   await assert.rejects(login.authority.authenticateSocial(google, false, true), { code: 'SOCIAL_REGISTRATION_REQUIRED' });
@@ -86,8 +78,10 @@ test('login never creates an unregistered SQL user and registration never adopts
   assert.equal(conflict.calls.creates.length, 0);
 });
 test('concurrent same-UID registration can recover a unique conflict', async () => {
-  const { authority } = fixture({ identity: null, createError: { code: 'P2002' } });
+  const { authority, calls } = fixture({ identity: null, createError: { code: 'P2002' } });
   assert.deepEqual(await authority.authenticateSocial(google, true, true), { userId: 8, version: 3 });
+  assert.ok(calls.creates[0].data.legal_acceptances.create.terms_version);
+  assert.equal(calls.creates[0].data.firebase_identity.create.uid, 'provider-uid');
 });
 for (const token of [
   { uid: 'other' }, { aud: 'other-project' }, { email_verified: false }, { email: undefined },

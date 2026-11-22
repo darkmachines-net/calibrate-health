@@ -149,7 +149,7 @@ administration plus signing on itself. Calibrate's server owns consent and delet
 Firebase owns passwords and verification/recovery email. `EMAIL_DELIVERY_MODE` stays
 `disabled` and no SMTP credentials are required. Verify delivery before inviting users.
 Direct Firebase signup is disabled by default. Enabling `FIREBASE_SOCIAL_PROVIDERS`
-in `application_environment` allows provider identity creation for native Google/Apple
+in `application_environment` allows provider identity creation for native Google
 sign-in; apply this configuration along with the backend flag. Firebase identities
 alone grant no Calibrate access: the backend still requires explicit registration,
 current hosted legal consent and an immutable SQL binding. Configure the providers

@@ -34,7 +34,7 @@ const providers = router.stack.find(layer => layer.route?.path === '/mobile/prov
 const originalEnv = { ...process.env };
 test.beforeEach(() => {
   process.env.AUTH_PROVIDER = 'firebase';
-  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com,apple.com';
+  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com';
   process.env.CALIBRATE_HOSTED_SERVICE = 'true';
   process.env.NODE_ENV = 'production';
   calls.length = 0;
@@ -79,7 +79,8 @@ test('valid registration and login issue credentials using the verified security
   }
 });
 test('malformed, unsupported, and Wear requests never reach Firebase', async () => {
-  for (const patch of [{ provider: 'password' }, { device_id: '' }, { device_platform: 'wear_os' }, { intent: 'unknown' }, { provider: 'apple.com' }]) {
+  process.env.FIREBASE_SOCIAL_PROVIDERS = 'google.com,apple.com';
+  for (const patch of [{ provider: 'password' }, { device_id: '' }, { device_platform: 'wear_os' }, { intent: 'unknown' }, { provider: 'apple.com', nonce: 'a'.repeat(64) }]) {
     const res = response();
     await social({ body: { ...login, ...patch } }, res);
     assert.equal(res.statusCode, 400);

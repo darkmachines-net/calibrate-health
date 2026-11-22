@@ -1,9 +1,9 @@
 # Firebase owns HTTPS routing and credential verification; SQL still gates consent and Calibrate account access.
 locals {
-  firebase_social_signin_enabled = length(setintersection(
-    toset([for provider in split(",", lookup(var.application_environment, "FIREBASE_SOCIAL_PROVIDERS", "")) : trimspace(provider)]),
-    toset(["google.com", "apple.com"])
-  )) > 0
+  firebase_social_signin_enabled = contains(
+    [for provider in split(",", lookup(var.application_environment, "FIREBASE_SOCIAL_PROVIDERS", "")) : trimspace(provider)],
+    "google.com"
+  )
 }
 
 resource "google_firebase_project" "app" {

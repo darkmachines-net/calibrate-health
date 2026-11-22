@@ -8,6 +8,7 @@ import { AppText } from '../src/components/AppText';
 import { TextField } from '../src/components/TextField';
 import { TrustPageShell, trustPageStyles } from '../src/components/auth/TrustPageShell';
 import { useAuth } from '../src/auth/AuthContext';
+import { authEntryHref } from '../src/auth/authEntryHref';
 import { getAccountTrustErrorMessage } from '../src/errors/presentation';
 import { useAppTheme } from '../src/theme';
 
@@ -47,7 +48,7 @@ export default function ForgotPasswordRoute() {
             title="Reset password"
             description="Enter your account email. For privacy, the response is the same whether or not an account exists."
             footer={(
-                <Link href="/(auth)/login" asChild>
+                <Link href={authEntryHref('email')} asChild>
                     <Pressable accessibilityRole="link" style={trustPageStyles.linkTarget}>
                         <AppText style={{ color: colors.primary, fontWeight: '600' }}>Back to sign in</AppText>
                     </Pressable>
