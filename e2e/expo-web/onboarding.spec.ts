@@ -1,10 +1,12 @@
-/** @file Regression coverage for onboarding: editing details returns directly to the plan and preserves canonical measurements. */
+/** @file Exercises onboarding goal defaults, draft restoration, and atomic completion. */
 
 import { expect, expectApiFailure, FROZEN_LOCAL_DATE, hideTransientPwaNotices, test } from './fixtures';
 import {
   advanceOnboardingToActivity,
   advanceOnboardingToPlan,
+  chooseGoalPace,
   goalPaceOption,
+  goalPacePicker,
   installOnboardingAccount,
 } from './onboarding.fixture';
 
@@ -35,23 +37,23 @@ for (const goal of [
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
     await expect(page.getByText('Step 3 of 3', { exact: true })).toBeVisible();
-    const direction = page.getByRole('radiogroup', { name: 'Goal direction', exact: true });
-    await expect(direction.getByRole('radio', { checked: true })).toHaveCount(0);
-    await direction.getByRole('radio', { name: goal.label, exact: true }).click();
+    const goalType = page.getByRole('radiogroup', { name: 'Goal type', exact: true });
+    const choices = goalType.getByRole('radio');
+    await expect(choices.nth(0)).toHaveAccessibleName('Lose');
+    await expect(choices.nth(1)).toHaveAccessibleName('Maintain');
+    await expect(choices.nth(2)).toHaveAccessibleName('Gain');
+    await expect(goalType.getByRole('radio', { name: 'Lose', exact: true })).toBeChecked();
+    if (goal.label !== 'Lose') await goalType.getByRole('radio', { name: goal.label, exact: true }).click();
     if (goal.deficit === 0) {
       await expect(page.getByRole('textbox', { name: 'Target weight (kg)', exact: true })).toHaveCount(0);
-      await expect(page.getByRole('radiogroup', { name: 'Goal pace', exact: true })).toHaveCount(0);
+      await expect(goalPacePicker(page)).toHaveCount(0);
     } else {
       await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill(goal.target);
-      await expect(page.getByRole('radiogroup', { name: 'Goal pace', exact: true })
-        .getByRole('radio', { checked: true })).toHaveCount(0);
-      await goalPaceOption(page, 500).click();
+      await expect(goalPacePicker(page)).toContainText('Choose an available pace');
+      await chooseGoalPace(page, 500);
     }
     await expect(page.getByText('Your daily calorie target', { exact: true })).toBeVisible();
-    if (page.viewportSize()!.width < 1024) {
-      await expect(page.getByText('Your daily calorie target', { exact: true })).toBeInViewport();
-      await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeInViewport();
-    }
+    await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeInViewport();
     await page.getByRole('button', { name: 'Start tracking', exact: true }).click();
     await expect(page).toHaveURL(/\/today$/);
     await expect(page.getByRole('heading', { name: 'Daily balance', exact: true })).toBeVisible();
@@ -84,7 +86,7 @@ test('editing details returns directly to the plan and preserves canonical measu
   await advanceOnboardingToPlan(page);
   await page.getByRole('radio', { name: 'Lose', exact: true }).click();
   await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('82.3');
-  await goalPaceOption(page, 500).click();
+  await chooseGoalPace(page, 500);
   await page.getByRole('button', { name: 'Edit details', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'About you', exact: true })).toBeVisible();
   const weightUnit = page.getByRole('button', { name: /^Weight unit:/ });
@@ -149,14 +151,14 @@ test('restart restores the current step and explicit choices without overwriting
   await advanceOnboardingToPlan(page);
   await page.getByRole('radio', { name: 'Gain', exact: true }).click();
   await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('93.2');
-  await goalPaceOption(page, 250).click();
+  await chooseGoalPace(page, 250);
   await expect.poll(() => page.evaluate(() => Object.values(localStorage).some(value => value.includes('93.2')))).toBe(true);
   await page.reload();
   await hideTransientPwaNotices(page);
   await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Gain', exact: true })).toBeChecked();
   await expect(page.getByRole('textbox', { name: 'Target weight (kg)', exact: true })).toHaveValue('93.2');
-  await expect(goalPaceOption(page, 250)).toBeChecked();
+  await expect(goalPacePicker(page)).toContainText('250 kcal/day surplus');
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeEnabled();
 });
 
@@ -285,14 +287,27 @@ test('a target on the wrong side of current weight cannot complete setup', async
   await page.getByRole('radio', { name: 'Lose', exact: true }).click();
   const target = page.getByRole('textbox', { name: 'Target weight (kg)', exact: true });
   await target.fill('92');
-  await goalPaceOption(page, 500).click();
-  await page.getByRole('button', { name: 'Start tracking', exact: true }).click();
-  await expect(target).toBeFocused();
+  const start = page.getByRole('button', { name: 'Start tracking', exact: true });
+  const actions = page.getByTestId('goal-editor-actions');
+  await chooseGoalPace(page, 500);
+  await expect(start).toBeDisabled();
+  await expect(start).toBeInViewport();
+  const startY = (await start.boundingBox())?.y;
+  await page.getByRole('button', { name: 'Edit activity', exact: true }).scrollIntoViewIfNeeded();
+  expect((await start.boundingBox())?.y).toBe(startY);
   await expect(target).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByText('Choose a target below your current weight.', { exact: true })).toBeVisible();
+  await expect(actions.getByRole('alert')).toHaveText('Enter a target below your current weight of 88.2 kg.');
+  await expect(target).toHaveAccessibleDescription('Enter a target below your current weight of 88.2 kg.');
   expect(account.completions).toHaveLength(0);
+  await page.getByRole('radio', { name: 'Gain', exact: true }).click();
   await target.fill('82');
-  await page.getByRole('button', { name: 'Start tracking', exact: true }).click();
+  await expect(start).toBeDisabled();
+  await expect(target).toHaveAttribute('aria-invalid', 'true');
+  await expect(actions.getByRole('alert')).toHaveText('Enter a target above your current weight of 88.2 kg.');
+  await target.fill('92');
+  await chooseGoalPace(page, 500);
+  await expect(target).toHaveAttribute('aria-invalid', 'false');
+  await start.click();
   await expect(page).toHaveURL(/\/today$/);
 });
 
@@ -316,15 +331,15 @@ test('an activity edit that invalidates the chosen pace requires a fresh choice'
   await advanceOnboardingToPlan(page);
   await page.getByRole('radio', { name: 'Lose', exact: true }).click();
   await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('82');
-  await goalPaceOption(page, 500).click();
+  await chooseGoalPace(page, 500);
   await page.getByRole('button', { name: 'Edit activity', exact: true }).click();
   await page.getByRole('radio', { name: 'Mostly sitting', exact: true }).click();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
-  await expect(goalPaceOption(page, 500)).toBeDisabled();
-  await expect(page.getByRole('radiogroup', { name: 'Goal pace', exact: true })
-    .getByRole('radio', { checked: true })).toHaveCount(0);
+  await expect(goalPacePicker(page)).toContainText('Choose an available pace');
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeDisabled();
-  await goalPaceOption(page, 250).click();
+  await goalPacePicker(page).click();
+  await expect(goalPaceOption(page, 500)).toBeDisabled();
+  await chooseGoalPace(page, 250);
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeEnabled();
 });

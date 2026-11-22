@@ -16,6 +16,8 @@ export type FocusableFormControl = {
     focus: () => void;
 };
 
+export type ExternalFieldError = { id: string; message: string };
+
 type FormControlAccessibilityProps = {
     nativeID: string;
     accessibilityLabel: string;
@@ -33,6 +35,7 @@ export type FormFieldProps = {
     children: (controlProps: FormControlAccessibilityProps) => React.ReactNode;
     helperText?: string;
     errorText?: string;
+    externalError?: ExternalFieldError;
     required?: boolean;
     disabled?: boolean;
     hideLabel?: boolean;
@@ -48,13 +51,14 @@ function toNativeId(value: string) {
 
 /**
  * Gives every form control one label, description, and error relationship on
- * web while preserving useful VoiceOver and TalkBack announcements.
+ * web while preserving useful VoiceOver and TalkBack announcements. An external error references an existing message.
  */
 export function FormField({
     label,
     children,
     helperText,
     errorText,
+    externalError,
     required = false,
     disabled = false,
     hideLabel = false,
@@ -71,7 +75,7 @@ export function FormField({
     const controlId = `${baseId}-control`;
     const helperId = helperText ? `${baseId}-helper` : undefined;
     const errorId = errorText ? `${baseId}-error` : undefined;
-    const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined;
+    const describedBy = [errorId ?? externalError?.id, helperId].filter(Boolean).join(' ') || undefined;
     const lastAnnouncedError = useRef<string | undefined>(undefined);
 
     useEffect(() => {
@@ -85,7 +89,7 @@ export function FormField({
         AccessibilityInfo.announceForAccessibility(errorText);
     }, [controlRef, errorText, focusError]);
 
-    const accessibilityHint = [errorText, helperText].filter(Boolean).join(' ') || undefined;
+    const accessibilityHint = [errorText ?? externalError?.message, helperText].filter(Boolean).join(' ') || undefined;
     const controlProps: FormControlAccessibilityProps = {
         nativeID: controlId,
         accessibilityLabel: label,
@@ -94,7 +98,7 @@ export function FormField({
         accessibilityLabelledBy: hideLabel ? undefined : labelId,
         'aria-labelledby': hideLabel ? undefined : labelId,
         'aria-describedby': describedBy,
-        'aria-invalid': Boolean(errorText),
+        'aria-invalid': Boolean(errorText || externalError),
         'aria-required': required
     };
 

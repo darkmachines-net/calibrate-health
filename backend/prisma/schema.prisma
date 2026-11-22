@@ -421,13 +421,36 @@ model Goal {
   target_weight_grams Int
   target_date   DateTime?
   daily_deficit Int       @default(500)
+  /// Bounds are both null until a maintenance range has been confirmed.
+  maintenance_lower_grams Int?
+  maintenance_upper_grams Int?
+  /// Directional recovery goals point to the maintenance goal whose settings they restore.
+  recovery_maintenance_goal_id Int?
+  predecessor_goal_id Int?
+  start_from_trend Boolean @default(false)
+  completed_on DateTime? @db.Date
+  completion_source_revision String? @db.VarChar(64)
   calorie_plan_review_status CaloriePlanReviewStatus @default(CLEAR)
   calorie_plan_review_reason String?
   created_at    DateTime  @default(now())
   calibration_recommendations CalibrationRecommendation[]
   calorie_plan_revisions CaloriePlanRevision[]
+  maintenance_revisions MaintenanceGoalRevision[]
 
   @@index([user_id, created_at(sort: Desc), id(sort: Desc)])
+}
+
+model MaintenanceGoalRevision {
+  id Int @id @default(autoincrement())
+  goal_id Int
+  goal Goal @relation(fields: [goal_id], references: [id], onDelete: Cascade)
+  target_weight_grams Int
+  lower_weight_grams Int?
+  upper_weight_grams Int?
+  effective_local_date DateTime @db.Date
+  created_at DateTime @default(now())
+
+  @@index([goal_id, id])
 }
 
 model BodyMetric {
@@ -612,6 +635,8 @@ model CaloriePlanRevision {
   recommendation         CalibrationRecommendation? @relation(fields: [recommendation_id], references: [id], onDelete: SetNull)
   /// Non-null only for an intentional pace change; calibration rows inherit the dated pace.
   configured_daily_deficit Int?
+  /// A retired manual maintenance offset retained for history and exports.
+  manual_maintenance Boolean @default(false)
   target_adjustment_kcal Int
   calorie_plan_review_status CaloriePlanReviewStatus @default(CLEAR)
   calorie_plan_review_reason String?

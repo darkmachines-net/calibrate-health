@@ -13,6 +13,9 @@
 - Historical comparisons identify their source below the balance: **Compared with saved target**
   or **Compared with current target**. Include the same distinction in the accessible description.
   The current-target fallback is display-only; see [daily plan persistence](../../../backend/src/services/README.md#planning-and-daily-comparisons).
+- After goal completion, a bordered action in Daily balance opens the next-goal picker. It wraps below
+  the balance on narrow screens and appears above the paused-day content when tracking is paused.
+  A live calorie comparison identifies the previous plan. Progress carries the completion details.
 - Place the full-width weight control immediately below the balance, above food. It begins with
   **Weigh in** and an inviting supporting label, then becomes a measurement with **Logged today** or
   queued-sync status. Never use "No weigh-in yet" as its principal content. Use the existing scale
@@ -45,6 +48,8 @@
   say **Tracking was paused**, explain that this is not a zero-calorie day, and retain **Edit day** for
   backfill. Weight logging is always available. Retained food entries do not restore the normal
   calorie/meal preview while paused. Let the message scroll on short screens and at enlarged text sizes.
+- On the current maintenance day, weight and range guidance replace the generic pause message.
+  Start calorie tracking opens a budget review. Weight logging stays available.
 
 
 Shared expansion/focus/animation rules belong to [components](../components/README.md).

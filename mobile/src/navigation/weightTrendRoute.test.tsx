@@ -10,6 +10,10 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('../components/WeightTrendCard', () => ({
     WeightTrendCard: () => null
 }));
+jest.mock('../progress/useGoalStatus', () => ({
+    useGoalStatus: () => ({ data: null }),
+    getMaintenanceChartRange: () => undefined
+}));
 
 describe('WeightTrendScreen', () => {
     it('leaves route navigation to the shared tab header', async () => {

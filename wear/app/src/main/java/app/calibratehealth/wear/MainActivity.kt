@@ -96,6 +96,7 @@ class MainActivity : ComponentActivity() {
                 serverConfig = WearServerConfig.fromBuildConfig(),
                 homeState = homeState,
                 onSaveWeight = homeController::saveWeight,
+                onOpenProgressOnPhone = homeController::openProgressOnPhone,
                 disconnecting = disconnecting.value,
                 disconnectError = disconnectError.value,
                 publicResourceHandoffStatus = publicResourceHandoffStatus.value,

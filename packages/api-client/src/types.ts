@@ -26,6 +26,7 @@ import type {
 } from '@calibrate/shared/caloriePolicy';
 import type { CalibrationResult } from '@calibrate/shared/calibration';
 import type { InAppNotificationType } from '@calibrate/shared/inAppNotifications';
+import type { components } from './generated/v1';
 
 export type EligibilityStatus = SharedEligibilityStatus;
 export type CaloriePlanStatus = SharedCaloriePlanStatus;
@@ -119,6 +120,8 @@ export type UserClientPayload = {
 };
 
 export type OnboardingCompleteData = {
+    maintenance_lower_grams?: number;
+    maintenance_upper_grams?: number;
     weight_unit: WeightUnit;
     height_unit: HeightUnit;
     timezone: string;
@@ -175,16 +178,7 @@ export type AccountExport = {
         privacy_version: string;
         accepted_at: string;
     }>;
-    goals: Array<{
-        id: number;
-        start_weight_grams: number;
-        target_weight_grams: number;
-        target_date: string | null;
-        daily_deficit: number;
-        calorie_plan_review_status: 'CLEAR' | 'REQUIRES_REVIEW';
-        calorie_plan_review_reason: string | null;
-        created_at: string;
-    }>;
+    goals: Array<components['schemas']['AccountExportGoal']>;
     body_metrics: Array<{
         id: number;
         date: string;
@@ -342,6 +336,7 @@ export type AccountExport = {
         source_goal_id: number;
         recommendation_id: number | null;
         configured_daily_deficit: number | null;
+        manual_maintenance?: boolean;
         target_adjustment_kcal: number;
         calorie_plan_review_status: 'CLEAR' | 'REQUIRES_REVIEW';
         calorie_plan_review_reason: string | null;
@@ -507,6 +502,7 @@ export type WatchFoodDayMutation = Omit<WatchFoodDaySnapshot, 'revision'> & {
 };
 
 export type WatchSnapshot = {
+    goal_lifecycle?: components['schemas']['WatchSnapshot']['goal_lifecycle'];
     server_time: string;
     timezone: string;
     local_date: string;
@@ -607,6 +603,7 @@ export type ClientConfigResponse = {
         web_push?: boolean;
         health_connect_activity: boolean;
         wear_os_ready: boolean;
+        maintenance_goals?: boolean;
     };
 };
 
@@ -793,6 +790,9 @@ export type CalibrationStatusResponse = {
 };
 
 export type GoalPaceRequest = { daily_deficit: number; expected_plan_version: string };
+export type GoalStatus = components['schemas']['GoalStatus'];
+export type GoalChange = components['schemas']['GoalChange'];
+export type GoalChangeReceipt = components['schemas']['GoalChangeReceipt'];
 export type GoalPaceOptions = CaloriePlanOptionsResponse & {
     goal: GoalEntry;
     expected_plan_version: string;
@@ -800,6 +800,9 @@ export type GoalPaceOptions = CaloriePlanOptionsResponse & {
 };
 
 export type GoalEntry = {
+    completed_on?: string | null;
+    maintenance_lower_grams?: number | null;
+    maintenance_upper_grams?: number | null;
     id: number;
     user_id?: number;
     start_weight: number;
@@ -855,6 +858,7 @@ export type MetricProgressUpdate = {
 /** New servers attach a transactional progress receipt; older servers return only MetricEntry. */
 export type MetricSaveResponse = MetricEntry & {
     progress_update?: MetricProgressUpdate;
+    goal_completion?: components['schemas']['GoalCompletion'] | null;
 };
 
 export type FoodLogEntry = {

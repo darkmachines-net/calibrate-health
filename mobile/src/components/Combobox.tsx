@@ -1,4 +1,4 @@
-/** @file Accessible combobox and listbox primitives with content-sized option sheets and keyboard navigation. */
+/** @file Accessible combobox and listbox primitives with themed fields, option sheets, and keyboard navigation. */
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -15,7 +15,7 @@ import {
 import { type AppTheme, useAppTheme } from '../theme';
 import { AppText } from './AppText';
 import { BottomSheetModal } from './BottomSheetModal';
-import { FormField, type FocusableFormControl } from './FormField';
+import { FormField, type ExternalFieldError, type FocusableFormControl } from './FormField';
 import { useFocusVisible } from './useFocusVisible';
 
 export type ComboboxOption<T extends string> = {
@@ -47,6 +47,8 @@ export type ComboboxProps<T extends string> = {
     placeholder?: string;
     helperText?: string;
     errorText?: string;
+    externalError?: ExternalFieldError;
+    controlRef?: React.RefObject<FocusableFormControl | null>;
     required?: boolean;
     hideLabel?: boolean;
     closeOnSelect?: boolean;
@@ -252,7 +254,7 @@ export function Listbox<T extends string>({
     );
 }
 
-/** Accessible single-value selection with an optional searchable native modal. */
+/** Accessible selection with an optional searchable modal and support for externally rendered errors. */
 export function Combobox<T extends string>({
     label,
     options,
@@ -261,6 +263,8 @@ export function Combobox<T extends string>({
     placeholder = 'Choose an option',
     helperText,
     errorText,
+    externalError,
+    controlRef,
     required = false,
     hideLabel = false,
     closeOnSelect = true,
@@ -278,7 +282,8 @@ export function Combobox<T extends string>({
     const [hasOpened, setHasOpened] = useState(open === true);
     const [query, setQuery] = useState('');
     const [initialTypeahead, setInitialTypeahead] = useState('');
-    const triggerRef = useRef<FocusableFormControl | null>(null);
+    const internalTriggerRef = useRef<FocusableFormControl | null>(null);
+    const triggerRef = controlRef ?? internalTriggerRef;
     const searchRef = useRef<React.ComponentRef<typeof TextInput> | null>(null);
     const { focusVisible, handleFocus, handleBlur } = useFocusVisible();
     const isOpen = open ?? internalOpen;
@@ -329,6 +334,7 @@ export function Combobox<T extends string>({
             label={label}
             helperText={helperText}
             errorText={errorText}
+            externalError={externalError}
             required={required}
             disabled={disabled}
             hideLabel={hideLabel}
@@ -358,7 +364,8 @@ export function Combobox<T extends string>({
                             styles.trigger,
                             focusVisible && styles.triggerFocused,
                             pressed && !disabled && styles.triggerPressed,
-                            disabled && styles.triggerDisabled
+                            disabled && styles.triggerDisabled,
+                            externalError && { borderColor: theme.colors.danger }
                         ]}
                         testID={testID}
                     >
@@ -438,7 +445,7 @@ function createStyles(theme: AppTheme) {
             borderColor: theme.colors.outline,
             borderWidth: theme.stroke.control,
             borderRadius: theme.radius.md,
-            backgroundColor: theme.colors.surfaceContainerLow,
+            backgroundColor: theme.colors.surface,
             paddingHorizontal: theme.spacing.md,
             paddingVertical: theme.spacing.sm
         },
@@ -452,6 +459,7 @@ function createStyles(theme: AppTheme) {
             opacity: theme.interaction.pressedOpacity
         },
         triggerDisabled: {
+            backgroundColor: theme.colors.surfaceContainer,
             opacity: theme.interaction.disabledOpacity
         },
         triggerCopy: {
@@ -473,7 +481,7 @@ function createStyles(theme: AppTheme) {
             borderColor: theme.colors.outline,
             borderWidth: theme.stroke.control,
             borderRadius: theme.radius.md,
-            backgroundColor: theme.colors.surfaceContainerLow,
+            backgroundColor: theme.colors.surface,
             color: theme.colors.onSurface,
             paddingHorizontal: theme.spacing.md,
             paddingVertical: theme.spacing.sm,

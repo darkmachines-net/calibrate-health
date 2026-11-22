@@ -1,26 +1,29 @@
-/** @file Shared About you, Activity, and Your plan step forms with canonical measurement preservation. */
+/** @file Onboarding forms for profile details, activity, and the user's initial weight goal. */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import { HEIGHT_UNITS, WEIGHT_UNITS } from '@calibrate/shared';
+import { HEIGHT_UNITS, isMaintenanceRange, WEIGHT_UNITS } from '@calibrate/shared';
 import { AppButton } from '../components/AppButton';
 import { AppText } from '../components/AppText';
 import { AppNotice } from '../components/AppNotice';
-import { AppChoiceGroup } from '../components/AppChoiceGroup';
+import { GoalDailyChangeSelect } from '../components/GoalDailyChangeSelect';
 import { DatePickerField } from '../components/DatePickerField';
 import { FormField, type FocusableFormControl } from '../components/FormField';
+import { GOAL_TYPE_LABEL, GoalTypeSelector } from '../components/GoalTypeSelector';
 import { TextField } from '../components/TextField';
+import { gramsToDisplayWeight } from '../utils/bodyMeasurements';
+import { MaintenanceRangeFields } from '../progress/MaintenanceRangeFields';
+import { displayMaintenanceDistance, distanceFromInput } from '../progress/maintenanceRange';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { TimeZonePickerField } from '../components/TimeZonePickerField';
 import { ActivityLevelSelector } from '../components/profile/ActivityLevelSelector';
 import { AsyncStateBoundary, useAsyncResourceState } from '../components/AsyncStateBoundary';
 import { isNeverEmpty } from '../asyncState/resolveAsyncState';
 import { getMinimumDateOfBirth } from '../caloriePlanning/dateBounds';
-import { getCaloriePlanPresentation, getPlanOptionUnavailableCopy } from '../caloriePlanning/presentation';
+import { getCaloriePlanPresentation } from '../caloriePlanning/presentation';
 import { useCurrentLocalDate } from '../hooks/useCurrentLocalDate';
 import { formatTimeZoneLabel, isValidIanaTimeZone } from '../utils/timezones';
 import { SEX_OPTIONS } from '../utils/profileOptions';
-import { GOAL_MODE_OPTIONS, DAILY_GOAL_CHANGE_OPTIONS } from '../utils/goals';
 import { normalizeDecimalInput } from '../utils/numericInput';
 import { normalizeWeightInputText } from '../weightEntry/input';
 import { radius, spacing, useAppTheme } from '../theme';
@@ -30,9 +33,6 @@ import type { OnboardingController } from './useOnboardingController';
 
 export type OnboardingControlRefs = Record<OnboardingField, React.RefObject<FocusableFormControl | null>>;
 type StepProps = { controller: OnboardingController; controls: OnboardingControlRefs };
-const KCAL_PER_POUND = 3500;
-const KCAL_PER_KILOGRAM = 7700;
-const DAYS_PER_WEEK = 7;
 
 /** Collects profile measurements, birth date, sex, and timezone with canonical quantity preservation. */
 export function AboutYouStep({ controller, controls }: StepProps) {
@@ -130,41 +130,48 @@ export function ActivityStep({ controller, controls }: StepProps) {
         }} />;
 }
 
-/** Collects goal direction, target weight, and an available pace with live calorie-preview state. */
-export function YourPlanStep({ controller, controls }: StepProps) {
-    const { form, setForm, errors, planQuery, clearFieldError } = controller;
+/** Collects an available pace for directional goals or a reviewed maintenance range. */
+export function YourPlanStep({ controller, controls, errorId }: StepProps & { errorId: string }) {
+    const { form, setForm, planQuery, clearFieldError } = controller;
     const previewState = useAsyncResourceState(planQuery, isNeverEmpty);
     const weightUnit = form.weightUnit.toLowerCase();
-    const isChangingWeight = form.goalMode === 'lose' || form.goalMode === 'gain';
-    const paceOptions = useMemo(() => DAILY_GOAL_CHANGE_OPTIONS.map((magnitude) => {
-        const isGain = form.goalMode === 'gain';
-        const option = planQuery.data?.planOptions.find((candidate) => candidate.dailyDeficit === (isGain ? -magnitude : magnitude));
-        const weeklyChange = magnitude * DAYS_PER_WEEK / (form.weightUnit === 'LB' ? KCAL_PER_POUND : KCAL_PER_KILOGRAM);
-        return {
-            value: String(magnitude),
-            label: `${isGain ? 'Gain' : 'Lose'} about ${weeklyChange.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${weightUnit}/week`,
-            description: `${magnitude.toLocaleString()} kcal/day ${isGain ? 'surplus' : 'deficit'}`,
-            disabled: option?.available !== true || planQuery.isFetching || planQuery.isError || controller.completion.isPending,
-            disabledReason: option?.available === false ? getPlanOptionUnavailableCopy(option.reasonCode) : undefined
-        };
-    }), [form.goalMode, form.weightUnit, weightUnit, planQuery.data, planQuery.isFetching, planQuery.isError, controller.completion.isPending]);
-
+    const targetLabel = `Target weight (${weightUnit})`;
+    const goalMode = form.goalMode;
+    const isChangingWeight = goalMode === 'lose' || goalMode === 'gain';
+    const range = controller.maintenanceRange;
+    const [distanceInput, setDistanceInput] = useState<{ text: string; unit: typeof form.weightUnit } | null>(null);
+    function fieldError(field: OnboardingField) {
+        const message = controller.visiblePlanErrors[field];
+        return message && message === controller.planError ? { id: errorId, message } : undefined;
+    }
+    function editDistance(text: string) {
+        clearFieldError('targetWeight');
+        clearFieldError('maintenanceRange');
+        setDistanceInput({ text, unit: form.weightUnit });
+        setForm(current => ({ ...current, maintenanceDistanceGrams: distanceFromInput(text, current.weightUnit) }));
+    }
     return (
         <View style={styles.sections}>
             <View style={styles.group}>
-                <FormField label="Goal direction" errorText={errors.goalMode} controlRef={controls.goalMode}>
-                    {(field) => <SegmentedControl {...field} accessibilityLabel="Goal direction"
-                        options={GOAL_MODE_OPTIONS} value={form.goalMode} controlRef={controls.goalMode} disabled={controller.completion.isPending}
+                <FormField label={GOAL_TYPE_LABEL} externalError={fieldError('goalMode')} controlRef={controls.goalMode}>
+                    {(field) => <GoalTypeSelector {...field}
+                        value={form.goalMode} controlRef={controls.goalMode} disabled={controller.completion.isPending}
                         onChange={(goalMode) => {
-                            clearFieldError('goalMode'); clearFieldError('dailyChangeAbs'); clearFieldError('targetWeight');
-                            setForm((current) => ({ ...current, goalMode, dailyChangeAbs: current.goalMode === goalMode ? current.dailyChangeAbs : '' }));
+                            clearFieldError('goalMode'); clearFieldError('dailyChangeAbs'); clearFieldError('targetWeight'); clearFieldError('maintenanceRange');
+                            if (form.goalMode !== goalMode) setDistanceInput(null);
+                            setForm((current) => ({ ...current, goalMode, dailyChangeAbs: current.goalMode === goalMode ? current.dailyChangeAbs : '',
+                                ...(current.goalMode !== goalMode && goalMode === 'maintain' ? {
+                                    targetWeight: '', targetWeightGrams: null, maintenanceRangeDraft: undefined,
+                                    maintenanceDistanceGrams: undefined, maintenanceTargetEdited: false
+                                } : {}) }));
                         }} />}
                 </FormField>
                 {isChangingWeight && (
                     <>
                         <AppText variant="muted">Starting at {form.currentWeight} {weightUnit}</AppText>
-                        <TextField label={`Target weight (${weightUnit})`} value={form.targetWeight} controlRef={controls.targetWeight}
-                            keyboardType="decimal-pad" selectTextOnFocus errorText={errors.targetWeight} editable={!controller.completion.isPending}
+                        <TextField label={targetLabel} accessibilityLabel={targetLabel} value={form.targetWeight} controlRef={controls.targetWeight}
+                            keyboardType="decimal-pad" selectTextOnFocus required placeholder="Enter a target weight"
+                            externalError={fieldError('targetWeight')} editable={!controller.completion.isPending}
                             trailingAccessory={<MeasurementUnitToggle measurement="Weight" unit={weightUnit}
                                 nextUnit={form.weightUnit === WEIGHT_UNITS.KG ? 'lb' : 'kg'} disabled={controller.completion.isPending}
                                 onPress={() => {
@@ -177,11 +184,32 @@ export function YourPlanStep({ controller, controls }: StepProps) {
                             }} />
                     </>
                 )}
-                {form.goalMode === 'maintain' && <AppText variant="muted">
+                {range && <>
+                    <MaintenanceRangeFields range={range} unit={form.weightUnit}
+                        valid={isMaintenanceRange(range.target_weight_grams, range.lower_weight_grams, range.upper_weight_grams)}
+                        distanceError={fieldError('maintenanceRange')} distanceControlRef={controls.maintenanceRange}
+                        distance={distanceInput?.unit === form.weightUnit ? distanceInput.text : displayMaintenanceDistance(controller.maintenanceDistance, form.weightUnit)}
+                        onDistanceChange={editDistance} disabled={controller.completion.isPending}
+                        onUseCenteredRange={form.maintenanceRangeDraft ? () => {
+                            clearFieldError('targetWeight'); clearFieldError('maintenanceRange');
+                            setForm(current => ({ ...current, maintenanceRangeDraft: undefined }));
+                        } : undefined}
+                        targetField={<TextField label={targetLabel} accessibilityLabel={targetLabel}
+                            value={form.maintenanceTargetEdited ? form.targetWeight : gramsToDisplayWeight(range.target_weight_grams, form.weightUnit)}
+                            keyboardType="decimal-pad" controlRef={controls.targetWeight} required placeholder="Enter a target weight"
+                            externalError={fieldError('targetWeight')} editable={!controller.completion.isPending}
+                            onChangeText={text => {
+                                clearFieldError('targetWeight');
+                                clearFieldError('maintenanceRange');
+                                setForm(current => ({ ...editWeight(current, 'targetWeight', normalizeWeightInputText(text)), maintenanceTargetEdited: true }));
+                            }} />} />
+                    <AppText variant="muted">You start by tracking weight. You can turn on calorie tracking from Today or Progress.</AppText>
+                </>}
+                {form.goalMode === 'maintain' && !range && <AppText variant="muted">
                     Maintain around {form.currentWeight} {weightUnit}, with no planned deficit or surplus.
                 </AppText>}
             </View>
-            <AsyncStateBoundary state={previewState} resourceLabel="calorie plan options"
+            {!range && <AsyncStateBoundary state={previewState} resourceLabel="calorie plan options"
                 loading={<AppText variant="muted">Finding your calorie target...</AppText>}
                 empty={<AppText variant="muted">No calorie plans are available.</AppText>}
                 onRetry={controller.isOnline ? () => planQuery.refetch() : undefined} retrying={planQuery.isFetching}>
@@ -190,15 +218,17 @@ export function YourPlanStep({ controller, controls }: StepProps) {
                 ) : (
                     <View style={styles.sections}>
                         {isChangingWeight && <View style={styles.group}>
-                            <AppChoiceGroup label="Goal pace" options={paceOptions} value={form.dailyChangeAbs || null}
-                                errorText={errors.dailyChangeAbs} controlRef={controls.dailyChangeAbs}
+                            <GoalDailyChangeSelect label={goalMode === 'gain' ? 'Calorie Surplus' : 'Calorie Deficit'} goalMode={goalMode}
+                                value={form.dailyChangeAbs} weightUnit={form.weightUnit} planOptions={planQuery.data?.planOptions}
+                                disabled={planQuery.isFetching || planQuery.isError || controller.completion.isPending}
+                                externalError={fieldError('dailyChangeAbs')} controlRef={controls.dailyChangeAbs}
                                 onChange={(dailyChangeAbs) => { clearFieldError('dailyChangeAbs'); setForm((current) => ({ ...current, dailyChangeAbs })); }} />
                             <AppText variant="caption">Weekly changes are estimates. Your actual progress will vary.</AppText>
                         </View>}
 
                     </View>
                 )}
-            </AsyncStateBoundary>
+            </AsyncStateBoundary>}
             <View style={styles.editActions}>
                 <AppButton title="Edit details" variant="ghost" disabled={controller.completion.isPending} onPress={() => controller.editStep('about')} />
                 <AppButton title="Edit activity" variant="ghost" disabled={controller.completion.isPending} onPress={() => controller.editStep('activity')} />
@@ -210,6 +240,7 @@ export function YourPlanStep({ controller, controls }: StepProps) {
 /** Displays the current onboarding target preview and explains pending or unavailable calculations. */
 export function OnboardingTargetSummary({ controller, compact }: { controller: OnboardingController; compact: boolean }) {
     const { colors } = useAppTheme();
+    if (controller.maintenanceRange) return null;
     let explanation = 'Choose your goal and an available pace to see your target.';
     if (controller.planQuery.isFetching) explanation = 'Updating your target...';
     else if (controller.form.goalMode === 'maintain') explanation = 'Your maintenance target is not available yet.';

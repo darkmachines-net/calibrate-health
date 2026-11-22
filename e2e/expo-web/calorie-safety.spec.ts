@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { advanceOnboardingToPlan, goalPaceOption, installOnboardingAccount } from './onboarding.fixture';
+import { advanceOnboardingToPlan, chooseGoalPace, goalPaceOption, goalPacePicker, installOnboardingAccount } from './onboarding.fixture';
 
 async function expectNoHorizontalOverflow(page: Page) {
   const widths = await page.evaluate(() => ({
@@ -52,11 +52,12 @@ test('server-unavailable options expose disabled semantics and safe reason copy'
   await installOnboardingAccount(page);
   await page.goto('/onboarding');
   await advanceOnboardingToPlan(page);
-  await page.getByRole('radiogroup', { name: 'Goal direction', exact: true })
+  await page.getByRole('radiogroup', { name: 'Goal type', exact: true })
     .getByRole('radio', { name: 'Lose', exact: true }).click();
   await page.getByRole('textbox', { name: 'Target weight (kg)', exact: true }).fill('82');
 
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeDisabled();
+  await goalPacePicker(page).click();
   const unsafeOption = goalPaceOption(page, 500);
   await expect(unsafeOption).toBeVisible();
   await expect(unsafeOption).toBeDisabled();
@@ -67,7 +68,7 @@ test('server-unavailable options expose disabled semantics and safe reason copy'
   await captureEvidence(page, testInfo, {
     'desktop-chrome': 'plan-options-desktop.png',
   });
-  await goalPaceOption(page, 250).click();
+  await chooseGoalPace(page, 250);
   await expect(page.getByRole('button', { name: 'Start tracking', exact: true })).toBeEnabled();
 });
 
@@ -109,7 +110,8 @@ test('safe server options keep maintenance goal editing functional', async ({ pa
 
   await expect(page.getByText('Nov 20, 2026', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Edit goal', exact: true }).click();
-  const editor = page.getByRole('dialog').filter({ hasText: 'Set a new goal' });
+  await page.getByRole('dialog', { name: 'Edit goal' }).getByRole('button', { name: 'Set a new goal', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Set a new goal' });
   await editor.getByRole('radio', { name: 'Maintain', exact: true }).click();
   await expect(editor.getByText('Maintenance goals use a steady calorie target with no daily deficit or surplus.')).toBeVisible();
   await expect(editor.getByText(/Server target: 2,600 kcal\/day/)).toBeVisible();

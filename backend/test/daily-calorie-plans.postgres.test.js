@@ -26,10 +26,12 @@ test('daily plan lifecycle through real Postgres and normal phone/Wear handlers'
     const daysRouter = require('../src/routes/foodDays').default;
     const foodRouter = require('../src/routes/food').default;
     const goalsRouter = require('../src/routes/goals').default;
+    const metricsRouter = require('../src/routes/metrics').default;
     const syncRouter = require('../src/routes/sync').default;
     const { buildWatchSnapshot, executeWatchMutation, parseWatchMutation } = require('../src/services/watch');
     const { observeCurrentCaloriePlan } = require('../src/services/dailyCaloriePlans');
     const { lockCaloriePlanningInputs } = require('../src/services/caloriePlanningLock');
+    const { getReminderMissingStatusForDate } = require('../src/services/inAppNotifications');
     const { exportAccountData, deleteAccountData } = require('../src/services/accountLifecycle');
     t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-07-20T19:00:00Z') });
     let sequence = 0;
@@ -63,6 +65,138 @@ test('daily plan lifecycle through real Postgres and normal phone/Wear handlers'
     const dayRead = (user, date) => call(daysRouter, 'get', '/', user, { query: { date } });
     const profile = user => call(userRouter, 'get', '/profile', user);
     const observeD = '2026-07-20T19:00:00Z', nextDay = '2026-07-21T19:00:00Z';
+
+    for (const direction of [1, -1]) {
+      await t.test(`goal completion and weight-only maintenance recovery in direction ${direction}`, async () => {
+        t.mock.timers.setTime(Date.parse(observeD));
+        const { user } = await seed();
+        const rawGoal = await db.goal.findFirstOrThrow({ where: { user_id: user.id } });
+        const center = 85_000;
+        await db.goal.update({ where: { id: rawGoal.id }, data: {
+          target_weight_grams: center, start_weight_grams: center + direction * 5000, daily_deficit: direction * 250
+        } });
+        const getStatus = async () => (await call(goalsRouter, 'get', '/status', user)).body;
+        let status = await getStatus();
+        assert.equal(status.goal.completed_on, null);
+        await db.bodyMetric.createMany({ data: [10, 15].map(day => ({
+          user_id: user.id, date: new Date(`2026-07-${day}Z`), weight_grams: center
+        })) });
+        const logged = await call(metricsRouter, 'post', '/', user, {
+          body: { weight: center / 1000 - direction, date: '2026-07-20' }, operation: `maint-metric-${direction}`
+        });
+        assert.equal(logged.body.goal_completion?.goal_id, rawGoal.id);
+        status = await getStatus();
+        assert.equal(status.goal.completed_on, '2026-07-20');
+
+        const range = { target_weight_grams: center, lower_weight_grams: center - 1000, upper_weight_grams: center + 1500 };
+        const transition = { expected_version: status.expected_version, ...range, daily_deficit: 0, tracking: false };
+        const outsideRange = await call(goalsRouter, 'post', '/transition', user, {
+          body: { ...transition, target_weight_grams: center + 5000, lower_weight_grams: center + 4000, upper_weight_grams: center + 6500 },
+          operation: `maint-outside-range-${direction}`
+        });
+        assert.equal(outsideRange.statusCode, 400);
+        assert.match(outsideRange.body.message, /include your current weight/);
+        const maintained = await call(goalsRouter, 'post', '/transition', user, {
+          body: transition, operation: `maint-switch-${direction}`
+        });
+        assert.equal(maintained.statusCode, 200);
+        assert.deepEqual((await call(goalsRouter, 'post', '/transition', user, {
+          body: transition, operation: `maint-switch-${direction}`
+        })).body, maintained.body);
+        status = await getStatus();
+        assert.equal(status.tracking, false);
+        assert.deepEqual(status.maintenance.range, range);
+        assert.equal((await call(metricsRouter, 'delete', '/:id', user, {
+          params: { id: logged.body.id }, operation: `maint-correct-${direction}`
+        })).statusCode, 204);
+        assert.equal((await db.goal.findUniqueOrThrow({ where: { id: rawGoal.id } })).completed_on, null);
+        assert.equal((await getStatus()).goal.id, maintained.body.goal_id);
+        assert.deepEqual(await getReminderMissingStatusForDate({
+          userId: user.id, localDate: new Date('2026-07-21Z'), reminderLogWeightEnabled: true, reminderLogFoodEnabled: true
+        }), { missingFood: false, missingWeight: true });
+
+        for (const day of [5, 10, 15, 20]) {
+          const date = new Date(`2026-08-${String(day).padStart(2, '0')}Z`);
+          await db.bodyMetric.create({ data: { user_id: user.id, date, weight_grams: center + direction * 3000 } });
+        }
+        t.mock.timers.setTime(Date.parse('2026-08-20T19:00:00Z'));
+        status = await getStatus();
+        assert.equal(status.maintenance.status, direction > 0 ? 'above_range' : 'below_range');
+        const corrected = await call(goalsRouter, 'post', '/transition', user, {
+          body: { expected_version: status.expected_version, target_weight_grams: center,
+            daily_deficit: direction * 250, tracking: true, return_to_target: true }, operation: `maint-recovery-${direction}`
+        });
+        assert.equal(corrected.statusCode, 200);
+        status = await getStatus();
+        assert.equal(status.tracking, true);
+        assert.deepEqual(status.recovery_range, range);
+        assert.equal((await db.goal.findUniqueOrThrow({ where: { id: corrected.body.goal_id } })).start_from_trend, true);
+        await db.bodyMetric.createMany({ data: [5, 10, 15, 20].map(day => ({
+          user_id: user.id, date: new Date(`2026-09-${String(day).padStart(2, '0')}Z`), weight_grams: center - direction * 600
+        })) });
+        t.mock.timers.setTime(Date.parse('2026-09-20T19:00:00Z'));
+        status = await getStatus();
+        assert.equal(status.goal.completed_on, '2026-09-20');
+        const resumed = await call(goalsRouter, 'post', '/transition', user, {
+          body: { expected_version: status.expected_version, ...status.recovery_range, daily_deficit: 0, tracking: false },
+          operation: `maint-restore-${direction}`
+        });
+        assert.equal(resumed.statusCode, 200);
+        status = await getStatus();
+        assert.equal(status.tracking, false);
+        assert.equal(status.maintenance.offset_kcal, 0);
+        const delta = direction * 500;
+        const patch = { expected_version: status.expected_version, target_weight_grams: center + delta,
+          lower_weight_grams: range.lower_weight_grams + delta, upper_weight_grams: range.upper_weight_grams + delta };
+        const reset = await call(goalsRouter, 'patch', '/:id/maintenance', user, {
+          body: patch, params: { id: resumed.body.goal_id }, operation: `maint-reset-${direction}`
+        });
+        assert.deepEqual(reset.body, resumed.body);
+        assert.equal((await getStatus()).tracking, false);
+        assert.equal(await db.maintenanceGoalRevision.count({ where: { goal_id: resumed.body.goal_id } }), 1);
+        const stale = await call(goalsRouter, 'patch', '/:id/maintenance', user, {
+          body: patch, params: { id: resumed.body.goal_id }, operation: `maint-stale-${direction}`
+        });
+        assert.equal(stale.statusCode, 409);
+        const changeBudget = async (extra, action) => {
+          const current = await getStatus();
+          const result = await call(goalsRouter, 'patch', '/:id/maintenance', user, {
+            body: { ...current.maintenance.range, expected_version: current.expected_version, ...extra },
+            params: { id: resumed.body.goal_id }, operation: `maint-${action}-${direction}`
+          });
+          assert.equal(result.statusCode, 200);
+          return getStatus();
+        };
+        status = await getStatus();
+        const [budget] = status.budget_options;
+        assert.deepEqual(status.budget_options, [{ offset_kcal: 0, target_kcal: status.target_kcal }]);
+        const offset = -direction * 250;
+        const rejectedOffset = await call(goalsRouter, 'patch', '/:id/maintenance', user, {
+          body: { ...status.maintenance.range, expected_version: status.expected_version, tracking: true, offset_kcal: offset },
+          params: { id: resumed.body.goal_id }, operation: `maint-offset-rejected-${direction}`
+        });
+        assert.equal(rejectedOffset.statusCode, 400);
+        assert.equal((await getStatus()).tracking, false);
+        await db.caloriePlanRevision.create({ data: {
+          user_id: user.id, source_goal_id: resumed.body.goal_id, effective_local_date: new Date('2026-09-20Z'),
+          manual_maintenance: true, target_adjustment_kcal: offset
+        } });
+        status = await changeBudget({ tracking: true }, 'enable');
+        assert.equal(status.tracking, true);
+        assert.equal(status.target_kcal, budget.target_kcal);
+        assert.equal(status.maintenance.offset_kcal, 0);
+        assert.equal(status.maintenance.return_to_neutral, false);
+        status = await changeBudget({ tracking: false }, 'disable');
+        assert.equal(status.tracking, false);
+        status = await changeBudget({ tracking: true }, 'restart');
+        assert.equal(status.tracking, true);
+        assert.equal(status.target_kcal, budget.target_kcal);
+        const exported = await exportAccountData(user.id);
+        const savedGoal = exported.goals.find(goal => goal.id === resumed.body.goal_id);
+        assert.equal(savedGoal.maintenance_revisions[0].target_weight_grams, center);
+        assert.ok(exported.calorie_plan_revisions.some(revision => revision.manual_maintenance && revision.target_adjustment_kcal === offset));
+      });
+    }
 
     await t.test('phone: D observation survives D+1 profile/pace changes, lost reply, reopen, intake edit and sync', async () => {
       t.mock.timers.setTime(Date.parse(observeD));

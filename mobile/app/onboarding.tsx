@@ -1,6 +1,6 @@
-/** @file onboarding: Guards onboarding access and clears obsolete drafts for accounts that already completed setup. */
+/** @file Onboarding route with keyboard-aware steps and a pinned goal confirmation footer. */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, KeyboardAvoidingView, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Redirect } from 'expo-router';
 import type { UserClientPayload } from '@calibrate/api-client';
@@ -22,11 +22,12 @@ import { useOnboardingController } from '../src/onboarding/useOnboardingControll
 import { ONBOARDING_STEPS } from '../src/onboarding/steps';
 import type { OnboardingField } from '../src/onboarding/completionState';
 import { clearOnboardingDraft } from '../src/onboarding/draftStorage';
+import { GoalFormActions } from '../src/progress/GoalFormActions';
 
 // Keep enough room to read and edit a form group beside a fixed phone footer.
 const MIN_FORM_VIEWPORT_HEIGHT = 240;
 
-const CONTROL_ORDER: OnboardingField[] = ['sex', 'dateOfBirth', 'currentWeight', 'height', 'timezone', 'activityLevel', 'goalMode', 'targetWeight', 'dailyChangeAbs'];
+const CONTROL_ORDER: OnboardingField[] = ['sex', 'dateOfBirth', 'currentWeight', 'height', 'timezone', 'activityLevel', 'goalMode', 'targetWeight', 'maintenanceRange', 'dailyChangeAbs'];
 
 /** Guards onboarding access and clears obsolete drafts for accounts that already completed setup. */
 export default function OnboardingScreen() {
@@ -47,10 +48,12 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
     const { colors } = useAppTheme();
     const { width, fontScale } = useWindowDimensions();
     const desktop = width >= SCREEN_WIDE_LAYOUT_BREAKPOINT;
+    const isPlan = controller.step === 'plan';
+    const errorId = useId();
     const [availableHeight, setAvailableHeight] = useState(0);
     const [actionHeight, setActionHeight] = useState(0);
-    const inlineActions = desktop || fontScale >= 1.5
-        || (availableHeight > 0 && actionHeight + MIN_FORM_VIEWPORT_HEIGHT > availableHeight);
+    const inlineActions = !isPlan && (desktop || fontScale >= 1.5
+        || (availableHeight > 0 && actionHeight + MIN_FORM_VIEWPORT_HEIGHT > availableHeight));
     const headingRef = useRef<React.ComponentRef<typeof View>>(null);
     const controls = useMemo(() => Object.fromEntries(CONTROL_ORDER.map((field) => [
         field, React.createRef<FocusableFormControl>()
@@ -80,27 +83,31 @@ function OnboardingForm({ user }: { user: UserClientPayload }) {
     }, [controller.errors, controller.focusAttempt, controller.step, controller.isHydrating, controls]);
 
     const busy = controller.completion.isPending;
+    const backButton = (controller.activeIndex > 0 || controller.returnToPlan) &&
+        <AppButton title="Back" variant="ghost" onPress={controller.back} disabled={busy} />;
     const actions = (
         <View onLayout={(event) => setActionHeight(event.nativeEvent.layout.height)} style={[styles.actionBar, { borderTopColor: colors.outlineVariant, backgroundColor: colors.background }]}>
-            {controller.step === 'plan' && <OnboardingTargetSummary controller={controller} compact={!desktop} />}
-            {controller.actionError && <AppNotice tone="danger"><AppText accessibilityRole="alert">{controller.actionError}</AppText></AppNotice>}
-            {controller.step === 'plan' && !controller.isOnline && <AppText variant="muted">Connect to the internet to check your plan and start tracking.</AppText>}
-            <View style={[styles.actions, fontScale >= 1.5 && styles.stacked]}>
-                {(controller.activeIndex > 0 || controller.returnToPlan) && <AppButton title="Back" variant="ghost"
-                    onPress={controller.back} disabled={busy} />}
-                <AppButton title={controller.step === 'plan' ? 'Start tracking' : 'Continue'}
-                    busy={busy} busyLabel="Saving your plan..."
-                    testID={controller.step === 'plan' ? 'onboarding-complete' : 'onboarding-continue'}
-                    disabled={controller.isHydrating || (controller.step === 'plan' && (!controller.planVerified || !controller.isOnline))}
-                    onPress={controller.next} style={styles.primaryAction} />
-            </View>
+            {isPlan ? <GoalFormActions title="Start tracking" errorId={errorId}
+                error={controller.isHydrating ? null : controller.planError} secondaryAction={backButton}
+                busy={busy} busyLabel="Saving your plan..." testID="onboarding-complete"
+                disabled={!controller.canComplete || busy} onPress={controller.next} /> : <>
+                {controller.actionError && <AppNotice tone="danger"><AppText accessibilityRole="alert">{controller.actionError}</AppText></AppNotice>}
+                <View style={[styles.actions, fontScale >= 1.5 && styles.stacked]}>
+                    {backButton}
+                    <AppButton title="Continue" testID="onboarding-continue" disabled={controller.isHydrating}
+                        onPress={controller.next} style={styles.primaryAction} />
+                </View>
+            </>}
         </View>
     );
 
     let stepContent: React.ReactNode;
     if (controller.step === 'about') stepContent = <AboutYouStep controller={controller} controls={controls} />;
     else if (controller.step === 'activity') stepContent = <ActivityStep controller={controller} controls={controls} />;
-    else stepContent = <YourPlanStep controller={controller} controls={controls} />;
+    else stepContent = <>
+        <YourPlanStep controller={controller} controls={controls} errorId={errorId} />
+        <OnboardingTargetSummary controller={controller} compact={!desktop} />
+    </>;
 
     return (
         <Screen testID="onboarding-root" contentWidth="form" scroll={false} safeTop style={styles.screen}>

@@ -1,4 +1,4 @@
-/** @file route Registry: Canonical route metadata shared by the Expo shell and exported-web route tests. Route groups are intentionally absent because they never appear in public URLs. */
+/** @file Canonical route paths, hierarchy, and shell metadata for Expo and the exported-web checks. */
 
 export const ROUTE_IDS = [
   'root',
@@ -31,6 +31,7 @@ export const ROUTE_IDS = [
   'food-log',
   'weight-trend',
   'plan-check',
+  'goal-setup',
   'activity',
   'my-foods',
   'about',
@@ -406,6 +407,17 @@ export const ROUTE_REGISTRY = {
   'plan-check': route({
     path: '/plan-check',
     title: 'Plan check',
+    parent: 'progress',
+    fallback: 'progress',
+    backLabel: 'Back to Progress',
+    authClass: 'authenticated',
+    shellPolicy: 'app',
+    deepLink: 'render',
+    authenticatedRedirect: null,
+  }),
+  'goal-setup': route({
+    path: '/goal-setup',
+    title: 'Goal setup',
     parent: 'progress',
     fallback: 'progress',
     backLabel: 'Back to Progress',

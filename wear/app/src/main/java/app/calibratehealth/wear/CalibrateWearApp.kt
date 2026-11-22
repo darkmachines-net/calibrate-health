@@ -82,6 +82,7 @@ fun CalibrateWearApp(
     serverConfig: WearServerConfig,
     homeState: WearHomeUiState = WearHomeUiState(),
     onSaveWeight: (WearSummary, Long) -> Unit = { _, _ -> },
+    onOpenProgressOnPhone: () -> Unit = {},
     disconnecting: Boolean = false,
     disconnectError: String? = null,
     publicResourceHandoffStatus: String? = null,
@@ -100,6 +101,7 @@ fun CalibrateWearApp(
     val currentDisconnectError = rememberUpdatedState(disconnectError)
     val currentPublicResourceHandoffStatus = rememberUpdatedState(publicResourceHandoffStatus)
     val currentOnSaveWeight = rememberUpdatedState(onSaveWeight)
+    val currentOnOpenProgressOnPhone = rememberUpdatedState(onOpenProgressOnPhone)
     val currentOnOpenPrivacyOnPhone = rememberUpdatedState(onOpenPrivacyOnPhone)
     val currentOnOpenAccountDeletionOnPhone = rememberUpdatedState(onOpenAccountDeletionOnPhone)
     val currentOnDisconnect = rememberUpdatedState(onDisconnect)
@@ -129,6 +131,7 @@ fun CalibrateWearApp(
                         appState = currentAppState.value,
                         homeState = currentHomeState.value,
                         onOpenWeight = { navController.navigate(WEIGHT_ROUTE) },
+                        onOpenProgressOnPhone = currentOnOpenProgressOnPhone.value,
                         onOpenConnection = { navController.navigate(CONNECTION_ROUTE) },
                     )
                 }
@@ -169,6 +172,7 @@ private fun SummaryScreen(
     appState: WearAppState,
     homeState: WearHomeUiState,
     onOpenWeight: () -> Unit,
+    onOpenProgressOnPhone: () -> Unit,
     onOpenConnection: () -> Unit
 ) {
     if (appState is WearAppState.Ready) {
@@ -176,6 +180,7 @@ private fun SummaryScreen(
             summary = appState.summary,
             homeState = homeState,
             onOpenWeight = onOpenWeight,
+            onOpenProgressOnPhone = onOpenProgressOnPhone,
             onOpenConnection = onOpenConnection
         )
         return
@@ -227,6 +232,7 @@ private fun ReadySummaryDashboard(
     summary: WearSummary,
     homeState: WearHomeUiState,
     onOpenWeight: () -> Unit,
+    onOpenProgressOnPhone: () -> Unit,
     onOpenConnection: () -> Unit
 ) {
     val displaySummary = summary.suppressPlanForPendingWeight(homeState.pendingMutationTypes)
@@ -312,6 +318,18 @@ private fun ReadySummaryDashboard(
                     )
                 }
                 item(key = "goal") { GoalProgressSection(displaySummary) }
+                if (displaySummary.goalProjectionStatus?.startsWith("maintenance_") == true ||
+                    displaySummary.goalProjectionStatus == "reached_trend"
+                ) {
+                    item(key = "review-goal") {
+                        Button(
+                            onClick = onOpenProgressOnPhone,
+                            enabled = !homeState.actionInProgress,
+                            label = { Text("Review goal on phone") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
                 summaryStatus(homeState)?.let { status ->
                     item(key = "status") {
                         Text(
@@ -640,6 +658,8 @@ internal fun calorieAccessibilityDescription(summary: WearSummary): String {
 
 internal fun goalProgressHeadline(summary: WearSummary): String = when {
     summary.planStatus == WEIGHT_SYNCING_PLAN_STATUS -> "Rechecking calorie plan"
+    summary.goalProjectionStatus?.startsWith("maintenance_") == true -> "Maintenance goal"
+    summary.goalProjectionStatus == "reached_trend" -> "Goal reached"
     !summary.isCaloriePlanAvailable -> "Review calorie plan"
     summary.goalDailyDeficit == 0 -> "Maintenance goal"
     summary.goalIsComplete == true -> "Goal reached"
@@ -655,6 +675,16 @@ internal fun goalProgressDetail(summary: WearSummary): String {
 }
 
 internal fun goalProjectionLabel(summary: WearSummary): String {
+    when (summary.goalProjectionStatus) {
+        "maintenance_within_range" -> return "Within range"
+        "maintenance_above_range" -> return "Above range. Review on phone."
+        "maintenance_below_range" -> return "Below range. Review on phone."
+        "maintenance_range_required" -> return "Set your range on phone"
+        "maintenance_insufficient", "maintenance_stale" -> return "Log weight to update your trend"
+        "maintenance_unavailable" -> return "Weight trend unavailable"
+        "reached_trend" -> return "Choose your next goal on phone"
+        "awaiting_trend" -> return "Waiting for the trend to reach your goal"
+    }
     if (!summary.isCaloriePlanAvailable) return "Projection unavailable"
     return when (summary.goalProjectionStatus) {
         "maintenance" -> "No projected date"

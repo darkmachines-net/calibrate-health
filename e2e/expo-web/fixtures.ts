@@ -749,6 +749,12 @@ async function installAuthenticatedApi(
       });
     }
     if (pathname === '/api/v1/goals') return fulfillJson(route, caloriePlan.goal);
+    if (pathname === '/api/v1/goals/pace-options') return fulfillJson(route, {
+      ...caloriePlan.options,
+      goal: caloriePlan.goal,
+      expected_plan_version: '0'.repeat(64),
+      effective_local_date: FROZEN_LOCAL_DATE,
+    });
     if (pathname === '/api/v1/metrics' && url.searchParams.get('include_trend') === 'true') {
       if (trendUnavailable) {
         const rawTrendMetrics = trendMetrics.map((metric) => ({

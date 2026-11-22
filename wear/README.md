@@ -83,6 +83,10 @@ quick add, undo, rotary weight entry, continue-on-phone, and connection controls
 The cache-only Tile and calorie-balance complication expose calorie progress and cache freshness without initiating
 network work from their system-rendered services.
 
+Maintenance and completed goals show their phone review action on the watch. The
+handoff uses the paired account and opens Progress. Weight logging remains available
+while calorie tracking is paused.
+
 `WearDataLayerContract` defines versioned paths for pairing, sync invalidation, continue-on-phone
 handoffs, and bounded authenticated HTTP relay through the paired phone. The transport tries that relay first,
 then falls back to a direct server connection when the phone transport is unavailable. The watch caches its own

@@ -13,6 +13,7 @@ import { useAuth } from '../auth/AuthContext';
 import { executeOrQueueMutation, OFFLINE_MUTATION_OPERATIONS } from '../offline/operations';
 import { useOfflineOutbox } from '../offline/provider';
 import { foodDayRangeQueryRoot } from '../food/calendar';
+import { useGoalStatus } from '../progress/useGoalStatus';
 import { FoodLogDockActions } from '../food/FoodLogDockActions';
 import { getFoodDayStatusLabel } from '../food/dayPresentation';
 import { calibrationStatusQueryKey } from '../calibration/queryKeys';
@@ -71,6 +72,7 @@ function useRefreshTrackingState(date?: string) {
             date ? queryClient.invalidateQueries({ queryKey: foodDayQueryKey(date) }) : Promise.resolve(),
             queryClient.invalidateQueries({ queryKey: foodDayRangeQueryRoot }),
             queryClient.invalidateQueries({ queryKey: foodTrackingPauseQueryKey }),
+            queryClient.invalidateQueries({ queryKey: ['mobile-goal-status'] }),
             queryClient.invalidateQueries({ queryKey: calibrationStatusQueryKey }),
             queryClient.invalidateQueries({ queryKey: ['mobile-in-app-notifications'] })
         ]);
@@ -105,8 +107,9 @@ export const DayStatusCard: React.FC<{
     presentation?: 'section' | 'dock' | 'controls';
     onAddFood?: () => void;
     onActionComplete?: () => void;
+    onPauseTracking?: () => void;
     style?: StyleProp<ViewStyle>;
-}> = ({ date, isToday, failed = false, loading = false, stackActions = false, compact = false, expanded = false, presentation = 'section', onAddFood, onActionComplete, style }) => {
+}> = ({ date, isToday, failed = false, loading = false, stackActions = false, compact = false, expanded = false, presentation = 'section', onAddFood, onActionComplete, onPauseTracking, style }) => {
     const { api } = useAuth();
     const { enqueue, withOutbox, mutations = [] } = useOfflineOutbox();
     const queryClient = useQueryClient();
@@ -323,7 +326,7 @@ export const DayStatusCard: React.FC<{
                                 title="Pause tracking"
                                 variant="secondary"
                                 disabled={isBusy}
-                                onPress={() => setPauseSheetOpen(true)}
+                                onPress={onPauseTracking ?? (() => setPauseSheetOpen(true))}
                                 style={[styles.action, styles.pauseAction, useCompactOpenLayout && styles.actionCompact, fontScale >= 1.3 && styles.actionStacked]}
                                 textStyle={styles.pauseText}
                                 leftIcon={<Ionicons
@@ -390,7 +393,9 @@ export const DayStatusCard: React.FC<{
                     {day.status === 'PAUSED' && isToday && <AppButton title={resume.isPending ? 'Resuming...' : 'Resume tracking'} disabled={isBusy} onPress={() => resume.mutate()} style={dockActionStyle} textStyle={styles.dockLabel} />}
                 </View>}
                 {presentation === 'dock' && statusFailed && <AppText variant="muted">Day status unavailable</AppText>}
-                {presentation === 'controls' && isToday && day.status === 'OPEN' && <AppButton title="Pause tracking" variant="secondary" disabled={isBusy} onPress={() => setPauseSheetOpen(true)} leftIcon={<Ionicons name="pause-circle-outline" size={20} color={theme.colors.primary} />} />}
+                {presentation === 'controls' && isToday && day.status === 'OPEN' && <AppButton title={onPauseTracking ? 'Turn off calorie tracking' : 'Pause tracking'} variant="secondary" disabled={isBusy}
+                    onPress={onPauseTracking ?? (() => setPauseSheetOpen(true))}
+                    leftIcon={<Ionicons name={onPauseTracking ? 'stop-circle-outline' : 'pause-circle-outline'} size={20} color={theme.colors.primary} />} />}
                 {actionError && <AppText accessibilityRole="alert" style={styles.error}>{getSafeActionErrorMessage(actionError, 'Unable to update food tracking.')}</AppText>}
             </View>}
 
@@ -446,6 +451,7 @@ export const ResumeTrackingPrompt: React.FC = () => {
     const styles = useMemo(() => createStyles(theme), [theme]);
     const today = useCurrentLocalDate(user?.timezone);
     const pauseQuery = useFoodTrackingPause();
+    const goal = useGoalStatus();
     const { refetch: refetchPause } = pauseQuery;
     const [dismissedThisForeground, setDismissedThisForeground] = useState(false);
     const [showExtend, setShowExtend] = useState(false);
@@ -511,6 +517,7 @@ export const ResumeTrackingPrompt: React.FC = () => {
     const visible = Boolean(
         pause?.active &&
         pause.resume_confirmation_due &&
+        !goal.data?.maintenance &&
         !dismissedThisForeground
     );
     const error = pauseQuery.error ?? resume.error ?? extend.error;

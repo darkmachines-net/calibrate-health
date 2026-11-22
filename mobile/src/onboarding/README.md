@@ -8,14 +8,16 @@ Unit changes preserve the physical measurement, including through rounded displa
 Date and numeric fields share input typography, padding, outlines, and focus styling.
 
 Activity uses descriptive radio rows shared with profile editing. Leave new-account sex, activity,
-goal direction, and pace unselected. Present goal pace inline as approximate weekly weight change,
-with the daily calorie change beneath. Keep the calculated daily target in one softly tinted summary.
-Maintenance derives its target weight from the current weight and omits target and pace inputs.
+and pace unselected. The shared Goal type selector starts on Lose for new drafts and preserves
+saved selections. Use the shared calorie deficit and surplus picker with approximate weekly weight changes.
+Keep the calculated daily target in the scrollable form.
+Maintenance defaults the target to the current weight. When the server supports weight-first
+maintenance, users can edit that target and preview a symmetric range that includes their current weight. Calorie tracking starts off.
 
-Phone actions and the final calorie target remain above device insets; desktop actions follow content.
-Move the footer into the scroller when enlarged text or a short viewport leaves too little form space.
-Fields and descriptions must reflow at enlarged text sizes, with inline errors and focus on the first
-invalid answer. Back and
+Keep Start tracking below the scrollable plan on all viewport sizes. Show the correction above it and
+highlight the affected control before submission. On earlier steps, move actions into the scroller when
+enlarged text or a short viewport leaves too little form space. Earlier steps use inline errors and
+focus the first invalid answer. Back and
 direct edit links preserve the draft. Save drafts locally per account and server, and clear them when
 setup completes or that account signs out. Start tracking saves atomically and opens Today directly.
 Health Connect, Galaxy Watch, and Lose It imports remain in their existing Settings destinations.

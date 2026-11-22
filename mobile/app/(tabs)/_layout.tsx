@@ -1,4 +1,4 @@
-/** @file layout: Guards authenticated tab access and composes responsive navigation, account actions, and global notices. */
+/** @file Authenticated app shell with responsive navigation, focused routes, account actions, and global notices. */
 
 import React from 'react';
 import {
@@ -65,7 +65,7 @@ import {
 import { radius, spacing, useAppTheme, type AppTheme, type AppThemeColors } from '../../src/theme';
 
 const HIDDEN_TAB_OPTIONS = {
-    // SDK 58 redirects away from href:null routes; hide only the settings tab button.
+    // SDK 58 redirects away from href:null routes; hide standalone destinations from the tab bar instead.
     tabBarButton: () => null,
     tabBarItemStyle: { display: 'none' }
 } as const;
@@ -344,7 +344,10 @@ export default function TabsLayout() {
                         tabBar={usesWebNavigationRail
                             ? (props) => <WebNavigationRail {...props} onWidthChange={setWebNavigationRailWidth} />
                             : undefined}
-                        screenOptions={{
+                        screenOptions={({ route }) => ({
+                            // Keep retained tabs out of web keyboard navigation while the editor owns the page.
+                            sceneStyle: Platform.OS === 'web' && activeRoute?.routeId === 'goal-setup' && route.name !== 'goal-setup'
+                                ? { display: 'none' } : undefined,
                             tabBarPosition: usesNavigationRail ? 'left' : 'bottom',
                             tabBarVariant: usesNavigationRail ? 'material' : 'uikit',
                             tabBarLabelPosition: 'below-icon',
@@ -408,7 +411,7 @@ export default function TabsLayout() {
                                     />
                                 );
                             }
-                        }}
+                        })}
                     >
                         <Tabs.Screen
                             name="(today)"
@@ -440,6 +443,8 @@ export default function TabsLayout() {
                                 headerTitle: 'Settings'
                             }}
                         />
+                        {/* Keep setup in tab history so Back returns to either launcher, regardless of the Progress stack. */}
+                        <Tabs.Screen name="goal-setup" options={HIDDEN_TAB_OPTIONS} />
                     </Tabs>
                     <NotificationsDrawer
                         visible={isNotificationDrawerOpen}

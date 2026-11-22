@@ -1,9 +1,9 @@
-/** @file Canonical onboarding state initialization, unit conversion, validation, and completion payloads. */
+/** @file Onboarding defaults and completion payloads with canonical measurements across unit changes. */
 
 import {
     ACTIVITY_LEVELS, HEIGHT_UNITS, WEIGHT_UNITS, SEX_VALUES,
     calculateCalendarAge, normalizeDateOfBirth, isPolicyHeight, isPolicyWeight,
-    type ActivityLevel, type HeightUnit, type WeightUnit, type Sex
+    type ActivityLevel, type HeightUnit, type MaintenanceRange, type WeightUnit, type Sex
 } from '@calibrate/shared';
 import type { CaloriePlanOptionsRequest, OnboardingCompleteData, UserClientPayload } from '@calibrate/api-client';
 import { type GoalMode, DAILY_GOAL_CHANGE_OPTIONS, getSignedDailyDeficit } from '../utils/goals';
@@ -15,6 +15,7 @@ import { getHeightPolicyError, heightInputToCanonicalMillimeters } from '../calo
 import type { OnboardingStepKey } from './steps';
 import { getDeviceLocale, type DeviceLocale } from '../platform/deviceLocale';
 import { resolveOnboardingUnits } from './unitDefaults';
+import { getGoalWeightIssue } from '../progress/goalWeightValidation';
 
 const GRAMS_PER_KG = 1000;
 const GRAMS_PER_LB = 453.59237;
@@ -25,6 +26,10 @@ const MIN_ACCOUNT_AGE = 18; // Matches the account eligibility enforced by atomi
 const MAX_ACCOUNT_AGE = 120;
 
 export type OnboardingFormState = {
+    // Older drafts can still carry independent bounds for the user to review.
+    maintenanceRangeDraft?: { lower: number | null; upper: number | null };
+    maintenanceDistanceGrams?: number;
+    maintenanceTargetEdited?: boolean;
     weightUnit: WeightUnit;
     heightUnit: HeightUnit;
     timezone: string;
@@ -42,7 +47,7 @@ export type OnboardingFormState = {
     targetWeightGrams: number | null;
     heightMillimeters: number | null;
 };
-export type OnboardingField = 'currentWeight' | 'height' | 'dateOfBirth' | 'sex' | 'timezone' | 'activityLevel' | 'goalMode' | 'targetWeight' | 'dailyChangeAbs';
+export type OnboardingField = 'currentWeight' | 'height' | 'dateOfBirth' | 'sex' | 'timezone' | 'activityLevel' | 'goalMode' | 'targetWeight' | 'maintenanceRange' | 'dailyChangeAbs';
 export type OnboardingErrors = Partial<Record<OnboardingField, string>>;
 
 function displayHeight(mm: number | null) {
@@ -55,7 +60,7 @@ function displayHeight(mm: number | null) {
     };
 }
 
-/** Initializes onboarding fields from saved profile data with locale-aware units and timezone defaults. */
+/** Initializes fields from saved profile data, with locale-aware measurements and Lose as the initial goal type. */
 export function createInitialOnboardingForm(user: UserClientPayload, deviceLocale: DeviceLocale = getDeviceLocale()): OnboardingFormState {
     const hasProfile = Boolean(user.date_of_birth || user.sex || user.height_mm || user.activity_level);
     return {
@@ -64,7 +69,7 @@ export function createInitialOnboardingForm(user: UserClientPayload, deviceLocal
         dateOfBirth: user.date_of_birth ?? '',
         sex: user.sex ?? null,
         activityLevel: user.activity_level ?? null,
-        currentWeight: '', targetWeight: '', goalMode: null, dailyChangeAbs: '',
+        currentWeight: '', targetWeight: '', goalMode: 'lose', dailyChangeAbs: '',
         ...displayHeight(user.height_mm ?? null),
         currentWeightGrams: null, targetWeightGrams: null, heightMillimeters: user.height_mm ?? null
     };
@@ -111,8 +116,8 @@ export function changeHeightUnit(form: OnboardingFormState, unit: HeightUnit): O
     return { ...form, heightUnit: unit, ...displayHeight(form.heightMillimeters) };
 }
 
-/** Returns field-specific validation errors for the requested onboarding step. */
-export function validateOnboardingStep(form: OnboardingFormState, step: OnboardingStepKey): OnboardingErrors {
+/** Return field errors for the requested step, including configured maintenance bounds when supplied. */
+export function validateOnboardingStep(form: OnboardingFormState, step: OnboardingStepKey, range?: MaintenanceRange | null): OnboardingErrors {
     const errors: OnboardingErrors = {};
     if (step === 'about') {
         if (!isPolicyWeight(form.currentWeightGrams)) errors.currentWeight = getWeightPolicyError(form.weightUnit);
@@ -133,13 +138,15 @@ export function validateOnboardingStep(form: OnboardingFormState, step: Onboardi
     if (step === 'activity' && !form.activityLevel) errors.activityLevel = 'Choose the activity level that best fits your typical week.';
     if (step === 'plan') {
         if (!form.goalMode) errors.goalMode = 'Choose Lose, Maintain, or Gain.';
+        if (form.goalMode && (form.goalMode !== 'maintain' || range)) {
+            const issue = getGoalWeightIssue({ mode: form.goalMode, starting: form.currentWeightGrams, unit: form.weightUnit,
+                target: range?.target_weight_grams ?? form.targetWeightGrams, targetEntered: Boolean(form.targetWeight), range,
+                invalidDistance: !form.maintenanceRangeDraft && form.maintenanceDistanceGrams === 0,
+                requireStartingWeight: Boolean(range) });
+            if (issue?.range) errors.maintenanceRange = issue.message;
+            if (issue && (issue.target || !issue.range)) errors.targetWeight = issue.message;
+        }
         if (form.goalMode && form.goalMode !== 'maintain') {
-            if (!isPolicyWeight(form.targetWeightGrams)) {
-                errors.targetWeight = getWeightPolicyError(form.weightUnit);
-            } else if (form.currentWeightGrams !== null) {
-                if (form.goalMode === 'lose' && form.targetWeightGrams! >= form.currentWeightGrams) errors.targetWeight = 'Choose a target below your current weight.';
-                if (form.goalMode === 'gain' && form.targetWeightGrams! <= form.currentWeightGrams) errors.targetWeight = 'Choose a target above your current weight.';
-            }
             if (!DAILY_GOAL_CHANGE_OPTIONS.some((value) => String(value) === form.dailyChangeAbs)) errors.dailyChangeAbs = 'Choose an available pace.';
         }
     }
@@ -158,9 +165,9 @@ export function buildCaloriePlanDraft(form: OnboardingFormState): CaloriePlanOpt
     };
 }
 
-/** Validates every onboarding step and builds completion data from canonical measurements, throwing on incomplete input. */
-export function buildOnboardingCompleteData(form: OnboardingFormState): OnboardingCompleteData {
-    if (['about', 'activity', 'plan'].some((step) => Object.keys(validateOnboardingStep(form, step as OnboardingStepKey)).length)) {
+/** Build completion data from canonical measurements and reviewed bounds, throwing for invalid or incomplete input. */
+export function buildOnboardingCompleteData(form: OnboardingFormState, range?: MaintenanceRange | null): OnboardingCompleteData {
+    if (['about', 'activity', 'plan'].some((step) => Object.keys(validateOnboardingStep(form, step as OnboardingStepKey, range)).length)) {
         throw new Error('Complete the required onboarding details.');
     }
     return {
@@ -168,7 +175,8 @@ export function buildOnboardingCompleteData(form: OnboardingFormState): Onboardi
         timezone: form.timezone.trim(), date_of_birth: form.dateOfBirth,
         sex: form.sex!, height_mm: form.heightMillimeters!, activity_level: form.activityLevel!,
         current_weight_grams: form.currentWeightGrams!,
-        target_weight_grams: form.goalMode === 'maintain' ? form.currentWeightGrams! : form.targetWeightGrams!,
+        target_weight_grams: range?.target_weight_grams ?? (form.goalMode === 'maintain' ? form.currentWeightGrams! : form.targetWeightGrams!),
+        ...(range && { maintenance_lower_grams: range.lower_weight_grams, maintenance_upper_grams: range.upper_weight_grams }),
         daily_deficit: getSignedDailyDeficit(form.goalMode!, form.dailyChangeAbs)
     };
 }
@@ -180,6 +188,7 @@ export function isOnboardingFormState(value: unknown): value is OnboardingFormSt
     const textFields = ['timezone', 'dateOfBirth', 'currentWeight', 'targetWeight', 'dailyChangeAbs', 'heightCm', 'heightFeet', 'heightInches'];
     if (!textFields.every((key) => typeof form[key] === 'string')) return false;
     if (!['currentWeightGrams', 'targetWeightGrams', 'heightMillimeters'].every((key) => form[key] === null || (typeof form[key] === 'number' && Number.isSafeInteger(form[key])))) return false;
+    if (form.maintenanceDistanceGrams !== undefined && !Number.isSafeInteger(form.maintenanceDistanceGrams)) return false;
     return Object.values(WEIGHT_UNITS).includes(form.weightUnit as WeightUnit)
         && Object.values(HEIGHT_UNITS).includes(form.heightUnit as HeightUnit)
         && (form.sex === null || Object.values(SEX_VALUES).includes(form.sex as Sex))

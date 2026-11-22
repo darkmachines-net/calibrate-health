@@ -1,4 +1,4 @@
-/** @file Date Picker Field: Pressable native date field used where typed date strings are error-prone on mobile. */
+/** @file Native date picker with the shared editable field surface. */
 
 import React, { useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -131,12 +131,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         borderRadius: radius.md,
         borderWidth: theme.stroke.control,
         borderColor: theme.colors.outline,
-        backgroundColor: theme.colors.surfaceContainerLow,
+        backgroundColor: theme.colors.surface,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm
     },
     value: { flex: 1, ...theme.typography.styles.input },
-    fieldFocused: { borderColor: theme.colors.focusRing, borderWidth: theme.interaction.focusRingWidth, backgroundColor: theme.colors.surface },
+    fieldFocused: { borderColor: theme.colors.focusRing, borderWidth: theme.interaction.focusRingWidth },
     fieldError: { borderColor: theme.colors.danger },
     placeholder: {
         color: theme.colors.onSurfaceVariant
@@ -152,6 +152,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         flex: 1
     },
     pressed: {
-        backgroundColor: theme.colors.surface
+        backgroundColor: theme.colors.surfacePressed
     }
 });

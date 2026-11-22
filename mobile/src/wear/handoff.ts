@@ -21,7 +21,7 @@ export type WearHandoff = {
     nodeId: string;
     serverOrigin: string;
     userId: number;
-    destination: 'food_log' | 'privacy' | 'account_deletion';
+    destination: 'food_log' | 'privacy' | 'account_deletion' | 'progress';
     localDate: string | null;
     receivedAt: number;
 };
@@ -96,7 +96,7 @@ export function parseWearHandoffPayload(payload: string): WearHandoffPayload | n
                 localDate: value.local_date
             };
         }
-        if (value.destination !== 'privacy' && value.destination !== 'account_deletion') return null;
+        if (value.destination !== 'privacy' && value.destination !== 'account_deletion' && value.destination !== 'progress') return null;
         return {
             serverOrigin,
             userId: value.user_id as number,
@@ -119,7 +119,7 @@ function isStoredHandoff(value: unknown, serverOrigin: string, userId: number): 
         && handoff.userId === userId
         && (
             (handoff.destination === 'food_log' && isDateOnly(handoff.localDate)) ||
-            ((handoff.destination === 'privacy' || handoff.destination === 'account_deletion') &&
+            ((handoff.destination === 'privacy' || handoff.destination === 'account_deletion' || handoff.destination === 'progress') &&
                 handoff.localDate === null)
         )
         && typeof handoff.receivedAt === 'number' && Number.isFinite(handoff.receivedAt) && handoff.receivedAt > 0;
@@ -273,8 +273,9 @@ export async function processWearHandoffInbox(options: {
     return { persisted, errors };
 }
 
-/** Maps a dated food-log handoff to its app route, returning null for unsupported destinations. */
+/** Maps trusted food and goal handoffs to fixed app routes, leaving public links to their own handler. */
 export function getWearHandoffHref(handoff: WearHandoff): Href | null {
+    if (handoff.destination === 'progress') return '/progress';
     if (handoff.destination !== 'food_log' || handoff.localDate === null) return null;
     return {
         pathname: '/log',

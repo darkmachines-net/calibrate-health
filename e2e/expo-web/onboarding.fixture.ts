@@ -89,8 +89,22 @@ export async function advanceOnboardingToPlan(page: Page) {
   await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
 }
 
-/** Locates a goal-pace radio by its displayed daily calorie magnitude. */
+/** Locates the shared deficit or surplus picker. */
+export function goalPacePicker(page: Page) {
+  return page.getByRole('combobox', { name: /^Calorie (Deficit|Surplus)$/ });
+}
+
+/** Locates an option in the open pace picker by its daily calorie magnitude. */
 export function goalPaceOption(page: Page, magnitude: number) {
-  return page.getByRole('radiogroup', { name: 'Goal pace', exact: true })
-    .getByRole('radio').filter({ hasText: `${magnitude} kcal/day` });
+  return page.getByRole('listbox', { name: /^Calorie (Deficit|Surplus) options$/ })
+    .getByRole('option', { name: new RegExp(`^${magnitude.toLocaleString('en-US')} kcal/day (deficit|surplus)$`) });
+}
+
+/** Opens the picker when necessary and chooses a permitted daily calorie change. */
+export async function chooseGoalPace(page: Page, magnitude: number) {
+  const picker = goalPacePicker(page);
+  const option = goalPaceOption(page, magnitude);
+  if (!await option.isVisible()) await picker.click();
+  await option.click();
+  await expect(picker).toHaveAttribute('aria-expanded', 'false');
 }

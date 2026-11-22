@@ -14,6 +14,8 @@ import { GoalReachedConfetti } from './GoalReachedConfetti';
 import { formatRemainingGoalWeight, getWeightRecognitionPresentation } from './presentation';
 
 type WeightSaveResultProps = {
+    trendCompleted?: boolean;
+    rawMilestoneOnly?: boolean;
     action: 'save' | 'delete';
     queued: boolean;
     savedWeight?: number;
@@ -37,7 +39,9 @@ export const WeightSaveResult: React.FC<WeightSaveResultProps> = ({
     trendLoading,
     trendError,
     reduceMotion,
-    headingRef
+    headingRef,
+    trendCompleted,
+    rawMilestoneOnly
 }) => {
     const theme = useAppTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
@@ -45,6 +49,14 @@ export const WeightSaveResult: React.FC<WeightSaveResultProps> = ({
     let title = recognition.title;
     let message = recognition.message;
     let icon = recognition.icon;
+    if (trendCompleted) {
+        title = 'Goal reached';
+        message = 'Your underlying weight reached your target. Choose what you want to work toward next.';
+        icon = 'ribbon';
+    } else if (rawMilestoneOnly && recognition.goalReached) {
+        title = 'Scale milestone';
+        message = 'This weigh-in reached your target. Your goal completes when your underlying trend gets there.';
+    }
 
     if (action === 'delete') {
         title = queued ? 'Deletion saved on this device' : 'Weigh-in deleted';
@@ -61,7 +73,7 @@ export const WeightSaveResult: React.FC<WeightSaveResultProps> = ({
     const goal = !queued && action === 'save' ? progressUpdate?.goal : null;
     const percent = goal?.current_progress_percent;
     const trendSummary = trend ? describeVisibleWeightTrend(trend.metrics, unit) : null;
-    const shouldCelebrate = !queued && action === 'save' && recognition.goalReached;
+    const shouldCelebrate = !queued && action === 'save' && (trendCompleted || (!rawMilestoneOnly && recognition.goalReached));
 
     return (
         <View style={styles.root}>
@@ -113,7 +125,7 @@ export const WeightSaveResult: React.FC<WeightSaveResultProps> = ({
                         )}
                     </View>
 
-                    {goal && (
+                    {goal && !(rawMilestoneOnly && goal.is_complete && !trendCompleted) && (
                         <View style={styles.summaryCard}>
                             <View style={styles.goalHeadingRow}>
                                 <View style={styles.summaryHeading}>

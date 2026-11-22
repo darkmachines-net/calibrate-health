@@ -12,6 +12,7 @@ import { correctSameDayGoalStartingWeight, recordCorrectedGoalStartingWeight } f
 import type { MutationDatabase } from '../services/clientOperations';
 import { getSafeUtcTodayDateOnlyInTimeZone, parseLocalDateOnly } from '../utils/date';
 import { refreshMaterializedWeightTrendsBestEffort } from '../services/materializedWeightTrend';
+import { reconcileGoalsAfterWeight } from '../services/goalAssessment';
 import {
   buildImportTimestamp,
   inferLoseItWeightUnit,
@@ -176,6 +177,8 @@ router.post('/loseit/execute', upload.single('file'), async (req, res) => {
     });
     if (result.imported > 0 || result.updated > 0) {
       await markCurrentCaloriePlanForReviewIfUnsafe(tx, user.id);
+      const earliest = boundedWeights.eligible.reduce((first, entry) => entry.localDateValue < first ? entry.localDateValue : first, today);
+      await reconcileGoalsAfterWeight(tx, user.id, currentUser.timezone, today, undefined, earliest);
     }
     if (correctedGoal) await recordCorrectedGoalStartingWeight(tx, user.id, correctedGoal.id);
     return { ...result, futureCount: partitionedWeights.future.length, invalidCount: boundedWeights.invalid.length };

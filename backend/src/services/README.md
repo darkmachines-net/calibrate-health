@@ -30,6 +30,19 @@ Daily observations create no food-day row and change no inferred status or Wear 
 
 ## Weight trend and calibration
 
+[goalAssessment.ts](goalAssessment.ts) fits the same bounded model as the chart inside the
+planning transaction. A current sufficient trend can complete a directional goal.
+Revalidate a recorded crossing against its original local date when the source evidence
+changes. A later fluctuation keeps the achievement, and a correction never rolls back a
+goal the user already accepted. The legacy raw weight milestone remains a separate receipt.
+
+[maintenanceGoals.ts](maintenanceGoals.ts) binds goal reviews to the current weight,
+profile, goal, budget, and pause. Goal transitions and their tracking choices commit
+together. Resetting a maintenance target records the previous settings on the same goal.
+Maintenance calorie tracking uses the estimated maintenance budget. Historical manual offsets
+remain in exports and saved comparisons. The existing pause records represent tracking state,
+and range guidance depends on weight evidence even when calorie tracking is off.
+
 [materializedWeightTrend.ts](materializedWeightTrend.ts) bounds modeling to a
 120-day active horizon plus 30-day warmup, anchored by the latest eligible reading.
 Recomputation takes a transaction advisory lock at RepeatableRead and retries the

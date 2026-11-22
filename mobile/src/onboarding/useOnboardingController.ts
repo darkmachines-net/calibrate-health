@@ -1,4 +1,4 @@
-/** @file use Onboarding Controller: Coordinates saved onboarding drafts, step validation, calorie preview, and atomic completion. */
+/** @file Coordinates saved onboarding drafts, plan and maintenance previews, and atomic completion. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Platform } from 'react-native';
@@ -15,20 +15,37 @@ import { getSignedDailyDeficit, DAILY_GOAL_CHANGE_OPTIONS } from '../utils/goals
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { buildCaloriePlanDraft, buildOnboardingCompleteData, validateOnboardingStep, type OnboardingErrors, type OnboardingField } from './completionState';
 import { ONBOARDING_STEPS } from './steps';
+import { defaultMaintenanceDistance, type MaintenanceRange } from '@calibrate/shared';
+import { useMaintenanceCapability } from '../progress/useGoalStatus';
+import { centeredMaintenanceRange } from '../progress/maintenanceRange';
 
 type SubmissionScope = { account: string; generation: number };
 
 const SERVER_FIELDS: Record<string, OnboardingField> = {
     current_weight_grams: 'currentWeight', height_mm: 'height', date_of_birth: 'dateOfBirth',
     sex: 'sex', timezone: 'timezone', activity_level: 'activityLevel',
-    target_weight_grams: 'targetWeight', daily_deficit: 'dailyChangeAbs'
+    target_weight_grams: 'targetWeight', daily_deficit: 'dailyChangeAbs',
+    maintenance_lower_grams: 'maintenanceRange', maintenance_upper_grams: 'maintenanceRange'
 };
+const PLAN_FIELDS = ['goalMode', 'targetWeight', 'maintenanceRange', 'dailyChangeAbs'] as const;
 
-/** Coordinates saved onboarding drafts, step validation, calorie preview, and atomic completion. */
+/** Validate the chosen plan or maintenance range and submit the confirmed onboarding draft atomically. */
 export function useOnboardingController(user: UserClientPayload) {
     const { api, serverUrl, updateCurrentUser } = useAuth();
     const draft = useOnboardingDraft({ user, serverUrl });
     const { form, setForm, step, setStep } = draft;
+    const maintenanceEnabled = useMaintenanceCapability().data === true;
+    const maintenanceTarget = form.maintenanceTargetEdited ? (form.targetWeightGrams ?? 0) : form.currentWeightGrams;
+    const maintenanceDistance = form.maintenanceDistanceGrams ?? defaultMaintenanceDistance(form.weightUnit);
+    let maintenanceRange: MaintenanceRange | null = null;
+    if (maintenanceEnabled && form.goalMode === 'maintain' && maintenanceTarget !== null) {
+        if (form.maintenanceRangeDraft) {
+            maintenanceRange = { target_weight_grams: maintenanceTarget,
+                lower_weight_grams: form.maintenanceRangeDraft.lower ?? 0, upper_weight_grams: form.maintenanceRangeDraft.upper ?? 0 };
+        } else {
+            maintenanceRange = centeredMaintenanceRange(maintenanceTarget, maintenanceDistance);
+        }
+    }
     const queryClient = useQueryClient();
     const isOnline = useOnlineStatus();
     const [errors, setErrors] = useState<OnboardingErrors>({});
@@ -69,6 +86,14 @@ export function useOnboardingController(user: UserClientPayload) {
     const selectedOption = dailyDeficit === null ? undefined : planQuery.data?.planOptions.find((option) => option.dailyDeficit === dailyDeficit);
     const planVerified = caloriePlanDraft !== null && !planQuery.isFetching && !planQuery.isError
         && planQuery.data?.eligibility.status === 'eligible' && selectedOption?.available === true;
+    const planErrors = validateOnboardingStep(form, 'plan', maintenanceRange);
+    const visiblePlanErrors = { ...planErrors };
+    for (const field of PLAN_FIELDS) {
+        if (errors[field]) visiblePlanErrors[field] = errors[field];
+    }
+    const planFieldError = PLAN_FIELDS.map((field) => visiblePlanErrors[field]).find(Boolean);
+    const planError = planFieldError ?? actionError ?? (!isOnline ? 'Connect to the internet to check your plan and start tracking.' : null);
+    const canComplete = !draft.isHydrating && !planFieldError && isOnline && (maintenanceRange !== null || planVerified);
 
     useEffect(() => {
         if (draft.isHydrating || !caloriePlanDraft || !planQuery.data || planQuery.isFetching || planQuery.isError
@@ -81,7 +106,7 @@ export function useOnboardingController(user: UserClientPayload) {
 
     const completion = useMutation({
         mutationFn: async () => {
-            const data = buildOnboardingCompleteData(form);
+            const data = buildOnboardingCompleteData(form, maintenanceRange);
             const payload = JSON.stringify(data);
             if (submission.current?.payload !== payload) submission.current = { payload, operationId: Crypto.randomUUID() };
             return api.completeOnboarding({ data }, submission.current.operationId);
@@ -96,6 +121,7 @@ export function useOnboardingController(user: UserClientPayload) {
             void Promise.allSettled([
                 queryClient.invalidateQueries({ queryKey: ['mobile-profile'] }),
                 queryClient.invalidateQueries({ queryKey: ['mobile-goal'] }),
+                queryClient.invalidateQueries({ queryKey: ['mobile-goal-status'] }),
                 queryClient.invalidateQueries({ queryKey: ['mobile-metrics'] }),
                 queryClient.invalidateQueries({ queryKey: ['mobile-metrics-trend'] })
             ]);
@@ -141,7 +167,7 @@ export function useOnboardingController(user: UserClientPayload) {
     function next() {
         if (submitting.current || completion.isPending) return;
         setActionError(null);
-        const nextErrors = validateOnboardingStep(form, step);
+        const nextErrors = step === 'plan' ? planErrors : validateOnboardingStep(form, step);
         if (Object.keys(nextErrors).length) { showErrors(nextErrors); return; }
         if (step === 'plan') {
             for (const previous of ['about', 'activity'] as const) {
@@ -152,7 +178,7 @@ export function useOnboardingController(user: UserClientPayload) {
                     return;
                 }
             }
-            if (!isOnline || !planVerified) {
+            if (!isOnline || (!maintenanceRange && !planVerified)) {
                 setActionError(!isOnline ? 'Connect to the internet to check your plan and start tracking.'
                     : getCaloriePlanPresentation(planQuery.data?.eligibility.reasonCode).message);
                 return;
@@ -194,7 +220,8 @@ export function useOnboardingController(user: UserClientPayload) {
     const activeIndex = ONBOARDING_STEPS.findIndex((candidate) => candidate.key === step);
     return {
         ...draft, errors, showErrors, focusAttempt, actionError, activeIndex, returnToPlan,
-        planQuery, selectedOption, planVerified, isOnline, completion, next, back, editStep,
+        planQuery, selectedOption, planVerified, maintenanceRange, maintenanceDistance, isOnline, completion, next, back, editStep,
+        planError, visiblePlanErrors, canComplete,
         clearFieldError: (field: OnboardingField) => setErrors((current) => ({ ...current, [field]: undefined }))
     };
 }

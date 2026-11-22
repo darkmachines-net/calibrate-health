@@ -1,4 +1,4 @@
-/** @file Date Picker Field: Uses the browser's accessible, locale-aware date control on web. */
+/** @file Locale-aware browser date input with the shared editable field surface. */
 
 import React from 'react';
 import { View } from 'react-native';
@@ -35,7 +35,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
                             minHeight: interaction.minimumTouchTarget, width: '100%', boxSizing: 'border-box',
                             borderStyle: 'solid', borderWidth: isFocused ? interaction.focusRingWidth : stroke.control,
                             borderColor,
-                            borderRadius: radius.md, backgroundColor: isFocused ? colors.surface : colors.surfaceContainerLow,
+                            borderRadius: radius.md, backgroundColor: colors.surface,
                             color: colors.onSurface, colorScheme: dark ? 'dark' : 'light',
                             fontFamily: typography.styles.input.fontFamily,
                             fontSize: typography.styles.input.fontSize, fontWeight: typography.styles.input.fontWeight,

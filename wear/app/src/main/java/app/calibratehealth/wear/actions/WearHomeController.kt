@@ -152,9 +152,18 @@ class WearHomeController(
 
     /** Requests the dated food-log handoff while preventing overlapping actions and reporting unreachable phone state. */
     fun continueOnPhone(summary: WearSummary) {
+        requestPhoneHandoff(ContinueOnPhoneRequest.FoodLog(summary.localDate))
+    }
+
+    /** Open the paired phone's Progress screen for goal settings that are reviewed on the phone. */
+    fun openProgressOnPhone() {
+        requestPhoneHandoff(ContinueOnPhoneRequest.Progress)
+    }
+
+    private fun requestPhoneHandoff(request: ContinueOnPhoneRequest) {
         if (actionState.value.inProgress) return
         actionState.value = actionState.value.copy(inProgress = true)
-        continueOnPhone.send(ContinueOnPhoneRequest.FoodLog(summary.localDate)) { result ->
+        continueOnPhone.send(request) { result ->
             scope.launch {
                 if (result.isSuccess) {
                     actionState.update { current -> current.copy(inProgress = false) }

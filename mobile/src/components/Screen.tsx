@@ -1,4 +1,4 @@
-/** @file Screen: Provides the shared page width, safe-area spacing, scrolling, and main accessibility landmark. */
+/** @file Shared page width, safe-area spacing, keyboard-aware scrolling, and an optional fixed footer. */
 
 import React from 'react';
 import { Platform, StyleSheet, View, type ViewProps, useWindowDimensions } from 'react-native';
@@ -14,6 +14,7 @@ type ScreenProps = ViewProps & {
     scroll?: boolean;
     safeTop?: boolean;
     contentWidth?: 'overview' | 'form' | 'wide';
+    footer?: React.ReactNode;
 };
 
 const SCREEN_CONTENT_MAX_WIDTH = 1040; // Keeps forms and metrics readable on wide browser and tablet viewports.
@@ -25,12 +26,13 @@ const SCROLL_CONTENT_VIEWPORT_FLOOR = Platform.OS === 'web'
     ? { minHeight: '100%' as const }
     : { flexGrow: 1 };
 
-/** Provides the shared page width, safe-area spacing, scrolling, and main accessibility landmark. */
+/** Provides the main landmark and scrollable body. The optional footer stays below the scrolling content. */
 export const Screen: React.FC<ScreenProps> = ({
     children,
     scroll = true,
     safeTop = false,
     contentWidth = 'wide',
+    footer,
     style,
     accessibilityRole,
     role,
@@ -88,6 +90,21 @@ export const Screen: React.FC<ScreenProps> = ({
         );
     }
 
+    if (footer != null) {
+        return <View {...viewProps} accessibilityRole={accessibilityRole} role={resolvedRole}
+            focusable={Platform.OS === 'web'} tabIndex={Platform.OS === 'web' ? (tabIndex ?? -1) : tabIndex}
+            style={styles.frame}>
+            <KeyboardAwareScrollView style={styles.scroller} contentContainerStyle={contentStyle}>
+                {children}
+            </KeyboardAwareScrollView>
+            <View style={styles.footer}>
+                <View style={[styles.footerColumn, safeHorizontalPadding, { maxWidth: SCREEN_CONTENT_WIDTHS[contentWidth] }]}>
+                    {footer}
+                </View>
+            </View>
+        </View>;
+    }
+
     return (
         <KeyboardAwareScrollView
             {...viewProps}
@@ -115,8 +132,12 @@ function createStyles(theme: AppTheme) {
         },
         scroller: {
             flex: 1,
+            minHeight: 0,
             backgroundColor: theme.colors.background
         },
+        frame: { flex: 1, minHeight: 0, backgroundColor: theme.colors.background },
+        footer: { flexShrink: 0, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.outlineVariant },
+        footerColumn: { width: '100%', alignSelf: 'center', paddingVertical: theme.spacing.md },
         content: {
             ...SCROLL_CONTENT_VIEWPORT_FLOOR,
             width: '100%',
