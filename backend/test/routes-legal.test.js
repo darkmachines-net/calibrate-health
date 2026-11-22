@@ -41,8 +41,8 @@ function response() {
 
 const fullStatus = {
   account_access: { state: 'full', email_verified: true, legal_current: true },
-  required: { terms_version: '2026-08-09', privacy_version: '2026-08-19' },
-  accepted: { terms_version: '2026-08-09', privacy_version: '2026-08-19', accepted_at: '2026-08-19T00:00:00.000Z' }
+  required: { terms_version: '2026-08-09', privacy_version: '2026-11-07' },
+  accepted: { terms_version: '2026-08-09', privacy_version: '2026-11-07', accepted_at: '2026-08-19T00:00:00.000Z' }
 };
 test('self-hosted deployments do not expose Calibrate hosted legal-consent routes', () => {
   const router = loadRouter({
@@ -66,7 +66,7 @@ test('legal acceptance rejects outdated versions with a stable code', async () =
   const res = response();
   await handler(router, 'post', '/acceptance')({
     user: { id: 7 },
-    body: { terms_version: 'outdated', privacy_version: '2026-08-19', accept_terms: true, accept_privacy: true }
+    body: { terms_version: 'outdated', privacy_version: '2026-11-07', accept_terms: true, accept_privacy: true }
   }, res);
   assert.equal(res.statusCode, 400);
   assert.equal(res.body.code, 'INVALID_LEGAL_VERSION');
@@ -86,7 +86,7 @@ test('legal status and current acceptance return the same account-access contrac
   const acceptanceRes = response();
   await handler(router, 'post', '/acceptance')({
     user: { id: 7 },
-    body: { terms_version: '2026-08-09', privacy_version: '2026-08-19', accept_terms: true, accept_privacy: true }
+    body: { terms_version: '2026-08-09', privacy_version: '2026-11-07', accept_terms: true, accept_privacy: true }
   }, acceptanceRes);
   assert.deepEqual(acceptanceRes.body, fullStatus);
 });
@@ -99,7 +99,7 @@ test('legal acceptance requires explicit affirmative consent', async () => {
   const res = response();
   await handler(router, 'post', '/acceptance')({
     user: { id: 7 },
-    body: { terms_version: '2026-08-09', privacy_version: '2026-08-19' }
+    body: { terms_version: '2026-08-09', privacy_version: '2026-11-07' }
   }, res);
   assert.equal(res.statusCode, 400);
   assert.equal(res.body.code, 'INVALID_LEGAL_ACCEPTANCE');

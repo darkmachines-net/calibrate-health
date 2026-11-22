@@ -13,7 +13,7 @@ const ACTION_SCENARIO_ID = 'target-too-high';
 
 if (!CAPTURE_ENABLED) {
   throw new Error(
-    'Set CALIBRATE_CAPTURE_SCREENSHOTS=1 to replace the reviewed Calibration lab evidence.',
+    'Set CALIBRATE_CAPTURE_SCREENSHOTS=1 to replace the synthetic Plan check screenshots.',
   );
 }
 
@@ -68,16 +68,7 @@ try {
     });
     process.stdout.write('Captured ' + filename + ': ' + scenario.name + '\n');
 
-    if (scenario.id === ACTION_SCENARIO_ID) {
-      await page.getByText('Review adjustment', { exact: true }).click();
-      await page.getByText('Review calorie target', { exact: true }).waitFor();
-      const reviewFilename = '20-adjustment-review.png';
-      await page.screenshot({
-        animations: 'disabled',
-        path: path.join(OUTPUT_DIRECTORY, reviewFilename),
-      });
-      process.stdout.write('Captured ' + reviewFilename + ': desktop adjustment review\n');
-    }
+
   }
 
   const actionScenario = scenarios.find((scenario) => scenario?.id === ACTION_SCENARIO_ID);
@@ -105,23 +96,14 @@ try {
     animations: 'disabled',
     path: path.join(OUTPUT_DIRECTORY, compactFilename),
   });
-  process.stdout.write('Captured ' + compactFilename + ': compact actionable card\n');
-
-  await page.getByText('Review adjustment', { exact: true }).click();
-  await page.getByText('Review calorie target', { exact: true }).waitFor();
-  const compactReviewFilename = '22-adjustment-review-compact.png';
-  await page.screenshot({
-    animations: 'disabled',
-    path: path.join(OUTPUT_DIRECTORY, compactReviewFilename),
-  });
-  process.stdout.write('Captured ' + compactReviewFilename + ': compact adjustment review\n');
+  process.stdout.write('Captured ' + compactFilename + ': compact trend summary\n');
 
   await page.setViewportSize({ width: 320, height: COMPACT_VIEWPORT.height });
   const waitingUrl = new URL('/', LAB_URL);
   waitingUrl.searchParams.set('scenario', 'not-ready');
   await page.goto(waitingUrl.href, { waitUntil: 'networkidle' });
   await page.locator('.preview-state', { hasText: 'Live preview' }).waitFor();
-  await page.getByText('Not enough history for a reliable plan check', { exact: true }).waitFor();
+  await page.getByText('Your first trend summary appears after 7 days of tracking.', { exact: true }).waitFor();
   await page.addStyleTag({
     content: [
       'header, .preview-heading, .workspace { display: none !important; }',

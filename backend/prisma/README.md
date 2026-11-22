@@ -18,6 +18,11 @@ intent to those immutable mappings. Firebase runtime selection is explicit; it
 revokes local credential families when provider security changes. Retained bcrypt
 hashes cannot authenticate in Firebase mode.
 
+Migration 0048 adds account-owned weekly progress reports. The unique account/Sunday
+key and expiring worker lease support retry-safe generation; account deletion cascades
+to report content and aggregate evidence. Credentials remain environment-only. The
+[report service](../src/services/weeklyReports/README.md) owns generation and export rules.
+
 ## Disposable validation
 
 `npm run test:db:upgrade` migrates a random isolated schema, seeds representative

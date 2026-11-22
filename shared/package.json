@@ -12,6 +12,12 @@
       "react-native": "./socialAuth.ts",
       "default": "./dist/cjs/socialAuth.js"
     },
+    "./planCheck": {
+      "types": "./planCheck.ts",
+      "browser": "./planCheck.ts",
+      "react-native": "./planCheck.ts",
+      "default": "./dist/cjs/planCheck.js"
+    },
     ".": {
       "types": "./index.ts",
       "browser": "./index.ts",

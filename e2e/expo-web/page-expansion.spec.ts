@@ -2,7 +2,7 @@
 
 import { expect, FROZEN_NOW, hideTransientPwaNotices, test } from './fixtures';
 import { expectNoBlockingAccessibilityViolations } from './ux-a11y';
-import { PLAN_CHECK_RECOMMENDATION_STATUS } from './plan-check.fixture';
+import { PLAN_CHECK_STATUS } from './plan-check.fixture';
 import { applyTwoHundredPercentText } from './text-scaling';
 
 // Animated.timing reads Date.now; a per-read fixture clock speeds it up with unrelated query work.
@@ -69,7 +69,7 @@ test('Food log expands below the date and restores its source, scroll and focus'
 test('Progress expansions use the whole pane and return a scrolled overview', async ({ page, ux }, testInfo) => {
   if (testInfo.project.name === 'compact-phone-chrome') await page.setViewportSize({ width: 320, height: 568 });
   await ux.install('populated');
-  await page.route('**/api/v1/calibration/status', route => route.fulfill({ json: PLAN_CHECK_RECOMMENDATION_STATUS }));
+  await page.route('**/api/v1/plan-check', route => route.fulfill({ json: PLAN_CHECK_STATUS }));
   await page.goto('/progress');
   await hideTransientPwaNotices(page);
   await expect(page.getByTestId('progress-snapshot-card')).toBeVisible();
@@ -103,7 +103,7 @@ test('Progress expansions use the whole pane and return a scrolled overview', as
       expect(await chartAppearance(pane)).toEqual(overviewChart);
       await expect(pane.getByLabel('Chart legend', { exact: true })).toBeVisible();
     }
-    else await expect(pane.getByRole('button', { name: 'Review suggested 1,750 calorie daily target' })).toBeAttached();
+    else await expect(pane.getByRole('button', { name: 'Report history' })).toBeAttached();
     await page.screenshot({ path: testInfo.outputPath(`${id}-expanded.png`) });
     await expectNoBlockingAccessibilityViolations(page, testInfo, { kind: 'probe', surfaceId: `expanded-${id}` });
     await page.keyboard.press('Escape');
@@ -123,7 +123,7 @@ for (const section of [
     test.skip(!['desktop-chrome', 'android-phone-chrome'].includes(testInfo.project.name), 'Measure repeated mouse and touch motion.');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await ux.install('populated');
-    await page.route('**/api/v1/calibration/status', route => route.fulfill({ json: PLAN_CHECK_RECOMMENDATION_STATUS }));
+    await page.route('**/api/v1/plan-check', route => route.fulfill({ json: PLAN_CHECK_STATUS }));
     await page.goto(section.route);
     await hideTransientPwaNotices(page);
     await useElapsedAnimationClock(page);
@@ -304,7 +304,7 @@ test('expanded pages reflow after resizing and keep enlarged-text actions reacha
   test.skip(testInfo.project.name !== 'compact-phone-chrome', 'One short-screen reflow cross-cut.');
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await ux.install('populated', { foodDayStatus: 'OPEN' });
-  await page.route('**/api/v1/calibration/status', route => route.fulfill({ json: PLAN_CHECK_RECOMMENDATION_STATUS }));
+  await page.route('**/api/v1/plan-check', route => route.fulfill({ json: PLAN_CHECK_STATUS }));
   for (const [route, sourceId, id] of [
     ['/today', 'today-food-preview', 'food'],
     ['/progress', 'weight-trend-preview-card', 'trend'],
@@ -320,7 +320,7 @@ test('expanded pages reflow after resizing and keep enlarged-text actions reacha
     await expect(collapse).toBeFocused();
     if (id === 'trend') await expect(pane.getByTestId('selected-trend-summary')).toBeVisible();
     if (id === 'food') await expect(pane.getByText('Fixture breakfast', { exact: true })).toBeVisible();
-    if (id === 'plan') await expect(pane.getByRole('button', { name: 'Review suggested 1,750 calorie daily target' })).toBeVisible();
+    if (id === 'plan') await expect(pane.getByRole('button', { name: 'Report history' })).toBeVisible();
     await applyTwoHundredPercentText(page);
     await page.setViewportSize({ width: 320, height: 568 });
     await expect.poll(async () => {
@@ -329,7 +329,7 @@ test('expanded pages reflow after resizing and keep enlarged-text actions reacha
     }).toBeLessThanOrEqual(1);
     await expect(collapse).toBeInViewport({ ratio: 1 });
     const lastAction = id === 'food' ? page.getByRole('button', { name: 'Add food', exact: true })
-      : id === 'plan' ? pane.getByRole('button', { name: 'Review suggested 1,750 calorie daily target' })
+      : id === 'plan' ? pane.getByRole('button', { name: 'Report history' })
         : pane.getByTestId('selected-trend-summary');
     await lastAction.scrollIntoViewIfNeeded();
     await expect(lastAction).toBeInViewport();
