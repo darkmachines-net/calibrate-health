@@ -14,7 +14,12 @@ import {
   parseInAppNotificationPageQuery,
   resolveInactiveReminderNotificationsForUser
 } from '../services/inAppNotifications';
-import { getWebPushPublicKey } from '../services/webPush';
+import {
+  getWebPushPublicKey,
+  MAX_WEB_PUSH_KEY_LENGTH,
+  MAX_WEB_PUSH_SUBSCRIPTIONS_PER_USER,
+  validateWebPushEndpoint
+} from '../services/webPush';
 import {
   NOTIFICATION_REALTIME_EVENT_NAME,
   subscribeToNotificationRealtimeUpdates
@@ -92,24 +97,20 @@ router.get('/stream', (req, res) => {
   res.once('close', cleanup);
 });
 
-/**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
+const isValidWebPushKey = (value: string): boolean =>
+  value.length > 0 && value.length <= MAX_WEB_PUSH_KEY_LENGTH && !/\s/.test(value);
+
+/** Return the configured VAPID public key for browser push subscription setup. */
 router.get('/public-key', (_req, res) => {
   const { publicKey, error } = getWebPushPublicKey();
   if (!publicKey) {
     return res.status(500).json({ message: error ?? 'Web push is not configured.' });
   }
 
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.json({ publicKey });
 });
 
-/**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
+/** Register or transfer a validated browser Web Push subscription for the active cookie session. */
 router.post('/subscription', isBrowserSession, async (req, res) => {
   const user = getAuthenticatedUser(req);
   const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint.trim() : '';
@@ -117,18 +118,37 @@ router.post('/subscription', isBrowserSession, async (req, res) => {
   const p256dh = typeof keys?.p256dh === 'string' ? keys?.p256dh.trim() : '';
   const auth = typeof keys?.auth === 'string' ? keys?.auth.trim() : '';
   const expirationTimeRaw = req.body?.expirationTime;
-  const expirationTime =
-    typeof expirationTimeRaw === 'number' && Number.isFinite(expirationTimeRaw)
-      ? new Date(expirationTimeRaw)
-      : null;
+  let expirationTime: Date | null = null;
+  if (expirationTimeRaw !== undefined && expirationTimeRaw !== null) {
+    if (typeof expirationTimeRaw !== 'number' || !Number.isFinite(expirationTimeRaw)) {
+      return res.status(400).json({ message: 'Invalid subscription expiration time.' });
+    }
+    const parsedExpiration = new Date(expirationTimeRaw);
+    if (Number.isNaN(parsedExpiration.getTime())) {
+      return res.status(400).json({ message: 'Invalid subscription expiration time.' });
+    }
+    expirationTime = parsedExpiration;
+  }
 
-  if (!endpoint || !p256dh || !auth) {
+  if (!endpoint || !isValidWebPushKey(p256dh) || !isValidWebPushKey(auth)) {
     return res.status(400).json({ message: 'Invalid subscription payload.' });
   }
 
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
+  const endpointValidation = validateWebPushEndpoint(endpoint);
+  if (!endpointValidation.ok) {
+    return res.status(400).json({ message: endpointValidation.error });
+  }
+
+  const otherSubscriptionCount = await prisma.pushSubscription.count({
+    where: {
+      user_id: user.id,
+      NOT: { endpoint }
+    }
+  });
+  if (otherSubscriptionCount >= MAX_WEB_PUSH_SUBSCRIPTIONS_PER_USER) {
+    return res.status(400).json({ message: 'Too many active browser push subscriptions for this account.' });
+  }
+
   await prisma.pushSubscription.upsert({
     where: { endpoint },
     update: {
@@ -155,15 +175,10 @@ router.post('/subscription', isBrowserSession, async (req, res) => {
     }
   });
 
-  /**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
   res.json({ ok: true });
 });
 
-/**
- * Return active in-app reminders, resolving stale/completed entries first.
- */
+/** Remove a browser Web Push subscription owned by the authenticated session. */
 router.delete('/subscription', isBrowserSession, async (req, res) => {
   const user = getAuthenticatedUser(req);
   const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint.trim() : '';

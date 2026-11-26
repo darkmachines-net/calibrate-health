@@ -4,6 +4,7 @@ import { NativePushProvider } from '@prisma/client';
 import { type PushNotificationPayload } from './pushNotificationPayloads';
 
 const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send';
+const NATIVE_PUSH_REQUEST_TIMEOUT_MS = 10_000;
 
 export type NativePushSubscriptionForDelivery = {
   id: number;
@@ -52,7 +53,8 @@ export async function sendNativePushNotification(
       accept: 'application/json',
       'content-type': 'application/json'
     },
-    body: JSON.stringify(buildExpoPayload(subscription.token, payload))
+    body: JSON.stringify(buildExpoPayload(subscription.token, payload)),
+    signal: AbortSignal.timeout(NATIVE_PUSH_REQUEST_TIMEOUT_MS)
   });
 
   const body = await response.json().catch(() => null);
