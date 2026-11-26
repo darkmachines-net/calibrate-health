@@ -16,12 +16,14 @@ function loadNotificationsRouter({ prismaStub }) {
   const webPushPath = require.resolve('../src/services/webPush');
   const routePath = require.resolve('../src/routes/notifications');
 
+  const realWebPush = require('../src/services/webPush');
   const previousDbModule = require.cache[dbPath];
   const previousWebPushModule = require.cache[webPushPath];
   delete require.cache[routePath];
 
   stubModule(dbPath, prismaStub);
   stubModule(webPushPath, {
+    ...realWebPush,
     getWebPushPublicKey: () => ({ publicKey: 'public-key' })
   });
 
@@ -68,6 +70,13 @@ test('notifications route: transfers a browser endpoint and updates the owning s
   const router = loadNotificationsRouter({
     prismaStub: {
       pushSubscription: {
+        count: async ({ where }) => {
+          let total = 0;
+          for (const entry of rowsByEndpoint.values()) {
+            if (entry.user_id === where.user_id && entry.endpoint !== where.NOT?.endpoint) total += 1;
+          }
+          return total;
+        },
         upsert: async ({ where, update, create }) => {
           const current = rowsByEndpoint.get(where.endpoint);
           const saved = current ? { ...current, ...update } : { id: rowsByEndpoint.size + 1, ...create };
@@ -114,6 +123,73 @@ test('notifications route: transfers a browser endpoint and updates the owning s
     last_sent_weight_local_date: null,
     last_sent_food_local_date: null
   });
+});
+
+test('notifications route: rejects SSRF endpoints, invalid expirations, and excess browser subscriptions', async () => {
+  let upsertCalls = 0;
+  let existingCount = 0;
+  const router = loadNotificationsRouter({
+    prismaStub: {
+      pushSubscription: {
+        count: async () => existingCount,
+        upsert: async () => {
+          upsertCalls += 1;
+          return { id: upsertCalls };
+        }
+      }
+    }
+  });
+  const handler = getRouteHandlers(router, 'post', '/subscription').at(-1);
+  assert.ok(handler);
+
+  const blockedEndpoints = [
+    'http://169.254.169.254/latest/meta-data/',
+    'https://169.254.169.254/latest/meta-data/',
+    'https://127.0.0.1/push',
+    'https://[::1]/push',
+    'https://localhost/push',
+    'https://metadata.google.internal/computeMetadata/v1/',
+    'https://internal-service/push',
+    'https://fcm.googleapis.com:8443/fcm/send/abc',
+    'https://user:pass@fcm.googleapis.com/fcm/send/abc',
+    'http://fcm.googleapis.com/fcm/send/abc',
+    `https://fcm.googleapis.com/${'a'.repeat(2100)}`
+  ];
+
+  for (const endpoint of blockedEndpoints) {
+    const res = createRes();
+    await handler({
+      user: { id: 5 },
+      sessionID: 'session-owner-5',
+      body: { endpoint, keys: { p256dh: 'owner-5-key', auth: 'owner-5-auth' } }
+    }, res);
+    assert.equal(res.statusCode, 400, endpoint);
+  }
+
+  const invalidExpirationRes = createRes();
+  await handler({
+    user: { id: 5 },
+    sessionID: 'session-owner-5',
+    body: {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/valid',
+      expirationTime: 1e20,
+      keys: { p256dh: 'owner-5-key', auth: 'owner-5-auth' }
+    }
+  }, invalidExpirationRes);
+  assert.equal(invalidExpirationRes.statusCode, 400);
+
+  existingCount = 20;
+  const overCapRes = createRes();
+  await handler({
+    user: { id: 5 },
+    sessionID: 'session-owner-5',
+    body: {
+      endpoint: 'https://fcm.googleapis.com/fcm/send/new-endpoint',
+      keys: { p256dh: 'owner-5-key', auth: 'owner-5-auth' }
+    }
+  }, overCapRes);
+  assert.equal(overCapRes.statusCode, 400);
+  assert.equal(upsertCalls, 0);
 });
 
 test('notifications route: rejects native bearer ownership for browser push', async () => {
