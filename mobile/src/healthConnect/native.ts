@@ -121,10 +121,14 @@ export async function openHealthConnectAccess(): Promise<void> {
     native.openHealthConnectSettings();
 }
 
-/** Revokes Health Connect permissions on Android and normalizes platform-specific revocation results. */
+/** Revokes Health Connect permissions on Android when the SDK is available and initialized. */
 export async function disconnectHealthConnect(): Promise<RevokeAllPermissionsResponse | void> {
     if (Platform.OS !== 'android') return;
     const native = await loadNativeModule();
+    const availability = mapSdkStatus(await native.getSdkStatus(HEALTH_CONNECT_PROVIDER_PACKAGE));
+    if (availability !== 'available') return;
+    const initialized = await native.initialize(HEALTH_CONNECT_PROVIDER_PACKAGE);
+    if (!initialized) return;
     const response = await native.revokeAllPermissions() as RevokeAllPermissionsResponse | boolean | void;
     return normalizeRevocationResponse(response, Platform.Version);
 }
