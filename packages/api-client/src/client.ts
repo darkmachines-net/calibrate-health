@@ -38,6 +38,8 @@ import type {
     InAppNotificationPageResponse,
     InAppNotificationsQuery,
     InAppNotificationsResponse,
+    LoseItImportOptions,
+    LoseItImportPreview,
     LoseItImportSummary,
     MetricEntry,
     MetricSaveResponse,
@@ -207,6 +209,7 @@ type RequestOptions = RequestInit & {
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+const LOSE_IT_IMPORT_TIMEOUT_MS = 60000;
 const CLIENT_OPERATION_ID_HEADER = 'x-client-operation-id';
 
 /** Attach an operation identifier only when the caller is opting into idempotent replay. */
@@ -448,10 +451,11 @@ export class CalibrateApiClient {
         return body as T;
     }
 
-    private async requestForm<T>(path: string, formData: FormData): Promise<T> {
+    private async requestForm<T>(path: string, formData: FormData, timeoutMs?: number): Promise<T> {
         return this.request<T>(path, {
             method: 'POST',
-            body: formData
+            body: formData,
+            ...(timeoutMs === undefined ? {} : { timeoutMs })
         });
     }
 
@@ -966,15 +970,30 @@ export class CalibrateApiClient {
     }
 
     /** Uploads a Lose It export for validation and a preview without committing imported records. */
-    async previewLoseItImport(file: LoseItImportFile): Promise<LoseItImportSummary> {
+    async previewLoseItImport(file: LoseItImportFile): Promise<LoseItImportPreview> {
         const formData = await this.createLoseItImportForm(file);
-        return this.requestForm<LoseItImportSummary>('/api/imports/loseit/preview', formData);
+        return this.requestForm<LoseItImportPreview>(
+            '/api/imports/loseit/preview',
+            formData,
+            LOSE_IT_IMPORT_TIMEOUT_MS
+        );
     }
 
-    /** Uploads a Lose It export for import and returns the server's import summary. */
-    async executeLoseItImport(file: LoseItImportFile): Promise<LoseItImportSummary> {
+    /** Uploads a Lose It export with explicit unit and conflict options and returns the server's import summary. */
+    async executeLoseItImport(
+        file: LoseItImportFile,
+        options: LoseItImportOptions
+    ): Promise<LoseItImportSummary> {
         const formData = await this.createLoseItImportForm(file);
-        return this.requestForm<LoseItImportSummary>('/api/imports/loseit/execute', formData);
+        formData.append('weight_unit', options.weight_unit);
+        formData.append('food_conflict_mode', options.food_conflict_mode);
+        formData.append('weight_conflict_mode', options.weight_conflict_mode);
+        formData.append('include_body_fat', options.include_body_fat === false ? 'false' : 'true');
+        return this.requestForm<LoseItImportSummary>(
+            '/api/imports/loseit/execute',
+            formData,
+            LOSE_IT_IMPORT_TIMEOUT_MS
+        );
     }
 
     /** Convert the web DocumentPicker blob URL to a real browser Blob; native keeps its URI descriptor. */
