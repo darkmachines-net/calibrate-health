@@ -31,6 +31,12 @@ function platformLabel(platform: MobileDevicePlatform): string {
   }
 }
 
+/** Normalize request paths to match Express's case-insensitive, trailing-slash-tolerant routing. */
+function normalizeCompatibilityPath(path: string): string {
+  const lowered = path.toLowerCase();
+  return lowered.length > 1 ? lowered.replace(/\/+$/, '') : lowered;
+}
+
 /**
  * Enforce release floors on every bearer-authenticated request and the unauthenticated Wear exchange.
  * Browser cookie sessions omit native identity headers and remain unaffected.
@@ -39,7 +45,7 @@ export function enforceNativeClientCompatibility(req: Request, res: Response, ne
   const trustedPlatform = isMobileDevicePlatform(res.locals.mobileDevicePlatform)
     ? res.locals.mobileDevicePlatform
     : null;
-  const requiredPathPlatform = req.path.endsWith(WEAR_PAIRING_EXCHANGE_PATH)
+  const requiredPathPlatform = normalizeCompatibilityPath(req.path).endsWith(WEAR_PAIRING_EXCHANGE_PATH)
     ? MOBILE_DEVICE_PLATFORMS.WEAR_OS
     : null;
   const suppliedPlatformValue = req.get(NATIVE_CLIENT_HEADERS.PLATFORM)?.trim();

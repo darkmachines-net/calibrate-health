@@ -124,6 +124,13 @@ test('Wear pairing exchange requires Wear version identity before issuing a sess
   assert.equal(older.nextCount, 0);
   assert.equal(older.res.statusCode, 426);
   assert.equal(older.res.headers['x-calibrate-minimum-client-version'], '0.2.0');
+
+  for (const variant of ['/AUTH/mobile/wear/pair', '/auth/mobile/wear/pair/', '/API/V1/AUTH/MOBILE/WEAR/PAIR/']) {
+    const bypassAttempt = run({ path: variant });
+    assert.equal(bypassAttempt.nextCount, 0, variant);
+    assert.equal(bypassAttempt.res.statusCode, 426, variant);
+    assert.equal(bypassAttempt.res.body.platform, 'wear_os', variant);
+  }
 });
 
 test('older and malformed versions receive a bounded upgrade contract', () => {
