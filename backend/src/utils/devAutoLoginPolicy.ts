@@ -18,6 +18,7 @@ export function shouldAutoLoginTestUser(
 ): boolean {
   const enabled = env.AUTO_LOGIN_TEST_USER === 'true';
   const isProductionOrStaging = isProductionOrStagingEnv(env.NODE_ENV);
-  const isLoggingOut = req.path.startsWith('/auth/logout');
+  const normalizedPath = req.path.toLowerCase();
+  const isLoggingOut = normalizedPath === '/auth/logout' || normalizedPath.startsWith('/auth/logout/');
   return enabled && !isProductionOrStaging && !isLoggingOut && !req.isAuthenticated();
 }

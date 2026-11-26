@@ -93,3 +93,57 @@ test('full accounts continue to ordinary authenticated routes', async () => {
   assert.equal(nextCalled, true);
   assert.deepEqual(res.locals.accountAccess, full);
 });
+
+test('restricted sessions cannot bypass enforcement with mixed-case or trailing-slash Express paths', async (t) => {
+  const express = require('express');
+  const verification = { state: 'email_verification_required', email_verified: false, legal_current: true };
+  const { enforceAccountAccess } = loadMiddleware(async () => verification);
+
+  for (const [path, method] of [
+    ['/API/v1/food', 'POST'],
+    ['/Api/v1/goals', 'GET'],
+    ['/API/user/me', 'GET'],
+    ['/AUTH/mobile/wear/pairing-credential', 'POST'],
+    ['/Auth/sessions/', 'GET']
+  ]) {
+    const res = response();
+    let nextCalled = false;
+    await enforceAccountAccess(authenticatedRequest(path, method), res, () => { nextCalled = true; });
+    assert.equal(nextCalled, false, `${method} ${path}`);
+    assert.equal(res.statusCode, 403, `${method} ${path}`);
+    assert.equal(res.body.code, 'EMAIL_VERIFICATION_REQUIRED', `${method} ${path}`);
+  }
+
+  for (const [path, method] of [
+    ['/API/v1/legal/status/', 'GET'],
+    ['/AUTH/LOGOUT/', 'POST']
+  ]) {
+    let nextCalled = false;
+    await enforceAccountAccess(authenticatedRequest(path, method), response(), () => { nextCalled = true; });
+    assert.equal(nextCalled, true, `${method} ${path}`);
+  }
+
+  const app = express();
+  app.use((req, _res, next) => {
+    req.user = { id: 7 };
+    req.isAuthenticated = () => true;
+    next();
+  });
+  app.use(enforceAccountAccess);
+  app.get('/api/v1/food', (_req, res) => res.json({ reached: true }));
+  app.post('/auth/mobile/wear/pairing-credential', (_req, res) => res.json({ reached: true }));
+
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  const origin = `http://127.0.0.1:${address.port}`;
+
+  const foodRes = await fetch(`${origin}/API/v1/food`);
+  assert.equal(foodRes.status, 403);
+  assert.equal((await foodRes.json()).code, 'EMAIL_VERIFICATION_REQUIRED');
+
+  const pairingRes = await fetch(`${origin}/AUTH/mobile/wear/pairing-credential`, { method: 'POST' });
+  assert.equal(pairingRes.status, 403);
+  assert.equal((await pairingRes.json()).code, 'EMAIL_VERIFICATION_REQUIRED');
+});

@@ -18,15 +18,22 @@ const AUTH_ALLOWED_PATHS = new Set([
   '/auth/password-reset/confirm'
 ]);
 
+/** Normalize Express paths to match case-insensitive, optional-trailing-slash route dispatch. */
+const normalizeRequestPath = (path: string): string => {
+  const lowered = path.toLowerCase();
+  return lowered.length > 1 ? lowered.replace(/\/+$/, '') : lowered;
+};
+
 /** Allow only recovery, legal, portability and supporting requests while normal account access is restricted. */
 const isRestrictedPathAllowed = (req: Request): boolean => {
   if (req.method === 'OPTIONS') return true;
-  if (AUTH_ALLOWED_PATHS.has(req.path)) return true;
-  if (/^\/api(?:\/v1)?\/legal\/(?:status|acceptance)$/.test(req.path)) return true;
-  if (/^\/api(?:\/v1)?\/client-config\/?$/.test(req.path) && req.method === 'GET') return true;
-  if (/^\/api(?:\/v1)?\/client-diagnostics\/?$/.test(req.path) && req.method === 'POST') return true;
-  if (/^\/api(?:\/v1)?\/user\/account\/export\/?$/.test(req.path) && req.method === 'GET') return true;
-  if (/^\/api(?:\/v1)?\/user\/account\/?$/.test(req.path) && req.method === 'DELETE') return true;
+  const normalizedPath = normalizeRequestPath(req.path);
+  if (AUTH_ALLOWED_PATHS.has(normalizedPath)) return true;
+  if (/^\/api(?:\/v1)?\/legal\/(?:status|acceptance)$/.test(normalizedPath)) return true;
+  if (/^\/api(?:\/v1)?\/client-config$/.test(normalizedPath) && req.method === 'GET') return true;
+  if (/^\/api(?:\/v1)?\/client-diagnostics$/.test(normalizedPath) && req.method === 'POST') return true;
+  if (/^\/api(?:\/v1)?\/user\/account\/export$/.test(normalizedPath) && req.method === 'GET') return true;
+  if (/^\/api(?:\/v1)?\/user\/account$/.test(normalizedPath) && req.method === 'DELETE') return true;
   return false;
 };
 
@@ -43,8 +50,15 @@ const restrictedResponse = (access: AccountAccess) => {
 };
 
 /** Restrict incomplete accounts to verification, legal, support, export, deletion, and logout surfaces. */
-const isBackendAccountPath = (path: string): boolean =>
-  path === '/auth' || path.startsWith('/auth/') || path === '/api' || path.startsWith('/api/');
+const isBackendAccountPath = (path: string): boolean => {
+  const normalizedPath = normalizeRequestPath(path);
+  return (
+    normalizedPath === '/auth' ||
+    normalizedPath.startsWith('/auth/') ||
+    normalizedPath === '/api' ||
+    normalizedPath.startsWith('/api/')
+  );
+};
 
 /** Recheck authenticated account gates for protected routes and reject restricted access without clearing the session. */
 export async function enforceAccountAccess(

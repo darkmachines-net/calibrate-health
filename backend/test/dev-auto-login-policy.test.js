@@ -28,8 +28,10 @@ test('devAutoLoginPolicy: shouldAutoLoginTestUser blocks auto-login when already
 });
 
 test('devAutoLoginPolicy: shouldAutoLoginTestUser blocks auto-login on logout requests', () => {
-  const req = buildReq({ path: '/auth/logout', isAuthenticated: false });
-  assert.equal(shouldAutoLoginTestUser(req, { AUTO_LOGIN_TEST_USER: 'true', NODE_ENV: 'development' }), false);
+  for (const path of ['/auth/logout', '/AUTH/LOGOUT', '/Auth/Logout/']) {
+    const req = buildReq({ path, isAuthenticated: false });
+    assert.equal(shouldAutoLoginTestUser(req, { AUTO_LOGIN_TEST_USER: 'true', NODE_ENV: 'development' }), false, path);
+  }
 });
 
 test('devAutoLoginPolicy: shouldAutoLoginTestUser enables auto-login only for unauthenticated non-logout dev requests', () => {
