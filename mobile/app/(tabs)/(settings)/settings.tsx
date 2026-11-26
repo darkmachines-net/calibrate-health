@@ -35,6 +35,7 @@ import { spacing, useAppTheme } from '../../../src/theme';
 import { useHealthConnect } from '../../../src/healthConnect/provider';
 import { clearWearAccountData } from '../../../src/wear/accountCleanup';
 import { DeleteAccountSheet } from '../../../src/settings/AccountSettingsSheets';
+import { importLoseItArchive } from '../../../src/settings/loseItImport';
 import {
     SettingsHome,
     shouldShowSettingsResourceStatus,
@@ -250,13 +251,18 @@ export function SettingsScreen({ category }: { category?: SettingsCategoryId }) 
             });
             if (result.canceled || result.assets.length === 0) return null;
             const asset = result.assets[0];
-            return api.executeLoseItImport({
-                uri: asset.uri,
-                name: asset.name ?? 'loseit-export.zip',
-                type: asset.mimeType ?? 'application/zip'
-            });
+            return importLoseItArchive(
+                api,
+                {
+                    uri: asset.uri,
+                    name: asset.name ?? 'loseit-export.zip',
+                    type: asset.mimeType ?? 'application/zip'
+                },
+                user?.weight_unit
+            );
         },
-        onSuccess: async () => {
+        onSuccess: async (data) => {
+            if (!data) return;
             await queryClient.invalidateQueries();
         }
     });
@@ -443,6 +449,7 @@ export function SettingsScreen({ category }: { category?: SettingsCategoryId }) 
                 <AppButton
                     title={importMutation.isPending ? 'Importing...' : 'Import Lose It ZIP'}
                     variant="secondary"
+                    disabled={importMutation.isPending}
                     leftIcon={<Ionicons name="cloud-upload-outline" size={18} color={themeColors.onSurface} />}
                     onPress={() => importMutation.mutate()}
                 />

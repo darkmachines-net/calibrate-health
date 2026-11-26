@@ -1295,6 +1295,36 @@ export type TrendMetricsResponse = {
     };
 };
 
+export type LoseItFoodConflictMode = 'MERGE' | 'REPLACE' | 'SKIP';
+export type LoseItWeightConflictMode = 'KEEP' | 'OVERWRITE';
+
+export type LoseItImportOptions = {
+    weight_unit: WeightUnit;
+    food_conflict_mode: LoseItFoodConflictMode;
+    weight_conflict_mode: LoseItWeightConflictMode;
+    include_body_fat?: boolean;
+};
+
+export type LoseItImportPreview = {
+    summary: {
+        foodLogs: number;
+        foodLogDays: number;
+        weights: number;
+        bodyFat: number;
+        startDate: string | null;
+        endDate: string | null;
+    };
+    conflicts: {
+        foodLogDays: number;
+        weightDays: number;
+    };
+    warnings: string[];
+    weightUnitGuess: WeightUnit;
+    weightUnitGuessSource: 'profile' | 'heuristic' | 'fallback';
+    foodDayCompletionStatus?: 'unavailable';
+    foodDayCompletionMessage?: string;
+};
+
 export type LoseItImportSummary = {
     food_logs: {
         total: number;

@@ -478,7 +478,14 @@ test('browser cookie transport uses session endpoints without native or bearer c
     });
 });
 
-test('browser Lose It uploads submit a real Blob instead of a React Native URI descriptor', async () => {
+const DEFAULT_LOSE_IT_IMPORT_OPTIONS = {
+    weight_unit: 'LB' as const,
+    food_conflict_mode: 'MERGE' as const,
+    weight_conflict_mode: 'KEEP' as const,
+    include_body_fat: true
+};
+
+test('browser Lose It uploads submit a real Blob and explicit import options instead of a React Native URI descriptor', async () => {
     let uploaded: FormData | null = null;
     const client = new CalibrateApiClient({
         baseUrl: 'https://calibrate.example',
@@ -489,12 +496,47 @@ test('browser Lose It uploads submit a real Blob instead of a React Native URI d
     });
     const exportBlob = new Blob(['zip export'], { type: 'application/zip' });
 
-    await client.executeLoseItImport(exportBlob);
+    await client.executeLoseItImport(exportBlob, DEFAULT_LOSE_IT_IMPORT_OPTIONS);
 
     const uploadedForm = requireCaptured<FormData>(uploaded, 'upload form');
     const uploadedFile = uploadedForm.get('file');
     assert.ok(uploadedFile instanceof Blob);
     assert.equal(await uploadedFile.text(), 'zip export');
+    assert.equal(uploadedForm.get('weight_unit'), 'LB');
+    assert.equal(uploadedForm.get('food_conflict_mode'), 'MERGE');
+    assert.equal(uploadedForm.get('weight_conflict_mode'), 'KEEP');
+    assert.equal(uploadedForm.get('include_body_fat'), 'true');
+});
+
+test('previewLoseItImport returns the preview summary and inferred weight unit', async () => {
+    const requestedUrls: string[] = [];
+    const previewPayload = {
+        summary: {
+            foodLogs: 12,
+            foodLogDays: 4,
+            weights: 3,
+            bodyFat: 1,
+            startDate: '2026-01-01',
+            endDate: '2026-01-04'
+        },
+        conflicts: { foodLogDays: 1, weightDays: 0 },
+        warnings: [],
+        weightUnitGuess: 'LB',
+        weightUnitGuessSource: 'profile'
+    };
+    const client = new CalibrateApiClient({
+        baseUrl: 'https://calibrate.example',
+        fetchImpl: (async (input) => {
+            requestedUrls.push(String(input));
+            return new Response(JSON.stringify(previewPayload), { status: 200 });
+        }) as typeof fetch
+    });
+    const exportBlob = new Blob(['zip export'], { type: 'application/zip' });
+
+    const preview = await client.previewLoseItImport(exportBlob);
+
+    assert.deepEqual(requestedUrls, ['https://calibrate.example/api/v1/imports/loseit/preview']);
+    assert.deepEqual(preview, previewPayload);
 });
 
 test('browser Lose It object URLs are hydrated before upload', async () => {
@@ -515,13 +557,25 @@ test('browser Lose It object URLs are hydrated before upload', async () => {
         }) as typeof fetch
     });
 
-    await client.executeLoseItImport({ uri: objectUrl, name: 'loseit-export.zip', type: 'application/zip' });
+    await client.executeLoseItImport(
+        { uri: objectUrl, name: 'loseit-export.zip', type: 'application/zip' },
+        {
+            weight_unit: 'KG',
+            food_conflict_mode: 'SKIP',
+            weight_conflict_mode: 'OVERWRITE',
+            include_body_fat: false
+        }
+    );
 
     assert.deepEqual(requestedUrls, [objectUrl, 'https://calibrate.example/api/v1/imports/loseit/execute']);
     const uploadedForm = requireCaptured<FormData>(uploaded, 'upload form');
     const uploadedFile = uploadedForm.get('file');
     assert.ok(uploadedFile instanceof Blob);
     assert.equal(await uploadedFile.text(), 'zip export');
+    assert.equal(uploadedForm.get('weight_unit'), 'KG');
+    assert.equal(uploadedForm.get('food_conflict_mode'), 'SKIP');
+    assert.equal(uploadedForm.get('weight_conflict_mode'), 'OVERWRITE');
+    assert.equal(uploadedForm.get('include_body_fat'), 'false');
 });
 
 test('native Lose It URIs remain FormData descriptors even when React Native exposes window', async (t) => {
@@ -561,11 +615,17 @@ test('native Lose It URIs remain FormData descriptors even when React Native exp
         }) as typeof fetch
     });
 
-    await client.executeLoseItImport(nativeFile);
+    await client.executeLoseItImport(nativeFile, DEFAULT_LOSE_IT_IMPORT_OPTIONS);
 
     assert.deepEqual(requestedUrls, ['https://calibrate.example/api/v1/imports/loseit/execute']);
     const uploadedForm = requireCaptured<NativeFormData>(uploaded, 'native upload form');
-    assert.deepEqual(uploadedForm.fields, [{ name: 'file', value: nativeFile }]);
+    assert.deepEqual(uploadedForm.fields, [
+        { name: 'file', value: nativeFile },
+        { name: 'weight_unit', value: 'LB' },
+        { name: 'food_conflict_mode', value: 'MERGE' },
+        { name: 'weight_conflict_mode', value: 'KEEP' },
+        { name: 'include_body_fat', value: 'true' }
+    ]);
 });
 
 test('a per-request credential policy overrides the browser client default', async () => {
