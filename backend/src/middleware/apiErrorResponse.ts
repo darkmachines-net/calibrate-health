@@ -1,10 +1,11 @@
 /** @file api Error Response: Add the current request's stable error envelope without mutating route/idempotency bodies. */
 
 import type { ErrorRequestHandler, RequestHandler, Response } from 'express';
+import { isCalibrateMcpRequest } from '../mcp/paths';
 import { safeErrorType, safeRequestId } from '../observability';
 
 type ApiErrorBody = Record<string, unknown>;
-type HttpError = Error & { statusCode?: number; status?: number };
+type HttpError = Error & { statusCode?: number; status?: number; code?: string };
 
 const MAX_MESSAGE_LENGTH = 512;
 const MAX_CODE_LENGTH = 96;
@@ -28,6 +29,12 @@ const FOOD_DAY_SOURCES = new Set([
 const CURRENT_FOOD_DAY_STATUSES = new Set(['OPEN', 'COMPLETE', 'INCOMPLETE', 'PAUSED']);
 const CURRENT_FOOD_DAY_SOURCES = new Set(['USER', 'PAUSE', 'IMPORT']);
 
+const ACCOUNT_ACCESS_STATES = new Set([
+  'full',
+  'email_verification_required',
+  'legal_acceptance_required'
+]);
+
 const SAFE_SERVER_ERRORS: Readonly<Record<string, {
   status: number;
   message: string;
@@ -37,6 +44,41 @@ const SAFE_SERVER_ERRORS: Readonly<Record<string, {
     status: 503,
     message: 'Native push is disabled by this server.',
     retryable: false
+  },
+  AUTH_UNAVAILABLE: {
+    status: 503,
+    message: 'Sign-in is temporarily unavailable.',
+    retryable: true
+  },
+  EMAIL_DELIVERY_UNAVAILABLE: {
+    status: 503,
+    message: 'Account email delivery is temporarily unavailable.',
+    retryable: true
+  },
+  SOCIAL_AUTH_UNAVAILABLE: {
+    status: 503,
+    message: 'Provider sign-in is temporarily unavailable.',
+    retryable: true
+  },
+  ONBOARDING_COMPLETION_FAILED: {
+    status: 500,
+    message: 'Unable to complete onboarding.',
+    retryable: true
+  },
+  LABEL_SCAN_BUSY: {
+    status: 503,
+    message: 'The label scanner is busy. Try again shortly.',
+    retryable: true
+  },
+  LABEL_SCAN_TIMEOUT: {
+    status: 504,
+    message: 'Reading this label took too long. Try a clearer, tightly cropped photo.',
+    retryable: true
+  },
+  LABEL_SCAN_FAILED: {
+    status: 500,
+    message: 'The label could not be read. Try another photo or enter the details manually.',
+    retryable: true
   }
 };
 
@@ -186,6 +228,24 @@ function normalizedCurrent(value: unknown): Record<string, unknown> | null | und
   return undefined;
 }
 
+function normalizedAccountAccess(value: unknown): Record<string, unknown> | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.state !== 'string' ||
+    !ACCOUNT_ACCESS_STATES.has(value.state) ||
+    typeof value.email_verified !== 'boolean' ||
+    typeof value.legal_current !== 'boolean'
+  ) {
+    return undefined;
+  }
+
+  return {
+    state: value.state,
+    email_verified: value.email_verified,
+    legal_current: value.legal_current
+  };
+}
+
 function normalizedExtensions(
   statusCode: number,
   code: string,
@@ -216,6 +276,11 @@ function normalizedExtensions(
   if (code === 'ENTITY_CONFLICT') {
     const current = normalizedCurrent(body.current);
     if (current !== undefined) extensions.current = current;
+  }
+
+  if (code === 'EMAIL_VERIFICATION_REQUIRED' || code === 'LEGAL_ACCEPTANCE_REQUIRED') {
+    const accountAccess = normalizedAccountAccess(body.account_access);
+    if (accountAccess !== undefined) extensions.account_access = accountAccess;
   }
 
   return extensions;
@@ -289,9 +354,14 @@ function normalizeApiErrorResponse(
   return normalized;
 }
 
-/** Normalize every later JSON error at the final serialization boundary. */
+/** Normalize every later JSON error at the final serialization boundary, leaving MCP/OAuth 2.1 protocol payloads intact. */
 export function createApiErrorResponseMiddleware(): RequestHandler {
-  return (_req, res, next) => {
+  return (req, res, next) => {
+    if (isCalibrateMcpRequest(req.path, req.method)) {
+      next();
+      return;
+    }
+
     const originalJson = res.json.bind(res);
     res.json = ((body: unknown) => {
       if (res.statusCode < 400) return originalJson(body);
@@ -317,7 +387,10 @@ export const apiRequestErrorHandler: ErrorRequestHandler = (err: HttpError, _req
     return;
   }
 
-  const rawStatus = err.statusCode ?? err.status;
+  let rawStatus = err.statusCode ?? err.status;
+  if (rawStatus === undefined && err.name === 'MulterError') {
+    rawStatus = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+  }
   const statusCode = typeof rawStatus === 'number' && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500;
   if (statusCode >= 500) {
     console.error(

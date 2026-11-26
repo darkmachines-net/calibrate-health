@@ -20,6 +20,7 @@ import {
   MCP_FOOD_READ_SCOPE,
   MCP_WEIGHT_READ_SCOPE
 } from './oauth';
+export { isCalibrateMcpRequest } from './paths';
 
 const MCP_SERVER_INSTRUCTIONS = [
   'Use Calibrate data only for informational progress discussion, not diagnosis or treatment.',
@@ -165,20 +166,6 @@ function isTrustedCloudRunTag(host: string | undefined, allowedHosts: string[]):
     const tag = host.slice(0, -suffix.length);
     return /^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(tag);
   });
-}
-
-/** Identify protocol requests while leaving GET/HEAD /register to the browser's account-registration page. */
-export function isCalibrateMcpRequest(path: string, method: string): boolean {
-  if (path === '/register' && (method === 'GET' || method === 'HEAD')) return false;
-  return path === '/mcp' ||
-    path === '/authorize' ||
-    path === '/token' ||
-    path === '/register' ||
-    path === '/revoke' ||
-    path === '/oauth/approve' ||
-    path === '/.well-known/oauth-authorization-server' ||
-    path === '/.well-known/oauth-protected-resource' ||
-    path === '/.well-known/oauth-protected-resource/mcp';
 }
 
 async function resolveAccessToken(

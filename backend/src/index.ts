@@ -123,13 +123,17 @@ const bootstrap = async (): Promise<void> => {
   // Reduce fingerprinting surface for minimal Express signature.
   app.disable('x-powered-by');
   app.use(createRequestObservabilityMiddleware({ config: observabilityConfig }));
-  app.use(createApiErrorResponseMiddleware());
   app.use(helmet({
     // A deployment-aware CSP needs to account for self-hosted proxy and food-image origins.
     contentSecurityPolicy: false,
     ...(isProductionOrStaging ? {} : { strictTransportSecurity: false })
   }));
-  app.get('/internal/diagnostics/metrics', createDiagnosticsMetricsHandler({ config: observabilityConfig }));
+  const apiErrorResponseMiddleware = createApiErrorResponseMiddleware();
+  app.get(
+    '/internal/diagnostics/metrics',
+    apiErrorResponseMiddleware,
+    createDiagnosticsMetricsHandler({ config: observabilityConfig })
+  );
   const authRateLimiters = createAuthRateLimiters();
   const clientDiagnosticsRateLimiter = createClientDiagnosticsRateLimiter();
 
@@ -165,8 +169,8 @@ const bootstrap = async (): Promise<void> => {
       oauthApprovalRateLimiter: authRateLimiters.login
     })
     : null;
-  // MCP and its OAuth protocol endpoints own cross-origin policy and bearer auth. Mount them
-  // before browser CORS and mobile bearer middleware so remote public clients can connect safely.
+  // MCP and its OAuth protocol endpoints own cross-origin policy, bearer auth, and RFC 6749/JSON-RPC
+  // error envelopes. Mount them before browser CORS, REST error normalization, and mobile bearer middleware.
   app.use((req, res, next) => {
     if (!mcpHttpApp || !isCalibrateMcpRequest(req.path, req.method)) {
       next();
@@ -174,6 +178,7 @@ const bootstrap = async (): Promise<void> => {
     }
     mcpHttpApp(req, res, next);
   });
+  app.use(apiErrorResponseMiddleware);
 
   const browserOriginPolicy = resolveBrowserOriginPolicy(process.env.CORS_ORIGINS, isProductionOrStaging);
   const allowedOriginSet = browserOriginPolicy.exactOrigins;

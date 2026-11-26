@@ -17,10 +17,15 @@ type OcrResult = { text: string; confidence: number } | { error: 'invalid-image'
 /** Runs locally with bundled language data; photos and recognized text are never persisted. */
 export async function scanNutritionLabel(image: Buffer, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  if (image.length === 0 || image.length > MAX_LABEL_IMAGE_BYTES) {
+  if (image.length === 0) {
+    throw createHttpError(400, 'Choose a label photo.');
+  }
+  if (image.length > MAX_LABEL_IMAGE_BYTES) {
     throw createHttpError(413, 'Choose a label photo smaller than 8 MB.');
   }
-  if (scanActive) throw createHttpError(503, 'The label scanner is busy. Try again shortly.');
+  if (scanActive) {
+    throw createHttpError(503, 'The label scanner is busy. Try again shortly.', 'LABEL_SCAN_BUSY');
+  }
   scanActive = true;
   let worker: Worker | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -43,15 +48,22 @@ export async function scanNutritionLabel(image: Buffer, signal?: AbortSignal) {
       if (signal?.aborted) abortScan();
       worker!.once('message', resolve);
       worker!.once('error', reject);
-      worker!.once('exit', () => reject(createHttpError(500, 'Label scanning stopped. Try again.')));
-      timer = setTimeout(() => reject(createHttpError(504,
-        'Reading this label took too long. Try a clearer, tightly cropped photo.')), SCAN_TIMEOUT_MS);
+      worker!.once('exit', () => reject(createHttpError(500, 'Label scanning stopped. Try again.', 'LABEL_SCAN_FAILED')));
+      timer = setTimeout(() => reject(createHttpError(
+        504,
+        'Reading this label took too long. Try a clearer, tightly cropped photo.',
+        'LABEL_SCAN_TIMEOUT'
+      )), SCAN_TIMEOUT_MS);
     });
     if ('error' in result) {
       if (result.error === 'invalid-image') {
         throw createHttpError(400, 'Choose a valid JPEG, PNG, or WebP label photo under 25 megapixels.');
       }
-      throw createHttpError(500, 'The label could not be read. Try another photo or enter the details manually.');
+      throw createHttpError(
+        500,
+        'The label could not be read. Try another photo or enter the details manually.',
+        'LABEL_SCAN_FAILED'
+      );
     }
     const draft = parseNutritionLabel(result.text);
     if (result.confidence < 70) draft.warnings.unshift('This photo was difficult to read. Check every value or try a clearer photo.');

@@ -85,6 +85,48 @@ async function startTestServer(t) {
     retryable: true,
     internal_config: { api_key: 'private' }
   }));
+  app.get('/email-delivery-unavailable', (_req, res) => res.status(503).json({
+    message: 'Private SMTP detail',
+    code: 'EMAIL_DELIVERY_UNAVAILABLE',
+    retryable: false,
+    internal_detail: 'dropped'
+  }));
+  app.get('/label-scan-timeout', (_req, res) => res.status(504).json({
+    message: 'Reading this label took too long. Try a clearer, tightly cropped photo.',
+    code: 'LABEL_SCAN_TIMEOUT'
+  }));
+  app.get('/restricted-access', (_req, res) => res.status(403).json({
+    message: 'Verify your email to continue.',
+    code: 'EMAIL_VERIFICATION_REQUIRED',
+    retryable: false,
+    account_access: {
+      state: 'email_verification_required',
+      email_verified: false,
+      legal_current: true,
+      private: 'dropped'
+    }
+  }));
+  app.post('/mcp', (_req, res) => res.status(401).json({
+    jsonrpc: '2.0',
+    error: { code: -32001, message: 'Calibrate authentication is required' },
+    id: null
+  }));
+  app.post('/token', (_req, res) => res.status(400).json({
+    error: 'invalid_grant',
+    error_description: 'The authorization code is invalid or expired'
+  }));
+  app.post('/multer-limit', () => {
+    const err = new Error('File too large');
+    err.name = 'MulterError';
+    err.code = 'LIMIT_FILE_SIZE';
+    throw err;
+  });
+  app.post('/multer-field', () => {
+    const err = new Error('Unexpected field');
+    err.name = 'MulterError';
+    err.code = 'LIMIT_UNEXPECTED_FILE';
+    throw err;
+  });
   app.get('/upgrade', (_req, res) => res.status(426).json({
     message: 'Update Calibrate for Android to version 2.3.4 or newer to continue.',
     code: 'CLIENT_UPGRADE_REQUIRED',
@@ -328,6 +370,75 @@ test('body-parser failures use the same request ID in the response header and er
   assert.deepEqual(await response.json(), {
     message: 'Request body is too large',
     code: 'PAYLOAD_TOO_LARGE',
+    retryable: false,
+    request_id: REQUEST_ID
+  });
+});
+
+test('MCP/OAuth errors, safe 5xx codes, 403 account_access, and MulterError statuses are preserved', async (t) => {
+  const { origin } = await startTestServer(t);
+
+  const mcp = await request(origin, '/mcp', { method: 'POST' });
+  assert.equal(mcp.status, 401);
+  assert.deepEqual(await mcp.json(), {
+    jsonrpc: '2.0',
+    error: { code: -32001, message: 'Calibrate authentication is required' },
+    id: null
+  });
+
+  const token = await request(origin, '/token', { method: 'POST' });
+  assert.equal(token.status, 400);
+  assert.deepEqual(await token.json(), {
+    error: 'invalid_grant',
+    error_description: 'The authorization code is invalid or expired'
+  });
+
+  const emailUnavailable = await request(origin, '/email-delivery-unavailable');
+  assert.equal(emailUnavailable.status, 503);
+  assert.deepEqual(await emailUnavailable.json(), {
+    message: 'Account email delivery is temporarily unavailable.',
+    code: 'EMAIL_DELIVERY_UNAVAILABLE',
+    retryable: true,
+    request_id: REQUEST_ID
+  });
+
+  const scanTimeout = await request(origin, '/label-scan-timeout');
+  assert.equal(scanTimeout.status, 504);
+  assert.deepEqual(await scanTimeout.json(), {
+    message: 'Reading this label took too long. Try a clearer, tightly cropped photo.',
+    code: 'LABEL_SCAN_TIMEOUT',
+    retryable: true,
+    request_id: REQUEST_ID
+  });
+
+  const restricted = await request(origin, '/restricted-access');
+  assert.equal(restricted.status, 403);
+  assert.deepEqual(await restricted.json(), {
+    account_access: {
+      state: 'email_verification_required',
+      email_verified: false,
+      legal_current: true
+    },
+    message: 'Verify your email to continue.',
+    code: 'EMAIL_VERIFICATION_REQUIRED',
+    retryable: false,
+    request_id: REQUEST_ID
+  });
+
+  const multerLimit = await request(origin, '/multer-limit', { method: 'POST' });
+  assert.equal(multerLimit.status, 413);
+  assert.deepEqual(await multerLimit.json(), {
+    message: 'Request body is too large',
+    code: 'PAYLOAD_TOO_LARGE',
+    retryable: false,
+    request_id: REQUEST_ID
+  });
+
+  const multerField = await request(origin, '/multer-field', { method: 'POST' });
+  assert.equal(multerField.status, 400);
+  assert.deepEqual(await multerField.json(), {
+    message: 'Invalid request',
+    code: 'INVALID_REQUEST',
     retryable: false,
     request_id: REQUEST_ID
   });
