@@ -45,15 +45,16 @@ export function normalizeOptionalString(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
-export type HttpError = Error & { statusCode: number };
+export type HttpError = Error & { statusCode: number; code?: string };
 
 /**
  * Create a typed HTTP error so route handlers can map validation failures to status codes
  * without leaking stack traces or turning everything into a 500.
  */
-export function createHttpError(statusCode: number, message: string): HttpError {
+export function createHttpError(statusCode: number, message: string, code?: string): HttpError {
   const err = new Error(message) as HttpError;
   err.statusCode = statusCode;
+  if (code) err.code = code;
   return err;
 }
 

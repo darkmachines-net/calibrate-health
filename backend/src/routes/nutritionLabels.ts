@@ -54,8 +54,16 @@ router.post('/scan', async (_req, res, next) => {
       if (!res.destroyed) return res.json(draft);
     } catch (err) {
       if (controller.signal.aborted || res.destroyed) return;
-      if (isHttpError(err)) return res.status(err.statusCode).json({ message: err.message });
-      return res.status(500).json({ message: 'The label could not be read. Try another photo or enter the details manually.' });
+      if (isHttpError(err)) {
+        return res.status(err.statusCode).json({
+          message: err.message,
+          ...(err.code ? { code: err.code } : {})
+        });
+      }
+      return res.status(500).json({
+        message: 'The label could not be read. Try another photo or enter the details manually.',
+        code: 'LABEL_SCAN_FAILED'
+      });
     }
   });
 });
